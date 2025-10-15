@@ -413,7 +413,7 @@ export async function verifyCommentUpdate({ update, resolveAuthorAddresses, clie
         validateUpdateSignature);
     if (clientsManager._plebbit._memCaches.commentUpdateVerificationCache.get(cacheKey))
         return { valid: true };
-    if (update.edit) {
+    if ("edit" in update && update.edit) {
         if (update.edit.signature.publicKey !== comment.signature.publicKey)
             return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
         const editSignatureValidation = await _validateSignatureOfPlebbitRecord(update.edit);
@@ -422,7 +422,7 @@ export async function verifyCommentUpdate({ update, resolveAuthorAddresses, clie
     }
     if (update.cid !== comment.cid)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
-    if (update.replies && validatePages) {
+    if ("replies" in update && update.replies && validatePages) {
         // Validate update.replies
         const replyPageKeys = remeda.keys.strict(update.replies.pages);
         for (const replySortName of replyPageKeys) {
@@ -449,17 +449,6 @@ export async function verifyCommentUpdate({ update, resolveAuthorAddresses, clie
     if (subplebbit.signature && update.signature.publicKey !== subplebbit.signature.publicKey)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
     clientsManager._plebbit._memCaches.commentUpdateVerificationCache.set(cacheKey, true);
-    return { valid: true };
-}
-export async function verifyCommentUpdateForChallengeVerification(update) {
-    if (!_allFieldsOfRecordInSignedPropertyNames(update))
-        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
-    if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
-        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
-    // Validate signature
-    const jsonValidation = await _validateSignatureOfPlebbitRecord(update);
-    if (!jsonValidation.valid)
-        return jsonValidation;
     return { valid: true };
 }
 // -5 mins
@@ -522,16 +511,21 @@ export async function verifyPageComment({ pageComment, subplebbit, parentComment
     // when we're verifying a page from a subplebbit.posts, that means there's no parent comment cid or any of its props
     // another sceneario is with a flat page, where we don't have the parent comment cid or prop, but we do have its postCid
     // another sceneario is when we're veriifying a nested page and we have the parent comment cid and all its props
+    // another sceneario is when we're verifying a mod queue page that has comments with different depths with different parentCids and not necessarily a shared postCid
     if (pageComment.comment.subplebbitAddress !== subplebbit.address)
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
-    if ("cid" in parentComment && parentComment.cid !== pageComment.comment.parentCid)
-        return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
-    if (pageComment.comment.depth > 0 && "cid" in parentComment && !parentComment?.cid)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
-    if ("depth" in parentComment && typeof parentComment.depth === "number" && parentComment.depth + 1 !== pageComment.comment.depth)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
-    if (pageComment.comment.postCid !== parentComment.postCid)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE };
+    if (pageComment.comment.depth === 0 && pageComment.comment.postCid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_HAS_POST_CID_DEFINED_WITH_DEPTH_0 };
+    if (parentComment) {
+        if ("cid" in parentComment && parentComment.cid !== pageComment.comment.parentCid)
+            return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
+        if (pageComment.comment.depth > 0 && "cid" in parentComment && !parentComment?.cid)
+            return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
+        if ("depth" in parentComment && typeof parentComment.depth === "number" && parentComment.depth + 1 !== pageComment.comment.depth)
+            return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
+        if (pageComment.comment.postCid !== parentComment.postCid)
+            return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE };
+    }
     const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
     const commentSignatureValidity = await verifyCommentIpfs({
         comment: pageComment.comment,
@@ -542,7 +536,7 @@ export async function verifyPageComment({ pageComment, subplebbit, parentComment
     });
     if (!commentSignatureValidity.valid)
         return commentSignatureValidity;
-    const postCid = parentComment.postCid || (pageComment.comment.depth === 0 ? calculatedCommentCid : pageComment.comment.postCid);
+    const postCid = (parentComment && parentComment.postCid) || (pageComment.comment.depth === 0 ? calculatedCommentCid : pageComment.comment.postCid);
     if (!postCid)
         return { valid: false, reason: messages.ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID };
     const commentUpdateSignatureValidity = await verifyCommentUpdate({
@@ -585,6 +579,36 @@ export async function verifyPage({ pageCid, pageSortName, page, resolveAuthorAdd
             clientsManager,
             overrideAuthorAddressIfInvalid,
             parentComment,
+            validatePages,
+            validateUpdateSignature
+        });
+        if (!verifyRes.valid)
+            return verifyRes;
+    }
+    if (cacheKey)
+        clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
+    return { valid: true };
+}
+export async function verifyModQueuePage({ pageCid, page, resolveAuthorAddresses, clientsManager, subplebbit, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }) {
+    const cacheKey = pageCid &&
+        sha256(pageCid +
+            resolveAuthorAddresses +
+            overrideAuthorAddressIfInvalid +
+            subplebbit.address +
+            subplebbit.signature?.publicKey +
+            validatePages +
+            validateUpdateSignature);
+    if (cacheKey)
+        if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey))
+            return { valid: true };
+    for (const pageComment of page.comments) {
+        const verifyRes = await verifyPageComment({
+            pageComment,
+            subplebbit,
+            resolveAuthorAddresses,
+            clientsManager,
+            overrideAuthorAddressIfInvalid,
+            parentComment: undefined,
             validatePages,
             validateUpdateSignature
         });

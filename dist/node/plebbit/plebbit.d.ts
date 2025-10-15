@@ -14,7 +14,7 @@ import { z } from "zod";
 import type { CreateSignerOptions } from "../signer/types.js";
 import type { CommentEditPubsubMessagePublication, CommentEditTypeJson, CreateCommentEditOptions } from "../publications/comment-edit/types.js";
 import type { CreateVoteOptions, VoteJson, VotePubsubMessagePublication } from "../publications/vote/types.js";
-import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentJson, CommentPubsubMessagePublication, CommentUpdateType, CommentWithinPageJson, CreateCommentOptions, MinimumCommentFieldsToFetchPages } from "../publications/comment/types.js";
+import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentJson, CommentPubsubMessagePublication, CommentUpdateType, CommentWithinRepliesPostsPageJson, CreateCommentOptions, MinimumCommentFieldsToFetchPages } from "../publications/comment/types.js";
 import { CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
 import { CreateSubplebbitFunctionArgumentsSchema } from "../subplebbit/schema.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
@@ -73,6 +73,8 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit | RpcLocalSubplebbit>;
     private _subplebbitFsWatchAbort?;
     private _addressRewriterDestroy?;
+    private _addressRewriterSetupPromise?;
+    destroyed: boolean;
     private _promiseToWaitForFirstSubplebbitschangeEvent;
     private _storageLRUs;
     _memCaches: PlebbitMemCaches;
@@ -102,7 +104,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     createComment(options: CommentIpfsType | CommentPubsubMessagePublication | {
         cid: CommentUpdateType["cid"];
         subplebbitAddress?: CommentPubsubMessagePublication["subplebbitAddress"];
-    } | MinimumCommentFieldsToFetchPages | CreateCommentOptions | CommentJson | Comment | CommentWithinPageJson | CommentIpfsWithCidDefined): Promise<Comment>;
+    } | MinimumCommentFieldsToFetchPages | CreateCommentOptions | CommentJson | Comment | CommentWithinRepliesPostsPageJson | CommentIpfsWithCidDefined): Promise<Comment>;
     _canCreateNewLocalSub(): boolean;
     protected _setSubplebbitIpfsOnInstanceIfPossible(subplebbit: RpcRemoteSubplebbit | RemoteSubplebbit, options: CreateRemoteSubplebbitOptions | SubplebbitIpfsType | RemoteSubplebbitJson | RpcRemoteSubplebbitJson): Promise<void>;
     protected _waitForSubplebbitsToBeDefined(): Promise<void>;

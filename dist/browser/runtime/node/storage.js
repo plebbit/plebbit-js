@@ -28,7 +28,7 @@ export default class Storage {
         return undefined;
     }
     async init() { }
-    getItem(key) {
+    async getItem(key) {
         return this._keyv.get(key);
     }
     async setItem(key, value) {

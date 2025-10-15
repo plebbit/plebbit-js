@@ -14,6 +14,11 @@ export declare class DbHandler {
     private _keyv;
     private _createdTables;
     constructor(subplebbit: DbHandler["_subplebbit"]);
+    private _parsePrefixedComment;
+    private _parseCommentsTableRow;
+    private _parseCommentUpdatesRow;
+    private _parseCommentEditsRow;
+    private _parseVoteRow;
     initDbConfigIfNeeded(): Promise<void>;
     toJSON(): undefined;
     initDbIfNeeded(dbConfigOptions?: Partial<DbHandler["_dbConfig"]>): Promise<void>;
@@ -21,17 +26,15 @@ export declare class DbHandler {
     getDbConfig(): {
         filename: string;
     } & Database.Options;
-    keyvGet<Value>(key: string): Promise<Value | undefined>;
-    keyvSet(key: string, value: any, ttl?: number): Promise<any>;
-    keyvDelete(key: string): Promise<boolean>;
-    keyvHas(key: string): Promise<boolean>;
-    destoryConnection(): Promise<void>;
+    keyvGet<Value>(key: string): Value | undefined;
+    keyvSet(key: string, value: any, ttl?: number): any;
+    keyvDelete(key: string): boolean;
+    keyvHas(key: string): boolean;
+    destoryConnection(): void;
     createTransaction(): void;
     commitTransaction(): void;
     rollbackTransaction(): void;
     rollbackAllTransactions(): Promise<void>;
-    private _parseJsonFields;
-    private _intToBoolean;
     private _createCommentsTable;
     private _createCommentUpdatesTable;
     private _createVotesTable;
@@ -39,157 +42,64 @@ export declare class DbHandler {
     private _createCommentModerationsTable;
     getDbVersion(): number;
     _migrateOldSettings(oldSettings: InternalSubplebbitRecordBeforeFirstUpdateType["settings"]): {
-        challenges?: {
-            path?: string | undefined;
-            options?: Record<string, string> | undefined;
-            exclude?: [import("zod").objectOutputType<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, import("zod").ZodTypeAny, "passthrough">, ...import("zod").objectOutputType<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, import("zod").ZodTypeAny, "passthrough">[]] | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
-        }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
+        challenges?: {
+            path?: string | undefined;
+            name?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: {
+                [x: string]: unknown;
+                subplebbit?: {
+                    addresses: string[];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                } | undefined;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+                challenges?: number[] | undefined;
+                role?: string[] | undefined;
+                address?: string[] | undefined;
+                rateLimit?: number | undefined;
+                rateLimitChallengeSuccess?: boolean | undefined;
+                publicationType?: {
+                    [x: string]: unknown;
+                    post?: boolean | undefined;
+                    reply?: boolean | undefined;
+                    vote?: boolean | undefined;
+                    commentEdit?: boolean | undefined;
+                    commentModeration?: boolean | undefined;
+                    subplebbitEdit?: boolean | undefined;
+                } | undefined;
+            }[] | undefined;
+            description?: string | undefined;
+            pendingApproval?: boolean | undefined;
+        }[] | undefined;
+        maxPendingApprovalCount?: number | undefined;
+        purgeDisapprovedCommentsOlderThan?: number | undefined;
     };
     _createOrMigrateTablesIfNeeded(): Promise<void>;
     private _tableExists;
     private _getColumnNames;
     private _copyTable;
+    private _purgeCommentEditsWithInvalidSchemaOrSignature;
     private _purgeCommentsWithInvalidSchemaOrSignature;
-    private _moveCommentEditsToModAuthorTables;
     deleteVote(authorSignerAddress: VotesTableRow["authorSignerAddress"], commentCid: VotesTableRow["commentCid"]): void;
+    private _deleteCommentEditRow;
     insertVotes(votes: VotesTableRowInsert[]): void;
     insertComments(comments: CommentsTableRowInsert[]): void;
     upsertCommentUpdates(updates: CommentUpdatesTableRowInsert[]): void;
     insertCommentModerations(moderations: CommentModerationsTableRowInsert[]): void;
     insertCommentEdits(edits: CommentEditsTableRowInsert[]): void;
     queryVote(commentCid: string, authorSignerAddress: string): VotesTableRow | undefined;
+    private _approvedClause;
+    private _removedClause;
+    private _deletedFromUpdatesClause;
+    private _deletedFromLookupClause;
+    private _pendingApprovalClause;
     private _buildPageQueryParts;
     queryMaximumTimestampUnderComment(comment: Pick<CommentsTableRow, "cid">): number | undefined;
     queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"];
@@ -201,10 +111,13 @@ export declare class DbHandler {
     hasCommentModerationWithSignatureEncoded(signatureEncoded: string): boolean;
     hasCommentEditWithSignatureEncoded(signatureEncoded: string): boolean;
     queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">): Pick<CommentsTableRow, "cid">[];
+    queryCommentsPendingApproval(): CommentsTableRow[];
     queryCommentsToBeUpdated(): CommentsTableRow[];
     querySubplebbitStats(): SubplebbitStats;
     queryCommentsUnderComment(parentCid: string | null): CommentsTableRow[];
+    queryCombinedHashOfPendingComments(): string;
     queryComment(cid: string): CommentsTableRow | undefined;
+    private _queryCommentAuthorAndParentWithoutParsing;
     private _queryCommentCounts;
     queryPostsWithOutdatedBuckets(buckets: number[]): {
         cid: string;
@@ -213,11 +126,22 @@ export declare class DbHandler {
         newBucket: number;
     }[];
     private _queryLatestAuthorEdit;
+    removeCommentFromPendingApproval(comment: Pick<CommentsTableRow, "cid">): void;
+    removeOldestPendingCommentIfWeHitMaxPendingCount(maxPendingApprovalCount: number): void;
+    purgeDisapprovedCommentsOlderThan(retentionSeconds: number): {
+        cid: string;
+        parentCid?: string | null;
+        postUpdatesBucket?: number;
+        purgedCids: string[];
+    }[] | undefined;
     private _queryLatestModeratorReason;
     queryCommentFlagsSetByMod(cid: string): Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">;
     queryAuthorEditDeleted(cid: string): Pick<CommentEditsTableRow, "deleted"> | undefined;
     private _queryModCommentFlair;
     private _queryLastChildCidAndLastReplyTimestamp;
+    _queryIsCommentApproved(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">): {
+        approved: boolean;
+    } | undefined;
     queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">;
     queryLatestPostCid(): Pick<CommentsTableRow, "cid"> | undefined;
     queryLatestCommentCid(): Pick<CommentsTableRow, "cid"> | undefined;

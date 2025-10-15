@@ -222,6 +222,7 @@ export class BaseClientsManager {
     async _fetchWithLimit(url, options) {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         const handleError = (e) => {
+            const nodeError = e;
             if (e instanceof PlebbitError)
                 throw e;
             else if (e instanceof Error && e.message.includes("over limit"))
@@ -239,6 +240,12 @@ export class BaseClientsManager {
                     status: res?.status,
                     statusText: res?.statusText,
                     fetchError: String(e),
+                    fetchErrorCode: nodeError?.code,
+                    fetchErrorErrno: nodeError?.errno,
+                    fetchErrorSyscall: nodeError?.syscall,
+                    fetchErrorAddress: nodeError?.address,
+                    fetchErrorPort: nodeError?.port,
+                    fetchErrorCause: nodeError?.cause,
                     options
                 });
             }
@@ -319,7 +326,7 @@ export class BaseClientsManager {
     _handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, res, log) {
         if (GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway])
             return; // already handled, no need to do anything
-        if (!res.redirected)
+        if (!res?.redirected)
             return; // if it doesn't redirect to subdomain gateway then the gateway doesn't support subdomain resolution
         const resUrl = new URL(res.url);
         if (resUrl.hostname.includes(`.${loadOpts.recordIpfsType}.`)) {

@@ -3,7 +3,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import * as remeda from "remeda";
-import { PostsPages } from "../pages/pages.js";
+import { ModQueuePages, PostsPages } from "../pages/pages.js";
 import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
 import { SubplebbitClientsManager } from "./subplebbit-client-manager.js";
@@ -31,6 +31,7 @@ export class RemoteSubplebbit extends TypedEmitter {
             plebbit: this._plebbit,
             subplebbit: this
         });
+        this.modQueue = new ModQueuePages({ pageCids: {}, plebbit: this._plebbit, subplebbit: this, pages: undefined });
         hideClassPrivateProps(this);
     }
     _updateLocalPostsInstance(newPosts) {
@@ -52,7 +53,7 @@ export class RemoteSubplebbit extends TypedEmitter {
             // was only provided with a single preloaded page, no page cids
             if (typeof postsPagesCreationTimestamp !== "number")
                 throw Error("subplebbit.updatedAt should be defined when updating posts");
-            const parsedPages = parseRawPages(newPosts, postsPagesCreationTimestamp);
+            const parsedPages = parseRawPages(newPosts);
             this.posts.updateProps({
                 ...parsedPages,
                 subplebbit: this,
@@ -64,11 +65,25 @@ export class RemoteSubplebbit extends TypedEmitter {
             log.trace(`Updating the props of subplebbit (${this.address}) posts`);
             if (typeof postsPagesCreationTimestamp !== "number")
                 throw Error("subplebbit.updatedAt should be defined when updating posts");
-            const parsedPages = (parseRawPages(newPosts, postsPagesCreationTimestamp));
+            const parsedPages = parseRawPages(newPosts);
             this.posts.updateProps({
                 ...parsedPages,
                 subplebbit: this,
                 pageCids: newPosts?.pageCids || {}
+            });
+        }
+    }
+    _updateLocalModQueueInstance(newModQueue) {
+        this.modQueue._subplebbit = this;
+        if (!newModQueue)
+            // The sub has changed its address, need to reset the posts
+            this.modQueue.resetPages();
+        else if (newModQueue.pageCids) {
+            // only pageCids is provided
+            this.modQueue.updateProps({
+                pageCids: newModQueue.pageCids,
+                subplebbit: this,
+                pages: {}
             });
         }
     }
@@ -124,6 +139,7 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.signature = newProps.signature;
         this.setAddress(newProps.address);
         this._updateLocalPostsInstance(newProps.posts);
+        this._updateLocalModQueueInstance(newProps.modQueue);
         // Exclusive Instance props
         if (newProps.updateCid)
             this.updateCid = newProps.updateCid;
@@ -139,9 +155,10 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
         this.posts._subplebbit = this;
+        this.modQueue._subplebbit = this;
     }
     _toJSONIpfsBaseNoPosts() {
-        const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts"]));
+        const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts", "modQueue"]));
         return remeda.pick(this, subplebbitIpfsKeys);
     }
     toJSONIpfs() {
@@ -353,6 +370,7 @@ export class RemoteSubplebbit extends TypedEmitter {
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
         this.posts._stop();
+        this.modQueue._stop();
     }
     // functions to be overridden in local subplebbit classes
     async edit(options) {

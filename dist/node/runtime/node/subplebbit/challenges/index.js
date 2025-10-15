@@ -6,7 +6,6 @@ import fail from "./plebbit-js-challenges/fail.js";
 import blacklist from "./plebbit-js-challenges/blacklist.js";
 import whitelist from "./plebbit-js-challenges/whitelist.js";
 import question from "./plebbit-js-challenges/question.js";
-import voucher from "./plebbit-js-challenges/voucher.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
 import publicationMatch from "./plebbit-js-challenges/publication-match.js";
 import mintpass from "@mintpass/challenge";
@@ -21,7 +20,6 @@ const plebbitJsChallenges = {
     blacklist: blacklist,
     whitelist: whitelist,
     question: question,
-    voucher: voucher,
     "evm-contract-call": evmContractCall,
     "publication-match": publicationMatch,
     "mintpass": mintpass
@@ -158,7 +156,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
 const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, challengeAnswers, subplebbit) => {
     const verifyChallengePromises = [];
     for (const i in pendingChallenges) {
-        verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i])); // TODO double check if zod verifies output of a promise
+        verifyChallengePromises.push(Promise.resolve(pendingChallenges[i].verify(challengeAnswers[i])));
     }
     const challengeResultsWithPendingIndexes = await Promise.all(verifyChallengePromises);
     // validate results
@@ -216,6 +214,10 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     if (!Array.isArray(subplebbit.settings?.challenges))
         throw Error("subplebbit.settings?.challenges is not defined");
     const res = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+    // there's basically 3 scenarios,
+    // all challenges pass, no pending approval,
+    // at least one challenge without pendingApproval: true fails, no pending approval,
+    // all challenges that fail have pendingApproval: true, it goes to pending approval.
     let challengeVerification;
     // was able to verify without asking author for challenges
     if ("challengeSuccess" in res) {
@@ -230,6 +232,13 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     }
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
     addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
+    // all challenges that failed have pendingApproval: true, therefore it will go to pending approval
+    const allFailuresRequirePendingApproval = challengeVerification.challengeErrors &&
+        Object.keys(challengeVerification.challengeErrors).every((challengeIndexString) => Boolean(subplebbit.challenges?.[Number(challengeIndexString)]?.pendingApproval));
+    if (challengeRequestMessage.comment && // only comments have pendingApproval
+        allFailuresRequirePendingApproval) {
+        return { ...challengeVerification, pendingApproval: true, challengeSuccess: true, challengeErrors: undefined };
+    }
     return challengeVerification;
 };
 // get the data to be published publicly to subplebbit.challenges
@@ -268,7 +277,8 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (subplebbitC
         description: subplebbitChallengeSettings.description || challengeFile.description,
         challenge,
         type,
-        caseInsensitive: challengeFile.caseInsensitive
+        caseInsensitive: challengeFile.caseInsensitive,
+        pendingApproval: subplebbitChallengeSettings.pendingApproval
     };
 };
 export { plebbitJsChallenges, getPendingChallengesOrChallengeVerification, getChallengeVerificationFromChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings };

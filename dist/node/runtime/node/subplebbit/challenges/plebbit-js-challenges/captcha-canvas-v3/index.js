@@ -1,4 +1,3 @@
-import { createCaptcha } from "captcha-canvas";
 const optionInputs = [
     {
         option: "characters",
@@ -32,6 +31,7 @@ const optionInputs = [
 const type = "image/png";
 const description = "make custom image captcha";
 const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+    const { createCaptcha } = await import("captcha-canvas");
     // setCaptchaOptions https://captcha-canvas.js.org/global.html#SetCaptchaOptions
     const width = subplebbitChallengeSettings?.options?.width ? Number(subplebbitChallengeSettings?.options?.width) : 300;
     const height = subplebbitChallengeSettings?.options?.height ? Number(subplebbitChallengeSettings?.options?.height) : 100;

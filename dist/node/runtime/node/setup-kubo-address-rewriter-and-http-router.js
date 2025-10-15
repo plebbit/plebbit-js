@@ -4,6 +4,33 @@ import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../../plebbit-error.js";
 import * as remeda from "remeda";
 import tcpPortUsed from "tcp-port-used";
+function _mergeRouterConfigs(existingConfig, newConfig) {
+    if (!existingConfig?.Routers)
+        return newConfig;
+    const existingRoutersByEndpoint = new Map();
+    Object.entries(existingConfig.Routers).forEach(([routerName, router]) => {
+        if (router.Parameters?.Endpoint) {
+            existingRoutersByEndpoint.set(router.Parameters.Endpoint, { routerName, router });
+        }
+    });
+    const mergedRouters = { ...newConfig.Routers };
+    Object.entries(newConfig.Routers).forEach(([newRouterName, newRouter]) => {
+        if (newRouter.Parameters?.Endpoint) {
+            const existing = existingRoutersByEndpoint.get(newRouter.Parameters.Endpoint);
+            if (existing) {
+                mergedRouters[newRouterName] = {
+                    ...existing.router,
+                    ...newRouter,
+                    Parameters: { ...existing.router.Parameters, ...newRouter.Parameters }
+                };
+            }
+        }
+    });
+    return {
+        ...newConfig,
+        Routers: mergedRouters
+    };
+}
 async function _setHttpRouterOptionsOnKuboNode(kuboClient, routingValue) {
     const log = Logger("plebbit-js:plebbit:_init:retrySettingHttpRoutersOnIpfsNodes:setHttpRouterOptionsOnIpfsNode");
     const routingKey = "Routing";
@@ -20,7 +47,8 @@ async function _setHttpRouterOptionsOnKuboNode(kuboClient, routingValue) {
         log.error(e);
         throw error;
     }
-    const url = `${kuboClient._clientOptions.url}/config?arg=${routingKey}&arg=${JSON.stringify(routingValue)}&json=true`;
+    const mergedRoutingValue = _mergeRouterConfigs(routingConfigBeforeChanging, routingValue);
+    const url = `${kuboClient._clientOptions.url}/config?arg=${routingKey}&arg=${JSON.stringify(mergedRoutingValue)}&json=true`;
     try {
         await fetch(url, { method: "POST", headers: kuboClient._clientOptions.headers });
     }
@@ -30,17 +58,17 @@ async function _setHttpRouterOptionsOnKuboNode(kuboClient, routingValue) {
             actualError: e,
             kuboEndpoint: kuboClient._clientOptions.url,
             configKey: routingKey,
-            configValueToBeSet: routingValue
+            configValueToBeSet: mergedRoutingValue
         });
         log.error(e);
         throw error;
     }
-    log.trace("Succeeded in setting config key", routingKey, "on node", kuboClient._clientOptions.url, "to be", routingValue);
+    log.trace("Succeeded in setting config key", routingKey, "on node", kuboClient._clientOptions.url, "to be", mergedRoutingValue);
     const endpointsBefore = Object.values(routingConfigBeforeChanging?.["Routers"] || {}).map(
     //@ts-expect-error
     (router) => router["Parameters"]["Endpoint"]);
     //@ts-expect-error
-    const endpointsAfter = Object.values(routingValue.Routers).map((router) => router["Parameters"]["Endpoint"]);
+    const endpointsAfter = Object.values(mergedRoutingValue.Routers).map((router) => router["Parameters"]["Endpoint"]);
     if (!remeda.isDeepEqual(endpointsBefore.sort(), endpointsAfter.sort())) {
         log("Config on kubo node has been changed. Plebbit-js will send shutdown command to node", kuboClient._clientOptions.url, "Clients of plebbit-js should restart ipfs node");
         const shutdownUrl = `${kuboClient._clientOptions.url}/shutdown`;
@@ -59,18 +87,36 @@ async function _setHttpRouterOptionsOnKuboNode(kuboClient, routingValue) {
     }
 }
 async function _getStartedProxyUrl(plebbit, httpRouterUrl) {
+    if (plebbit.destroyed)
+        return undefined;
     const mappingKeyName = `httprouter_proxy_${httpRouterUrl}`;
-    const urlOfProxyOfHttpRouter = await plebbit._storage.getItem(mappingKeyName);
-    if (urlOfProxyOfHttpRouter) {
-        const proxyHttpUrl = new URL(urlOfProxyOfHttpRouter);
-        if (await tcpPortUsed.check(Number(proxyHttpUrl.port), "127.0.0.1"))
-            return urlOfProxyOfHttpRouter;
-        else
+    try {
+        const urlOfProxyOfHttpRouter = await plebbit._storage.getItem(mappingKeyName);
+        if (plebbit.destroyed)
+            return undefined;
+        if (urlOfProxyOfHttpRouter) {
+            const proxyHttpUrl = new URL(urlOfProxyOfHttpRouter);
+            if (await tcpPortUsed.check(Number(proxyHttpUrl.port), "127.0.0.1"))
+                return urlOfProxyOfHttpRouter;
+            if (plebbit.destroyed)
+                return undefined;
             await plebbit._storage.removeItem(mappingKeyName);
+        }
+        return undefined;
     }
-    return undefined;
+    catch (error) {
+        if (plebbit.destroyed && error instanceof Error && error.message.includes("database connection is not open")) {
+            return undefined;
+        }
+        throw error;
+    }
 }
 export async function setupKuboAddressesRewriterAndHttpRouters(plebbit) {
+    if (plebbit.destroyed) {
+        return {
+            destroy: async () => { }
+        };
+    }
     if (!Array.isArray(plebbit.kuboRpcClientsOptions) || plebbit.kuboRpcClientsOptions.length <= 0)
         throw Error("need ipfs http client to be defined");
     if (!Array.isArray(plebbit.httpRoutersOptions) || plebbit.httpRoutersOptions.length <= 0)
@@ -81,6 +127,8 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit) {
     const proxyServers = [];
     let addressesRewriterStartPort = 19575; // use port 19575 as first port, looks like IPRTR (IPFS ROUTER)
     for (const httpRouter of plebbit.httpRoutersOptions) {
+        if (plebbit.destroyed)
+            break;
         const startedProxyUrl = await _getStartedProxyUrl(plebbit, httpRouter);
         if (startedProxyUrl) {
             httpRouterProxyUrls.push(startedProxyUrl);
@@ -100,6 +148,10 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit) {
             plebbit
         });
         await addressesRewriterProxyServer.listen();
+        if (plebbit.destroyed) {
+            await addressesRewriterProxyServer.destroy();
+            break;
+        }
         proxyServers.push(addressesRewriterProxyServer);
         // save the proxy urls to use them later
         const httpRouterProxyUrl = `http://${hostname}:${port}`;

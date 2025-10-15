@@ -10,11 +10,11 @@ import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import type { CreateNewLocalSubplebbitUserOptions, SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
-import type { CommentIpfsWithCidDefined, CommentWithinPageJson, CreateCommentOptions } from "../publications/comment/types.js";
+import type { CommentIpfsWithCidDefined, CommentWithinRepliesPostsPageJson, CreateCommentOptions } from "../publications/comment/types.js";
 import { BasePages, PostsPages, RepliesPages } from "../pages/pages.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import type { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
-import type { ChallengeVerificationMessageType, PubsubMessage } from "../pubsub-messages/types.js";
+import type { ChallengeVerificationMessageType, DecryptedChallengeVerificationMessageType, PubsubMessage } from "../pubsub-messages/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type { PageTypeJson } from "../pages/types.js";
 interface MockPlebbitOptions {
@@ -27,10 +27,10 @@ interface MockPlebbitOptions {
 export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockComment(parentPostOrComment: CommentIpfsWithCidDefined, plebbit: Plebbit, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockVote(parentPostOrComment: CommentIpfsWithCidDefined, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
-export declare function loadAllPages(pageCid: string, pagesInstance: BasePages): Promise<CommentWithinPageJson[]>;
-export declare function loadAllPagesBySortName(pageSortName: string, pagesInstance: BasePages): Promise<CommentWithinPageJson[]>;
-export declare function loadAllUniquePostsUnderSubplebbit(subplebbit: RemoteSubplebbit): Promise<CommentWithinPageJson[]>;
-export declare function loadAllUniqueCommentsUnderCommentInstance(comment: Comment): Promise<CommentWithinPageJson[]>;
+export declare function loadAllPages(pageCid: string, pagesInstance: PostsPages | RepliesPages): Promise<CommentWithinRepliesPostsPageJson[]>;
+export declare function loadAllPagesBySortName(pageSortName: string, pagesInstance: BasePages): Promise<CommentWithinRepliesPostsPageJson[] | import("../publications/comment/types.js").CommentWithinModQueuePageJson[]>;
+export declare function loadAllUniquePostsUnderSubplebbit(subplebbit: RemoteSubplebbit): Promise<CommentWithinRepliesPostsPageJson[]>;
+export declare function loadAllUniqueCommentsUnderCommentInstance(comment: Comment): Promise<CommentWithinRepliesPostsPageJson[]>;
 type TestServerSubs = {
     onlineSub?: string;
     ensSub: string;
@@ -66,11 +66,11 @@ export declare function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOption
 export declare function mockRpcRemotePlebbit(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function mockRPCLocalPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
 export declare function mockGatewayPlebbit(opts?: MockPlebbitOptions): Promise<Plebbit>;
-export declare function publishRandomReply(parentComment: CommentIpfsWithCidDefined, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>): Promise<Comment>;
+export declare function publishRandomReply(parentComment: CommentIpfsWithCidDefined, plebbit: Plebbit, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function publishVote(commentCid: string, subplebbitAddress: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<CreateVoteOptions>): Promise<Vote>;
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
-export declare function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: BasePages): Promise<CommentWithinPageJson | undefined>;
+export declare function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: PostsPages | RepliesPages): Promise<CommentWithinRepliesPostsPageJson | undefined>;
 export declare function waitTillPostInSubplebbitInstancePages(post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>, sub: RemoteSubplebbit): Promise<void>;
 export declare function waitTillPostInSubplebbitPages(post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>, plebbit: Plebbit): Promise<void>;
 export declare function iterateThroughPagesToFindCommentInParentPagesInstance(commentCid: string, pages: PostsPages | RepliesPages): Promise<PageTypeJson["comments"][0] | undefined>;
@@ -124,280 +124,303 @@ export declare function publishSubplebbitRecordWithExtraProp(opts?: {
 }>;
 export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalSubplebbitUserOptions): Promise<{
     subplebbitRecord: {
-        address: string;
+        challenges: {
+            [x: string]: unknown;
+            type: string;
+            exclude?: {
+                [x: string]: unknown;
+                subplebbit?: {
+                    addresses: string[];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                } | undefined;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+                challenges?: number[] | undefined;
+                role?: string[] | undefined;
+                address?: string[] | undefined;
+                rateLimit?: number | undefined;
+                rateLimitChallengeSuccess?: boolean | undefined;
+                publicationType?: {
+                    [x: string]: unknown;
+                    post?: boolean | undefined;
+                    reply?: boolean | undefined;
+                    vote?: boolean | undefined;
+                    commentEdit?: boolean | undefined;
+                    commentModeration?: boolean | undefined;
+                    subplebbitEdit?: boolean | undefined;
+                } | undefined;
+            }[] | undefined;
+            description?: string | undefined;
+            challenge?: string | undefined;
+            caseInsensitive?: boolean | undefined;
+            pendingApproval?: boolean | undefined;
+        }[];
         signature: {
             type: string;
             signature: string;
             publicKey: string;
             signedPropertyNames: string[];
         };
-        protocolVersion: string;
-        updatedAt: number;
-        challenges: import("zod").objectOutputType<{
-            exclude: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodObject<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, import("zod").ZodTypeAny, "passthrough">>, "atleastone">>;
-            description: import("zod").ZodOptional<import("zod").ZodString>;
-            challenge: import("zod").ZodOptional<import("zod").ZodString>;
-            type: import("zod").ZodString;
-            caseInsensitive: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        }, import("zod").ZodTypeAny, "passthrough">[];
         encryption: {
+            [x: string]: unknown;
             type: string;
             publicKey: string;
-        } & {
-            [k: string]: unknown;
         };
+        address: string;
         createdAt: number;
+        updatedAt: number;
         statsCid: string;
-        title?: string | undefined;
-        lastCommentCid?: string | undefined;
+        protocolVersion: string;
         posts?: {
-            pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+            pages: Record<string, {
+                comments: {
+                    comment: {
+                        [x: string]: unknown;
+                        timestamp: number;
+                        signature: {
+                            type: string;
+                            signature: string;
+                            publicKey: string;
+                            signedPropertyNames: string[];
+                        };
+                        subplebbitAddress: string;
+                        protocolVersion: string;
+                        author: {
+                            [x: string]: unknown;
+                            address: string;
+                            previousCommentCid?: string | undefined;
+                            displayName?: string | undefined;
+                            wallets?: Record<string, {
+                                address: string;
+                                timestamp: number;
+                                signature: {
+                                    signature: string;
+                                    type: string;
+                                };
+                            }> | undefined;
+                            avatar?: {
+                                [x: string]: unknown;
+                                chainTicker: string;
+                                address: string;
+                                id: string;
+                                timestamp: number;
+                                signature: {
+                                    signature: string;
+                                    type: string;
+                                };
+                            } | undefined;
+                            flair?: {
+                                [x: string]: unknown;
+                                text: string;
+                                backgroundColor?: string | undefined;
+                                textColor?: string | undefined;
+                                expiresAt?: number | undefined;
+                            } | undefined;
+                        };
+                        depth: number;
+                        flair?: {
+                            [x: string]: unknown;
+                            text: string;
+                            backgroundColor?: string | undefined;
+                            textColor?: string | undefined;
+                            expiresAt?: number | undefined;
+                        } | undefined;
+                        content?: string | undefined;
+                        spoiler?: boolean | undefined;
+                        nsfw?: boolean | undefined;
+                        link?: string | undefined;
+                        title?: string | undefined;
+                        linkWidth?: number | undefined;
+                        linkHeight?: number | undefined;
+                        linkHtmlTagName?: string | undefined;
+                        parentCid?: string | undefined;
+                        postCid?: string | undefined;
+                        thumbnailUrl?: string | undefined;
+                        thumbnailUrlWidth?: number | undefined;
+                        thumbnailUrlHeight?: number | undefined;
+                        previousCid?: string | undefined;
+                    };
+                    commentUpdate: {
+                        [x: string]: unknown;
+                        cid: string;
+                        upvoteCount: number;
+                        downvoteCount: number;
+                        replyCount: number;
+                        updatedAt: number;
+                        signature: {
+                            type: string;
+                            signature: string;
+                            publicKey: string;
+                            signedPropertyNames: string[];
+                        };
+                        protocolVersion: string;
+                        childCount?: number | undefined;
+                        edit?: {
+                            [x: string]: unknown;
+                            timestamp: number;
+                            signature: {
+                                type: string;
+                                signature: string;
+                                publicKey: string;
+                                signedPropertyNames: string[];
+                            };
+                            subplebbitAddress: string;
+                            protocolVersion: string;
+                            commentCid: string;
+                            author: {
+                                [x: string]: unknown;
+                                address: string;
+                                previousCommentCid?: string | undefined;
+                                displayName?: string | undefined;
+                                wallets?: Record<string, {
+                                    address: string;
+                                    timestamp: number;
+                                    signature: {
+                                        signature: string;
+                                        type: string;
+                                    };
+                                }> | undefined;
+                                avatar?: {
+                                    [x: string]: unknown;
+                                    chainTicker: string;
+                                    address: string;
+                                    id: string;
+                                    timestamp: number;
+                                    signature: {
+                                        signature: string;
+                                        type: string;
+                                    };
+                                } | undefined;
+                                flair?: {
+                                    [x: string]: unknown;
+                                    text: string;
+                                    backgroundColor?: string | undefined;
+                                    textColor?: string | undefined;
+                                    expiresAt?: number | undefined;
+                                } | undefined;
+                            };
+                            flair?: {
+                                [x: string]: unknown;
+                                text: string;
+                                backgroundColor?: string | undefined;
+                                textColor?: string | undefined;
+                                expiresAt?: number | undefined;
+                            } | undefined;
+                            content?: string | undefined;
+                            deleted?: boolean | undefined;
+                            spoiler?: boolean | undefined;
+                            nsfw?: boolean | undefined;
+                            reason?: string | undefined;
+                        } | undefined;
+                        flair?: {
+                            [x: string]: unknown;
+                            text: string;
+                            backgroundColor?: string | undefined;
+                            textColor?: string | undefined;
+                            expiresAt?: number | undefined;
+                        } | undefined;
+                        spoiler?: boolean | undefined;
+                        nsfw?: boolean | undefined;
+                        pinned?: boolean | undefined;
+                        locked?: boolean | undefined;
+                        removed?: boolean | undefined;
+                        reason?: string | undefined;
+                        approved?: boolean | undefined;
+                        author?: {
+                            [x: string]: unknown;
+                            subplebbit?: {
+                                [x: string]: unknown;
+                                postScore: number;
+                                replyScore: number;
+                                firstCommentTimestamp: number;
+                                lastCommentCid: string;
+                                banExpiresAt?: number | undefined;
+                                flair?: {
+                                    [x: string]: unknown;
+                                    text: string;
+                                    backgroundColor?: string | undefined;
+                                    textColor?: string | undefined;
+                                    expiresAt?: number | undefined;
+                                } | undefined;
+                            } | undefined;
+                        } | undefined;
+                        lastChildCid?: string | undefined;
+                        lastReplyTimestamp?: number | undefined;
+                        replies?: {
+                            pages: Record<string, /*elided*/ any>;
+                            pageCids?: Record<string, string> | undefined;
+                        } | undefined;
+                    };
+                }[];
+                nextCid?: string | undefined;
+            }>;
             pageCids?: Record<string, string> | undefined;
         } | undefined;
-        description?: string | undefined;
+        modQueue?: {
+            pageCids: Record<string, string>;
+        } | undefined;
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
-        roles?: Record<string, import("zod").objectOutputType<{
-            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
-        }, import("zod").ZodTypeAny, "passthrough">> | undefined;
+        title?: string | undefined;
+        description?: string | undefined;
+        roles?: Record<string, {
+            [x: string]: unknown;
+            role: string;
+        }> | undefined;
         rules?: string[] | undefined;
         lastPostCid?: string | undefined;
-        features?: import("zod").objectOutputType<{
-            noVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noSpoilers: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noSpoilerReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noPolls: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noCrossposts: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            anonymousAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noNestedReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            safeForWork: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            authorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requireAuthorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            postFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requirePostFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noMarkdownImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noMarkdownVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            markdownImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            markdownVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noPostUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noReplyUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noPostDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noReplyDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        suggested?: import("zod").objectOutputType<{
-            primaryColor: import("zod").ZodOptional<import("zod").ZodString>;
-            secondaryColor: import("zod").ZodOptional<import("zod").ZodString>;
-            avatarUrl: import("zod").ZodOptional<import("zod").ZodString>;
-            bannerUrl: import("zod").ZodOptional<import("zod").ZodString>;
-            backgroundUrl: import("zod").ZodOptional<import("zod").ZodString>;
-            language: import("zod").ZodOptional<import("zod").ZodString>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        flairs?: Record<string, import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">[]> | undefined;
+        lastCommentCid?: string | undefined;
+        features?: {
+            [x: string]: unknown;
+            noVideos?: boolean | undefined;
+            noSpoilers?: boolean | undefined;
+            noImages?: boolean | undefined;
+            noVideoReplies?: boolean | undefined;
+            noSpoilerReplies?: boolean | undefined;
+            noImageReplies?: boolean | undefined;
+            noPolls?: boolean | undefined;
+            noCrossposts?: boolean | undefined;
+            noAuthors?: boolean | undefined;
+            anonymousAuthors?: boolean | undefined;
+            noNestedReplies?: boolean | undefined;
+            safeForWork?: boolean | undefined;
+            authorFlairs?: boolean | undefined;
+            requireAuthorFlairs?: boolean | undefined;
+            postFlairs?: boolean | undefined;
+            requirePostFlairs?: boolean | undefined;
+            noMarkdownImages?: boolean | undefined;
+            noMarkdownVideos?: boolean | undefined;
+            markdownImageReplies?: boolean | undefined;
+            markdownVideoReplies?: boolean | undefined;
+            noPostUpvotes?: boolean | undefined;
+            noReplyUpvotes?: boolean | undefined;
+            noPostDownvotes?: boolean | undefined;
+            noReplyDownvotes?: boolean | undefined;
+            noUpvotes?: boolean | undefined;
+            noDownvotes?: boolean | undefined;
+            requirePostLink?: boolean | undefined;
+            requirePostLinkIsMedia?: boolean | undefined;
+        } | undefined;
+        suggested?: {
+            [x: string]: unknown;
+            primaryColor?: string | undefined;
+            secondaryColor?: string | undefined;
+            avatarUrl?: string | undefined;
+            bannerUrl?: string | undefined;
+            backgroundUrl?: string | undefined;
+            language?: string | undefined;
+        } | undefined;
+        flairs?: Record<string, {
+            [x: string]: unknown;
+            text: string;
+            backgroundColor?: string | undefined;
+            textColor?: string | undefined;
+            expiresAt?: number | undefined;
+        }[]> | undefined;
     };
     ipnsObj: {
         signer: import("../signer/index.js").SignerWithPublicKeyAddress;
@@ -407,73 +430,78 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
 }>;
 export declare function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit): Omit<any, "signer" | "state" | "clients" | "settings" | "startedState" | "editable" | "updatingState" | "started">;
 export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit): Omit<{
-    signer: import("../signer/index.js").SignerWithPublicKeyAddress;
     address: SubplebbitIpfsType["address"];
+    shortAddress: string;
     signature?: SubplebbitIpfsType["signature"] | undefined;
+    signer: import("../signer/index.js").SignerWithPublicKeyAddress;
     protocolVersion: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["protocolVersion"];
+    lastCommentCid?: string | undefined;
     state: import("../subplebbit/types.js").SubplebbitState;
     clients: import("../subplebbit/subplebbit-client-manager.js").SubplebbitClientsManager["clients"];
     title?: string | undefined;
     updatedAt?: SubplebbitIpfsType["updatedAt"] | undefined;
-    lastCommentCid?: string | undefined;
-    shortAddress: string;
-    posts: PostsPages;
-    challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
-    description?: string | undefined;
     encryption: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
     createdAt: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
-    pubsubTopic?: string | undefined;
     statsCid?: SubplebbitIpfsType["statsCid"] | undefined;
+    posts: PostsPages;
+    modQueue: import("../pages/pages.js").ModQueuePages;
+    challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
+    description?: string | undefined;
+    pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
-    roles?: Record<string, import("zod").objectOutputType<{
-        role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
-    }, import("zod").ZodTypeAny, "passthrough">> | undefined;
+    roles?: Record<string, {
+        [x: string]: unknown;
+        role: string;
+    }> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
-    features?: import("zod").objectOutputType<{
-        noVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noSpoilers: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noSpoilerReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noPolls: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noCrossposts: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        anonymousAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noNestedReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        safeForWork: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        authorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        requireAuthorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        postFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        requirePostFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noMarkdownImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noMarkdownVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        markdownImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        markdownVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noPostUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noReplyUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noPostDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noReplyDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
-    }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-    suggested?: import("zod").objectOutputType<{
-        primaryColor: import("zod").ZodOptional<import("zod").ZodString>;
-        secondaryColor: import("zod").ZodOptional<import("zod").ZodString>;
-        avatarUrl: import("zod").ZodOptional<import("zod").ZodString>;
-        bannerUrl: import("zod").ZodOptional<import("zod").ZodString>;
-        backgroundUrl: import("zod").ZodOptional<import("zod").ZodString>;
-        language: import("zod").ZodOptional<import("zod").ZodString>;
-    }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-    flairs?: Record<string, import("zod").objectOutputType<{
-        text: import("zod").ZodString;
-        backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-        textColor: import("zod").ZodOptional<import("zod").ZodString>;
-        expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-    }, import("zod").ZodTypeAny, "passthrough">[]> | undefined;
+    features?: {
+        [x: string]: unknown;
+        noVideos?: boolean | undefined;
+        noSpoilers?: boolean | undefined;
+        noImages?: boolean | undefined;
+        noVideoReplies?: boolean | undefined;
+        noSpoilerReplies?: boolean | undefined;
+        noImageReplies?: boolean | undefined;
+        noPolls?: boolean | undefined;
+        noCrossposts?: boolean | undefined;
+        noAuthors?: boolean | undefined;
+        anonymousAuthors?: boolean | undefined;
+        noNestedReplies?: boolean | undefined;
+        safeForWork?: boolean | undefined;
+        authorFlairs?: boolean | undefined;
+        requireAuthorFlairs?: boolean | undefined;
+        postFlairs?: boolean | undefined;
+        requirePostFlairs?: boolean | undefined;
+        noMarkdownImages?: boolean | undefined;
+        noMarkdownVideos?: boolean | undefined;
+        markdownImageReplies?: boolean | undefined;
+        markdownVideoReplies?: boolean | undefined;
+        noPostUpvotes?: boolean | undefined;
+        noReplyUpvotes?: boolean | undefined;
+        noPostDownvotes?: boolean | undefined;
+        noReplyDownvotes?: boolean | undefined;
+        noUpvotes?: boolean | undefined;
+        noDownvotes?: boolean | undefined;
+        requirePostLink?: boolean | undefined;
+        requirePostLinkIsMedia?: boolean | undefined;
+    } | undefined;
+    suggested?: {
+        [x: string]: unknown;
+        primaryColor?: string | undefined;
+        secondaryColor?: string | undefined;
+        avatarUrl?: string | undefined;
+        bannerUrl?: string | undefined;
+        backgroundUrl?: string | undefined;
+        language?: string | undefined;
+    } | undefined;
+    flairs?: Record<string, {
+        [x: string]: unknown;
+        text: string;
+        backgroundColor?: string | undefined;
+        textColor?: string | undefined;
+        expiresAt?: number | undefined;
+    }[]> | undefined;
     settings: import("../subplebbit/types.js").RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
     raw: {
         subplebbitIpfs?: SubplebbitIpfsType;
@@ -495,11 +523,298 @@ export declare function mockRpcServerForTests(plebbitWs: any): void;
 export declare function mockPostToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string): void;
 export declare function mockPostToFailToLoadFromPostUpdates(postToBeMocked: Comment): void;
 export declare function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked: Comment): void;
-export declare function createCommentUpdateWithInvalidSignature(commentCid: string): Promise<import("../publications/comment/types.js").CommentUpdateType>;
+export declare function createCommentUpdateWithInvalidSignature(commentCid: string): Promise<{
+    cid: string;
+    upvoteCount: number;
+    downvoteCount: number;
+    replyCount: number;
+    updatedAt: number;
+    signature: {
+        type: string;
+        signature: string;
+        publicKey: string;
+        signedPropertyNames: string[];
+    };
+    protocolVersion: string;
+    childCount?: number | undefined;
+    edit?: {
+        [x: string]: unknown;
+        timestamp: number;
+        signature: {
+            type: string;
+            signature: string;
+            publicKey: string;
+            signedPropertyNames: string[];
+        };
+        subplebbitAddress: string;
+        protocolVersion: string;
+        commentCid: string;
+        author: {
+            [x: string]: unknown;
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    signature: string;
+                    type: string;
+                };
+            }> | undefined;
+            avatar?: {
+                [x: string]: unknown;
+                chainTicker: string;
+                address: string;
+                id: string;
+                timestamp: number;
+                signature: {
+                    signature: string;
+                    type: string;
+                };
+            } | undefined;
+            flair?: {
+                [x: string]: unknown;
+                text: string;
+                backgroundColor?: string | undefined;
+                textColor?: string | undefined;
+                expiresAt?: number | undefined;
+            } | undefined;
+        };
+        flair?: {
+            [x: string]: unknown;
+            text: string;
+            backgroundColor?: string | undefined;
+            textColor?: string | undefined;
+            expiresAt?: number | undefined;
+        } | undefined;
+        content?: string | undefined;
+        deleted?: boolean | undefined;
+        spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
+        reason?: string | undefined;
+    } | undefined;
+    flair?: {
+        [x: string]: unknown;
+        text: string;
+        backgroundColor?: string | undefined;
+        textColor?: string | undefined;
+        expiresAt?: number | undefined;
+    } | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
+    pinned?: boolean | undefined;
+    locked?: boolean | undefined;
+    removed?: boolean | undefined;
+    reason?: string | undefined;
+    approved?: boolean | undefined;
+    author?: {
+        [x: string]: unknown;
+        subplebbit?: {
+            [x: string]: unknown;
+            postScore: number;
+            replyScore: number;
+            firstCommentTimestamp: number;
+            lastCommentCid: string;
+            banExpiresAt?: number | undefined;
+            flair?: {
+                [x: string]: unknown;
+                text: string;
+                backgroundColor?: string | undefined;
+                textColor?: string | undefined;
+                expiresAt?: number | undefined;
+            } | undefined;
+        } | undefined;
+    } | undefined;
+    lastChildCid?: string | undefined;
+    lastReplyTimestamp?: number | undefined;
+    replies?: {
+        pages: Record<string, {
+            comments: {
+                comment: {
+                    [x: string]: unknown;
+                    timestamp: number;
+                    signature: {
+                        type: string;
+                        signature: string;
+                        publicKey: string;
+                        signedPropertyNames: string[];
+                    };
+                    subplebbitAddress: string;
+                    protocolVersion: string;
+                    author: {
+                        [x: string]: unknown;
+                        address: string;
+                        previousCommentCid?: string | undefined;
+                        displayName?: string | undefined;
+                        wallets?: Record<string, {
+                            address: string;
+                            timestamp: number;
+                            signature: {
+                                signature: string;
+                                type: string;
+                            };
+                        }> | undefined;
+                        avatar?: {
+                            [x: string]: unknown;
+                            chainTicker: string;
+                            address: string;
+                            id: string;
+                            timestamp: number;
+                            signature: {
+                                signature: string;
+                                type: string;
+                            };
+                        } | undefined;
+                        flair?: {
+                            [x: string]: unknown;
+                            text: string;
+                            backgroundColor?: string | undefined;
+                            textColor?: string | undefined;
+                            expiresAt?: number | undefined;
+                        } | undefined;
+                    };
+                    depth: number;
+                    flair?: {
+                        [x: string]: unknown;
+                        text: string;
+                        backgroundColor?: string | undefined;
+                        textColor?: string | undefined;
+                        expiresAt?: number | undefined;
+                    } | undefined;
+                    content?: string | undefined;
+                    spoiler?: boolean | undefined;
+                    nsfw?: boolean | undefined;
+                    link?: string | undefined;
+                    title?: string | undefined;
+                    linkWidth?: number | undefined;
+                    linkHeight?: number | undefined;
+                    linkHtmlTagName?: string | undefined;
+                    parentCid?: string | undefined;
+                    postCid?: string | undefined;
+                    thumbnailUrl?: string | undefined;
+                    thumbnailUrlWidth?: number | undefined;
+                    thumbnailUrlHeight?: number | undefined;
+                    previousCid?: string | undefined;
+                };
+                commentUpdate: {
+                    [x: string]: unknown;
+                    cid: string;
+                    upvoteCount: number;
+                    downvoteCount: number;
+                    replyCount: number;
+                    updatedAt: number;
+                    signature: {
+                        type: string;
+                        signature: string;
+                        publicKey: string;
+                        signedPropertyNames: string[];
+                    };
+                    protocolVersion: string;
+                    childCount?: number | undefined;
+                    edit?: {
+                        [x: string]: unknown;
+                        timestamp: number;
+                        signature: {
+                            type: string;
+                            signature: string;
+                            publicKey: string;
+                            signedPropertyNames: string[];
+                        };
+                        subplebbitAddress: string;
+                        protocolVersion: string;
+                        commentCid: string;
+                        author: {
+                            [x: string]: unknown;
+                            address: string;
+                            previousCommentCid?: string | undefined;
+                            displayName?: string | undefined;
+                            wallets?: Record<string, {
+                                address: string;
+                                timestamp: number;
+                                signature: {
+                                    signature: string;
+                                    type: string;
+                                };
+                            }> | undefined;
+                            avatar?: {
+                                [x: string]: unknown;
+                                chainTicker: string;
+                                address: string;
+                                id: string;
+                                timestamp: number;
+                                signature: {
+                                    signature: string;
+                                    type: string;
+                                };
+                            } | undefined;
+                            flair?: {
+                                [x: string]: unknown;
+                                text: string;
+                                backgroundColor?: string | undefined;
+                                textColor?: string | undefined;
+                                expiresAt?: number | undefined;
+                            } | undefined;
+                        };
+                        flair?: {
+                            [x: string]: unknown;
+                            text: string;
+                            backgroundColor?: string | undefined;
+                            textColor?: string | undefined;
+                            expiresAt?: number | undefined;
+                        } | undefined;
+                        content?: string | undefined;
+                        deleted?: boolean | undefined;
+                        spoiler?: boolean | undefined;
+                        nsfw?: boolean | undefined;
+                        reason?: string | undefined;
+                    } | undefined;
+                    flair?: {
+                        [x: string]: unknown;
+                        text: string;
+                        backgroundColor?: string | undefined;
+                        textColor?: string | undefined;
+                        expiresAt?: number | undefined;
+                    } | undefined;
+                    spoiler?: boolean | undefined;
+                    nsfw?: boolean | undefined;
+                    pinned?: boolean | undefined;
+                    locked?: boolean | undefined;
+                    removed?: boolean | undefined;
+                    reason?: string | undefined;
+                    approved?: boolean | undefined;
+                    author?: {
+                        [x: string]: unknown;
+                        subplebbit?: {
+                            [x: string]: unknown;
+                            postScore: number;
+                            replyScore: number;
+                            firstCommentTimestamp: number;
+                            lastCommentCid: string;
+                            banExpiresAt?: number | undefined;
+                            flair?: {
+                                [x: string]: unknown;
+                                text: string;
+                                backgroundColor?: string | undefined;
+                                textColor?: string | undefined;
+                                expiresAt?: number | undefined;
+                            } | undefined;
+                        } | undefined;
+                    } | undefined;
+                    lastChildCid?: string | undefined;
+                    lastReplyTimestamp?: number | undefined;
+                    replies?: /*elided*/ any | undefined;
+                };
+            }[];
+            nextCid?: string | undefined;
+        }>;
+        pageCids?: Record<string, string> | undefined;
+    } | undefined;
+}>;
 export declare function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, subAddress: string, subplebbitRecord: any): Promise<void>;
 export declare function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit): void;
 export declare function mockCommentToNotUsePagesForUpdates(comment: Comment): void;
-export declare function forceSubplebbitToGenerateAllRepliesPages(comment: Comment): Promise<void>;
+export declare function forceSubplebbitToGenerateAllRepliesPages(comment: Comment, commentProps?: CreateCommentOptions): Promise<void>;
 export declare function findOrPublishCommentWithDepth({ depth, subplebbit }: {
     depth: number;
     subplebbit: RemoteSubplebbit;
@@ -508,9 +823,30 @@ export declare function publishCommentWithDepth({ depth, subplebbit }: {
     depth: number;
     subplebbit: RemoteSubplebbit;
 }): Promise<Comment>;
-export declare function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit): Promise<void>;
-export declare function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinPageJson | Comment>;
-export declare function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinPageJson | Comment>;
+export declare function getCommentWithCommentUpdateProps({ cid, plebbit }: {
+    cid: string;
+    plebbit: Plebbit;
+}): Promise<Comment>;
+export declare function publishCommentToModQueue({ subplebbit, plebbit, parentComment }: {
+    subplebbit: RemoteSubplebbit;
+    plebbit?: Plebbit;
+    parentComment?: Comment;
+}): Promise<{
+    comment: Comment;
+    challengeVerification: DecryptedChallengeVerificationMessageType;
+}>;
+export declare function publishToModQueueWithDepth({ subplebbit, depth, plebbit, modCommentProps }: {
+    subplebbit: RemoteSubplebbit;
+    plebbit: Plebbit;
+    depth: number;
+    modCommentProps?: Partial<CreateCommentOptions>;
+}): Promise<{
+    comment: Comment;
+    challengeVerification: unknown;
+}>;
+export declare function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit, commentProps?: CreateCommentOptions): Promise<void>;
+export declare function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinRepliesPostsPageJson | Comment>;
+export declare function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinRepliesPostsPageJson | Comment>;
 export declare function mockReplyToUseParentPagesForUpdates(reply: Comment): void;
 export declare function mockUpdatingCommentResolvingAuthor(comment: Comment, mockFunction: Comment["_clientsManager"]["resolveAuthorAddressIfNeeded"]): void;
 export declare function mockCacheOfTextRecord(opts: {
@@ -542,5 +878,5 @@ export declare function mockViemClient({ plebbit, chainTicker, url, mockedViem }
     url: string;
     mockedViem: any;
 }): void;
-export declare function processAllCommentsRecursively(comments: (Comment | CommentWithinPageJson)[] | undefined, processor: (comment: Comment | CommentWithinPageJson) => void): void;
+export declare function processAllCommentsRecursively(comments: (Comment | CommentWithinRepliesPostsPageJson)[] | undefined, processor: (comment: Comment | CommentWithinRepliesPostsPageJson) => void): void;
 export {};

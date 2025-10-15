@@ -34,6 +34,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         this._updatingSubplebbits = {}; // storing subplebbit instance that are getting updated rn
         this._updatingComments = {}; // storing comment instancse that are getting updated rn
         this._startedSubplebbits = {}; // storing subplebbit instance that are started rn
+        this.destroyed = false;
         this._storageLRUs = {}; // Cache name to storage interface
         this._timeouts = {
             "subplebbit-ipns": 5 * 60 * 1000, // 5min, for resolving subplebbit IPNS, or fetching subplebbit from gateways
@@ -175,17 +176,26 @@ export class Plebbit extends PlebbitTypedEmitter {
     }
     async _setupHttpRoutersWithKuboNodeInBackground() {
         const log = Logger("plebbit-js:plebbit:_initHttpRoutersWithIpfsInBackground");
+        if (this.destroyed)
+            return;
         if (this.httpRoutersOptions?.length && this.kuboRpcClientsOptions?.length && this._canCreateNewLocalSub()) {
             // only for node
-            setupKuboAddressesRewriterAndHttpRouters(this)
-                .then((addressesRewriterProxyServer) => {
+            const setupPromise = setupKuboAddressesRewriterAndHttpRouters(this)
+                .then(async (addressesRewriterProxyServer) => {
+                if (this.destroyed) {
+                    await addressesRewriterProxyServer.destroy();
+                    return;
+                }
                 log("Set http router options and their proxies successfully on all connected ipfs", Object.keys(this.clients.kuboRpcClients));
                 this._addressRewriterDestroy = addressesRewriterProxyServer.destroy;
             })
                 .catch((e) => {
+                if (this.destroyed)
+                    return;
                 log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
                 this.emit("error", e);
             });
+            this._addressRewriterSetupPromise = setupPromise;
         }
     }
     async _init() {
@@ -360,7 +370,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         // last resort to set subplebbit ipfs props
         if (!subplebbit.raw.subplebbitIpfs) {
             if (options.signature) {
-                const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(remeda.pick(options, [...options.signature.signedPropertyNames, "signature"]));
+                const resParseSubplebbitIpfs = SubplebbitIpfsSchema.loose().safeParse(remeda.pick(options, [...options.signature.signedPropertyNames, "signature"]));
                 if (resParseSubplebbitIpfs.success) {
                     const cleanedRecord = removeUndefinedValuesRecursively(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
                     await subplebbit.initSubplebbitIpfsPropsNoMerge(cleanedRecord);
@@ -711,6 +721,9 @@ export class Plebbit extends PlebbitTypedEmitter {
         return this._storageLRUs[opts.cacheName];
     }
     async destroy() {
+        if (this.destroyed)
+            return;
+        this.destroyed = true;
         // Clean up connections
         for (const comment of Object.values(this._updatingComments))
             await comment.stop();
@@ -719,8 +732,14 @@ export class Plebbit extends PlebbitTypedEmitter {
         await Promise.all(Object.values(this._startedSubplebbits).map((sub) => sub.stop()));
         if (this._subplebbitFsWatchAbort)
             this._subplebbitFsWatchAbort.abort();
-        if (this._addressRewriterDestroy)
+        if (this._addressRewriterSetupPromise) {
+            await this._addressRewriterSetupPromise;
+            this._addressRewriterSetupPromise = undefined;
+        }
+        if (this._addressRewriterDestroy) {
             await this._addressRewriterDestroy();
+            this._addressRewriterDestroy = undefined;
+        }
         await this._domainResolver.destroy();
         await this._storage.destroy();
         for (const storage of Object.values(this._storageLRUs))

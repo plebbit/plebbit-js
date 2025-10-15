@@ -37,14 +37,14 @@ export const CommentPubsubMessagePublicationSchema = CreateCommentOptionsSchema.
     .extend({ signature: JsonSignatureSchema })
     .pick(commentPubsubKeys)
     .strict();
-export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessagePublicationSchema.merge(z.object({ author: AuthorPubsubSchema.passthrough() })).strict();
+export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessagePublicationSchema.merge(z.object({ author: AuthorPubsubSchema.loose() })).strict();
 // This is used by the subplebbit when parsing request.comment
-export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPubsubMessageWithFlexibleAuthorSchema.passthrough().refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
+export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPubsubMessageWithFlexibleAuthorSchema.loose().refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
 export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePublicationSchema.refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE).refine((arg) => (arg.parentCid ? arg.postCid : true), messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
 export const CommentChallengeRequestToEncryptSchema = CreateCommentOptionsSchema.shape.challengeRequest
     .unwrap()
     .extend({
-    comment: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
+    comment: CommentPubsubMessageWithFlexibleAuthorSchema.loose()
 })
     .strict();
 // Remote comments
@@ -63,8 +63,9 @@ export const AuthorWithCommentUpdateSchema = CommentPubsubMessagePublicationSche
     .extend({
     subplebbit: SubplebbitAuthorSchema.optional()
 })
-    .passthrough();
-export const CommentUpdateNoRepliesSchema = z.object({
+    .loose();
+export const CommentUpdateSchema = z
+    .object({
     cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
     upvoteCount: z.number().nonnegative().int(),
     downvoteCount: z.number().nonnegative().int(),
@@ -78,23 +79,42 @@ export const CommentUpdateNoRepliesSchema = z.object({
     locked: z.boolean().optional(), // mod locked a post
     removed: z.boolean().optional(), // mod deleted a comment
     reason: z.string().optional(), // reason the mod took a mood action,
+    approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use moderation.pageCids.pendingApproval to fetch pending comments
     updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
     author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
     lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
     lastReplyTimestamp: PlebbitTimestampSchema.optional(), // The timestamp of the most recent direct or indirect child of the comment
     signature: JsonSignatureSchema, // signature of the CommentUpdate by the sub owner to protect against malicious gateway
-    protocolVersion: ProtocolVersionSchema
-});
-export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
-    replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'best', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
-}).strict();
+    protocolVersion: ProtocolVersionSchema,
+    get replies() {
+        return RepliesPagesIpfsSchema.optional();
+    }
+})
+    .strict();
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
+export const CommentUpdateForDisapprovedPendingComment = CommentUpdateSchema.pick({
+    author: true,
+    cid: true,
+    signature: true,
+    protocolVersion: true,
+    reason: true,
+    removed: true,
+    nsfw: true,
+    locked: true,
+    spoiler: true,
+    flair: true,
+    updatedAt: true,
+    approved: true
+}).strict();
+export const CommentUpdateForDisapprovedPendingCommentSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateForDisapprovedPendingComment.shape, ["signature"]));
 export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.pick({
     author: true,
     cid: true,
     signature: true,
     protocolVersion: true
-}).strict();
+})
+    .merge(z.object({ pendingApproval: z.boolean().optional() }))
+    .strict();
 export const CommentUpdateForChallengeVerificationSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateForChallengeVerificationSchema.shape, ["signature"]));
 const originalFields = (remeda
     .intersection(remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape), remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"])))
@@ -106,30 +126,47 @@ export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessa
 export const CommentsTableRowSchema = CommentIpfsSchema.extend({
     cid: CidStringSchema, // cid of CommentIpfs, cid v0
     postCid: CidStringSchema,
-    rowid: z.number().nonnegative().int(), // this field is from sqlite
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    extraProps: z.object({}).passthrough().optional()
+    extraProps: z.looseObject({}).optional(),
+    pendingApproval: z.boolean().optional()
 }).strict();
-// Comment pubsub message here
-export const CommentPubsubMessageReservedFields = remeda.difference(remeda.unique([
-    ...remeda.keys.strict(CommentIpfsSchema.shape),
-    ...remeda.keys.strict(CommentsTableRowSchema.shape),
-    ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
-    ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
-    ...CommentUpdateSignedPropertyNames,
+export const CommentUpdateTableRowSchema = CommentUpdateSchema.extend({
+    insertedAt: PlebbitTimestampSchema,
+    postUpdatesBucket: z.int().nonnegative().optional(), // the post updates bucket of post CommentUpdate, not applicable to replies
+    publishedToPostUpdatesMFS: z.boolean() // whether the comment latest update has been published
+});
+// Comment pubsub reserved fields
+const additionalCommentReservedFields = [
     "original",
     "shortCid",
     "shortSubplebbitAddress",
     "deleted",
-    "signer",
     "raw",
     "comment",
     "commentUpdate",
     "state",
     "clients",
     "publishingState",
-    "updatingState"
-]), remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape));
-export const CommentUpdateReservedFields = remeda.difference(CommentPubsubMessageReservedFields, remeda.keys.strict(CommentUpdateSchema.shape));
+    "updatingState",
+    "rowid"
+];
+const commentReservedFieldCandidates = remeda.unique([
+    ...remeda.keys.strict(CommentIpfsSchema.shape),
+    ...remeda.keys.strict(CommentsTableRowSchema.shape),
+    ...remeda.keys.strict(CommentUpdateTableRowSchema.shape),
+    ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
+    ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
+    ...CommentUpdateForChallengeVerificationSignedPropertyNames,
+    ...CommentUpdateSignedPropertyNames,
+    ...CommentUpdateForDisapprovedPendingCommentSignedPropertyNames,
+    ...additionalCommentReservedFields
+]);
+export const CommentPubsubMessageReservedFields = remeda.difference(commentReservedFieldCandidates, remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape));
+export const CommentUpdateReservedFields = remeda.difference(CommentPubsubMessageReservedFields, [
+    ...remeda.keys.strict(CommentUpdateSchema.shape),
+    ...remeda.keys.strict(CommentUpdateTableRowSchema.shape),
+    "pendingApproval"
+]);
+// CommentUpdates Table row here
 //# sourceMappingURL=schema.js.map

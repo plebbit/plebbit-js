@@ -8,7 +8,7 @@ import type { JsonSignature, PubsubMsgToSign, PubsubSignature, SignerType } from
 import type { CommentEditOptionsToSign, CommentEditPubsubMessagePublication, CommentEditSignature } from "../publications/comment-edit/types.js";
 import type { VoteOptionsToSign, VotePubsubMessagePublication, VoteSignature } from "../publications/vote/types.js";
 import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CommentOptionsToSign, CommentPubsubMessagePublication, CommentPubsubMessagPublicationSignature, CommentUpdateForChallengeVerification, CommentUpdateForChallengeVerificationSignature, CommentUpdateSignature, CommentUpdateType } from "../publications/comment/types.js";
-import type { PageIpfs } from "../pages/types.js";
+import type { ModQueuePageIpfs, PageIpfs } from "../pages/types.js";
 import type { CommentModerationOptionsToSign, CommentModerationPubsubMessagePublication, CommentModerationSignature } from "../publications/comment-moderation/types.js";
 import type { SubplebbitEditPublicationOptionsToSign, SubplebbitEditPublicationSignature, SubplebbitEditPubsubMessagePublication } from "../publications/subplebbit-edit/types.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
@@ -71,7 +71,7 @@ export declare function verifySubplebbit({ subplebbit, subplebbitIpnsName, resol
     cacheIfValid?: boolean;
 }): Promise<ValidationResult>;
 export declare function verifyCommentUpdate({ update, resolveAuthorAddresses, clientsManager, subplebbit, comment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }: {
-    update: CommentUpdateType;
+    update: CommentUpdateType | CommentUpdateForChallengeVerification | ModQueuePageIpfs["comments"][0]["commentUpdate"];
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     subplebbit: SubplebbitForVerifyingPages;
@@ -80,7 +80,6 @@ export declare function verifyCommentUpdate({ update, resolveAuthorAddresses, cl
     validatePages: boolean;
     validateUpdateSignature: boolean;
 }): Promise<ValidationResult>;
-export declare function verifyCommentUpdateForChallengeVerification(update: CommentUpdateForChallengeVerification): Promise<ValidationResult>;
 export declare function verifyChallengeRequest(request: ChallengeRequestMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
 export declare function verifyChallengeMessage(challenge: ChallengeMessageType, pubsubTopic: string, validateTimestampRange: boolean): Promise<ValidationResult>;
 export declare function verifyChallengeAnswer(answer: ChallengeAnswerMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
@@ -92,9 +91,9 @@ type ParentCommentForVerifyingPages = Pick<CommentIpfsWithCidPostCidDefined, "ci
 };
 type SubplebbitForVerifyingPages = Pick<RemoteSubplebbit, "address" | "signature">;
 export declare function verifyPageComment({ pageComment, subplebbit, parentComment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }: {
-    pageComment: PageIpfs["comments"][0];
+    pageComment: (PageIpfs | ModQueuePageIpfs)["comments"][0];
     subplebbit: SubplebbitForVerifyingPages;
-    parentComment: ParentCommentForVerifyingPages;
+    parentComment: ParentCommentForVerifyingPages | undefined;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
@@ -109,6 +108,16 @@ export declare function verifyPage({ pageCid, pageSortName, page, resolveAuthorA
     clientsManager: BaseClientsManager;
     subplebbit: SubplebbitForVerifyingPages;
     parentComment: ParentCommentForVerifyingPages;
+    overrideAuthorAddressIfInvalid: boolean;
+    validatePages: boolean;
+    validateUpdateSignature: boolean;
+}): Promise<ValidationResult>;
+export declare function verifyModQueuePage({ pageCid, page, resolveAuthorAddresses, clientsManager, subplebbit, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }: {
+    pageCid: string | undefined;
+    page: ModQueuePageIpfs;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    subplebbit: SubplebbitForVerifyingPages;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
     validateUpdateSignature: boolean;

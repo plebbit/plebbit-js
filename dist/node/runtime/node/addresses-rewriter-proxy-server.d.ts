@@ -5,7 +5,7 @@ type AddressesRewriterOptions = {
     port: number;
     hostname: string | undefined;
     proxyTargetUrl: string;
-    plebbit: Pick<Plebbit, "_storage">;
+    plebbit: Pick<Plebbit, "_storage" | "dataPath">;
 };
 export declare class AddressesRewriterProxyServer {
     addresses: Record<string, string[]>;
@@ -15,12 +15,30 @@ export declare class AddressesRewriterProxyServer {
     proxyTarget: URL;
     server: ReturnType<(typeof http)["createServer"]>;
     _storageKeyName: string;
-    _plebbit: Pick<Plebbit, "_storage">;
-    private _updateAddressesInterval;
+    _plebbit: Pick<Plebbit, "_storage" | "dataPath">;
+    private _db;
+    private _logWriteInterval?;
+    private _requestLogBuffer;
+    private _isWritingLogs;
+    private _loggingEnabled;
+    private _failedKeys;
+    private _retryInterval?;
+    private _updateAddressesInterval?;
+    private _httpAgent;
+    private _httpsAgent;
     constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl, plebbit }: AddressesRewriterOptions);
     listen(callback?: () => void): Promise<void>;
     destroy(): Promise<void>;
     _proxyRequestRewrite(req: Parameters<http.RequestListener>[0], res: Parameters<http.RequestListener>[1]): void;
+    private _proxyRequest;
     _startUpdateAddressesLoop(): Promise<void>;
+    private _extractKeysFromRequestBody;
+    private _writeRequestLogs;
+    private _startRequestLogging;
+    private _startFailedKeysRetry;
+    private _loadFailedKeysFromDatabase;
+    private _saveFailedKeysToDatabase;
+    private _retryFailedKeys;
+    private _logReprovideAttempt;
 }
 export {};

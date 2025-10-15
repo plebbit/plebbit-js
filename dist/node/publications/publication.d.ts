@@ -69,280 +69,303 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
     protected _setRpcClientState(newState: Publication["clients"]["plebbitRpcClients"][""]["state"]): void;
     private _pubsubTopicWithfallback;
     _getSubplebbitCache(): Pick<{
-        address: string;
+        challenges: {
+            [x: string]: unknown;
+            type: string;
+            exclude?: {
+                [x: string]: unknown;
+                subplebbit?: {
+                    addresses: string[];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                } | undefined;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+                challenges?: number[] | undefined;
+                role?: string[] | undefined;
+                address?: string[] | undefined;
+                rateLimit?: number | undefined;
+                rateLimitChallengeSuccess?: boolean | undefined;
+                publicationType?: {
+                    [x: string]: unknown;
+                    post?: boolean | undefined;
+                    reply?: boolean | undefined;
+                    vote?: boolean | undefined;
+                    commentEdit?: boolean | undefined;
+                    commentModeration?: boolean | undefined;
+                    subplebbitEdit?: boolean | undefined;
+                } | undefined;
+            }[] | undefined;
+            description?: string | undefined;
+            challenge?: string | undefined;
+            caseInsensitive?: boolean | undefined;
+            pendingApproval?: boolean | undefined;
+        }[];
         signature: {
             type: string;
             signature: string;
             publicKey: string;
             signedPropertyNames: string[];
         };
-        protocolVersion: string;
-        updatedAt: number;
-        challenges: import("zod").objectOutputType<{
-            exclude: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodObject<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
-                    addresses: import("zod").ZodArray<import("zod").ZodString, "atleastone">;
-                    maxCommentCids: import("zod").ZodNumber;
-                    postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                    firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                }, "strict", import("zod").ZodTypeAny, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }, {
-                    addresses: [string, ...string[]];
-                    maxCommentCids: number;
-                    postScore?: number | undefined;
-                    replyScore?: number | undefined;
-                    firstCommentTimestamp?: number | undefined;
-                }>>;
-                postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
-                firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
-                challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
-                address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
-                rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
-                rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                publicationType: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodObject<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                    post: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                }, import("zod").ZodTypeAny, "passthrough">>>;
-            }, import("zod").ZodTypeAny, "passthrough">>, "atleastone">>;
-            description: import("zod").ZodOptional<import("zod").ZodString>;
-            challenge: import("zod").ZodOptional<import("zod").ZodString>;
-            type: import("zod").ZodString;
-            caseInsensitive: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        }, import("zod").ZodTypeAny, "passthrough">[];
         encryption: {
+            [x: string]: unknown;
             type: string;
             publicKey: string;
-        } & {
-            [k: string]: unknown;
         };
+        address: string;
         createdAt: number;
+        updatedAt: number;
         statsCid: string;
-        title?: string | undefined;
-        lastCommentCid?: string | undefined;
+        protocolVersion: string;
         posts?: {
-            pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+            pages: Record<string, {
+                comments: {
+                    comment: {
+                        [x: string]: unknown;
+                        timestamp: number;
+                        signature: {
+                            type: string;
+                            signature: string;
+                            publicKey: string;
+                            signedPropertyNames: string[];
+                        };
+                        subplebbitAddress: string;
+                        protocolVersion: string;
+                        author: {
+                            [x: string]: unknown;
+                            address: string;
+                            previousCommentCid?: string | undefined;
+                            displayName?: string | undefined;
+                            wallets?: Record<string, {
+                                address: string;
+                                timestamp: number;
+                                signature: {
+                                    signature: string;
+                                    type: string;
+                                };
+                            }> | undefined;
+                            avatar?: {
+                                [x: string]: unknown;
+                                chainTicker: string;
+                                address: string;
+                                id: string;
+                                timestamp: number;
+                                signature: {
+                                    signature: string;
+                                    type: string;
+                                };
+                            } | undefined;
+                            flair?: {
+                                [x: string]: unknown;
+                                text: string;
+                                backgroundColor?: string | undefined;
+                                textColor?: string | undefined;
+                                expiresAt?: number | undefined;
+                            } | undefined;
+                        };
+                        depth: number;
+                        flair?: {
+                            [x: string]: unknown;
+                            text: string;
+                            backgroundColor?: string | undefined;
+                            textColor?: string | undefined;
+                            expiresAt?: number | undefined;
+                        } | undefined;
+                        content?: string | undefined;
+                        spoiler?: boolean | undefined;
+                        nsfw?: boolean | undefined;
+                        link?: string | undefined;
+                        title?: string | undefined;
+                        linkWidth?: number | undefined;
+                        linkHeight?: number | undefined;
+                        linkHtmlTagName?: string | undefined;
+                        parentCid?: string | undefined;
+                        postCid?: string | undefined;
+                        thumbnailUrl?: string | undefined;
+                        thumbnailUrlWidth?: number | undefined;
+                        thumbnailUrlHeight?: number | undefined;
+                        previousCid?: string | undefined;
+                    };
+                    commentUpdate: {
+                        [x: string]: unknown;
+                        cid: string;
+                        upvoteCount: number;
+                        downvoteCount: number;
+                        replyCount: number;
+                        updatedAt: number;
+                        signature: {
+                            type: string;
+                            signature: string;
+                            publicKey: string;
+                            signedPropertyNames: string[];
+                        };
+                        protocolVersion: string;
+                        childCount?: number | undefined;
+                        edit?: {
+                            [x: string]: unknown;
+                            timestamp: number;
+                            signature: {
+                                type: string;
+                                signature: string;
+                                publicKey: string;
+                                signedPropertyNames: string[];
+                            };
+                            subplebbitAddress: string;
+                            protocolVersion: string;
+                            commentCid: string;
+                            author: {
+                                [x: string]: unknown;
+                                address: string;
+                                previousCommentCid?: string | undefined;
+                                displayName?: string | undefined;
+                                wallets?: Record<string, {
+                                    address: string;
+                                    timestamp: number;
+                                    signature: {
+                                        signature: string;
+                                        type: string;
+                                    };
+                                }> | undefined;
+                                avatar?: {
+                                    [x: string]: unknown;
+                                    chainTicker: string;
+                                    address: string;
+                                    id: string;
+                                    timestamp: number;
+                                    signature: {
+                                        signature: string;
+                                        type: string;
+                                    };
+                                } | undefined;
+                                flair?: {
+                                    [x: string]: unknown;
+                                    text: string;
+                                    backgroundColor?: string | undefined;
+                                    textColor?: string | undefined;
+                                    expiresAt?: number | undefined;
+                                } | undefined;
+                            };
+                            flair?: {
+                                [x: string]: unknown;
+                                text: string;
+                                backgroundColor?: string | undefined;
+                                textColor?: string | undefined;
+                                expiresAt?: number | undefined;
+                            } | undefined;
+                            content?: string | undefined;
+                            deleted?: boolean | undefined;
+                            spoiler?: boolean | undefined;
+                            nsfw?: boolean | undefined;
+                            reason?: string | undefined;
+                        } | undefined;
+                        flair?: {
+                            [x: string]: unknown;
+                            text: string;
+                            backgroundColor?: string | undefined;
+                            textColor?: string | undefined;
+                            expiresAt?: number | undefined;
+                        } | undefined;
+                        spoiler?: boolean | undefined;
+                        nsfw?: boolean | undefined;
+                        pinned?: boolean | undefined;
+                        locked?: boolean | undefined;
+                        removed?: boolean | undefined;
+                        reason?: string | undefined;
+                        approved?: boolean | undefined;
+                        author?: {
+                            [x: string]: unknown;
+                            subplebbit?: {
+                                [x: string]: unknown;
+                                postScore: number;
+                                replyScore: number;
+                                firstCommentTimestamp: number;
+                                lastCommentCid: string;
+                                banExpiresAt?: number | undefined;
+                                flair?: {
+                                    [x: string]: unknown;
+                                    text: string;
+                                    backgroundColor?: string | undefined;
+                                    textColor?: string | undefined;
+                                    expiresAt?: number | undefined;
+                                } | undefined;
+                            } | undefined;
+                        } | undefined;
+                        lastChildCid?: string | undefined;
+                        lastReplyTimestamp?: number | undefined;
+                        replies?: {
+                            pages: Record<string, /*elided*/ any>;
+                            pageCids?: Record<string, string> | undefined;
+                        } | undefined;
+                    };
+                }[];
+                nextCid?: string | undefined;
+            }>;
             pageCids?: Record<string, string> | undefined;
         } | undefined;
-        description?: string | undefined;
+        modQueue?: {
+            pageCids: Record<string, string>;
+        } | undefined;
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
-        roles?: Record<string, import("zod").objectOutputType<{
-            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
-        }, import("zod").ZodTypeAny, "passthrough">> | undefined;
+        title?: string | undefined;
+        description?: string | undefined;
+        roles?: Record<string, {
+            [x: string]: unknown;
+            role: string;
+        }> | undefined;
         rules?: string[] | undefined;
         lastPostCid?: string | undefined;
-        features?: import("zod").objectOutputType<{
-            noVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noSpoilers: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noSpoilerReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noPolls: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noCrossposts: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            anonymousAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noNestedReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            safeForWork: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            authorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requireAuthorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            postFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requirePostFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noMarkdownImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noMarkdownVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            markdownImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            markdownVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noPostUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noReplyUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noPostDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noReplyDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        suggested?: import("zod").objectOutputType<{
-            primaryColor: import("zod").ZodOptional<import("zod").ZodString>;
-            secondaryColor: import("zod").ZodOptional<import("zod").ZodString>;
-            avatarUrl: import("zod").ZodOptional<import("zod").ZodString>;
-            bannerUrl: import("zod").ZodOptional<import("zod").ZodString>;
-            backgroundUrl: import("zod").ZodOptional<import("zod").ZodString>;
-            language: import("zod").ZodOptional<import("zod").ZodString>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        flairs?: Record<string, import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">[]> | undefined;
+        lastCommentCid?: string | undefined;
+        features?: {
+            [x: string]: unknown;
+            noVideos?: boolean | undefined;
+            noSpoilers?: boolean | undefined;
+            noImages?: boolean | undefined;
+            noVideoReplies?: boolean | undefined;
+            noSpoilerReplies?: boolean | undefined;
+            noImageReplies?: boolean | undefined;
+            noPolls?: boolean | undefined;
+            noCrossposts?: boolean | undefined;
+            noAuthors?: boolean | undefined;
+            anonymousAuthors?: boolean | undefined;
+            noNestedReplies?: boolean | undefined;
+            safeForWork?: boolean | undefined;
+            authorFlairs?: boolean | undefined;
+            requireAuthorFlairs?: boolean | undefined;
+            postFlairs?: boolean | undefined;
+            requirePostFlairs?: boolean | undefined;
+            noMarkdownImages?: boolean | undefined;
+            noMarkdownVideos?: boolean | undefined;
+            markdownImageReplies?: boolean | undefined;
+            markdownVideoReplies?: boolean | undefined;
+            noPostUpvotes?: boolean | undefined;
+            noReplyUpvotes?: boolean | undefined;
+            noPostDownvotes?: boolean | undefined;
+            noReplyDownvotes?: boolean | undefined;
+            noUpvotes?: boolean | undefined;
+            noDownvotes?: boolean | undefined;
+            requirePostLink?: boolean | undefined;
+            requirePostLinkIsMedia?: boolean | undefined;
+        } | undefined;
+        suggested?: {
+            [x: string]: unknown;
+            primaryColor?: string | undefined;
+            secondaryColor?: string | undefined;
+            avatarUrl?: string | undefined;
+            bannerUrl?: string | undefined;
+            backgroundUrl?: string | undefined;
+            language?: string | undefined;
+        } | undefined;
+        flairs?: Record<string, {
+            [x: string]: unknown;
+            text: string;
+            backgroundColor?: string | undefined;
+            textColor?: string | undefined;
+            expiresAt?: number | undefined;
+        }[]> | undefined;
     }, "address" | "encryption" | "pubsubTopic"> | undefined;
     _fetchSubplebbitForPublishing(): Promise<NonNullable<Publication["_subplebbit"]>>;
     stop(): Promise<void>;

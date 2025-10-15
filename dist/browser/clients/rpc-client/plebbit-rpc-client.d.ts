@@ -1,6 +1,6 @@
 import EventEmitter from "events";
 import type { CreateNewLocalSubplebbitUserOptions, RpcInternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitEditOptions, RpcLocalSubplebbitUpdateResultType } from "../../subplebbit/types.js";
-import type { PageIpfs } from "../../pages/types.js";
+import type { ModQueuePageIpfs, PageIpfs } from "../../pages/types.js";
 import type { DecryptedChallengeAnswer, DecryptedChallengeRequest } from "../../pubsub-messages/types.js";
 import type { PlebbitWsServerSettingsSerialized } from "../../rpc/src/types.js";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
@@ -26,10 +26,14 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     toJSON(): undefined;
     getSubscription(subscriptionId: number): EventEmitter<[never]>;
     unsubscribe(subscriptionId: number): Promise<void>;
+    private _deserializeRpcError;
+    private _setErrorName;
+    private _assignAdditionalProps;
     emitAllPendingMessages(subscriptionId: number): void;
     getComment(parsedCommentCid: string): Promise<CommentIpfsType>;
-    getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs>;
-    getSubplebbitPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs>;
+    getCommentRepliesPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs>;
+    getSubplebbitPostsPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs>;
+    getSubplebbitModQueuePage(pageCid: string, subplebbitAddress: string): Promise<ModQueuePageIpfs>;
     createSubplebbit(createSubplebbitOptions: CreateNewLocalSubplebbitUserOptions): Promise<RpcInternalSubplebbitRecordBeforeFirstUpdateType>;
     private _initSubscriptionEvent;
     startSubplebbit(subplebbitAddress: string): Promise<number>;

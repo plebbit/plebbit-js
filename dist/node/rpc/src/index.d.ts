@@ -9,6 +9,7 @@ import type { CommentIpfsType } from "../../publications/comment/types.js";
 import type { RpcInternalSubplebbitRecordBeforeFirstUpdateType } from "../../subplebbit/types.js";
 import { RpcPublishResult } from "../../publications/types.js";
 import { TypedEmitter } from "tiny-typed-emitter";
+import type { ModQueuePageIpfs, PageIpfs } from "../../pages/types.js";
 declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     plebbit: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
@@ -32,8 +33,9 @@ declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     getComment(params: any): Promise<CommentIpfsType>;
-    getSubplebbitPage(params: any): Promise<import("../../pages/types.js").PageIpfsManuallyDefined>;
-    getCommentPage(params: any): Promise<import("../../pages/types.js").PageIpfsManuallyDefined>;
+    getSubplebbitModQueuePage(params: any): Promise<ModQueuePageIpfs>;
+    getSubplebbitPostsPage(params: any): Promise<PageIpfs>;
+    getCommentRepliesPage(params: any): Promise<PageIpfs>;
     createSubplebbit(params: any): Promise<RpcInternalSubplebbitRecordBeforeFirstUpdateType>;
     _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number): void;
     startSubplebbit(params: any, connectionId: string): Promise<number>;

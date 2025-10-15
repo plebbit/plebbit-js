@@ -2,7 +2,7 @@ import { BaseClientsManager } from "../clients/base-client-manager.js";
 import * as remeda from "remeda";
 import Logger from "@plebbit/plebbit-logger";
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "./util.js";
-import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { parseJsonWithPlebbitErrorIfFails, parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
 import { sha256 } from "js-sha256";
 import { PagesIpfsGatewayClient, PagesKuboRpcClient, PagesLibp2pJsClient, PagesPlebbitRpcStateClient } from "./pages-clients.js";
@@ -160,16 +160,19 @@ export class BasePagesClientsManager extends BaseClientsManager {
         else
             this.updateKuboRpcState(newState, kuboRpcOrHelia.url, sortTypes);
     }
+    preFetchPage() {
+        throw Error("should be implemented");
+    }
+    async _requestPageFromRPC(pageCid, log, sortTypes) {
+        throw Error("Should be implemented");
+    }
     async _fetchPageWithRpc(pageCid, log, sortTypes) {
         const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions[0];
-        if (this._pages._parentComment && !this._pages._parentComment?.cid)
-            throw Error("Parent comment cid is not defined");
+        this.preFetchPage();
         log.trace(`Fetching page cid (${pageCid}) using rpc`);
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
         try {
-            return this._pages._parentComment
-                ? await this._plebbit._plebbitRpcClient.getCommentPage(pageCid, this._pages._parentComment.cid, this._pages._subplebbit.address)
-                : await this._plebbit._plebbitRpcClient.getSubplebbitPage(pageCid, this._pages._subplebbit.address);
+            return this._requestPageFromRPC(pageCid, log, sortTypes);
         }
         catch (e) {
             log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
@@ -179,12 +182,16 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this.updateRpcState("stopped", currentRpcUrl, sortTypes);
         }
     }
+    parsePageJson(json) {
+        // default validator; subclasses can override
+        return parsePageIpfsSchemaWithPlebbitErrorIfItFails(json);
+    }
     async _fetchPageWithKuboOrHeliaP2P(pageCid, log, sortTypes, pageMaxSize) {
         const heliaOrKubo = this.getDefaultKuboRpcClientOrHelia();
         this._updateKuboRpcClientOrHeliaState("fetching-ipfs", heliaOrKubo, sortTypes);
         const pageTimeoutMs = this._plebbit._timeouts["page-ipfs"];
         try {
-            return parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize, timeoutMs: pageTimeoutMs })));
+            return this.parsePageJson(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize, timeoutMs: pageTimeoutMs })));
         }
         catch (e) {
             //@ts-expect-error
@@ -208,7 +215,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             timeoutMs: this._plebbit._timeouts["page-ipfs"],
             log
         });
-        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
+        const pageIpfs = this.parsePageJson(parseJsonWithPlebbitErrorIfFails(res.resText));
         return pageIpfs;
     }
     async fetchPage(pageCid) {
@@ -230,8 +237,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
             throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page;
         try {
-            if (this._plebbit._plebbitRpcClient)
+            if (this._plebbit._plebbitRpcClient) {
                 page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
+            }
             else if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
                 Object.keys(this._plebbit.clients.libp2pJsClients).length > 0)
                 page = await this._fetchPageWithKuboOrHeliaP2P(pageCid, log, sortTypesFromMemcache, pageMaxSize);
@@ -257,10 +265,49 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
     getSortTypes() {
         return remeda.keys.strict(POST_REPLIES_SORT_TYPES);
     }
+    preFetchPage() {
+        if (!this._pages._parentComment)
+            throw Error("parent comment needs to be defined");
+        if (!this._pages._parentComment?.cid)
+            throw Error("Parent comment cid is not defined");
+    }
+    async _requestPageFromRPC(pageCid, log, sortTypes) {
+        return this._plebbit._plebbitRpcClient.getCommentRepliesPage(pageCid, this._pages._parentComment.cid, this._pages._subplebbit.address);
+    }
 }
 export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager {
     getSortTypes() {
         return remeda.keys.strict(POSTS_SORT_TYPES);
+    }
+    preFetchPage() {
+        if (!this._pages._subplebbit)
+            throw Error("Subplebbit needs to be defined");
+        if (!this._pages._subplebbit.address)
+            throw Error("Subplebbit address is not defined");
+    }
+    async _requestPageFromRPC(pageCid, log, sortTypes) {
+        return this._plebbit._plebbitRpcClient.getSubplebbitPostsPage(pageCid, this._pages._subplebbit.address);
+    }
+}
+export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
+    getSortTypes() {
+        return ["pendingApproval"];
+    }
+    async fetchPage(pageCid) {
+        return await super.fetchPage(pageCid);
+    }
+    preFetchPage() {
+        if (!this._pages._subplebbit)
+            throw Error("Subplebbit needs to be defined");
+        if (!this._pages._subplebbit.address)
+            throw Error("Subplebbit address is not defined");
+    }
+    parsePageJson(json) {
+        // Validate using the ModQueue page schema, then coerce to PageIpfs for consumers
+        return parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(json);
+    }
+    async _requestPageFromRPC(pageCid, log, sortTypes) {
+        return this._plebbit._plebbitRpcClient.getSubplebbitModQueuePage(pageCid, this._pages._subplebbit.address);
     }
 }
 //# sourceMappingURL=pages-client-manager.js.map

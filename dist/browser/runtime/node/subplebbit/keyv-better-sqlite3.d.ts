@@ -29,31 +29,31 @@ export declare class KeyvBetterSqlite3 extends EventEmitter {
     /**
      * Get a value from the store
      */
-    get<Value>(key: string): Promise<Value | undefined>;
+    get<Value>(key: string): Value | undefined;
     /**
      * Get multiple values from the store
      */
-    getMany<Value>(keys: string[]): Promise<Array<Value | undefined>>;
+    getMany<Value>(keys: string[]): Array<Value | undefined>;
     /**
      * Set a value in the store
      */
-    set(key: string, value: any, ttl?: number): Promise<any>;
+    set(key: string, value: any, ttl?: number): any;
     /**
      * Delete a value from the store
      */
-    delete(key: string): Promise<boolean>;
+    delete(key: string): boolean;
     /**
      * Delete multiple values from the store
      */
-    deleteMany(keys: string[]): Promise<boolean>;
+    deleteMany(keys: string[]): boolean;
     /**
      * Clear all values from the store
      */
-    clear(): Promise<void>;
+    clear(): void;
     /**
      * Check if a key exists in the store
      */
-    has(key: string): Promise<boolean>;
+    has(key: string): boolean;
     /**
      * Iterate over all values in the store
      * Note: Even though better-sqlite3 is synchronous, we need to keep this
@@ -63,6 +63,6 @@ export declare class KeyvBetterSqlite3 extends EventEmitter {
     /**
      * Disconnect from the store
      */
-    disconnect(): Promise<void>;
+    disconnect(): void;
 }
 export default KeyvBetterSqlite3;

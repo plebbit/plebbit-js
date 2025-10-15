@@ -109,6 +109,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 });
             }
             catch (e) {
+                // failed to load the record, maybe our node is offline or the content is unreachable
                 log.trace(`Failed to fetch CommentUpdate from path (${path}) with IPFS P2P. Trying the next timestamp range`);
                 attemptedPathsToLoadErrors[path] = e;
                 continue;
@@ -135,7 +136,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
             attemptedPathsToLoadErrors,
-            postCid: this._comment.cid
+            postCid: this._comment.cid,
+            commentDepth: this._comment.depth
         });
     }
     _shouldWeFetchCommentUpdateFromNextTimestamp(err) {
@@ -245,7 +247,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
             attemptedPathsToLoadErrors,
-            commentCid: this._comment.cid
+            commentCid: this._comment.cid,
+            commentDepth: this._comment.depth
         });
     }
     _useLoadedCommentUpdateIfNewInfo(loadedCommentUpdate, subplebbit, log) {

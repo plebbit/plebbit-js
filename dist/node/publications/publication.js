@@ -250,10 +250,10 @@ class Publication extends TypedEmitter {
             return;
         }
         const pubsubSchemas = [
-            ChallengeVerificationMessageSchema.passthrough(),
-            ChallengeMessageSchema.passthrough(),
-            ChallengeRequestMessageSchema.passthrough(),
-            ChallengeAnswerMessageSchema.passthrough()
+            ChallengeVerificationMessageSchema.loose(),
+            ChallengeMessageSchema.loose(),
+            ChallengeRequestMessageSchema.loose(),
+            ChallengeAnswerMessageSchema.loose()
         ];
         let pubsubMsgParsed;
         for (const pubsubSchema of pubsubSchemas) {

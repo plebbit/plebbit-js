@@ -1,3 +1,4 @@
+import "./zod-error-map.js";
 import polyfill from "./runtime/node/polyfill.js";
 polyfill();
 import * as PlebbitClass from "./plebbit/plebbit.js";

@@ -91,6 +91,30 @@ export function oldScore(comment) {
     assert(typeof comment.comment.timestamp === "number");
     return -comment.comment.timestamp;
 }
+export function mapModqueuePageIpfsCommentToModQueuePageJsonComment(pageComment) {
+    const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
+    if (!postCid)
+        throw Error("Failed to infer postCid from pageIpfs.comments.comment");
+    return {
+        ...pageComment.comment,
+        ...pageComment.commentUpdate,
+        signature: pageComment.comment.signature,
+        author: {
+            ...pageComment.comment.author,
+            ...pageComment.commentUpdate.author,
+            shortAddress: shortifyAddress(pageComment.comment.author.address),
+            flair: pageComment.commentUpdate?.author?.subplebbit?.flair || pageComment.comment.author.flair
+        },
+        shortCid: shortifyCid(pageComment.commentUpdate.cid),
+        shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
+        original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(pageComment.comment),
+        postCid,
+        raw: {
+            comment: pageComment.comment,
+            commentUpdate: pageComment.commentUpdate
+        }
+    };
+}
 export function mapPageIpfsCommentToPageJsonComment(pageComment) {
     const parsedPages = pageComment.commentUpdate.replies ? parsePagesIpfs(pageComment.commentUpdate.replies) : undefined;
     const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
@@ -137,7 +161,11 @@ export function mapPageIpfsCommentToPageJsonComment(pageComment) {
 }
 export function parsePageIpfs(pageIpfs) {
     const finalComments = pageIpfs.comments.map(mapPageIpfsCommentToPageJsonComment);
-    return { comments: finalComments, ...remeda.pick(pageIpfs, ["nextCid"]) };
+    return { comments: finalComments, ...remeda.omit(pageIpfs, ["comments"]) };
+}
+export function parseModQueuePageIpfs(modqueuePageIpfs) {
+    const finalComments = modqueuePageIpfs.comments.map(mapModqueuePageIpfsCommentToModQueuePageJsonComment);
+    return { comments: finalComments, ...remeda.omit(modqueuePageIpfs, ["comments"]) };
 }
 export function parsePagesIpfs(pagesRaw) {
     const keys = remeda.keys.strict(pagesRaw.pages);
@@ -154,8 +182,7 @@ export function processAllCommentsRecursively(comments, processor) {
             processAllCommentsRecursively(comment.commentUpdate.replies.pages.best.comments, processor);
 }
 // To use for both subplebbit.posts and comment.replies
-export function parseRawPages(pages, pageCreationTimestamp // to use to calculate sort pages client-side
-) {
+export function parseRawPages(pages) {
     if (!pages)
         return {
             pages: {}

@@ -11,7 +11,7 @@ export const VoteSignedPropertyNames = remeda.keys.strict(remeda.omit(CreateVote
 const votePickOptions = (remeda.mapToObj([...VoteSignedPropertyNames, "signature"], (x) => [x, true]));
 // Will be used by the sub when parsing request.publication
 export const VotePubsubMessagePublicationSchema = CreateVoteUserOptionsSchema.merge(PublicationBaseBeforeSigning)
-    .extend({ signature: JsonSignatureSchema, author: PublicationBaseBeforeSigning.shape.author.passthrough() })
+    .extend({ signature: JsonSignatureSchema, author: PublicationBaseBeforeSigning.shape.author.loose() })
     .pick(votePickOptions)
     .strict();
 export const VoteTablesRowSchema = VotePubsubMessagePublicationSchema.pick({
@@ -22,10 +22,10 @@ export const VoteTablesRowSchema = VotePubsubMessagePublicationSchema.pick({
 }).extend({
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    extraProps: z.object({}).passthrough().optional()
+    extraProps: z.looseObject({}).optional()
 });
 export const VoteChallengeRequestToEncryptSchema = CreateVoteUserOptionsSchema.shape.challengeRequest.unwrap().extend({
-    vote: VotePubsubMessagePublicationSchema.passthrough()
+    vote: VotePubsubMessagePublicationSchema.loose()
 });
 export const VotePubsubReservedFields = remeda.difference([
     ...remeda.keys.strict(VoteTablesRowSchema.shape),

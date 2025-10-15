@@ -7,18 +7,21 @@ import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
 import Database from "better-sqlite3";
+import { sha256 } from "js-sha256";
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
-import { verifyCommentIpfs } from "../../../signer/signatures.js";
-import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
+import { verifyCommentEdit, verifyCommentIpfs } from "../../../signer/signatures.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 import KeyvBetterSqlite3 from "./keyv-better-sqlite3.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { CommentEditPubsubMessagePublicationSchema } from "../../../publications/comment-edit/schema.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import { parseCommentEditsRow, parseCommentUpdateRow, parseCommentsTableRow, parsePrefixedComment, parseVoteRow } from "./db-row-parser.js";
+import { ZodError } from "zod";
+import { messages } from "../../../errors.js";
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -32,6 +35,38 @@ export class DbHandler {
         this._transactionDepth = 0;
         this._createdTables = false;
         hideClassPrivateProps(this);
+    }
+    _parsePrefixedComment(row) {
+        const parsed = parsePrefixedComment(row);
+        const comment = removeNullUndefinedValues(this._spreadExtraProps(parsed.comment));
+        const commentUpdate = removeNullUndefinedValues(this._spreadExtraProps(parsed.commentUpdate));
+        return {
+            comment,
+            commentUpdate,
+            extras: parsed.extras
+        };
+    }
+    _parseCommentsTableRow(row) {
+        const parsed = parseCommentsTableRow(row);
+        return removeNullUndefinedValues(parsed);
+    }
+    _parseCommentUpdatesRow(row) {
+        const parsed = parseCommentUpdateRow(row);
+        return removeNullUndefinedValues(parsed);
+    }
+    _parseCommentEditsRow(row) {
+        const parsedRow = parseCommentEditsRow(row);
+        const parsed = removeNullUndefinedValues(parsedRow);
+        if (typeof parsed.id === "string") {
+            const numericId = Number(parsed.id);
+            if (!Number.isNaN(numericId))
+                parsed.id = numericId;
+        }
+        return parsed;
+    }
+    _parseVoteRow(row) {
+        const parsed = parseVoteRow(row);
+        return removeNullUndefinedValues(parsed);
     }
     async initDbConfigIfNeeded() {
         if (!this._dbConfig)
@@ -77,9 +112,9 @@ export class DbHandler {
     getDbConfig() {
         return this._dbConfig;
     }
-    async keyvGet(key) {
+    keyvGet(key) {
         try {
-            const res = await this._keyv.get(key);
+            const res = this._keyv.get(key);
             return res;
         }
         catch (e) {
@@ -87,23 +122,23 @@ export class DbHandler {
             throw e;
         }
     }
-    async keyvSet(key, value, ttl) {
+    keyvSet(key, value, ttl) {
         return this._keyv.set(key, value, ttl);
     }
-    async keyvDelete(key) {
+    keyvDelete(key) {
         return this._keyv.delete(key);
     }
-    async keyvHas(key) {
+    keyvHas(key) {
         return this._keyv.has(key);
     }
-    async destoryConnection() {
+    destoryConnection() {
         const log = Logger("plebbit-js:local-subplebbit:dbHandler:destroyConnection");
         if (this._db && this._db.open) {
             this._db.exec("PRAGMA checkpoint"); // write all wal to disk
             this._db.close();
         }
         if (this._keyv)
-            await this._keyv.disconnect();
+            this._keyv.disconnect();
         //@ts-expect-error
         this._db = this._keyv = undefined;
         this._transactionDepth = 0;
@@ -159,27 +194,6 @@ export class DbHandler {
             log.trace(`Rolled back all transactions. Initial depth was ${initialDepth}, now ${this._transactionDepth}.`);
         }
     }
-    _parseJsonFields(record, jsonFields) {
-        for (const field of jsonFields) {
-            if (record[field] !== null && record[field] !== undefined && typeof record[field] === "string") {
-                try {
-                    record[field] = JSON.parse(record[field]);
-                }
-                catch (e) {
-                    //@ts-expect-error
-                    e.details = { ...e.details, key: field, value: record[field], jsonFields };
-                    throw e;
-                }
-            }
-        }
-        return record;
-    }
-    _intToBoolean(record, booleanFields) {
-        for (const field of booleanFields)
-            if (typeof record[field] === "number")
-                record[field] = Boolean(record[field]);
-        return record;
-    }
     _createCommentsTable(tableName) {
         this._db.exec(`
             CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -204,6 +218,7 @@ export class DbHandler {
                 linkHtmlTagName TEXT NULLABLE,
                 flair TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
+                pendingApproval INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 extraProps TEXT NULLABLE, -- JSON
                 protocolVersion TEXT NOT NULL,
@@ -226,6 +241,7 @@ export class DbHandler {
                 pinned INTEGER NULLABLE, -- BOOLEAN (0/1)
                 locked INTEGER NULLABLE, -- BOOLEAN (0/1)
                 removed INTEGER NULLABLE, -- BOOLEAN (0/1)
+                approved INTEGER NULLABLE, -- BOOLEAN (0/1)
                 reason TEXT NULLABLE,
                 updatedAt INTEGER NOT NULL CHECK(updatedAt > 0), 
                 protocolVersion TEXT NOT NULL,
@@ -235,7 +251,6 @@ export class DbHandler {
                 lastChildCid TEXT NULLABLE,
                 lastReplyTimestamp INTEGER NULLABLE, 
                 postUpdatesBucket INTEGER NULLABLE,
-                postCommentUpdateCid TEXT NULLABLE,
                 publishedToPostUpdatesMFS INTEGER NOT NULL, -- BOOLEAN (0/1)
                 insertedAt INTEGER NOT NULL 
             )
@@ -320,7 +335,7 @@ export class DbHandler {
         const dbExistsAlready = fs.existsSync(dbPath);
         if (needToMigrate) {
             if (dbExistsAlready && currentDbVersion > 0) {
-                await this.destoryConnection();
+                this.destoryConnection();
                 backupDbPath = path.join(path.dirname(dbPath), ".backup_before_migration", `${path.basename(dbPath)}.${currentDbVersion}.${timestamp()}`);
                 log(`Copying db ${path.basename(dbPath)} to ${backupDbPath} before migration`);
                 if (!fs.existsSync(path.dirname(backupDbPath)))
@@ -336,9 +351,6 @@ export class DbHandler {
             for (const tableName of tablesToDrop)
                 this._db.exec(`DROP TABLE IF EXISTS ${tableName}`);
             this._db.exec(`DROP TABLE IF EXISTS ${TABLES.COMMENT_UPDATES}`);
-            if (currentDbVersion <= 16 && this._tableExists(TABLES.COMMENT_EDITS)) {
-                await this._moveCommentEditsToModAuthorTables();
-            }
         }
         const createTableFunctions = [
             this._createCommentsTable.bind(this),
@@ -366,12 +378,14 @@ export class DbHandler {
             }
         }
         if (needToMigrate) {
-            if (currentDbVersion <= 15)
+            if (currentDbVersion <= 15) {
                 await this._purgeCommentsWithInvalidSchemaOrSignature();
+                await this._purgeCommentEditsWithInvalidSchemaOrSignature();
+            }
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
             await this.initDbIfNeeded(); // to init keyv
-            const internalState = (await this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
+            const internalState = this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
                 ? (await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
                 : undefined;
             if (internalState) {
@@ -434,6 +448,10 @@ export class DbHandler {
                     if (!commentToBeEdited)
                         throw Error(`Failed to compute isAuthorEdit for ${srcRecord.commentCid}`);
                     srcRecord["isAuthorEdit"] = parsedSig.publicKey === commentToBeEdited.signature.publicKey;
+                    const commentEditFieldsNotIncludedAnymore = ["removed"];
+                    const extraProps = removeNullUndefinedValues(remeda.pick(srcRecord, commentEditFieldsNotIncludedAnymore));
+                    if (Object.keys(extraProps).length > 0)
+                        srcRecord.extraProps = { ...srcRecord.extraProps, ...extraProps };
                 }
                 if (currentDbVersion <= 12 && srcRecord["authorAddress"] && srcRecord["signature"]) {
                     const sig = typeof srcRecord.signature === "string" ? JSON.parse(srcRecord.signature) : srcRecord.signature;
@@ -467,13 +485,60 @@ export class DbHandler {
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
+    async _purgeCommentEditsWithInvalidSchemaOrSignature() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentEditsWithInvalidSchemaOrSignature");
+        const commentEditsOrderedByASC = this._db
+            .prepare(`SELECT rowid as rowid, * FROM ${TABLES.COMMENT_EDITS} ORDER BY rowid ASC`)
+            .all();
+        for (const rawCommentEditRecord of commentEditsOrderedByASC) {
+            let commentEditRecord;
+            try {
+                commentEditRecord = this._parseCommentEditsRow(rawCommentEditRecord);
+            }
+            catch (error) {
+                if (error instanceof ZodError) {
+                    log.error(`Comment edit (${rawCommentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB failed to parse and will be purged from comment edits table.`, error);
+                    this._deleteCommentEditRow(rawCommentEditRecord.rowid);
+                    continue;
+                }
+                throw error;
+            }
+            try {
+                CommentEditPubsubMessagePublicationSchema.strip().parse(commentEditRecord);
+            }
+            catch (e) {
+                log.error(`Comment edit (${commentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB has an invalid schema and will be purged from comment edits table.`, e);
+                this._deleteCommentEditRow(rawCommentEditRecord.rowid);
+                continue;
+            }
+            const commentEditPubsub = remeda.pick(commentEditRecord, [
+                ...commentEditRecord.signature.signedPropertyNames,
+                "signature"
+            ]);
+            const validRes = await verifyCommentEdit(commentEditPubsub, false, this._subplebbit._clientsManager, false);
+            if (!validRes.valid && validRes.reason === messages.ERR_SIGNATURE_IS_INVALID) {
+                log.error(`Comment edit (${commentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB has invalid signature due to ${validRes.reason}. Removing comment edit entry.`);
+                this._deleteCommentEditRow(rawCommentEditRecord.rowid);
+            }
+        }
+    }
     async _purgeCommentsWithInvalidSchemaOrSignature() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentsWithInvalidSchema");
-        const comments = this.queryAllCommentsOrderedByIdAsc();
-        for (const commentRecord of comments) {
-            // comments are already parsed here
+        const commentsOrderedByASC = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all();
+        for (const rawCommentRecord of commentsOrderedByASC) {
+            let commentRecord;
             try {
-                CommentIpfsSchema.strip().parse(commentRecord); // Validate against the already parsed object
+                commentRecord = this._parseCommentsTableRow(rawCommentRecord);
+            }
+            catch (error) {
+                if (error instanceof ZodError) {
+                    this.purgeComment(rawCommentRecord.cid);
+                    continue;
+                }
+                throw error;
+            }
+            try {
+                CommentIpfsSchema.strip().parse(commentRecord);
             }
             catch (e) {
                 log.error(`Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged.`, e);
@@ -481,7 +546,7 @@ export class DbHandler {
                 continue;
             }
             const validRes = await verifyCommentIpfs({
-                comment: { ...commentRecord, ...commentRecord.extraProps }, // commentRecord is already parsed
+                comment: { ...commentRecord, ...commentRecord.extraProps },
                 resolveAuthorAddresses: false,
                 calculatedCommentCid: commentRecord.cid,
                 clientsManager: this._subplebbit._clientsManager,
@@ -493,87 +558,14 @@ export class DbHandler {
             }
         }
     }
-    async _moveCommentEditsToModAuthorTables() {
-        // Prior to db version 17, all comment edits, author and mod's were in the same table
-        // code below will split them to their separate tables
-        this._createCommentModerationsTable(TABLES.COMMENT_MODERATIONS);
-        const allCommentEditsRaw = this._db.prepare(`SELECT rowid, * FROM ${TABLES.COMMENT_EDITS} ORDER BY rowid ASC`).all();
-        const allCommentEdits = allCommentEditsRaw.map((r) => {
-            let parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            return this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit"]);
-        });
-        const commentModerationSchemaKeys = remeda.keys.strict(ModeratorOptionsSchema.shape);
-        const modEditRowIds = [];
-        const moderationsToInsert = [];
-        for (const commentEdit of allCommentEdits) {
-            const commentToBeEdited = this.queryComment(commentEdit.commentCid);
-            if (!commentToBeEdited) {
-                throw Error(`Comment ${commentEdit.commentCid} not found while migrating comment edits.`);
-            }
-            const rowid = commentEdit.rowid || commentEdit.id;
-            if (typeof rowid !== "number")
-                throw Error("rowid should be part of the query results");
-            const editHasBeenSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
-            if (editHasBeenSignedByOriginalAuthor)
-                continue; // we're only interested in mod edits
-            const modSignerAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
-            const commentModeration = removeNullUndefinedValues({
-                ...remeda.pick(commentEdit, commentModerationSchemaKeys),
-                ...(commentEdit.commentAuthor && { author: JSON.parse(commentEdit.commentAuthor) })
-            });
-            moderationsToInsert.push(this._processRecordsForDbBeforeInsert([
-                {
-                    commentCid: commentEdit.commentCid,
-                    author: commentEdit.author, //This is the moderator's author object
-                    signature: commentEdit.signature, // Moderator's signature
-                    modSignerAddress,
-                    protocolVersion: commentEdit.protocolVersion,
-                    subplebbitAddress: commentEdit.subplebbitAddress,
-                    timestamp: commentEdit.timestamp,
-                    commentModeration: commentModeration, // The specific moderation actions
-                    insertedAt: commentEdit.insertedAt,
-                    extraProps: commentEdit.extraProps
-                }
-            ])[0]);
-            modEditRowIds.push(rowid);
-        }
-        if (moderationsToInsert.length > 0) {
-            const stmt = this._db.prepare(`
-                INSERT INTO ${TABLES.COMMENT_MODERATIONS} 
-                (commentCid, author, signature, modSignerAddress, protocolVersion, subplebbitAddress, timestamp, commentModeration, insertedAt, extraProps) 
-                VALUES (@commentCid, @author, @signature, @modSignerAddress, @protocolVersion, @subplebbitAddress, @timestamp, @commentModeration, @insertedAt, @extraProps)
-            `);
-            const insertMany = this._db.transaction((items) => {
-                for (const item of items)
-                    stmt.run(item);
-            });
-            insertMany(moderationsToInsert);
-        }
-        if (modEditRowIds.length > 0) {
-            const placeholders = modEditRowIds.map(() => "?").join(",");
-            // Update the query to use explicit rowids
-            const deleteRes = this._db
-                .prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid IN (${placeholders})
-                         OR (removed IS NOT NULL OR pinned IS NOT NULL OR locked IS NOT NULL OR commentAuthor IS NOT NULL)`)
-                .run(...modEditRowIds);
-            // Check if deletion was successful
-            if (deleteRes.changes < modEditRowIds.length) {
-                // Get list of rowids that actually exist for better error reporting
-                const existingRowids = this._db
-                    .prepare(`SELECT rowid FROM ${TABLES.COMMENT_EDITS} WHERE rowid IN (${placeholders})`)
-                    .all(...modEditRowIds)
-                    .map((row) => row.rowid);
-                const error = `Failed to delete ${modEditRowIds.length} comment edits. Only deleted ${deleteRes.changes}. ` +
-                    `Missing rowids likely don't exist in the database. ` +
-                    `Attempted: [${modEditRowIds.join(", ")}], Found existing: [${existingRowids.join(", ")}]`;
-                throw Error(error);
-            }
-        }
-    }
     deleteVote(authorSignerAddress, commentCid) {
         this._db
             .prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ? AND authorSignerAddress = ?`)
             .run(commentCid, authorSignerAddress);
+    }
+    _deleteCommentEditRow(rowid) {
+        const deleteResult = this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid = ?`).run(rowid);
+        return deleteResult.changes > 0;
     }
     insertVotes(votes) {
         if (votes.length === 0)
@@ -610,8 +602,8 @@ export class DbHandler {
         const columnNames = this._getColumnNames(TABLES.COMMENTS);
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENTS} 
-            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, nsfw, extraProps, protocolVersion, insertedAt) 
-            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @nsfw, @extraProps, @protocolVersion, @insertedAt)
+            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, pendingApproval, nsfw, extraProps, protocolVersion, insertedAt) 
+            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @pendingApproval, @nsfw, @extraProps, @protocolVersion, @insertedAt)
         `);
         // Create default object with null values for all columns
         const defaults = remeda.mapToObj(columnNames, (column) => [column, null]);
@@ -630,15 +622,15 @@ export class DbHandler {
         const columnNames = this._getColumnNames(TABLES.COMMENT_UPDATES);
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_UPDATES} 
-            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, flair, spoiler, nsfw, pinned, locked, removed, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, postCommentUpdateCid, publishedToPostUpdatesMFS, insertedAt) 
-            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @postCommentUpdateCid, @publishedToPostUpdatesMFS, @insertedAt)
+            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, flair, spoiler, nsfw, pinned, locked, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt) 
+            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
             ON CONFLICT(cid) DO UPDATE SET
                 edit = excluded.edit, upvoteCount = excluded.upvoteCount, downvoteCount = excluded.downvoteCount, replyCount = excluded.replyCount, childCount = excluded.childCount,
                 flair = excluded.flair, spoiler = excluded.spoiler, nsfw = excluded.nsfw, pinned = excluded.pinned, locked = excluded.locked,
-                removed = excluded.removed, reason = excluded.reason, updatedAt = excluded.updatedAt, protocolVersion = excluded.protocolVersion,
+                removed = excluded.removed, approved = excluded.approved, reason = excluded.reason, updatedAt = excluded.updatedAt, protocolVersion = excluded.protocolVersion,
                 signature = excluded.signature, author = excluded.author, replies = excluded.replies, lastChildCid = excluded.lastChildCid,
                 lastReplyTimestamp = excluded.lastReplyTimestamp, postUpdatesBucket = excluded.postUpdatesBucket,
-                postCommentUpdateCid = excluded.postCommentUpdateCid, publishedToPostUpdatesMFS = excluded.publishedToPostUpdatesMFS,
+                publishedToPostUpdatesMFS = excluded.publishedToPostUpdatesMFS,
                 insertedAt = excluded.insertedAt
         `);
         const defaults = remeda.mapToObj(columnNames, (column) => [column, null]);
@@ -702,35 +694,58 @@ export class DbHandler {
             .get(commentCid, authorSignerAddress);
         if (!row)
             return undefined;
-        const parsed = this._parseJsonFields(row, ["extraProps"]);
-        return removeNullUndefinedValues(parsed);
+        return this._parseVoteRow(row);
+    }
+    _approvedClause(alias) {
+        return `(${alias}.approved IS NULL OR ${alias}.approved = 1 OR ${alias}.approved IS TRUE)`;
+    }
+    _removedClause(alias) {
+        return `(${alias}.removed IS NOT 1 AND ${alias}.removed IS NOT TRUE)`;
+    }
+    _deletedFromUpdatesClause(alias) {
+        return `(json_extract(${alias}.edit, '$.deleted') IS NULL OR json_extract(${alias}.edit, '$.deleted') != 1)`;
+    }
+    _deletedFromLookupClause(alias) {
+        return `(${alias}.deleted_flag IS NULL OR ${alias}.deleted_flag != 1)`;
+    }
+    _pendingApprovalClause(alias) {
+        return `(${alias}.pendingApproval IS NULL OR ${alias}.pendingApproval != 1)`;
     }
     _buildPageQueryParts(options) {
-        const whereClauses = [`${TABLES.COMMENTS}.parentCid = ?`];
+        const commentsTable = TABLES.COMMENTS;
+        const commentUpdatesTable = TABLES.COMMENT_UPDATES;
+        const whereClauses = [`${commentsTable}.parentCid = ?`];
         const params = [options.parentCid];
         if (options.excludeCommentsWithDifferentSubAddress) {
-            whereClauses.push(`${TABLES.COMMENTS}.subplebbitAddress = ?`);
+            whereClauses.push(`${commentsTable}.subplebbitAddress = ?`);
             params.push(this._subplebbit.address);
         }
-        if (options.excludeRemovedComments) {
-            whereClauses.push(`(${TABLES.COMMENT_UPDATES}.removed IS NOT 1 AND ${TABLES.COMMENT_UPDATES}.removed IS NOT TRUE)`);
-        }
-        if (options.excludeDeletedComments) {
-            whereClauses.push(`(json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') IS NULL OR json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') != 1)`);
-        }
+        if (options.excludeCommentPendingApproval)
+            whereClauses.push(this._pendingApprovalClause(commentsTable));
+        if (options.excludeRemovedComments)
+            whereClauses.push(this._removedClause(commentUpdatesTable));
+        if (options.excludeDeletedComments)
+            whereClauses.push(this._deletedFromUpdatesClause(commentUpdatesTable));
+        if (options.excludeCommentWithApprovedFalse)
+            whereClauses.push(this._approvedClause(commentUpdatesTable));
         return { whereClauses, params };
     }
     queryMaximumTimestampUnderComment(comment) {
         const query = `
             WITH RECURSIVE descendants AS (
                 SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
                 WHERE c.parentCid = ?
+                  AND COALESCE(cu.approved, 1) != 0
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
                 UNION ALL
                 SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                 LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
                 JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
                 WHERE c.subplebbitAddress = ? AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                  AND COALESCE(cu.approved, 1) != 0
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             )
             SELECT MAX(timestamp) AS max_timestamp FROM descendants
         `;
@@ -754,33 +769,8 @@ export class DbHandler {
         `;
         const commentsRaw = this._db.prepare(queryStr).all(...params);
         return commentsRaw.map((commentRaw) => {
-            if (commentRaw["commentIpfs_depth"] === 0)
-                delete commentRaw["commentIpfs_postCid"];
-            const commentIpfsData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentIpfs_"));
-            const commentUpdateData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentUpdate_"));
-            const parsedCommentIpfs = this._spreadExtraProps(this._parseJsonFields(this._intToBoolean(commentIpfsData, ["commentIpfs_spoiler", "commentIpfs_nsfw"]), [
-                "commentIpfs_author",
-                "commentIpfs_signature",
-                "commentIpfs_flair",
-                "commentIpfs_extraProps"
-            ]));
-            const parsedCommentUpdate = this._spreadExtraProps(this._parseJsonFields(this._intToBoolean(commentUpdateData, [
-                "commentUpdate_spoiler",
-                "commentUpdate_nsfw",
-                "commentUpdate_pinned",
-                "commentUpdate_locked",
-                "commentUpdate_removed"
-            ]), [
-                "commentUpdate_edit",
-                "commentUpdate_flair",
-                "commentUpdate_signature",
-                "commentUpdate_author",
-                "commentUpdate_replies"
-            ]));
-            return {
-                comment: removeNullUndefinedValues(remeda.mapKeys(remeda.omit(parsedCommentIpfs, ["commentIpfs_extraProps"]), (k) => k.replace("commentIpfs_", ""))),
-                commentUpdate: removeNullUndefinedValues(remeda.mapKeys(parsedCommentUpdate, (k) => k.replace("commentUpdate_", "")))
-            };
+            const { comment, commentUpdate } = this._parsePrefixedComment(commentRaw);
+            return { comment, commentUpdate };
         });
     }
     queryFlattenedPageReplies(options) {
@@ -794,22 +784,34 @@ export class DbHandler {
         let baseWhereClausesStr = "";
         let recursiveWhereClausesStr = "";
         const params = [options.parentCid];
-        const pageQueryParts = this._buildPageQueryParts(options); // parentCid is handled by initial CTE condition.
         const baseFilterClauses = [];
         const recursiveFilterClauses = [];
+        const commentsAlias = "comments";
+        const commentUpdatesAlias = "c_updates";
+        const deletedLookupAlias = "d";
         if (options.excludeCommentsWithDifferentSubAddress) {
-            baseFilterClauses.push(`comments.subplebbitAddress = ?`);
+            baseFilterClauses.push(`${commentsAlias}.subplebbitAddress = ?`);
             params.push(this._subplebbit.address);
-            recursiveFilterClauses.push(`comments.subplebbitAddress = ?`);
+            recursiveFilterClauses.push(`${commentsAlias}.subplebbitAddress = ?`);
             params.push(this._subplebbit.address);
         }
+        if (options.excludeCommentPendingApproval) {
+            const clause = this._pendingApprovalClause(commentsAlias);
+            baseFilterClauses.push(clause);
+            recursiveFilterClauses.push(clause);
+        }
         if (options.excludeRemovedComments) {
-            const clause = `(c_updates.removed IS NOT 1 AND c_updates.removed IS NOT TRUE)`;
+            const clause = this._removedClause(commentUpdatesAlias);
             baseFilterClauses.push(clause);
             recursiveFilterClauses.push(clause);
         }
         if (options.excludeDeletedComments) {
-            const clause = `(d.deleted_flag IS NULL OR d.deleted_flag != 1)`;
+            const clause = this._deletedFromLookupClause(deletedLookupAlias);
+            baseFilterClauses.push(clause);
+            recursiveFilterClauses.push(clause);
+        }
+        if (options.excludeCommentWithApprovedFalse) {
+            const clause = this._approvedClause(commentUpdatesAlias);
             baseFilterClauses.push(clause);
             recursiveFilterClauses.push(clause);
         }
@@ -835,37 +837,15 @@ export class DbHandler {
         `;
         const commentsRaw = this._db.prepare(query).all(...params);
         return commentsRaw.map((commentRaw) => {
-            if (commentRaw["commentIpfs_depth"] === 0)
-                delete commentRaw["commentIpfs_postCid"];
-            const commentIpfsData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentIpfs_"));
-            const commentUpdateData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentUpdate_"));
-            const parsedCommentIpfs = this._spreadExtraProps(this._parseJsonFields(this._intToBoolean(commentIpfsData, ["commentIpfs_spoiler", "commentIpfs_nsfw"]), ["commentIpfs_author", "commentIpfs_signature", "commentIpfs_flair", "commentIpfs_extraProps"]));
-            const parsedCommentUpdate = this._spreadExtraProps(this._parseJsonFields(this._intToBoolean(commentUpdateData, [
-                "commentUpdate_spoiler",
-                "commentUpdate_nsfw",
-                "commentUpdate_pinned",
-                "commentUpdate_locked",
-                "commentUpdate_removed"
-            ]), [
-                "commentUpdate_edit",
-                "commentUpdate_flair",
-                "commentUpdate_signature",
-                "commentUpdate_author",
-                "commentUpdate_replies"
-            ]));
-            return {
-                comment: removeNullUndefinedValues(remeda.mapKeys(remeda.omit(parsedCommentIpfs, ["commentIpfs_extraProps"]), (k) => k.replace("commentIpfs_", ""))),
-                commentUpdate: removeNullUndefinedValues(remeda.mapKeys(parsedCommentUpdate, (k) => k.replace("commentUpdate_", "")))
-            };
+            const { comment, commentUpdate } = this._parsePrefixedComment(commentRaw);
+            return { comment, commentUpdate };
         });
     }
     queryStoredCommentUpdate(comment) {
         const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).get(comment.cid);
         if (!row)
             return undefined;
-        const parsed = this._parseJsonFields(row, ["edit", "flair", "signature", "author", "replies"]);
-        const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pinned", "locked", "removed", "publishedToPostUpdatesMFS"]);
-        return removeNullUndefinedValues(result);
+        return this._parseCommentUpdatesRow(row);
     }
     hasCommentWithSignatureEncoded(signatureEncoded) {
         const row = this._db
@@ -897,37 +877,72 @@ export class DbHandler {
         `;
         return this._db.prepare(query).all(rootComment.parentCid);
     }
+    queryCommentsPendingApproval() {
+        const results = this._db
+            .prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid DESC`)
+            .all();
+        return results.map((r) => this._parseCommentsTableRow(r));
+    }
     queryCommentsToBeUpdated() {
         const query = `
             WITH RECURSIVE 
             direct_updates AS (
                 SELECT c.* FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE)
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
                 UNION
                 SELECT c.* FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.updatedAt - 1)
-                   OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.updatedAt - 1)
-                   OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.updatedAt - 1)
-                   OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.updatedAt - 1)
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                AND (
+                    EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.updatedAt - 1)
+                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.updatedAt - 1)
+                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.updatedAt - 1)
+                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.updatedAt - 1)
+                  )
             ),
             authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM direct_updates),
             parent_chain AS (
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid WHERE p.cid IS NOT NULL
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
                 UNION
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid WHERE p.cid IS NOT NULL
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
+            ),
+            child_counts AS (
+                SELECT 
+                    c.parentCid AS cid,
+                    COUNT(*) AS actual_child_count
+                FROM ${TABLES.COMMENTS} c
+                JOIN ${TABLES.COMMENT_UPDATES} cu_child ON c.cid = cu_child.cid
+                LEFT JOIN (
+                    SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
+                ) deleted_lookup ON deleted_lookup.cid = c.cid
+                WHERE c.parentCid IS NOT NULL
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND (cu_child.removed IS NOT 1 AND cu_child.removed IS NOT TRUE)
+                  AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
+                GROUP BY c.parentCid
+            ),
+            stale_child_counts AS (
+                SELECT parent.cid
+                FROM ${TABLES.COMMENTS} parent
+                JOIN ${TABLES.COMMENT_UPDATES} cu_parent ON parent.cid = cu_parent.cid
+                LEFT JOIN child_counts cc ON cc.cid = parent.cid
+                WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
+                  AND COALESCE(cc.actual_child_count, 0) != COALESCE(cu_parent.childCount, 0)
             ),
             all_updates AS (
                 SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                UNION SELECT cid FROM stale_child_counts
             )
-            SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid ORDER BY c.rowid
+            SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
+            WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+            ORDER BY c.rowid
         `;
         const results = this._db.prepare(query).all();
-        return results.map((r) => {
-            const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]);
-            return removeNullUndefinedValues(result);
-        });
+        return results.map((r) => this._parseCommentsTableRow(r));
     }
     querySubplebbitStats() {
         const now = timestamp(); // All timestamps are in seconds
@@ -986,19 +1001,27 @@ export class DbHandler {
     }
     queryCommentsUnderComment(parentCid) {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(parentCid);
-        return results.map((r) => {
-            const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]);
-            return removeNullUndefinedValues(result);
-        });
+        return results.map((r) => this._parseCommentsTableRow(r));
+    }
+    queryCombinedHashOfPendingComments() {
+        const rows = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC`).all();
+        const concatenated = rows.map((r) => r.cid).join("");
+        const hash = sha256(concatenated);
+        return hash;
     }
     queryComment(cid) {
         const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid);
         if (!row)
             return undefined;
-        const parsed = this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]);
-        const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]);
-        return removeNullUndefinedValues(result);
+        return this._parseCommentsTableRow(row);
+    }
+    _queryCommentAuthorAndParentWithoutParsing(cid) {
+        const row = this._db.prepare(`SELECT authorSignerAddress, parentCid FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid);
+        if (!row)
+            return undefined;
+        const authorSignerAddress = typeof row.authorSignerAddress === "string" ? row.authorSignerAddress : undefined;
+        const parentCid = typeof row.parentCid === "string" ? row.parentCid : row.parentCid === null ? null : undefined;
+        return { authorSignerAddress, parentCid };
     }
     _queryCommentCounts(cid) {
         const query = `
@@ -1040,7 +1063,9 @@ export class DbHandler {
                 SELECT c.cid, c.timestamp, cu.postUpdatesBucket AS current_bucket,
                     CASE ${caseClauses} ELSE ${maxBucket} END AS new_bucket
                 FROM ${TABLES.COMMENTS} as c INNER JOIN ${TABLES.COMMENT_UPDATES} as cu ON c.cid = cu.cid
-                WHERE c.subplebbitAddress = ? AND cu.postUpdatesBucket IS NOT NULL AND cu.postUpdatesBucket != ?
+                WHERE c.subplebbitAddress = ?
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND cu.postUpdatesBucket IS NOT NULL AND cu.postUpdatesBucket != ?
             ) SELECT cid, timestamp, current_bucket AS currentBucket, new_bucket AS newBucket
             FROM post_data WHERE current_bucket != new_bucket
         `;
@@ -1056,16 +1081,87 @@ export class DbHandler {
             .get(cid, authorSignerAddress);
         if (!row)
             return undefined;
-        const parsedResult = this._spreadExtraProps(this._intToBoolean(this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]), [
-            "deleted",
-            "spoiler",
-            "nsfw",
-            "isAuthorEdit"
-        ]));
-        const parsed = removeNullUndefinedValues(parsedResult);
+        const parsed = this._spreadExtraProps(this._parseCommentEditsRow(row));
         const signedKeys = parsed.signature.signedPropertyNames;
         const commentEditFields = remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape);
         return remeda.pick(parsed, ["signature", ...signedKeys, ...commentEditFields]);
+    }
+    removeCommentFromPendingApproval(comment) {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:removeCommentFromPendingApproval");
+        const stmt = this._db.prepare(`UPDATE ${TABLES.COMMENTS} SET pendingApproval = 0 WHERE cid = ?`);
+        const res = stmt.run(comment.cid);
+        log.trace(`Removed pendingApproval for cid=${comment.cid}, changes=${res.changes}`);
+    }
+    // Remove oldest comments pending approval when exceeding the configured limit
+    removeOldestPendingCommentIfWeHitMaxPendingCount(maxPendingApprovalCount) {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:removeOldestPendingCommentIfWeHitMaxPendingCount");
+        // Assume maxPendingApprovalCount is a valid integer > 0
+        try {
+            const { cnt } = this._db.prepare(`SELECT COUNT(1) as cnt FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1`).get();
+            if (cnt <= maxPendingApprovalCount)
+                return;
+            const toRemove = cnt - maxPendingApprovalCount;
+            const oldest = this._db
+                .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC LIMIT ?`)
+                .all(toRemove);
+            if (oldest.length === 0)
+                return;
+            log(`Evicting ${oldest.length} oldest pending comments (count=${cnt}, limit=${maxPendingApprovalCount})`);
+            this.createTransaction();
+            try {
+                for (const { cid } of oldest)
+                    this.purgeComment(cid);
+                this.commitTransaction();
+            }
+            catch (e) {
+                this.rollbackTransaction();
+                throw e;
+            }
+        }
+        catch (e) {
+            log.error("Failed to enforce maxPendingApprovalCount", e);
+        }
+    }
+    purgeDisapprovedCommentsOlderThan(retentionSeconds) {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeDisapprovedCommentsOlderThan");
+        if (!Number.isFinite(retentionSeconds) || retentionSeconds <= 0)
+            return;
+        const now = timestamp();
+        const cutoffTimestamp = now - retentionSeconds;
+        const rows = this._db
+            .prepare(`
+            WITH first_disapproved AS (
+                SELECT commentCid AS cid,
+                       MIN(timestamp) AS first_disapproved_at
+                FROM ${TABLES.COMMENT_MODERATIONS}
+                WHERE json_type(commentModeration, '$.approved') = 'false'
+                GROUP BY commentCid
+            )
+            SELECT c.cid AS cid,
+                   c.parentCid AS parentCid,
+                   COALESCE(fd.first_disapproved_at, cu.updatedAt) AS firstDisapprovedAt,
+                   cu.postUpdatesBucket AS postUpdatesBucket
+            FROM ${TABLES.COMMENT_UPDATES} cu
+            INNER JOIN ${TABLES.COMMENTS} c ON c.cid = cu.cid
+            LEFT JOIN first_disapproved fd ON fd.cid = cu.cid
+            WHERE (COALESCE(cu.approved, 1) = 0 OR cu.approved = 'false')
+              AND COALESCE(fd.first_disapproved_at, cu.updatedAt) <= ?
+        `)
+            .all(cutoffTimestamp);
+        if (rows.length === 0)
+            return;
+        log(`Purging ${rows.length} disapproved comments older than ${retentionSeconds} seconds (cutoff ${cutoffTimestamp}).`);
+        const purgedDetails = [];
+        for (const row of rows) {
+            const purgedCids = this.purgeComment(row.cid);
+            purgedDetails.push({
+                cid: row.cid,
+                parentCid: row.parentCid,
+                postUpdatesBucket: row.postUpdatesBucket || undefined,
+                purgedCids
+            });
+        }
+        return purgedDetails;
     }
     _queryLatestModeratorReason(comment) {
         const result = this._db
@@ -1127,10 +1223,27 @@ export class DbHandler {
     }
     _queryLastChildCidAndLastReplyTimestamp(comment) {
         const lastChildCid = this._db
-            .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ? ORDER BY rowid DESC LIMIT 1`)
+            .prepare(`SELECT c.cid FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.parentCid = ?
+                   AND COALESCE(cu.approved, 1) != 0
+                   AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                 ORDER BY c.rowid DESC
+                 LIMIT 1`)
             .get(comment.cid);
         const lastReplyTimestamp = this.queryMaximumTimestampUnderComment(comment);
         return { lastChildCid: lastChildCid?.cid, lastReplyTimestamp };
+    }
+    _queryIsCommentApproved(comment) {
+        const result = this._db
+            .prepare(`
+            SELECT json_extract(commentModeration, '$.approved') AS approved FROM ${TABLES.COMMENT_MODERATIONS}
+            WHERE commentCid = ? AND json_extract(commentModeration, '$.approved') IS NOT NULL ORDER BY rowid DESC LIMIT 1
+        `)
+            .get(comment.cid);
+        if (!result || result.approved === null)
+            return undefined;
+        return { approved: Boolean(result.approved) };
     }
     queryCalculatedCommentUpdate(comment) {
         const authorSubplebbit = this.querySubplebbitAuthor(comment.authorSignerAddress);
@@ -1140,32 +1253,47 @@ export class DbHandler {
         const commentFlags = this.queryCommentFlagsSetByMod(comment.cid);
         const commentModFlair = this._queryModCommentFlair(comment);
         const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
+        const isThisCommentApproved = this._queryIsCommentApproved(comment);
+        const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // automatically add removed:true if approved=false. Will be overridden if there's commentFlags.removed
         if (!authorSubplebbit)
             throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
+            ...(removedFromApproved ? removedFromApproved : undefined),
             cid: comment.cid,
-            edit: authorEdit,
             ...commentUpdateCounts,
             flair: commentModFlair?.flair || authorEdit?.flair,
             ...commentFlags,
             reason: moderatorReason?.reason,
             author: { subplebbit: authorSubplebbit },
-            ...lastChildAndLastReplyTimestamp
+            ...lastChildAndLastReplyTimestamp,
+            ...(authorEdit ? { edit: authorEdit } : undefined),
+            ...(isThisCommentApproved ? { approved: isThisCommentApproved.approved } : undefined)
         };
     }
     queryLatestPostCid() {
-        return this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE depth = 0 ORDER BY rowid DESC LIMIT 1`).get();
+        return this._db
+            .prepare(`SELECT c.cid FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.depth = 0
+                   AND c.pendingApproval IS NOT 1
+                   AND COALESCE(cu.approved, 1) != 0
+                 ORDER BY c.rowid DESC
+                 LIMIT 1`)
+            .get();
     }
     queryLatestCommentCid() {
-        return this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} ORDER BY rowid DESC LIMIT 1`).get();
+        return this._db
+            .prepare(`SELECT c.cid FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.pendingApproval IS NOT 1
+                   AND COALESCE(cu.approved, 1) != 0
+                 ORDER BY c.rowid DESC
+                 LIMIT 1`)
+            .get();
     }
     queryAllCommentsOrderedByIdAsc() {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all();
-        return results.map((r) => {
-            const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]);
-            return removeNullUndefinedValues(result);
-        });
+        return results.map((r) => this._parseCommentsTableRow(r));
     }
     queryAuthorModEdits(authorSignerAddress) {
         const authorCommentCids = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE authorSignerAddress = ?`).all(authorSignerAddress).map((r) => r.cid);
@@ -1179,8 +1307,8 @@ export class DbHandler {
         `)
             .all(...authorCommentCids);
         const modAuthorEdits = modAuthorEditsRaw.map((r) => JSON.parse(r.commentAuthorJson));
-        const banAuthor = modAuthorEdits.find((ca) => typeof ca?.banExpiresAt === "number");
-        const authorFlairByMod = modAuthorEdits.find((ca) => ca?.flair);
+        const banAuthor = modAuthorEdits.find((modEdit) => typeof modEdit?.banExpiresAt === "number");
+        const authorFlairByMod = modAuthorEdits.find((modEdit) => modEdit?.flair);
         const aggregateAuthor = {};
         if (banAuthor?.banExpiresAt)
             aggregateAuthor.banExpiresAt = banAuthor.banExpiresAt;
@@ -1234,7 +1362,7 @@ export class DbHandler {
             // Collect all unique authorSignerAddresses from comments that will be purged
             if (!isNestedCall) {
                 for (const cidToDelete of allCidsToBeDeleted) {
-                    const commentToDelete = this.queryComment(cidToDelete);
+                    const commentToDelete = this._queryCommentAuthorAndParentWithoutParsing(cidToDelete);
                     if (!commentToDelete) {
                         throw new Error(`Comment with cid ${cidToDelete} not found when attempting to purge`);
                     }
@@ -1254,7 +1382,7 @@ export class DbHandler {
                     editsFromPurgedComment.forEach((edit) => commentsToForceUpdate.add(edit.commentCid));
                     // Collect parent comments of purged comments (for reply count updates)
                     if (commentToDelete.parentCid) {
-                        const allAncestors = this.queryParentsCids(commentToDelete);
+                        const allAncestors = this.queryParentsCids({ parentCid: commentToDelete.parentCid });
                         allAncestors.forEach((ancestor) => commentsToForceUpdate.add(ancestor.cid));
                     }
                 }
@@ -1266,8 +1394,6 @@ export class DbHandler {
             this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE commentCid = ?`).run(cid);
             const commentUpdate = this.queryStoredCommentUpdate({ cid });
             if (commentUpdate) {
-                if (commentUpdate.postCommentUpdateCid)
-                    purgedCids.push(commentUpdate.postCommentUpdateCid);
                 if (commentUpdate.replies?.pageCids) {
                     Object.values(commentUpdate.replies.pageCids).forEach((pageCid) => {
                         if (typeof pageCid === "string")
@@ -1309,7 +1435,12 @@ export class DbHandler {
             }
             if (!isNestedCall)
                 this.commitTransaction();
-            return remeda.unique(purgedCids);
+            const uniquePurgedCids = remeda.unique(purgedCids);
+            uniquePurgedCids.forEach((cid) => {
+                this._subplebbit._cidsToUnPin.add(cid);
+                this._subplebbit._blocksToRm.push(cid);
+            });
+            return uniquePurgedCids;
         }
         catch (error) {
             log.error(`Error during comment purge for ${cid}: ${error}`);
@@ -1451,7 +1582,6 @@ export class DbHandler {
     queryAllCidsUnderThisSubplebbit() {
         const allCids = new Set();
         this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS}`).all().forEach((c) => allCids.add(c.cid));
-        this._db.prepare(`SELECT postCommentUpdateCid FROM ${TABLES.COMMENT_UPDATES} WHERE postCommentUpdateCid IS NOT NULL`).all().forEach((row) => allCids.add(row.postCommentUpdateCid));
         const pageCidsResult = this._db
             .prepare(`SELECT json_extract(replies, '$.pageCids') AS pageCids 
                              FROM ${TABLES.COMMENT_UPDATES} 
@@ -1464,15 +1594,42 @@ export class DbHandler {
         return allCids;
     }
     queryPostsWithActiveScore(pageOptions) {
+        const activeScoreRootConditions = ["p.depth = 0"];
+        if (pageOptions.excludeCommentsWithDifferentSubAddress)
+            activeScoreRootConditions.push("p.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentPendingApproval)
+            activeScoreRootConditions.push(this._pendingApprovalClause("p"));
+        if (pageOptions.excludeRemovedComments)
+            activeScoreRootConditions.push(this._removedClause("cu_root"));
+        if (pageOptions.excludeDeletedComments)
+            activeScoreRootConditions.push(this._deletedFromUpdatesClause("cu_root"));
+        if (pageOptions.excludeCommentWithApprovedFalse)
+            activeScoreRootConditions.push(this._approvedClause("cu_root"));
+        const activeScoreRootWhere = `WHERE ${activeScoreRootConditions.join(" AND ")}`;
+        const activeScoreDescendantConditions = [];
+        if (pageOptions.excludeCommentsWithDifferentSubAddress)
+            activeScoreDescendantConditions.push("c.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentPendingApproval)
+            activeScoreDescendantConditions.push(this._pendingApprovalClause("c"));
+        if (pageOptions.excludeRemovedComments)
+            activeScoreDescendantConditions.push(this._removedClause("cu"));
+        if (pageOptions.excludeDeletedComments)
+            activeScoreDescendantConditions.push(this._deletedFromLookupClause("deleted_lookup"));
+        if (pageOptions.excludeCommentWithApprovedFalse)
+            activeScoreDescendantConditions.push(this._approvedClause("cu"));
+        const activeScoreDescendantWhere = activeScoreDescendantConditions.length > 0 ? `WHERE ${activeScoreDescendantConditions.join(" AND ")}` : "";
         const activeScoresCte = `
             WITH RECURSIVE descendants AS (
-                SELECT p.cid AS post_cid, p.cid AS current_cid, p.timestamp FROM ${TABLES.COMMENTS} p WHERE p.depth = 0
+                SELECT p.cid AS post_cid, p.cid AS current_cid, p.timestamp
+                FROM ${TABLES.COMMENTS} p
+                INNER JOIN ${TABLES.COMMENT_UPDATES} cu_root ON p.cid = cu_root.cid
+                ${activeScoreRootWhere}
                 UNION ALL
-                SELECT d.post_cid, c.cid AS current_cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                SELECT desc_tree.post_cid, c.cid AS current_cid, c.timestamp FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                JOIN descendants d ON c.parentCid = d.current_cid
-                WHERE c.subplebbitAddress = :subAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS deleted_lookup ON c.cid = deleted_lookup.cid
+                JOIN descendants desc_tree ON c.parentCid = desc_tree.current_cid
+                ${activeScoreDescendantWhere}
             ) SELECT post_cid, MAX(timestamp) as active_score FROM descendants GROUP BY post_cid
         `;
         const commentUpdateCols = remeda.keys.strict(pageOptions.commentUpdateFieldsToExclude
@@ -1485,42 +1642,28 @@ export class DbHandler {
             SELECT ${commentIpfsSelects.join(", ")}, ${commentUpdateSelects.join(", ")}, asc_scores.active_score
             FROM ${TABLES.COMMENTS} c INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
             INNER JOIN (${activeScoresCte}) AS asc_scores ON c.cid = asc_scores.post_cid
-            WHERE c.depth = 0
         `;
         const params = { subAddress: this._subplebbit.address };
+        const postsWhereClauses = ["c.depth = 0"];
         if (pageOptions.excludeCommentsWithDifferentSubAddress) {
-            postsQueryStr += ` AND c.subplebbitAddress = :pageSubAddress`;
+            postsWhereClauses.push("c.subplebbitAddress = :pageSubAddress");
             params.pageSubAddress = this._subplebbit.address;
         }
         if (pageOptions.excludeRemovedComments)
-            postsQueryStr += ` AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE)`;
+            postsWhereClauses.push(this._removedClause("cu"));
         if (pageOptions.excludeDeletedComments)
-            postsQueryStr += ` AND (json_extract(cu.edit, '$.deleted') IS NULL OR json_extract(cu.edit, '$.deleted') != 1)`;
+            postsWhereClauses.push(this._deletedFromUpdatesClause("cu"));
+        if (pageOptions.excludeCommentPendingApproval)
+            postsWhereClauses.push(this._pendingApprovalClause("c"));
+        if (pageOptions.excludeCommentWithApprovedFalse)
+            postsWhereClauses.push(this._approvedClause("cu"));
+        postsQueryStr += ` WHERE ${postsWhereClauses.join(" AND ")}`;
         const postsRaw = this._db.prepare(postsQueryStr).all(params);
         return postsRaw.map((postRaw) => {
-            if (postRaw["commentIpfs_depth"] === 0)
-                delete postRaw["commentIpfs_postCid"]; // postCid is only included in file added to ipfs when depth > 0
-            const commentIpfsData = remeda.pickBy(postRaw, (v, k) => k.startsWith("commentIpfs_"));
-            const commentUpdateData = remeda.pickBy(postRaw, (v, k) => k.startsWith("commentUpdate_"));
-            const parsedCommentIpfs = this._spreadExtraProps(this._parseJsonFields(this._intToBoolean(commentIpfsData, ["commentIpfs_spoiler", "commentIpfs_nsfw"]), ["commentIpfs_author", "commentIpfs_signature", "commentIpfs_flair", "commentIpfs_extraProps"]));
-            const parsedCommentUpdate = this._spreadExtraProps(this._parseJsonFields(this._intToBoolean(commentUpdateData, [
-                "commentUpdate_spoiler",
-                "commentUpdate_nsfw",
-                "commentUpdate_pinned",
-                "commentUpdate_locked",
-                "commentUpdate_removed"
-            ]), [
-                "commentUpdate_edit",
-                "commentUpdate_flair",
-                "commentUpdate_signature",
-                "commentUpdate_author",
-                "commentUpdate_replies"
-            ]));
-            const cleanedCommentIpfs = removeNullUndefinedValues(parsedCommentIpfs);
-            const cleanedCommentUpdate = removeNullUndefinedValues(parsedCommentUpdate);
+            const { comment, commentUpdate } = this._parsePrefixedComment(postRaw);
             return {
-                comment: remeda.mapKeys(remeda.omit(cleanedCommentIpfs, ["commentIpfs_extraProps"]), (k) => k.replace("commentIpfs_", "")),
-                commentUpdate: remeda.mapKeys(cleanedCommentUpdate, (k) => k.replace("commentUpdate_", "")),
+                comment,
+                commentUpdate,
                 activeScore: postRaw.active_score
             };
         });

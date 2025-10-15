@@ -4,14 +4,14 @@ import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from ".
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit/plebbit.js";
-import type { CommentIpfsType, CommentIpfsWithCidPostCidDefined, CommentPubsubMessagePublication, CommentState, CommentUpdateForChallengeVerification, CommentUpdateType, CommentWithinPageJson, CreateCommentOptions } from "./types.js";
+import type { CommentIpfsType, CommentIpfsWithCidPostCidDefined, CommentPubsubMessagePublication, CommentState, CommentUpdateForChallengeVerification, CommentUpdateType, CommentWithinRepliesPostsPageJson, CreateCommentOptions } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import type { PublicationEventArgs, PublicationEvents } from "../types.js";
-export declare class Comment extends Publication implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">> {
-    shortCid?: CommentWithinPageJson["shortCid"];
+export declare class Comment extends Publication implements Partial<CommentUpdateForChallengeVerification>, CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">> {
+    shortCid?: CommentWithinRepliesPostsPageJson["shortCid"];
     clients: CommentClientsManager["clients"];
     author: AuthorWithOptionalCommentUpdateJson;
     title?: CommentPubsubMessagePublication["title"];
@@ -28,7 +28,7 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     depth?: CommentIpfsType["depth"];
     postCid?: CommentIpfsType["postCid"];
     linkHtmlTagName?: CommentPubsubMessagePublication["linkHtmlTagName"];
-    original?: CommentWithinPageJson["original"];
+    original?: CommentWithinRepliesPostsPageJson["original"];
     upvoteCount?: CommentUpdateType["upvoteCount"];
     downvoteCount?: CommentUpdateType["downvoteCount"];
     replyCount?: CommentUpdateType["replyCount"];
@@ -37,7 +37,7 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     replies: RepliesPages;
     edit?: CommentUpdateType["edit"];
     flair?: CommentPubsubMessagePublication["flair"];
-    deleted?: CommentWithinPageJson["deleted"];
+    deleted?: CommentWithinRepliesPostsPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
     nsfw?: CommentIpfsType["nsfw"];
     pinned?: CommentUpdateType["pinned"];
@@ -46,6 +46,8 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     reason?: CommentUpdateType["reason"];
     lastChildCid?: CommentUpdateType["lastChildCid"];
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
+    pendingApproval?: CommentUpdateForChallengeVerification["pendingApproval"];
+    approved?: CommentUpdateType["approved"];
     signature: CommentPubsubMessagePublication["signature"];
     state: CommentState;
     private _updatingState;
@@ -78,8 +80,8 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     _initPubsubMessageProps(props: CommentPubsubMessagePublication): void;
     _initIpfsProps(props: CommentIpfsType): void;
     _initProps(props: CommentIpfsType | CommentPubsubMessagePublication): void;
-    _initCommentUpdate(props: CommentUpdateType | CommentWithinPageJson, subplebbit?: Pick<SubplebbitIpfsType, "signature">): void;
-    _updateRepliesPostsInstance(newReplies: CommentUpdateType["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">, subplebbit?: Pick<SubplebbitIpfsType, "signature">): void;
+    _initCommentUpdate(props: CommentUpdateType | CommentWithinRepliesPostsPageJson, subplebbit?: Pick<SubplebbitIpfsType, "signature">): void;
+    _updateRepliesPostsInstance(newReplies: CommentUpdateType["replies"] | CommentWithinRepliesPostsPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">, subplebbit?: Pick<SubplebbitIpfsType, "signature">): void;
     private _verifyChallengeVerificationCommentProps;
     private _addOwnCommentToIpfsIfConnectedToIpfsClient;
     _initCommentUpdateFromChallengeVerificationProps(commentUpdate: CommentUpdateForChallengeVerification): void;

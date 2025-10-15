@@ -10,6 +10,7 @@ export const nonNegativeIntStringSchema = z
     .refine((val) => parseInt(val) >= 0, {
     message: "Must be a non-negative integer"
 });
+export const Uint8ArraySchema = z.custom((value) => value instanceof Uint8Array, { message: "Expected Uint8Array" });
 const LibraryChainProvider = z.enum(["viem", "ethers.js", "web3.js"]);
 export const ChainProviderSchema = z.object({
     urls: z.string().url().or(LibraryChainProvider).array(),
@@ -54,8 +55,8 @@ export const PlebbitUserOptionBaseSchema = z.object({
     libp2pJsClientsOptions: z
         .object({
         key: z.string().min(1),
-        libp2pOptions: z.custom(),
-        heliaOptions: z.custom()
+        libp2pOptions: z.custom().default({}),
+        heliaOptions: z.custom().default({})
     })
         .array()
         .max(1, "Only one libp2pJsClientOptions is allowed at the moment")

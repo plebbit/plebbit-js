@@ -89,12 +89,13 @@ export async function loadAllPages(pageCid, pagesInstance) {
 export async function loadAllPagesBySortName(pageSortName, pagesInstance) {
     if (!pageSortName)
         throw Error("Can't load all pages with undefined pageSortName");
-    if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages[pageSortName])
+    if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages && pagesInstance.pages[pageSortName])
         return pagesInstance.pages[pageSortName].comments;
-    let sortedCommentsPage = pagesInstance.pages[pageSortName] || (await pagesInstance.getPage(pagesInstance.pageCids[pageSortName]));
+    let sortedCommentsPage = (pagesInstance.pages && pagesInstance.pages[pageSortName]) || (await pagesInstance.getPage(pagesInstance.pageCids[pageSortName]));
     let sortedComments = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        //@ts-expect-error
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
     return sortedComments;
@@ -362,6 +363,12 @@ export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubS
     plebbit.on("error", (e) => {
         log.error("Plebbit error", e);
     });
+    for (const element of Object.keys(plebbit.clients.kuboRpcClients)) {
+        // provide will throw on tests because we're not connected to any peers
+        plebbit.clients.kuboRpcClients[element]._client.routing.provide = async function* () {
+            yield { type: "mock", data: {} }; // Cast to satisfy RoutingQueryEvent type
+        };
+    }
     return plebbit;
 }
 // name should be changed to mockBrowserPlebbit
@@ -496,8 +503,6 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
         milliseconds: 90000,
         message: error
     });
-    publication.once("challenge", (challenge) => publication.listenerCount("challenge") === 0 &&
-        console.error("Received challenges in publishWithExpectedResult with no handler. Are you sure you're publishing to a sub with no challenges?", challenge));
     await publication.publish();
     try {
         await validateResponsePromise;
@@ -514,7 +519,7 @@ export async function iterateThroughPageCidToFindComment(commentCid, pageCid, pa
         throw Error("Can't find comment with undefined pageCid");
     let currentPageCid = remeda.clone(pageCid);
     while (currentPageCid) {
-        const loadedPage = await pages.getPage(currentPageCid);
+        const loadedPage = (await pages.getPage(currentPageCid));
         const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
         if (commentInPage)
             return commentInPage;
@@ -861,6 +866,7 @@ export function setPlebbitConfigs(configs) {
         });
     }
     else if (process) {
+        process.setMaxListeners(100);
         process.on("uncaughtException", (...err) => {
             console.error("uncaughtException", ...err);
         });
@@ -955,6 +961,7 @@ export async function createMockedSubplebbitIpns(subplebbitOpts) {
 export function jsonifySubplebbitAndRemoveInternalProps(sub) {
     const jsonfied = JSON.parse(JSON.stringify(sub));
     delete jsonfied["posts"]["clients"];
+    delete jsonfied["modQueue"]["clients"];
     return remeda.omit(jsonfied, ["startedState", "started", "signer", "settings", "editable", "clients", "updatingState", "state"]);
 }
 export function jsonifyLocalSubWithNoInternalProps(sub) {
@@ -1143,7 +1150,7 @@ export function mockCommentToNotUsePagesForUpdates(comment) {
     delete updatingComment.updatedAt;
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
-export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
+export async function forceSubplebbitToGenerateAllRepliesPages(comment, commentProps) {
     // max comment size is 40kb = 40000
     const rawCommentUpdateRecord = comment.raw.commentUpdate;
     if (!rawCommentUpdateRecord)
@@ -1155,9 +1162,12 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
     const content = "x".repeat(1024 * 30); //30kb
     await Promise.all(new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
-        return publishRandomReply(comment, comment._plebbit, { content });
+        return publishRandomReply(comment, comment._plebbit, { content, ...commentProps });
     }));
-    const lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
+    const lastPublishedReply = await publishRandomReply(comment, comment._plebbit, {
+        content,
+        ...commentProps
+    });
     const log = Logger("plebbit-js:test-util:forceSubplebbitToGenerateAllRepliesPages");
     log("Published", numOfCommentsToPublish, "replies under comment", comment.cid, "to force subplebbit", comment.subplebbitAddress, "to generate all pages");
     const updatingComment = await comment._plebbit.createComment({ cid: comment.cid });
@@ -1206,23 +1216,71 @@ export async function publishCommentWithDepth({ depth, subplebbit }) {
         throw Error("Failed to publish comment with depth");
     }
 }
-export async function forceSubplebbitToGenerateAllPostsPages(subplebbit) {
+export async function getCommentWithCommentUpdateProps({ cid, plebbit }) {
+    const comment = await plebbit.createComment({ cid });
+    await comment.update();
+    await resolveWhenConditionIsTrue(comment, async () => Boolean(comment.updatedAt));
+    return comment;
+}
+export async function publishCommentToModQueue({ subplebbit, plebbit, parentComment }) {
+    const remotePlebbit = plebbit || (await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true })); // this plebbit is not connected to kubo rpc client of subplebbit
+    const pendingComment = parentComment
+        ? await generateMockComment(parentComment, remotePlebbit, false)
+        : await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Pending post" + " " + Math.random()
+        });
+    pendingComment.removeAllListeners("challenge");
+    pendingComment.once("challenge", async () => {
+        await pendingComment.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+    });
+    const challengeVerificationPromise = new Promise((resolve) => pendingComment.once("challengeverification", resolve));
+    await publishWithExpectedResult(pendingComment, true); // a pending approval is technically challengeSucess = true
+    if (!pendingComment.pendingApproval)
+        throw Error("The comment did not go to pending approval");
+    return { comment: pendingComment, challengeVerification: await challengeVerificationPromise };
+}
+export async function publishToModQueueWithDepth({ subplebbit, depth, plebbit, modCommentProps }) {
+    if (depth === 0)
+        return publishCommentToModQueue({ subplebbit, plebbit });
+    else {
+        // we assume mod can publish comments without mod queue
+        const remotePlebbit = plebbit || subplebbit._plebbit;
+        const commentsPublishedByMod = [await publishRandomPost(subplebbit.address, remotePlebbit, modCommentProps)];
+        for (let i = 1; i < depth; i++) {
+            commentsPublishedByMod.push(await publishRandomReply(commentsPublishedByMod[i - 1], remotePlebbit, modCommentProps));
+        }
+        // we have created a tree of comments and now we can publish the pending comment underneath it
+        const pendingReply = await generateMockComment(commentsPublishedByMod[commentsPublishedByMod.length - 1], remotePlebbit, false, {
+            content: "Pending reply" + " " + Math.random()
+        });
+        pendingReply.removeAllListeners("challenge");
+        pendingReply.once("challenge", async () => {
+            await pendingReply.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+        });
+        const challengeVerificationPromise = new Promise((resolve) => pendingReply.once("challengeverification", resolve));
+        await publishWithExpectedResult(pendingReply, true); // a pending approval is technically challengeSucess = true
+        if (!pendingReply.pendingApproval)
+            throw Error("The reply did not go to pending approval");
+        return { comment: pendingReply, challengeVerification: await challengeVerificationPromise };
+    }
+}
+export async function forceSubplebbitToGenerateAllPostsPages(subplebbit, commentProps) {
     // max comment size is 40kb = 40000
     const rawSubplebbitRecord = subplebbit.toJSONIpfs();
     if (!rawSubplebbitRecord)
         throw Error("Subplebbit should be updating before forcing to generate all pages");
+    subplebbit.setMaxListeners(100);
     if (Object.keys(subplebbit.posts.pageCids).length > 0)
         return;
     const curRecordSize = Buffer.byteLength(JSON.stringify(rawSubplebbitRecord));
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
     const content = "x".repeat(1024 * 30); //30kb
-    let lastPublishedPost;
+    let lastPublishedPost = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content, ...commentProps });
     await Promise.all(new Array(numOfCommentsToPublish).fill(null).map(async () => {
-        const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content });
+        const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content, ...commentProps });
         lastPublishedPost = post;
     }));
-    //@ts-expect-error
     await waitTillPostInSubplebbitPages(lastPublishedPost, subplebbit._plebbit);
     const newSubplebbit = await subplebbit._plebbit.getSubplebbit(subplebbit.address);
     if (Object.keys(newSubplebbit.posts.pageCids).length === 0)

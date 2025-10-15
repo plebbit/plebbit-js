@@ -9,14 +9,15 @@ export const ModeratorOptionsSchema = z
     nsfw: z.boolean().optional(),
     pinned: z.boolean().optional(),
     locked: z.boolean().optional(),
+    approved: z.boolean().optional(), // approving a comment that's pending approval
     removed: z.boolean().optional(),
     purged: z.boolean().optional(),
     reason: z.string().optional(),
-    author: SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true }).passthrough().optional()
+    author: SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true }).loose().optional()
 })
     .strict();
 export const CreateCommentModerationOptionsSchema = CreatePublicationUserOptionsSchema.extend({
-    commentModeration: ModeratorOptionsSchema.passthrough(),
+    commentModeration: ModeratorOptionsSchema.loose(),
     commentCid: CidStringSchema
 }).strict();
 // ChallengeRequest.publication
@@ -26,20 +27,19 @@ const commentModerationPickOptions = (remeda.mapToObj([...CommentModerationSigne
 export const CommentModerationPubsubMessagePublicationSchema = CreateCommentModerationOptionsSchema.merge(PublicationBaseBeforeSigning)
     .extend({
     signature: JsonSignatureSchema,
-    author: PublicationBaseBeforeSigning.shape.author.passthrough()
+    author: PublicationBaseBeforeSigning.shape.author.loose()
 })
     .pick(commentModerationPickOptions)
     .strict();
 export const CommentModerationsTableRowSchema = CommentModerationPubsubMessagePublicationSchema.extend({
     insertedAt: PlebbitTimestampSchema,
-    id: z.number().nonnegative().int(),
     modSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    extraProps: z.object({}).passthrough().optional()
+    extraProps: z.looseObject({}).optional()
 });
 export const CommentModerationChallengeRequestToEncryptSchema = CreateCommentModerationOptionsSchema.shape.challengeRequest
     .unwrap()
     .extend({
-    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough()
+    commentModeration: CommentModerationPubsubMessagePublicationSchema.loose()
 });
 export const CommentModerationReservedFields = remeda.difference([
     ...remeda.keys.strict(CommentModerationsTableRowSchema.shape),

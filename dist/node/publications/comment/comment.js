@@ -2,7 +2,7 @@ import retry from "retry";
 import { hideClassPrivateProps, removeUndefinedValuesRecursively, retryKuboIpfsAdd, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import Logger from "@plebbit/plebbit-logger";
-import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdateForChallengeVerification } from "../../signer/signatures.js";
+import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdate } from "../../signer/signatures.js";
 import assert from "assert";
 import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import * as remeda from "remeda";
@@ -137,6 +137,9 @@ export class Comment extends Publication {
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
         this._updateRepliesPostsInstance(props.replies, subplebbit);
+        if (typeof this.pendingApproval === "boolean" || "pendingApproval" in props)
+            this.pendingApproval = Boolean("pendingApproval" in props && props.pendingApproval); // revert pendingApproval if we just received a CommentUpdate
+        this.approved = props.approved;
     }
     _updateRepliesPostsInstance(newReplies, subplebbit) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
@@ -161,7 +164,7 @@ export class Comment extends Publication {
         else if (!newReplies.pageCids && "pages" in newReplies && newReplies.pages) {
             // only pages is provided
             this.replies.updateProps({
-                ...parseRawPages(newReplies, repliesCreationTimestamp),
+                ...parseRawPages(newReplies),
                 subplebbit: this.replies._subplebbit,
                 pageCids: {}
             });
@@ -171,7 +174,7 @@ export class Comment extends Publication {
             const shouldUpdateReplies = !remeda.isDeepEqual(this.replies.pageCids, newReplies.pageCids);
             if (shouldUpdateReplies) {
                 log.trace(`Updating the props of comment instance (${this.cid}) replies`);
-                const parsedPages = (parseRawPages(newReplies, repliesCreationTimestamp));
+                const parsedPages = (parseRawPages(newReplies));
                 this.replies.updateProps({
                     ...parsedPages,
                     subplebbit: repliesSubplebbit,
@@ -196,6 +199,10 @@ export class Comment extends Publication {
             return error;
         }
         const calculatedCid = await calculateIpfsHash(JSON.stringify(decryptedVerification.comment));
+        const postCid = decryptedVerification.comment.postCid || (decryptedVerification.comment.depth === 0 ? calculatedCid : undefined);
+        if (!postCid) {
+            throw Error("Unable to calculate postCid after receiving challengeVerification for comment. This is either a critical error in plebbit-js or the sub did not include postCid in replies");
+        }
         const commentIpfsValidity = await verifyCommentIpfs({
             comment: decryptedVerification.comment,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
@@ -212,7 +219,16 @@ export class Comment extends Publication {
             this.emit("error", error);
             return error;
         }
-        const commentUpdateValidity = await verifyCommentUpdateForChallengeVerification(decryptedVerification.commentUpdate);
+        const commentUpdateValidity = await verifyCommentUpdate({
+            update: decryptedVerification.commentUpdate,
+            clientsManager: this._clientsManager,
+            comment: { ...decryptedVerification.comment, cid: calculatedCid, postCid },
+            subplebbit: this._subplebbit,
+            overrideAuthorAddressIfInvalid: false,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            validateUpdateSignature: true,
+            validatePages: true
+        });
         if (!commentUpdateValidity.valid) {
             const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE", {
                 reason: commentUpdateValidity.reason,
@@ -266,6 +282,7 @@ export class Comment extends Publication {
         if (commentUpdate.author)
             Object.assign(this.author, commentUpdate.author);
         this.protocolVersion = commentUpdate.protocolVersion;
+        this.pendingApproval = commentUpdate.pendingApproval;
     }
     _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification) {
         const log = Logger("plebbit-js:comment:publish:_updateCommentPropsFromDecryptedChallengeVerification");
@@ -447,8 +464,8 @@ export class Comment extends Publication {
         return this._updatingState;
     }
     _changeCommentStateEmitEventEmitStateChangeEvent(opts) {
-        // this code block is only called on a sub whose update loop is already started
-        // never called in a subplebbit that's mirroring a subplebbit with an update loop
+        // this code block is only called on a comment whose update loop is already started
+        // never called in a comment that's mirroring a comment with an update loop
         const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
         const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this._updatingState;
         if (opts.newState)

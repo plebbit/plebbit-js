@@ -9,6 +9,7 @@ import { SubscriptionIdSchema } from "./schema.js";
 import { SubplebbitAddressSchema } from "../../schema/schema.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
+import { messages } from "../../errors.js";
 const log = Logger("plebbit-js:PlebbitRpcClient");
 export default class PlebbitRpcClient extends TypedEmitter {
     constructor(rpcServerUrl) {
@@ -61,9 +62,8 @@ export default class PlebbitRpcClient extends TypedEmitter {
                     this._initSubscriptionEvent(subscriptionId);
                     // We need to parse error props into PlebbitErrors
                     if (message?.params?.event === "error") {
-                        // zod here
-                        message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
-                        delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
+                        message.params.result = this._deserializeRpcError(message.params.result);
+                        delete message.params.result.stack; // Need to delete locally generated stack traces
                     }
                     if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0)
                         this._pendingSubscriptionMsgs[subscriptionId].push(message);
@@ -154,6 +154,54 @@ export default class PlebbitRpcClient extends TypedEmitter {
         delete this._subscriptionEvents[subscriptionId];
         delete this._pendingSubscriptionMsgs[subscriptionId];
     }
+    _deserializeRpcError(errorPayload) {
+        if (!errorPayload || typeof errorPayload !== "object") {
+            const genericError = new Error("Received malformed RPC error payload");
+            genericError.details = { rawError: errorPayload };
+            return genericError;
+        }
+        const { code, details, message, name, ...rest } = errorPayload;
+        const hasValidCode = typeof code === "string" && Object.prototype.hasOwnProperty.call(messages, code);
+        const serverMessage = typeof message === "string" && message.length > 0 ? message : "RPC server returned an unknown error";
+        if (hasValidCode) {
+            const plebbitError = new PlebbitError(code, details);
+            this._setErrorName(plebbitError, name);
+            this._assignAdditionalProps(plebbitError, rest);
+            return plebbitError;
+        }
+        if (typeof code === "string" && typeof name === "string" && name === "PlebbitError") {
+            const plebbitError = new PlebbitError("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", details);
+            plebbitError.code = code;
+            plebbitError.message = serverMessage;
+            this._setErrorName(plebbitError, name);
+            this._assignAdditionalProps(plebbitError, rest);
+            return plebbitError;
+        }
+        const genericError = new Error(serverMessage);
+        genericError.name = typeof name === "string" && name.length > 0 ? name : genericError.name;
+        genericError.code = code;
+        genericError.details = details;
+        this._assignAdditionalProps(genericError, rest);
+        return genericError;
+    }
+    _setErrorName(target, name) {
+        if (typeof name !== "string" || name.length === 0 || target.name === name)
+            return;
+        const descriptor = Object.getOwnPropertyDescriptor(target, "name");
+        try {
+            if (descriptor)
+                Object.defineProperty(target, "name", { ...descriptor, value: name });
+            else
+                target.name = name;
+        }
+        catch {
+            // Ignore failures to redefine the property
+        }
+    }
+    _assignAdditionalProps(target, rest) {
+        if (rest && Object.keys(rest).length > 0)
+            Object.assign(target, rest);
+    }
     emitAllPendingMessages(subscriptionId) {
         this._pendingSubscriptionMsgs[subscriptionId].forEach((message) => this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message));
         delete this._pendingSubscriptionMsgs[subscriptionId];
@@ -162,17 +210,23 @@ export default class PlebbitRpcClient extends TypedEmitter {
         const commentProps = await this._webSocketClient.call("getComment", [parsedCommentCid]);
         return commentProps;
     }
-    async getCommentPage(pageCid, commentCid, subplebbitAddress) {
+    async getCommentRepliesPage(pageCid, commentCid, subplebbitAddress) {
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = (await this._webSocketClient.call("getCommentPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress]));
+        const pageIpfs = (await this._webSocketClient.call("getCommentRepliesPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress]));
         return pageIpfs;
     }
-    async getSubplebbitPage(pageCid, subplebbitAddress) {
+    async getSubplebbitPostsPage(pageCid, subplebbitAddress) {
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = await this._webSocketClient.call("getSubplebbitPage", [parsedPageCid, parsedSubplebbitAddress]);
+        const pageIpfs = await this._webSocketClient.call("getSubplebbitPostsPage", [parsedPageCid, parsedSubplebbitAddress]);
+        return pageIpfs;
+    }
+    async getSubplebbitModQueuePage(pageCid, subplebbitAddress) {
+        const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const pageIpfs = (await this._webSocketClient.call("getSubplebbitModqueuePage", [parsedPageCid, parsedSubplebbitAddress]));
         return pageIpfs;
     }
     async createSubplebbit(createSubplebbitOptions) {

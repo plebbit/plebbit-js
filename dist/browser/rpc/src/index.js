@@ -11,6 +11,7 @@ import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails, parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails, parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails, parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { TypedEmitter } from "tiny-typed-emitter";
+import { sanitizeRpcNotificationResult } from "./json-rpc-util.js";
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
 const startedSubplebbits = {};
@@ -91,8 +92,9 @@ class PlebbitWsServer extends TypedEmitter {
         });
         // register all JSON RPC methods
         this.rpcWebsocketsRegister("getComment", this.getComment.bind(this));
-        this.rpcWebsocketsRegister("getSubplebbitPage", this.getSubplebbitPage.bind(this));
-        this.rpcWebsocketsRegister("getCommentPage", this.getCommentPage.bind(this));
+        this.rpcWebsocketsRegister("getSubplebbitPostsPage", this.getSubplebbitPostsPage.bind(this));
+        this.rpcWebsocketsRegister("getSubplebbitModqueuePage", this.getSubplebbitModQueuePage.bind(this));
+        this.rpcWebsocketsRegister("getCommentRepliesPage", this.getCommentRepliesPage.bind(this));
         this.rpcWebsocketsRegister("createSubplebbit", this.createSubplebbit.bind(this));
         this.rpcWebsocketsRegister("startSubplebbit", this.startSubplebbit.bind(this));
         this.rpcWebsocketsRegister("stopSubplebbit", this.stopSubplebbit.bind(this));
@@ -152,15 +154,11 @@ class PlebbitWsServer extends TypedEmitter {
             jsonrpc: "2.0",
             method,
             params: {
-                result,
+                result: sanitizeRpcNotificationResult(event, result),
                 subscription,
                 event
             }
         };
-        if (event === "error") {
-            delete message?.params?.result?.stack;
-            delete message?.params?.result?.details?.error?.stack;
-        }
         this.connections[connectionId]?.send?.(JSON.stringify(message));
     }
     async getComment(params) {
@@ -168,7 +166,17 @@ class PlebbitWsServer extends TypedEmitter {
         const comment = await this.plebbit.getComment(cid);
         return comment.toJSONIpfs();
     }
-    async getSubplebbitPage(params) {
+    async getSubplebbitModQueuePage(params) {
+        const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
+        const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
+        // Use started subplebbit to fetch the page if possible, to expediete the process
+        const sub = subplebbitAddress in startedSubplebbits
+            ? await getStartedSubplebbit(subplebbitAddress)
+            : await this.plebbit.createSubplebbit({ address: subplebbitAddress });
+        const page = await sub.modQueue._fetchAndVerifyPage(pageCid);
+        return page;
+    }
+    async getSubplebbitPostsPage(params) {
         const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
         // Use started subplebbit to fetch the page if possible, to expediete the process
@@ -178,7 +186,7 @@ class PlebbitWsServer extends TypedEmitter {
         const page = await sub.posts._fetchAndVerifyPage(pageCid);
         return page;
     }
-    async getCommentPage(params) {
+    async getCommentRepliesPage(params) {
         const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const commentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[1]);
         const subplebbitAddress = SubplebbitAddressSchema.parse(params[2]);

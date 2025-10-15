@@ -1,6 +1,6 @@
-import { parsePageIpfs } from "./util.js";
-import { verifyPage } from "../signer/signatures.js";
-import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "./pages-client-manager.js";
+import { parseModQueuePageIpfs, parsePageIpfs } from "./util.js";
+import { verifyModQueuePage, verifyPage } from "../signer/signatures.js";
+import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager, SubplebbitModQueueClientsManager } from "./pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { hideClassPrivateProps } from "../util.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
@@ -19,9 +19,10 @@ export class BasePages {
             this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
             this._clientsManager.updatePagesMaxSizeCache(Object.values(this.pageCids), 1024 * 1024);
         }
-        for (const preloadedPage of Object.values(this.pages))
-            if (preloadedPage?.nextCid)
-                this._clientsManager.updatePagesMaxSizeCache([preloadedPage.nextCid], 1024 * 1024);
+        if (this.pages)
+            for (const preloadedPage of Object.values(this.pages))
+                if (preloadedPage?.nextCid)
+                    this._clientsManager.updatePagesMaxSizeCache([preloadedPage.nextCid], 1024 * 1024);
     }
     _initClientsManager(plebbit) {
         throw Error(`This function should be overridden`);
@@ -40,12 +41,15 @@ export class BasePages {
             await this._validatePage(pageIpfs, pageCid);
         return pageIpfs;
     }
+    _parseRawPageIpfs(pageIpfs) {
+        throw Error("should be implemented");
+    }
     async getPage(pageCid) {
         if (!this._subplebbit?.address)
             throw Error("Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
-        return parsePageIpfs(pageIpfs);
+        return this._parseRawPageIpfs(pageIpfs);
     }
     // method below will be present in both subplebbit.posts and comment.replies
     async validatePage(page) {
@@ -69,6 +73,12 @@ export class RepliesPages extends BasePages {
         this._clientsManager = new RepliesPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
+    async _fetchAndVerifyPage(pageCid) {
+        return await super._fetchAndVerifyPage(pageCid);
+    }
+    _parseRawPageIpfs(pageIpfs) {
+        return parsePageIpfs(pageIpfs);
+    }
     async getPage(pageCid) {
         if (!this._parentComment?.cid)
             throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID", {
@@ -86,7 +96,7 @@ export class RepliesPages extends BasePages {
                 parentComment: this._parentComment
             });
         // we need to make all updating comment instances do the getPage call to cache _loadedUniqueCommentFromGetPage in a centralized instance
-        return super.getPage(pageCid);
+        return await super.getPage(pageCid);
     }
     async _validatePage(pageIpfs, pageCid) {
         if (!this._parentComment?.cid)
@@ -144,9 +154,15 @@ export class PostsPages extends BasePages {
         this._clientsManager = new SubplebbitPostsPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
-    getPage(pageCid) {
+    async _fetchAndVerifyPage(pageCid) {
+        return await super._fetchAndVerifyPage(pageCid);
+    }
+    _parseRawPageIpfs(pageIpfs) {
+        return parsePageIpfs(pageIpfs);
+    }
+    async getPage(pageCid) {
         // we need to make all updating subplebbit instances do the getPage call to cache _loadedUniqueCommentFromGetPage
-        return super.getPage(pageCid);
+        return await super.getPage(pageCid);
     }
     async _validatePage(pageIpfs, pageCid) {
         if (pageIpfs.comments.length === 0)
@@ -167,6 +183,54 @@ export class PostsPages extends BasePages {
         const signatureValidity = await verifyPage(verificationOpts);
         if (!signatureValidity.valid)
             throw new PlebbitError("ERR_POSTS_PAGE_IS_INVALID", {
+                signatureValidity,
+                verificationOpts
+            });
+    }
+}
+export class ModQueuePages extends BasePages {
+    constructor(props) {
+        super(props);
+        this.pages = undefined;
+        this._parentComment = undefined;
+        this.pages = undefined;
+    }
+    resetPages() {
+        this.pageCids = {};
+        this.pages = undefined;
+    }
+    _initClientsManager(plebbit) {
+        this._clientsManager = new SubplebbitModQueueClientsManager({ plebbit, pages: this });
+        this.clients = this._clientsManager.clients;
+    }
+    async _fetchAndVerifyPage(pageCid) {
+        return await super._fetchAndVerifyPage(pageCid);
+    }
+    _parseRawPageIpfs(pageIpfs) {
+        return parseModQueuePageIpfs(pageIpfs);
+    }
+    async getPage(pageCid) {
+        return await super.getPage(pageCid);
+    }
+    async _validatePage(pageIpfs, pageCid) {
+        if (pageIpfs.comments.length === 0)
+            return;
+        const pageSortName = Object.entries(this.pageCids).find(([_, pageCid]) => pageCid === pageCid)?.[0];
+        const verificationOpts = {
+            pageCid,
+            pageSortName,
+            page: pageIpfs,
+            resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            subplebbit: this._subplebbit,
+            parentComment: { cid: undefined, postCid: undefined, depth: -1 },
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: this._clientsManager._plebbit.validatePages,
+            validateUpdateSignature: false // no need because we verified that page cid matches its content
+        };
+        const signatureValidity = await verifyModQueuePage(verificationOpts);
+        if (!signatureValidity.valid)
+            throw new PlebbitError("ERR_MOD_QUEUE_PAGE_IS_INVALID", {
                 signatureValidity,
                 verificationOpts
             });

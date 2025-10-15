@@ -2,7 +2,7 @@ import { Plebbit } from "../plebbit/plebbit.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "../plebbit-error.js";
 import type { CreateRemoteSubplebbitOptions, SubplebbitIpfsType, RpcRemoteSubplebbitType, SubplebbitJson, SubplebbitUpdatingState, SubplebbitState, SubplebbitStartedState, SubplebbitSettings, RpcInternalSubplebbitRecordAfterFirstUpdateType, SubplebbitEditOptions, SubplebbitEventArgs, SubplebbitEvents } from "./types.js";
-import { PostsPages } from "../pages/pages.js";
+import { ModQueuePages, PostsPages } from "../pages/pages.js";
 import { SignerWithPublicKeyAddress } from "../signer/index.js";
 import { SubplebbitClientsManager } from "./subplebbit-client-manager.js";
 export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<Partial<SubplebbitIpfsType>, "posts"> {
@@ -12,6 +12,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     lastPostCid?: SubplebbitIpfsType["lastPostCid"];
     lastCommentCid?: SubplebbitIpfsType["lastCommentCid"];
     posts: PostsPages;
+    modQueue: ModQueuePages;
     pubsubTopic?: SubplebbitIpfsType["pubsubTopic"];
     features?: SubplebbitIpfsType["features"];
     suggested?: SubplebbitIpfsType["suggested"];
@@ -51,11 +52,12 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     protected _updatingState: SubplebbitUpdatingState;
     constructor(plebbit: Plebbit);
     _updateLocalPostsInstance(newPosts: SubplebbitIpfsType["posts"] | SubplebbitJson["posts"] | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">): void;
+    _updateLocalModQueueInstance(newModQueue: SubplebbitIpfsType["modQueue"] | SubplebbitJson["modQueue"] | Pick<NonNullable<SubplebbitIpfsType["modQueue"]>, "pageCids">): void;
     initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType): void;
     protected _updateIpnsPubsubPropsIfNeeded(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): void;
     initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): void;
     setAddress(newAddress: string): void;
-    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "protocolVersion" | "title" | "updatedAt" | "lastCommentCid" | "challenges" | "description" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;
+    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "encryption" | "createdAt" | "statsCid" | "challenges" | "description" | "pubsubTopic" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;
     toJSONIpfs(): SubplebbitIpfsType;
     toJSONRpcRemote(): RpcRemoteSubplebbitType;
     get updatingState(): SubplebbitUpdatingState;

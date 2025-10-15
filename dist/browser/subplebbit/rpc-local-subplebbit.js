@@ -52,7 +52,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
     initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps) {
         const keysOfSubplebbitIpfs = [...newProps.signature.signedPropertyNames, "signature"];
-        const subplebbitIpfsParseRes = SubplebbitIpfsSchema.passthrough().safeParse(remeda.pick(newProps, keysOfSubplebbitIpfs));
+        const subplebbitIpfsParseRes = SubplebbitIpfsSchema.loose().safeParse(remeda.pick(newProps, keysOfSubplebbitIpfs));
         if (subplebbitIpfsParseRes.success) {
             super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfsParseRes.data);
         }

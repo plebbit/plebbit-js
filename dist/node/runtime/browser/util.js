@@ -25,7 +25,9 @@ export async function importSignerIntoKuboNode(ipnsKeyName, ipfsKey, ipfsNode) {
         throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
-    data.append("file", new Blob([ipfsKey]));
+    // create a fresh ArrayBuffer-backed view to avoid SharedArrayBuffer issues
+    const normalizedKey = Uint8Array.from(ipfsKey);
+    data.append("file", new Blob([normalizedKey.buffer]));
     const nodeUrl = ipfsNode.url;
     if (!nodeUrl)
         throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);

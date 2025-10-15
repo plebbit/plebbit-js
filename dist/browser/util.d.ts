@@ -2,7 +2,7 @@ import { messages } from "./errors.js";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { CID } from "kubo-rpc-client";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient, FilesCpOptions } from "kubo-rpc-client";
+import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient, FilesRmOptions, RoutingProvideOptions } from "kubo-rpc-client";
 import type { DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeRequestMessageWithPostSubplebbitAuthor, DecryptedChallengeRequestMessageWithReplySubplebbitAuthor, DecryptedChallengeRequestPublication, PublicationFromDecryptedChallengeRequest, PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest } from "./pubsub-messages/types.js";
 import EventEmitter from "events";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
@@ -44,6 +44,14 @@ export declare function binaryKeyToPubsubTopic(key: Uint8Array): string;
 export declare function ipnsNameToIpnsOverPubsubTopic(ipnsName: string): string;
 export declare const pubsubTopicToDhtKey: (pubsubTopic: string) => string;
 export declare const pubsubTopicToDhtKeyCid: (pubsubTopic: string) => CID;
+export declare function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, addOptions, provideOptions }: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add" | "routing">;
+    log: Logger;
+    content: string;
+    inputNumOfRetries?: number;
+    addOptions?: AddOptions;
+    provideOptions?: RoutingProvideOptions;
+}): Promise<AddResult>;
 export declare function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, options }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add">;
     log: Logger;
@@ -58,12 +66,11 @@ export declare function removeBlocksFromKuboNode({ ipfsClient: kuboRpcClient, lo
     inputNumOfRetries?: number;
     options?: BlockRmOptions;
 }): Promise<unknown>;
-export declare function removeMfsFilesSafely(kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string], paths: string[]): Promise<void>;
-export declare function ipfsCpWithRmIfFails({ kuboRpcClient, log, src, dest, inputNumOfRetries, options }: {
+export declare function removeMfsFilesSafely({ kuboRpcClient, paths, log, inputNumOfRetries, rmOptions }: {
     kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string];
-    log: Logger;
-    src: string;
-    dest: string;
+    paths: string[];
+    log?: Logger;
     inputNumOfRetries?: number;
-    options?: FilesCpOptions;
-}): Promise<unknown>;
+    rmOptions?: FilesRmOptions;
+}): Promise<void>;
+export declare function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient, ipnsName: string): Promise<import("ipns").IPNSRecord>;

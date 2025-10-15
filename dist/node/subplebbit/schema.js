@@ -1,25 +1,20 @@
 import { z } from "zod";
 import { AuthorAddressSchema, ChallengeAnswerStringSchema, CidStringSchema, CreateSignerSchema, FlairSchema, JsonSignatureSchema, PlebbitTimestampSchema, ProtocolVersionSchema, SignerWithAddressPublicKeySchema, SubplebbitAddressSchema } from "../schema/schema.js";
-import { PostsPagesIpfsSchema } from "../pages/schema.js";
+import { ModQueuePagesIpfsSchema, PostsPagesIpfsSchema } from "../pages/schema.js";
 import * as remeda from "remeda";
 import { messages } from "../errors.js";
 import { nonNegativeIntStringSchema } from "../schema.js";
 // Other props of Subplebbit Ipfs here
-export const SubplebbitEncryptionSchema = z
-    .object({
+export const SubplebbitEncryptionSchema = z.looseObject({
     type: z.string().min(1), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
     publicKey: SignerWithAddressPublicKeySchema.shape.publicKey // 32 bytes base64 string (same as subplebbit.signer.publicKey)
-})
-    .passthrough();
+});
 export const SubplebbitRoleNames = z.enum(["owner", "admin", "moderator"]);
-export const SubplebbitRoleSchema = z
-    .object({
+export const SubplebbitRoleSchema = z.looseObject({
     role: SubplebbitRoleNames.or(z.string().min(1))
-})
-    .passthrough();
+});
 export const PubsubTopicSchema = z.string().min(1);
-export const SubplebbitSuggestedSchema = z
-    .object({
+export const SubplebbitSuggestedSchema = z.looseObject({
     // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
     primaryColor: z.string().optional(),
     secondaryColor: z.string().optional(),
@@ -28,10 +23,8 @@ export const SubplebbitSuggestedSchema = z
     backgroundUrl: z.string().min(1).optional(),
     language: z.string().optional()
     // TODO: menu links, wiki pages, sidebar widgets
-})
-    .passthrough();
-export const SubplebbitFeaturesSchema = z
-    .object({
+});
+export const SubplebbitFeaturesSchema = z.looseObject({
     // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
     noVideos: z.boolean().optional(), // Not implemented
     noSpoilers: z.boolean().optional(), // Not implemented. Author can't comment.spoiler = true their own comments
@@ -61,27 +54,21 @@ export const SubplebbitFeaturesSchema = z
     noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
     requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
     requirePostLinkIsMedia: z.boolean().optional() // post.link must be of media (audio, video, image)
-})
-    .passthrough();
+});
 // Local subplebbit challenge here (Challenges API)
-export const ChallengeOptionInputSchema = z
-    .object({
+export const ChallengeOptionInputSchema = z.looseObject({
     option: z.string(), // option property name, e.g. characterCount
     label: z.string(), // option title, e.g. Character Count
     default: z.string().optional(), // option default value, e.g. "10"
     description: z.string().optional(), // e.g. Amount of characters of the captcha
     placeholder: z.string().optional(), // the value to display if the input field is empty, e.g. "10"
     required: z.boolean().optional() // If this is true, the challenge option is required, the challenge will throw without it
-})
-    .passthrough(); // should be flexible
+}); // should be flexible
 export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z.object({ success: z.literal(false), error: z.string() }));
 export const ChallengeFromGetChallengeSchema = z
     .object({
     challenge: z.string(), // e.g. '2 + 2'
-    verify: z
-        .function()
-        .args(z.lazy(() => ChallengeAnswerStringSchema))
-        .returns(z.promise(ChallengeResultSchema)), // args is answer
+    verify: z.function({ input: [z.lazy(() => ChallengeAnswerStringSchema)], output: z.promise(ChallengeResultSchema) }),
     type: z.string().min(1),
     caseInsensitive: z.boolean().optional()
 })
@@ -98,7 +85,7 @@ export const ChallengeExcludeSubplebbitSchema = z
     .strict();
 const excludePublicationFieldSchema = z.boolean().optional(); // can be true or undefined
 export const ChallengeExcludePublicationTypeSchema = z
-    .object({
+    .looseObject({
     post: excludePublicationFieldSchema,
     reply: excludePublicationFieldSchema,
     vote: excludePublicationFieldSchema,
@@ -106,11 +93,9 @@ export const ChallengeExcludePublicationTypeSchema = z
     commentModeration: excludePublicationFieldSchema,
     subplebbitEdit: excludePublicationFieldSchema
 })
-    .passthrough()
     .refine((args) => !remeda.isEmpty(JSON.parse(JSON.stringify(args))), // is it empty object {} or {field: undefined}? throw if so
 messages.ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT);
-export const ChallengeExcludeSchema = z
-    .object({
+export const ChallengeExcludeSchema = z.looseObject({
     subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
     postScore: z.number().int().optional(),
     replyScore: z.number().int().optional(),
@@ -121,8 +106,7 @@ export const ChallengeExcludeSchema = z
     rateLimit: z.number().nonnegative().int().optional(),
     rateLimitChallengeSuccess: z.boolean().optional(),
     publicationType: ChallengeExcludePublicationTypeSchema.optional()
-})
-    .passthrough();
+});
 export const SubplebbitChallengeSettingSchema = z
     .object({
     // the private settings of the challenge (subplebbit.settings.challenges)
@@ -130,42 +114,44 @@ export const SubplebbitChallengeSettingSchema = z
     name: z.string().optional(), // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
     options: z.record(z.string(), z.string()).optional(), //{ [optionPropertyName: string]: string } the options to be used to the getChallenge function, all values must be strings for UI ease of use
     exclude: ChallengeExcludeSchema.array().nonempty().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
-    description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
+    description: z.string().optional(), // describe in the frontend what kind of challenge the user will receive when publishing
+    pendingApproval: z.boolean().optional()
 })
     .strict()
     .refine((challengeData) => challengeData.path || challengeData.name, "Path or name of challenge has to be defined");
 export const ChallengeFileSchema = z
     .object({
     // the result of the function exported by the challenge file
-    optionInputs: ChallengeOptionInputSchema.array().nonempty().optional(), // the options inputs fields to display to the user
+    optionInputs: ChallengeOptionInputSchema.array().optional(), // the options inputs fields to display to the user
     type: ChallengeFromGetChallengeSchema.shape.type,
     challenge: ChallengeFromGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
     caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
     description: z.string().optional(), // describe what the challenge does to display in the UI
-    getChallenge: z
-        .function()
-        .args(SubplebbitChallengeSettingSchema, // challenge settings
-    z.custom(), // challenge request to process, no need to validate because extra props may be there
-    z.number().int().nonnegative(), // challenge index
-    z.custom() // the local subplebbit instance
-    )
-        .returns(z.promise(ResultOfGetChallengeSchema))
+    getChallenge: z.function({
+        input: [
+            SubplebbitChallengeSettingSchema, // challenge settings
+            z.custom(), // challenge request to process, no need to validate because extra props may be there
+            z.number().int().nonnegative(), // challenge index
+            z.custom() // the local subplebbit instance
+        ],
+        output: z.promise(ResultOfGetChallengeSchema)
+    })
 })
     .strict();
-export const SubplebbitChallengeSchema = z
-    .object({
+export const SubplebbitChallengeSchema = z.looseObject({
     exclude: ChallengeExcludeSchema.array().nonempty().optional(),
     description: ChallengeFileSchema.shape.description,
     challenge: ChallengeFileSchema.shape.challenge,
     type: ChallengeFileSchema.shape.type,
-    caseInsensitive: ChallengeFileSchema.shape.caseInsensitive
-})
-    .passthrough();
-export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeSettingSchema).returns(ChallengeFileSchema);
+    caseInsensitive: ChallengeFileSchema.shape.caseInsensitive,
+    pendingApproval: z.boolean().optional()
+});
+export const ChallengeFileFactorySchema = z.function({ input: [SubplebbitChallengeSettingSchema], output: ChallengeFileSchema });
 // Subplebbit actual schemas here
 export const SubplebbitIpfsSchema = z
     .object({
     posts: PostsPagesIpfsSchema.optional(),
+    modQueue: ModQueuePagesIpfsSchema.optional(),
     challenges: SubplebbitChallengeSchema.array(),
     signature: JsonSignatureSchema,
     encryption: SubplebbitEncryptionSchema,
@@ -190,7 +176,7 @@ export const SubplebbitIpfsSchema = z
 export const SubplebbitSignedPropertyNames = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["signature"]));
 // This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
 export const RpcRemoteSubplebbitUpdateEventResultSchema = z.object({
-    subplebbit: SubplebbitIpfsSchema.passthrough(),
+    subplebbit: SubplebbitIpfsSchema.loose(),
     updateCid: CidStringSchema,
     updatingState: z.custom().optional()
 });
@@ -207,7 +193,9 @@ export const SubplebbitSettingsSchema = z
     .object({
     fetchThumbnailUrls: z.boolean().optional(),
     fetchThumbnailUrlsProxyUrl: z.string().optional(), // TODO should we validate this url?
-    challenges: SubplebbitChallengeSettingSchema.array().optional() // If empty array it will remove all challenges
+    challenges: SubplebbitChallengeSettingSchema.array().optional(), // If empty array it will remove all challenges
+    maxPendingApprovalCount: z.number().int().nonnegative().optional(),
+    purgeDisapprovedCommentsOlderThan: z.number().int().nonnegative().optional()
 })
     .strict();
 const SubplebbitRoleToEditSchema = SubplebbitRoleSchema.or(z.undefined()); // when we pass undefined we're removing the role
@@ -250,7 +238,7 @@ export const CreateNewLocalSubplebbitParsedOptionsSchema = CreateNewLocalSubpleb
 // | RpcLocalSubplebbit
 // | RpcRemoteSubplebbit
 // | LocalSubplebbit = {}
-export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(SubplebbitIpfsSchema.passthrough());
+export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(SubplebbitIpfsSchema.loose());
 export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitFunctionArgumentSchema.or(CreateNewLocalSubplebbitUserOptionsSchema);
 export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(CreateRemoteSubplebbitFunctionArgumentSchema);
 // plebbit.listSubplebbits()
