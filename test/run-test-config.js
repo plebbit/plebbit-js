@@ -207,6 +207,14 @@ const runNodeTests = () => {
         path.join(projectRoot, "config", ".mocharc.json")
     ];
 
+    if (options.has("parallel")) {
+        mochaArgs.push("--parallel");
+        const jobs = getLastOption(options, "jobs");
+        if (jobs !== undefined && jobs !== true) {
+            mochaArgs.push("--jobs", String(jobs));
+        }
+    }
+
     if (mochaTimeoutValue !== undefined) {
         mochaArgs.push("--timeout", String(mochaTimeoutValue));
     }

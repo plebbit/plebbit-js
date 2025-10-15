@@ -47,7 +47,7 @@ jobs:
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
             - name: Run node tests (local config)
-              run: DEBUG="plebbit*" node test/run-test-config.js --environment node --mocha-spec test/node --run-timeout-ms 1740000 --log-prefix test_node_local
+              run: DEBUG="plebbit*" node test/run-test-config.js --parallel --environment node --mocha-spec test/node --run-timeout-ms 1740000 --log-prefix test_node_local
               shell: bash
             - name: Show Mocha test logs
               if: ${{ always() }}
