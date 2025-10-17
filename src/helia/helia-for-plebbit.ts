@@ -92,7 +92,6 @@ export async function createLibp2pJsClientOrUseExistingOne(
         routers: [createIpnsFetchRouter(helia), createIpnsPubusubRouter(helia)]
     });
 
-    //@ts-expect-error
     ipnsNameResolver.routers = ipnsNameResolver.routers.slice(1); // remove gateway ipns routing and keep only pubsub
 
     const throwIfHeliaIsStoppingOrStopped = () => {

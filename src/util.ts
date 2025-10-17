@@ -4,20 +4,13 @@ import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 //@ts-expect-error
 import extName from "ext-name";
 import { CID } from "kubo-rpc-client";
+import type { Multiaddr } from "@multiformats/multiaddr";
 import * as Digest from "multiformats/hashes/digest";
 import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type {
-    AddOptions,
-    AddResult,
-    BlockRmOptions,
-    create as CreateKuboRpcClient,
-    FilesCpOptions,
-    FilesRmOptions,
-    RoutingProvideOptions
-} from "kubo-rpc-client";
+import type { AddOptions, AddResult, BlockRmOptions, FilesCpOptions, FilesRmOptions, RoutingProvideOptions } from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -261,9 +254,20 @@ export function isIpfsPath(x: string): boolean {
     return x.startsWith("/ipfs/");
 }
 
-export function parseIpfsRawOptionToIpfsOptions(
-    kuboRpcRawOption: Parameters<typeof CreateKuboRpcClient>[0]
-): KuboRpcClient["_clientOptions"] {
+export type KuboRpcClientCreateOption =
+    | string
+    | URL
+    | Multiaddr
+    | (Record<string, unknown> & { url?: string | URL | Multiaddr });
+
+function isMultiaddrLike(value: unknown): value is Multiaddr {
+    if (typeof value !== "object" || value === null) return false;
+    if (!("bytes" in value)) return false;
+    const candidate = value as { bytes?: unknown };
+    return candidate.bytes instanceof Uint8Array;
+}
+
+export function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption: KuboRpcClientCreateOption): KuboRpcClient["_clientOptions"] {
     if (!kuboRpcRawOption) throw Error("Need to define the ipfs options");
     if (typeof kuboRpcRawOption === "string" || kuboRpcRawOption instanceof URL) {
         const url = new URL(kuboRpcRawOption);
@@ -273,8 +277,8 @@ export function parseIpfsRawOptionToIpfsOptions(
             url: authorization ? url.origin + url.pathname : kuboRpcRawOption.toString(),
             ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
         };
-    } else if ("bytes" in kuboRpcRawOption) return { url: kuboRpcRawOption };
-    else return kuboRpcRawOption;
+    } else if (isMultiaddrLike(kuboRpcRawOption)) return { url: kuboRpcRawOption };
+    else return kuboRpcRawOption as KuboRpcClient["_clientOptions"];
 }
 
 export function hideClassPrivateProps(_this: any) {

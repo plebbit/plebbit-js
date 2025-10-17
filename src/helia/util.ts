@@ -1,5 +1,5 @@
 import type { HeliaWithLibp2pPubsub } from "./types.js";
-import type { PeerInfo } from "@libp2p/interface";
+import type { PeerId, PeerInfo } from "@libp2p/interface";
 import { CID } from "multiformats/cid";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../plebbit-error.js";
@@ -17,7 +17,7 @@ export async function connectToPubsubPeers({
     maxPeers: number; // how many peers to dial before we stop
     log: Logger;
     options?: { signal?: AbortSignal };
-}) {
+}): Promise<Awaited<ReturnType<typeof helia.libp2p.dial>>[]> {
     // TODO need to check if this hangs or not
     const contentCid = pubsubTopicToDhtKeyCid(pubsubTopic);
     const peersWithContent: PeerInfo[] = [];
@@ -46,7 +46,7 @@ export async function connectToPubsubPeers({
                 log.trace("Breaking findProviders loop due to shouldStop flag (pubsub subscribers found)");
                 break;
             }
-            peersWithContent.push(peer);
+            peersWithContent.push(peer as PeerInfo);
             try {
                 const conn = await helia.libp2p.dial(peer.id, options); // will be a no-op if we're already connected
                 // if it succeeds, means we can connect to this peer
@@ -96,7 +96,7 @@ export async function connectToPubsubPeers({
     } else return connectedPeersWithContent;
 }
 
-export async function waitForTopicPeers(helia: HeliaWithLibp2pPubsub, topic: string, minPeers = 1, timeoutMs = 10000) {
+export async function waitForTopicPeers(helia: HeliaWithLibp2pPubsub, topic: string, minPeers = 1, timeoutMs = 10000): Promise<PeerId[]> {
     // after connecting to peers, we need to get the peers from the pubsub service
     const startTime = Date.now();
 
