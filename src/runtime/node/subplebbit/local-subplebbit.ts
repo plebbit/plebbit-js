@@ -2816,7 +2816,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._updateStartedValue();
             this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
             this._clientsManager.updateKuboRpcPubsubState("stopped", pubsubClient.url);
-            if (this._dbHandler) await this._dbHandler.destoryConnection();
+            if (this._dbHandler) this._dbHandler.destoryConnection();
             log(`Stopped the running of local subplebbit (${this.address})`);
             this._setState("stopped");
         } else if (this.state === "updating") {
@@ -2824,7 +2824,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 await this._updateLoopPromise;
                 this._updateLoopPromise = undefined;
             }
-            if (this._dbHandler) await this._dbHandler.destoryConnection();
+            if (this._dbHandler) this._dbHandler.destoryConnection();
             if (this._mirroredStartedOrUpdatingSubplebbit) await this._cleanUpMirroredStartedOrUpdatingSubplebbit();
             if (this._plebbit._updatingSubplebbits[this.address] === this) {
                 delete this._plebbit._updatingSubplebbits[this.address];
