@@ -6,7 +6,6 @@
 const ed = require('@noble/ed25519')
 const {fromString: uint8ArrayFromString} = require('uint8arrays/from-string')
 const {toString: uint8ArrayToString} = require('uint8arrays/to-string')
-const {Ed25519PublicKey, Ed25519PrivateKey} = require('libp2p-crypto/src/keys/ed25519-class')
 const cborg = require('cborg')
 
 const generatePrivateKey = async () => {
