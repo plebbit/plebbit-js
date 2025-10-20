@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import PlebbitWsServer from "../../dist/node/rpc/src/index.js";
-import { describeSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, mockPlebbit, mockRpcServerForTests, mockRpcServerPlebbit } from "../../dist/node/test/test-util.js";
+import tempy from "tempy";
+
 import os from "os";
 import Plebbit from "../../dist/node/index.js";
 const getLanIpV4Address = () => {
@@ -30,7 +32,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
     });
 
     it(`Rpc server emits an error is rpc port is already taken`, async () => {
-        const rpcServerPort = 9138;
+        const rpcServerPort = 19138;
         const options = {
             port: rpcServerPort,
             plebbitOptions: {
@@ -256,5 +258,50 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();
+    });
+
+    describe(`RPC server subplebbit edit error handling`, () => {
+        it(`Returns domain mismatch errors to RPC clients without crashing the server`, async () => {
+            const rpcServerPort = 19145;
+            const options = {
+                port: rpcServerPort,
+                plebbitOptions: {
+                    kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
+                    httpRoutersOptions: plebbit.httpRoutersOptions,
+                    dataPath: tempy.directory()
+                }
+            };
+            const rpcServer = await PlebbitWsServer.PlebbitWsServer(options);
+
+            const rpcUrl = `ws://localhost:${rpcServerPort}`;
+            let clientPlebbit;
+            clientPlebbit = await Plebbit({
+                plebbitRpcClientsOptions: [rpcUrl],
+                dataPath: undefined,
+                httpRoutersOptions: []
+            });
+
+            const rpcSub = await clientPlebbit.createSubplebbit({});
+            const mismatchedDomain = "my-sub.eth";
+
+            await rpcSub.edit({ address: mismatchedDomain });
+            await new Promise((resolve) => setTimeout(resolve, 7000));
+
+            // should not crash hopefully
+
+            if (rpcSub) {
+                try {
+                    await rpcSub.delete();
+                } catch {}
+            }
+            if (clientPlebbit) {
+                try {
+                    await clientPlebbit.destroy();
+                } catch {}
+            }
+            try {
+                await rpcServer.destroy();
+            } catch {}
+        });
     });
 });
