@@ -2435,7 +2435,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     async _editPropsOnNotStartedSubplebbit(parsedEditOptions: ParsedSubplebbitEditOptions): Promise<typeof this> {
         // sceneario 3, the sub is not running anywhere, we need to edit the db and update this instance
-        const log = Logger("plebbit-js:local-subplebbit:start:editPropsOnNotStartedSubplebbit");
+        const log = Logger("plebbit-js:local-subplebbit:edit:editPropsOnNotStartedSubplebbit");
         const oldAddress = remeda.clone(this.address);
         await this.initDbHandlerIfNeeded();
         await this._dbHandler.initDbIfNeeded();
@@ -2447,7 +2447,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // in this sceneario we're editing a subplebbit that's not started anywhere
             log("will rename the subplebbit", this.address, "db in edit() because the subplebbit is not being ran anywhere else");
             await this._movePostUpdatesFolderToNewAddress(this.address, parsedEditOptions.address);
-            await this._dbHandler.destoryConnection();
+            this._dbHandler.destoryConnection();
             await this._dbHandler.changeDbFilename(this.address, parsedEditOptions.address);
             await this._dbHandler.initDbIfNeeded();
             this.setAddress(parsedEditOptions.address);
@@ -2483,7 +2483,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._updateStartedValue();
         if (this.started && this.state !== "started") {
             // sceneario 2
-            await this._dbHandler.destoryConnection();
+            this._dbHandler.destoryConnection();
             throw new PlebbitError("ERR_CAN_NOT_EDIT_A_LOCAL_SUBPLEBBIT_THAT_IS_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
                 address: this.address,
                 dataPath: this._plebbit.dataPath
