@@ -1,10 +1,10 @@
 import { expect } from "chai";
-import PlebbitWsServer from "../../dist/node/rpc/src/index.js";
-import { describeSkipIfRpc, mockPlebbit, mockRpcServerForTests, mockRpcServerPlebbit } from "../../dist/node/test/test-util.js";
+import PlebbitWsServer from "../../../dist/node/rpc/src/index.js";
+import { describeSkipIfRpc, mockPlebbit, mockRpcServerForTests, mockRpcServerPlebbit } from "../../../dist/node/test/test-util.js";
 import tempy from "tempy";
 
 import os from "os";
-import Plebbit from "../../dist/node/index.js";
+import Plebbit from "../../../dist/node/index.js";
 const getLanIpV4Address = () => {
     const allInterfaces = os.networkInterfaces();
     for (const k in allInterfaces) {
