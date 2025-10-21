@@ -11,11 +11,15 @@ export class PlebbitError extends CustomError {
         super(messages[code]);
         this.code = code;
         this.message = messages[code];
-        this.details = details;
+        this.details = details ?? {};
+        this.stack = this.injectDetailsIntoStack(this.stack);
     }
 
     override toString() {
-        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(this.details)}\nStack: ${this.stack}`;
+        const formattedDetails = this.formatDetails();
+        const detailsSuffix = formattedDetails ? ` Details: ${formattedDetails}` : "";
+        const stackSuffix = this.stack ? `\nStack: ${this.stack}` : "";
+        return `${this.constructor.name}: ${this.code}: ${this.message}${detailsSuffix}${stackSuffix}`;
     }
 
     toJSON() {
@@ -73,6 +77,45 @@ export class PlebbitError extends CustomError {
             return this.toString();
         }
         return this.message;
+    }
+
+    private injectDetailsIntoStack(stack?: string) {
+        if (!stack) {
+            return stack;
+        }
+        const formattedDetails = this.formatDetails(true);
+        if (!formattedDetails) {
+            return stack;
+        }
+        const [firstLine, ...rest] = stack.split("\n");
+        const detailsLines = formattedDetails.split("\n");
+        const detailsBlock =
+            detailsLines.length === 1
+                ? `Details: ${detailsLines[0]}`
+                : `Details:\n${detailsLines.map((line) => `  ${line}`).join("\n")}`;
+        return [firstLine, detailsBlock, ...rest].join("\n");
+    }
+
+    private formatDetails(pretty = false): string | undefined {
+        const details = this.details;
+        if (details === undefined || details === null) {
+            return undefined;
+        }
+        if (typeof details === "object" && !Array.isArray(details) && Object.keys(details).length === 0) {
+            return undefined;
+        }
+        if (typeof details === "string") {
+            return details;
+        }
+        try {
+            return JSON.stringify(details, PlebbitError.jsonReplacer, pretty ? 2 : undefined);
+        } catch {
+            return String(details);
+        }
+    }
+
+    private static jsonReplacer(_: string, value: unknown) {
+        return typeof value === "bigint" ? value.toString() : value;
     }
 }
 
