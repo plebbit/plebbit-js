@@ -10,7 +10,7 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, FilesCpOptions, FilesRmOptions, RoutingProvideOptions } from "kubo-rpc-client";
+import type { AddOptions, AddResult, BlockRmOptions, FilesCpOptions, FilesRmOptions, FilesWriteOptions, RoutingProvideOptions } from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -499,6 +499,53 @@ export async function retryKuboIpfsAdd({
                 resolve(addRes);
             } catch (error) {
                 log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add content to IPFS:`, error);
+
+                if (operation.retry(error as Error)) return;
+
+                reject(operation.mainError() || error);
+            }
+        });
+    });
+}
+
+type KuboFilesWriteParameters = Parameters<Plebbit["clients"]["kuboRpcClients"][string]["_client"]["files"]["write"]>;
+
+export async function writeKuboFilesWithTimeout({
+    ipfsClient: kuboRpcClient,
+    log,
+    path,
+    content,
+    inputNumOfRetries,
+    options,
+    timeoutMs
+}: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "files">;
+    log: Logger;
+    path: KuboFilesWriteParameters[0];
+    content: KuboFilesWriteParameters[1];
+    inputNumOfRetries?: number;
+    options?: FilesWriteOptions;
+    timeoutMs?: number;
+}): Promise<void> {
+    const numOfRetries = inputNumOfRetries ?? 3;
+    const timeoutMilliseconds = timeoutMs ?? 15_000;
+
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 2000
+        });
+
+        operation.attempt(async (currentAttempt) => {
+            try {
+                await pTimeout(kuboRpcClient.files.write(path, content, options), {
+                    milliseconds: timeoutMilliseconds,
+                    message: `Timed out writing to MFS path ${path} after ${timeoutMilliseconds}ms`
+                });
+                resolve();
+            } catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to write content to MFS path ${path}:`, error);
 
                 if (operation.retry(error as Error)) return;
 

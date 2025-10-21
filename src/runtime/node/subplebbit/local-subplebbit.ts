@@ -34,6 +34,7 @@ import {
     getErrorCodeFromMessage,
     removeMfsFilesSafely,
     removeBlocksFromKuboNode,
+    writeKuboFilesWithTimeout,
     retryKuboIpfsAddAndProvide,
     getIpnsRecordInLocalKuboNode,
     calculateIpfsCidV0
@@ -2155,11 +2156,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     const { localMfsPath, newCommentUpdate } = row;
                     const content = deterministicStringify(newCommentUpdate);
 
-                    await kuboRpc._client.files.write(localMfsPath, content, {
-                        create: true,
-                        truncate: true,
-                        parents: true,
-                        flush: false
+                    await writeKuboFilesWithTimeout({
+                        ipfsClient: kuboRpc._client,
+                        log,
+                        path: localMfsPath,
+                        content,
+                        options: {
+                            create: true,
+                            truncate: true,
+                            parents: true,
+                            flush: false
+                        }
                     });
 
                     removedMfsPaths.push(localMfsPath);
