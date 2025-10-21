@@ -11,7 +11,6 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - run: sudo apt install -y xvfb
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -34,12 +33,12 @@ jobs:
       # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: yarn remove @plebbit/plebbit-js
       - run: yarn add ./plebbit-js
-      # build
-      - run: yarn webpack
+      # install playwright browsers
+      - run: yarn playwright install --with-deps chromium firefox
       # disable hosts we shouldn't use
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # test
       - run: DEBUG="plebbit-js:*" TESTING=1 yarn test:server & yarn test:server:wait-on
       - run: DEBUG="plebbit-js:*" yarn test
-      - run: DEBUG="plebbit-js:*" CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:browser
+      - run: DEBUG="plebbit-js:*" yarn test:browser
