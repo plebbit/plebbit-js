@@ -1,6 +1,6 @@
 import { createHelia } from "helia";
 import { ipns } from "@helia/ipns";
-import { gossipsub } from "@chainsafe/libp2p-gossipsub";
+import { gossipsub } from "@libp2p/gossipsub";
 import { identify } from "@libp2p/identify";
 import { CID } from "multiformats/cid";
 import { peerIdFromString } from "@libp2p/peer-id";
