@@ -2,7 +2,7 @@
 // stuff for browsers
 
 // nothing to polyfill in node
-import { setGlobalDispatcher, Agent } from "undici";
+import { setGlobalDispatcher, Agent, WebSocket } from "undici";
 import Logger from "@plebbit/plebbit-logger";
 
 // Add Promise.withResolvers polyfill for Node.js < 22
@@ -15,5 +15,10 @@ if (Number(process.versions.node.split(".")[0]) >= 18) {
     log("Patching up the global body timeout");
     setGlobalDispatcher(new Agent({ bodyTimeout: Number.MAX_SAFE_INTEGER }));
 }
+
+if (typeof (globalThis as { WebSocket?: unknown }).WebSocket === "undefined") {
+    Reflect.set(globalThis as object, "WebSocket", WebSocket);
+}
+
 // must export a function and call it or this file isn't read
 export default () => {};

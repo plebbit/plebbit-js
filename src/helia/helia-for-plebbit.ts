@@ -11,7 +11,6 @@ import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
 import { createIpnsFetchRouter, PlebbitIpnsGetOptions } from "./ipns-over-pubsub-with-fetch.js";
 import { pubsub as createIpnsPubusubRouter } from "@helia/ipns/routing";
-import { WebSocket } from "undici";
 import Logger from "@plebbit/plebbit-logger";
 import type { AddResult, NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
@@ -25,10 +24,6 @@ import { connectToPubsubPeers } from "./util.js";
 const log = Logger("plebbit-js:libp2p-js");
 
 const libp2pJsClients: Record<string, Libp2pJsClient> = {}; // key => plebbit.clients.libp2pJsClients[key]
-
-if (typeof (globalThis as { WebSocket?: unknown }).WebSocket === "undefined") {
-    Reflect.set(globalThis as object, "WebSocket", WebSocket);
-}
 
 function getDelegatedRoutingFields(routers: string[]) {
     const routersObj: Record<string, ReturnType<typeof createDelegatedRoutingV1HttpApiClient>> = {};
