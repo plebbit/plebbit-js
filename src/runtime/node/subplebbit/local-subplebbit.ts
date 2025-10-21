@@ -551,8 +551,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _calculateLatestUpdateTrigger() {
         const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
+        // these two checks below are for rare cases where a purged comments or post is not forcing sub for a new update
+        const lastPostCidChanged = this.lastPostCid !== this._dbHandler.queryLatestPostCid()?.cid;
+        const lastCommentCidChanged = this.lastCommentCid !== this._dbHandler.queryLatestCommentCid()?.cid;
+
         this._subplebbitUpdateTrigger =
-            this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0 || this._blocksToRm.length > 0; // we have at least one edit to include in new ipns
+            this._subplebbitUpdateTrigger ||
+            lastPublishTooOld ||
+            this._pendingEditProps.length > 0 ||
+            this._blocksToRm.length > 0 ||
+            lastCommentCidChanged ||
+            lastPostCidChanged; // we have at least one edit to include in new ipns
     }
 
     private _requireSubplebbitUpdateIfModQueueChanged() {
