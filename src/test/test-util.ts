@@ -669,6 +669,8 @@ export async function publishVote(
 }
 
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
+    const emittedErrors: Error[] = [];
+    publication.on("error", (err) => emittedErrors.push(err));
     const challengeVerificationPromise = new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
             if (verificationMsg.reason === messages["ERR_DUPLICATE_COMMENT"]) {
@@ -693,7 +695,8 @@ export async function publishWithExpectedResult(publication: Publication, expect
         publication,
         expectedChallengeSuccess,
         expectedReason,
-        waitTime: 90000
+        waitTime: 90000,
+        emittedErrorsOnPublicationInstance: emittedErrors
     };
 
     const validateResponsePromise = pTimeout(challengeVerificationPromise, {
