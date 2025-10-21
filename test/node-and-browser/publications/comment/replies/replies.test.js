@@ -69,11 +69,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             secondLevelReply = await publishRandomReply(firstLevelReply, plebbit);
             thirdLevelReply = await publishRandomReply(secondLevelReply, plebbit);
             await waitTillReplyInParentPagesInstance(firstLevelReply, post);
+            await post.stop(); // make sure updates are stopped so it does't change props while run our expect statements
             expect(post.replies.pages.best).to.exist;
             expect(post.replies.pages.best.comments.length).to.be.at.least(1); // we don't know if other tests will publish more replies
             expect(post.replies.pages.best.comments[0].cid).to.equal(firstLevelReply.cid);
             expect(post.replies.pages.best.nextCid).to.be.undefined; // only a single preloaded page
             expect(post.replies.pageCids).to.deep.equal({}); // no page cids cause it's a single preloaded page
+            await post.update();
         });
         it(`A preloaded page should not have a corresponding CID in post.replies.pageCids`, async () => {
             for (const preloadedPageSortName of Object.keys(post.replies.pages))
