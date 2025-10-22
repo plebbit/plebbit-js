@@ -140,6 +140,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const parentOfPurgedComment = await plebbit.createComment({ cid: commentToPurge.parentCid });
                     await parentOfPurgedComment.update();
                     await resolveWhenConditionIsTrue(parentOfPurgedComment, () => typeof parentOfPurgedComment.updatedAt === "number");
+                    await resolveWhenConditionIsTrue(parentOfPurgedComment, () => {
+                        const purgedCommentInParent = findCommentInPageInstanceRecursively(
+                            parentOfPurgedComment.replies,
+                            commentToPurge.cid
+                        );
+                        return purgedCommentInParent === undefined;
+                    });
                     await parentOfPurgedComment.stop();
                     const purgedCommentInParent = findCommentInPageInstanceRecursively(parentOfPurgedComment.replies, commentToPurge.cid);
                     expect(purgedCommentInParent).to.be.undefined;
@@ -265,8 +272,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     }
                 });
             it(`purged comment should not appear in subplebbit.lastPostCid`, async () => {
+                const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
+                await subplebbit.update();
                 await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.lastPostCid !== commentToPurge.cid);
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 expect(subplebbit.lastPostCid).to.not.equal(commentToPurge.cid);
             });
 
