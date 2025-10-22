@@ -265,6 +265,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     }
                 });
             it(`purged comment should not appear in subplebbit.lastPostCid`, async () => {
+                await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.lastPostCid !== commentToPurge.cid);
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 expect(subplebbit.lastPostCid).to.not.equal(commentToPurge.cid);
             });
