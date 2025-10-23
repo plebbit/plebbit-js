@@ -34,7 +34,11 @@ export class PlebbitError extends CustomError {
 
     // Custom Node.js util.inspect formatting
     [Symbol.for("nodejs.util.inspect.custom")]() {
-        return this.toJSON();
+        const { stack, ...rest } = this.toJSON();
+        return {
+            ...rest,
+            stack: typeof stack === "string" ? stack.split("\n") : stack
+        };
     }
 
     // Chrome DevTools custom formatting
