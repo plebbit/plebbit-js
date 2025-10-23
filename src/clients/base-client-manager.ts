@@ -542,21 +542,17 @@ export class BaseClientsManager {
 
     // IPFS P2P methods
     async resolveIpnsToCidP2P(ipnsName: string, loadOpts: { timeoutMs: number }): Promise<string> {
-        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
-
+        const ipnsResolveOpts = { nocache: true, recursive: true, ...loadOpts };
         const ipfsClient = this.getIpfsClientWithKuboRpcClientFunctions();
 
         const performIpnsResolve = async () => {
-            const resolvedCidOfIpns: string | undefined = await last(
-                ipfsClient.name.resolve(ipnsName, { nocache: true, recursive: true, ...loadOpts })
-            );
+            const resolvedCidOfIpns: string | undefined = await last(ipfsClient.name.resolve(ipnsName, ipnsResolveOpts));
 
             if (!resolvedCidOfIpns)
                 throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", {
                     resolvedCidOfIpns,
                     ipnsName,
-                    kuboRpcOrHelia,
-                    loadOpts
+                    ipnsResolveOpts
                 });
 
             return CidPathSchema.parse(resolvedCidOfIpns);
@@ -567,15 +563,14 @@ export class BaseClientsManager {
                 milliseconds: loadOpts.timeoutMs,
                 message: new PlebbitError("ERR_IPNS_RESOLUTION_P2P_TIMEOUT", {
                     ipnsName,
-                    loadOpts,
-                    kuboRpcOrHelia
+                    ipnsResolveOpts
                 })
             });
 
             return result;
         } catch (error) {
             //@ts-expect-error
-            error.details = { ...error.details, ipnsName, loadOpts };
+            error.details = { ...error.details, ipnsName, ipnsResolveOpts };
             throw error;
         }
 
