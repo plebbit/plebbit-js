@@ -577,6 +577,23 @@ export async function mockPlebbitNoDataPathWithOnlyKuboClient(opts?: MockPlebbit
     return plebbit;
 }
 
+export async function mockPlebbitNoDataPathWithOnlyKuboClientNoAdd(opts?: MockPlebbitOptions) {
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+            plebbitRpcClientsOptions: undefined,
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
+    });
+
+    Object.values(plebbit.clients.kuboRpcClients)[0]._client.add = () => {
+        throw Error("Add is not supported");
+    };
+    return plebbit;
+}
+
 export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await mockPlebbitV2({
         plebbitOptions,
@@ -1629,11 +1646,14 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment,
 
 export async function findOrPublishCommentWithDepth({
     depth,
-    subplebbit
+    subplebbit,
+    plebbit
 }: {
     depth: number;
     subplebbit: RemoteSubplebbit;
+    plebbit?: Plebbit;
 }): Promise<Comment> {
+    const plebbitWithDefault = plebbit || subplebbit._plebbit;
     let commentFromPreloadedPages: PageTypeJson["comments"][0] | undefined;
     if (subplebbit.posts.pages.hot) {
         processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
@@ -1643,13 +1663,13 @@ export async function findOrPublishCommentWithDepth({
         });
     }
 
-    if (commentFromPreloadedPages) return subplebbit._plebbit.createComment(commentFromPreloadedPages);
+    if (commentFromPreloadedPages) return plebbitWithDefault.createComment(commentFromPreloadedPages);
 
-    let curComment = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
+    let curComment = await publishRandomPost(subplebbit.address, plebbitWithDefault);
     if (curComment.depth === depth) return curComment;
 
     while (curComment.depth! < depth) {
-        curComment = await publishRandomReply(curComment as CommentIpfsWithCidDefined, subplebbit._plebbit, {});
+        curComment = await publishRandomReply(curComment as CommentIpfsWithCidDefined, plebbitWithDefault, {});
         if (curComment.depth === depth) return curComment;
     }
     throw Error("Failed to find or publish comment with depth");
