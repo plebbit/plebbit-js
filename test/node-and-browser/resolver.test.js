@@ -163,7 +163,7 @@ describe("Comments with Authors as domains", async () => {
             mockUpdatingCommentResolvingAuthor(comment, (authorAddress) =>
                 authorAddress === "plebbit.eth" ? signers[7].address : originalResolvingFunction
             );
-            await resolveWhenConditionIsTrue(comment, () => comment.author?.address);
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => comment.author?.address });
             await comment.stop();
             expect(comment.author.address).to.equal(signers[6].address);
             await tempPlebbit.destroy();

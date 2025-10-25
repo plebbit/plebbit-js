@@ -29,7 +29,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         const plebbit = await mockPlebbit();
         subBeforeMigration = await createSubWithNoChallenge({}, plebbit);
         await subBeforeMigration.start();
-        await resolveWhenConditionIsTrue(subBeforeMigration, () => typeof subBeforeMigration.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subBeforeMigration, predicate: () => typeof subBeforeMigration.updatedAt === "number" });
         const post = await publishRandomPost(subBeforeMigration.address, plebbit);
         await publishRandomReply(post, plebbit);
         // publish a post with extra prop here
@@ -47,7 +47,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         subAfterMigration = await createSubWithNoChallenge({ address: subBeforeMigration.address }, plebbitDifferentIpfs);
         expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);
         await subAfterMigration.start(); // should migrate everything here
-        await resolveWhenConditionIsTrue(subAfterMigration, () => subAfterMigration.updatedAt > subBeforeMigration.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: subAfterMigration, predicate: () => subAfterMigration.updatedAt > subBeforeMigration.updatedAt });
 
         expect(subAfterMigration.lastPostCid).to.equal(postWithExtraProps.cid);
         expect(subAfterMigration.lastCommentCid).to.equal(replyOfPostWithExtraProps.cid);

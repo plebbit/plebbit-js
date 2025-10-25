@@ -66,7 +66,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
 
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.upvoteCount === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.upvoteCount === "number" });
             await mockPost.stop();
 
             expect(actualStates).to.deep.equal(expectedStates);
@@ -95,7 +95,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             await reply.update();
 
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
             await reply.stop();
 
             expect(actualStates).to.deep.equal(expectedStates);
@@ -120,7 +120,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
             await mockPost.stop();
 
             expect(actualStates).to.deep.equal(expectedStates);
@@ -190,7 +190,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
 
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
 
             await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
 

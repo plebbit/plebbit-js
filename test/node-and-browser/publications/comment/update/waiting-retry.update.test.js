@@ -26,7 +26,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 // Start the update process
                 await createdComment.update();
 
-                await resolveWhenConditionIsTrue(createdComment, () => waitingRetries.length === 3, "error");
+                await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => waitingRetries.length === 3, eventName: "error" });
 
                 await createdComment.stop();
                 for (const waitingRetryErr of waitingRetries) {

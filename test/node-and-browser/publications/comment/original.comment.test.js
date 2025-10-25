@@ -35,7 +35,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const cid = originalComment.cid;
             const comment = await plebbit.createComment({ cid });
             await comment.update();
-            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
             expect(comment.original.author.address).to.equal(originalComment.author.address);
             expect(comment.original.author.subplebbit).to.be.undefined;
             expect(comment.original.content).to.equal(originalComment.content);

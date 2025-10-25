@@ -32,7 +32,7 @@ describe(`subplebbit.statsCid`, async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
     after(async () => {
@@ -101,7 +101,7 @@ describe(`subplebbit.statsCid`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
             await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[3] });
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.statsCid !== oldStatsCid);
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.statsCid !== oldStatsCid });
             expect(subplebbit.statsCid).to.not.equal(oldStatsCid);
             const statsAfterNewVote = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 

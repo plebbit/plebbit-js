@@ -118,7 +118,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             const comment = await multipleGatewayPlebbit.getComment(await getRandomPostCidFromSub(subplebbitAddress, plebbit));
             await comment.update();
-            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
             const mockedPageIpfs = await addStringToIpfs(JSON.stringify({ comments: [comment.raw] })); // wrong schema, but goal is to test for states
             comment.replies.pageCids.new = mockedPageIpfs; // random cid
 
@@ -178,7 +178,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
             const comment = await plebbit.getComment(commentCid);
             await comment.update();
-            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
 
             const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
 

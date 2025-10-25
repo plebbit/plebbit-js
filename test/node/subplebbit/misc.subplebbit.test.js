@@ -22,7 +22,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
         plebbit = await mockPlebbit();
         sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
     });
 
     after(async () => {
@@ -45,7 +45,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     });
 
     it(`subplebbit.lastCommentCid reflects latest comment (post or reply)`, async () => {
-        await resolveWhenConditionIsTrue(sub, () => sub.posts.pages.hot?.comments[0]?.replyCount > 0);
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.posts.pages.hot?.comments[0]?.replyCount > 0 });
         expect(sub.lastCommentCid).to.equal(sub.posts.pages.hot.comments[0].replies.pages.best.comments[0].cid);
     });
 });
@@ -76,7 +76,7 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const plebbit = await mockPlebbit(plebbitOptions);
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         await publishRandomPost(sub.address, plebbit);
         await sub.delete();
         await plebbit.destroy();
@@ -93,7 +93,7 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const plebbit = await mockPlebbit(plebbitOptions);
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         await publishRandomPost(sub.address, plebbit);
         await sub.delete();
         await plebbit.destroy();
@@ -119,7 +119,7 @@ describe(`subplebbit.pubsubTopic`, async () => {
         await subplebbit.edit({ pubsubTopic: undefined });
         expect(subplebbit.pubsubTopic).to.be.undefined;
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         expect(subplebbit.pubsubTopic).to.be.undefined;
 
         const post = await publishRandomPost(subplebbit.address, plebbit, {});
@@ -137,7 +137,7 @@ describe.skip(`comment.link`, async () => {
         expect(subplebbit.settings.fetchThumbnailUrls).to.be.true;
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
     after(async () => {
@@ -281,7 +281,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await mockSub.start();
 
-            await resolveWhenConditionIsTrue(mockSub, () => typeof mockSub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockSub, predicate: () => typeof mockSub.updatedAt === "number" });
 
             const challengeVerificationPromise = new Promise((resolve) => mockSub.once("challengeverification", resolve));
             await publishRandomPost(mockSub.address, plebbit);
@@ -312,7 +312,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await mockSub.start();
 
-            await resolveWhenConditionIsTrue(mockSub, () => typeof mockSub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockSub, predicate: () => typeof mockSub.updatedAt === "number" });
 
             const post = await generateMockPost(mockSub.address, plebbit);
             post.once("challenge", async () => {
@@ -407,7 +407,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await sub.start();
 
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
             const post = await publishRandomPost(sub.address, plebbit, {});
             await waitTillPostInSubplebbitPages(post, plebbit);
@@ -440,7 +440,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await sub.start();
 
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
             const mockPost = await generateMockPost(sub.address, plebbit);
 

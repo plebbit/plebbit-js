@@ -20,7 +20,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
     after(async () => {
@@ -36,7 +36,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
 
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         await remoteSub.update();
-        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.requirePostLink);
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.requirePostLink });
 
         expect(remoteSub.features.requirePostLink).to.be.true;
         await remoteSub.stop();
@@ -64,7 +64,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
     after(async () => {
@@ -80,7 +80,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         expect(subplebbit.features.requirePostLinkIsMedia).to.be.true;
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         await remoteSub.update();
-        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.requirePostLinkIsMedia);
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.requirePostLinkIsMedia });
         expect(remoteSub.features.requirePostLinkIsMedia).to.be.true;
         await remoteSub.stop();
     });
@@ -109,7 +109,7 @@ describe(`subplebbit.features.noUpvotes`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
@@ -127,7 +127,7 @@ describe(`subplebbit.features.noUpvotes`, async () => {
         expect(subplebbit.features.noUpvotes).to.be.true;
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         await remoteSub.update();
-        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.noUpvotes); // that means we published a new update
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.noUpvotes }); // that means we published a new update
 
         expect(remoteSub.features.noUpvotes).to.be.true;
         await remoteSub.stop();
@@ -154,7 +154,7 @@ describe(`subplebbit.features.noDownvotes`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
@@ -171,7 +171,7 @@ describe(`subplebbit.features.noDownvotes`, async () => {
         expect(subplebbit.features.noDownvotes).to.be.true;
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         await remoteSub.update();
-        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.noDownvotes); // that means we published a new update
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.noDownvotes }); // that means we published a new update
 
         await remoteSub.stop();
         expect(remoteSub.features.noDownvotes).to.be.true;
@@ -201,7 +201,7 @@ describe(`subplebbit.features.noPostDownvotes`, async () => {
         await subplebbit.edit({ features: { ...subplebbit.features, noPostDownvotes: true } });
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
@@ -244,7 +244,7 @@ describe(`subplebbit.features.noPostUpvotes`, async () => {
         await subplebbit.edit({ features: { ...subplebbit.features, noPostUpvotes: true } });
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
@@ -288,7 +288,7 @@ describe(`subplebbit.features.noReplyDownvotes`, async () => {
         await subplebbit.edit({ features: { ...subplebbit.features, noReplyDownvotes: true } });
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
 
@@ -331,7 +331,7 @@ describe(`subplebbit.features.noReplyUpvotes`, async () => {
         await subplebbit.edit({ features: { ...subplebbit.features, noReplyUpvotes: true } });
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
 

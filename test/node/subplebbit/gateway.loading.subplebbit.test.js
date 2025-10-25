@@ -133,8 +133,8 @@ describe("Gateway loading of local subplebbit IPNS", async () => {
             }
         });
 
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updateCid === "string");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updateCid === "string" });
         latestUpdateCid = subplebbit.updateCid;
     });
 

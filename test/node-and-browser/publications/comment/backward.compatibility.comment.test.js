@@ -184,7 +184,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const loadedPostFromCreate = await plebbit.createComment({ cid: postWithExtraAuthorProp.cid });
                 await loadedPostFromCreate.update();
-                await resolveWhenConditionIsTrue(loadedPostFromCreate, () => typeof loadedPostFromCreate.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: loadedPostFromCreate, predicate: () => typeof loadedPostFromCreate.updatedAt === "number" });
                 await loadedPostFromCreate.stop();
 
                 const shapes = [

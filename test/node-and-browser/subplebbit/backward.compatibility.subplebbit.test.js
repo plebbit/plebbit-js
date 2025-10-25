@@ -46,7 +46,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await sub.update();
 
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
             expect(sub.toJSONIpfs().extraProp).to.equal(opts.extraProps.extraProp);
 

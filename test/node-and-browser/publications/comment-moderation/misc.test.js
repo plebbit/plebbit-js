@@ -133,7 +133,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(commentMod, true);
             await modPost.update();
 
-            await resolveWhenConditionIsTrue(modPost, () => modPost.removed === true);
+            await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.removed === true });
             await modPost.stop();
             expect(modPost.locked).to.be.true;
             expect(modPost.raw.commentUpdate.locked).to.be.true;
@@ -198,7 +198,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(commentModeration2, true);
 
             await modPost.update();
-            await resolveWhenConditionIsTrue(modPost, () => modPost.removed === fieldsToChange.removed);
+            await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.removed === fieldsToChange.removed });
 
             await modPost.stop();
             expect(modPost.locked).to.be.false;
@@ -258,7 +258,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await authorPost.update();
 
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost.removed === modFieldsToChange.removed);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.removed === modFieldsToChange.removed });
 
             await authorPost.stop();
 
@@ -327,7 +327,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await authorPost.update();
 
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost?.edit?.spoiler === authorFieldsToChange.spoiler);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost?.edit?.spoiler === authorFieldsToChange.spoiler });
 
             await authorPost.stop();
 

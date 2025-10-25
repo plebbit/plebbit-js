@@ -92,7 +92,7 @@ describe(`plebbit.destroy()`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         expect(sub.state).to.equal("started");
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         await plebbit.destroy();
         expect(sub.state).to.equal("stopped");
     });

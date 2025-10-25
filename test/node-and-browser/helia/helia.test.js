@@ -47,7 +47,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
             expect(comment.signature).to.be.a("object");
 
             await comment.update();
-            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
             expect(comment.author.subplebbit).to.be.a("object");
             await comment.stop();
         });

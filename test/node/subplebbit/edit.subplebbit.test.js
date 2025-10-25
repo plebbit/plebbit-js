@@ -49,7 +49,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
 
         await plebbit.resolveAuthorAddress("esteban.eth");
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         await publishRandomPost(subplebbit.address, plebbit);
     });
     after(async () => {
@@ -66,7 +66,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
                 expect(subplebbit[keyToEdit]).to.equal(newValue);
                 const updatingRemoteSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
                 await updatingRemoteSubplebbit.update();
-                await resolveWhenConditionIsTrue(updatingRemoteSubplebbit, () => updatingRemoteSubplebbit[keyToEdit] === newValue);
+                await resolveWhenConditionIsTrue({ toUpdate: updatingRemoteSubplebbit, predicate: () => updatingRemoteSubplebbit[keyToEdit] === newValue });
                 await updatingRemoteSubplebbit.stop();
                 expect(updatingRemoteSubplebbit[keyToEdit]).to.equal(newValue);
                 expect(updatingRemoteSubplebbit.raw.subplebbitIpfs).to.deep.equal(subplebbit.raw.subplebbitIpfs);
@@ -76,7 +76,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     it(`An update is triggered after calling subplebbit.edit()`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
         await sub.edit({ features: { requirePostLink: true } });
         expect(sub.features.requirePostLink).to.be.true;
@@ -102,9 +102,11 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
 
     it(`plebbit.subplebbits includes the new ENS address, and not the old address`, async () => {
         await resolveWhenConditionIsTrue(
-            plebbit,
-            () => plebbit.subplebbits.includes(ethAddress) && !plebbit.subplebbits.includes(subplebbit.signer.address),
-            "subplebbitschange"
+            {
+                toUpdate: plebbit,
+                predicate: () => plebbit.subplebbits.includes(ethAddress) && !plebbit.subplebbits.includes(subplebbit.signer.address),
+                eventName: "subplebbitschange",
+            }
         );
         const subs = plebbit.subplebbits;
         expect(subs).to.include(ethAddress);
@@ -142,8 +144,8 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     });
 
     it(`Posts submitted to new sub address are shown in subplebbit.posts`, async () => {
-        await resolveWhenConditionIsTrue(subplebbit, () =>
-            subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid)
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () =>
+            subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid) }
         );
         expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal([]); // empty array because it's a single preloaded page
     });
@@ -216,7 +218,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
             expectSubToHaveLatestEditProps(subToEdit);
             expectSubToHaveLatestEditProps(startedSub);
 
-            await resolveWhenConditionIsTrue(updatingSubplebbit, () => hasLatestEditProps(updatingSubplebbit));
+            await resolveWhenConditionIsTrue({ toUpdate: updatingSubplebbit, predicate: () => hasLatestEditProps(updatingSubplebbit) });
             expectSubToHaveLatestEditProps(startedSub);
             expectSubToHaveLatestEditProps(subToEdit);
             expectSubToHaveLatestEditProps(updatingSubplebbit);
@@ -352,7 +354,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         expect(await sub._dbHandler.isSubStartLocked(domain)).to.be.false;
 
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
         expect(sub.address).to.equal(domain);
         // Check for locks
@@ -425,7 +427,7 @@ describe(`Editing subplebbit.roles`, async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         sub = await plebbit.createSubplebbit();
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => Boolean(sub.updatedAt));
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => Boolean(sub.updatedAt) });
     });
 
     after(async () => {
@@ -473,7 +475,7 @@ describe(`Editing subplebbit.roles`, async () => {
         // This test is not needed anymore because zod will catch it
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
-        await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
+        await resolveWhenConditionIsTrue({ toUpdate: newSub, predicate: () => newSub.updatedAt }); // wait until it publishes an ipns record
         await remotePlebbit.getSubplebbit(newSub.address); // no problem with signature
 
         const newRoles = { "author-address.eth": { role: null }, "author-address2.eth": { role: "admin" } };
@@ -500,7 +502,7 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
         subplebbit = await plebbit.createSubplebbit({ signer });
         expect(subplebbit.address).to.equal(signer.address);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
     after(async () => {
@@ -520,7 +522,7 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
             const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient(); // This plebbit instance won't use RPC
             const loadedSubplebbit = await remotePlebbit.createSubplebbit({ address: subplebbit.address });
             await loadedSubplebbit.update();
-            await resolveWhenConditionIsTrue(loadedSubplebbit, () => loadedSubplebbit[keyToEdit] === newValue);
+            await resolveWhenConditionIsTrue({ toUpdate: loadedSubplebbit, predicate: () => loadedSubplebbit[keyToEdit] === newValue });
             expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
             await loadedSubplebbit.stop();
             await remotePlebbit.destroy();

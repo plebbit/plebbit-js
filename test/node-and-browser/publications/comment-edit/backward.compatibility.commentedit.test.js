@@ -26,7 +26,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             commentToEdit = await publishRandomPost(signers[0].address, plebbit);
             await commentToEdit.update();
-            await resolveWhenConditionIsTrue(commentToEdit, () => typeof commentToEdit.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: commentToEdit, predicate: () => typeof commentToEdit.updatedAt === "number" });
         });
 
         after(async () => {

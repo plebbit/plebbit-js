@@ -65,7 +65,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         sub = await plebbit.createSubplebbit();
         await sub.edit({ settings });
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
         // Set up viem account
         const privateKey = generatePrivateKey();

@@ -18,7 +18,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await sub.update();
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.a("object");
 
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.a("object");
             expect(plebbit._updatingSubplebbits[subplebbitAddress].raw.subplebbitIpfs).to.deep.equal(sub.raw.subplebbitIpfs);
             await sub.stop();
@@ -39,7 +39,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await sub3.update();
             expect(sub3.state).to.equal("updating");
 
-            await Promise.all([sub1, sub2, sub3].map((sub) => resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number")));
+            await Promise.all([sub1, sub2, sub3].map((sub) => resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" })));
 
             // all subs have received an update event now
             expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.be.a("number");
@@ -70,7 +70,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`Creating a new sub instance when it's already been updating before should give us latest SubplebbitIpfs on the created sub instance`, async () => {
             const sub1 = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub1.update();
-            await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: sub1, predicate: () => typeof sub1.updatedAt === "number" });
 
             // Verify that _updatingSubplebbits has the same updatedAt as sub1
             expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.equal(sub1.updatedAt);
@@ -113,7 +113,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const commentCid = sub.posts.pages.hot.comments[0].cid;
                 const comment1 = await plebbit.createComment({ cid: commentCid });
                 await comment1.update();
-                await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: comment1, predicate: () => typeof comment1.updatedAt === "number" });
 
                 // Verify that _updatingSubplebbits exists and has the expected properties
                 expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
@@ -144,7 +144,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(comment1._subplebbitForUpdating).to.be.undefined;
 
                 await comment1.update();
-                await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: comment1, predicate: () => typeof comment1.updatedAt === "number" });
 
                 const updatingCommentInstance = plebbit._updatingComments[comment1.cid];
                 expect(updatingCommentInstance).to.exist;
@@ -161,7 +161,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 );
 
                 await comment2.update();
-                await resolveWhenConditionIsTrue(comment2, () => typeof comment2.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: comment2, predicate: () => typeof comment2.updatedAt === "number" });
                 expect(updatingCommentInstance._subplebbitForUpdating).to.be.a("object");
 
                 expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1); // should not change

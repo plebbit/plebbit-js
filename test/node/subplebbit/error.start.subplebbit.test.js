@@ -21,7 +21,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
     it(`subplebbit.start() emits errors and recovers if the sync loop crashes once`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const errors = [];
         sub.on("error", (err) => errors.push(err));
         sub._listenToIncomingRequests = async () => {
@@ -30,7 +30,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         try {
             await publishRandomPost(sub.address, plebbit);
         } catch {}
-        await resolveWhenConditionIsTrue(sub, () => errors.length >= 3, "error");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => errors.length >= 3, eventName: "error" });
 
         await sub.delete();
 
@@ -43,7 +43,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
     it(`subplebbit.start() emits errors if kubo API call  fails`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const errors = [];
         sub.on("error", (err) => errors.push(err));
 
@@ -55,7 +55,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         };
         await publishRandomPost(sub.address, plebbit);
 
-        await resolveWhenConditionIsTrue(sub, () => errors.length === 3, "error");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => errors.length === 3, eventName: "error" });
 
         await sub.delete();
         ipfsClient.files.write = originalCp;
@@ -69,7 +69,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
     it(`subplebbit.start can recover if pubsub.ls() fails`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const errors = [];
         sub.on("error", (err) => errors.push(err));
 
@@ -80,7 +80,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
             throw Error("Failed to ls pubsub topics");
         };
 
-        await resolveWhenConditionIsTrue(sub, () => errors.length === 3, "error");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => errors.length === 3, eventName: "error" });
 
         pubsubClient.pubsub.ls = originalPubsub;
 

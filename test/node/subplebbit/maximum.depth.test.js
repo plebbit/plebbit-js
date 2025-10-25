@@ -16,7 +16,7 @@ describe.skip(`Test for maximum depth of ${depth}`, () => {
         const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => sub.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.updatedAt });
 
         const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const post = await publishRandomPost(sub.address, remotePlebbit);

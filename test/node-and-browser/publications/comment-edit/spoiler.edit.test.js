@@ -53,7 +53,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(spoilerEdit, true);
         });
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost.spoiler === true);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.spoiler === true });
             expect(authorPost.edit.spoiler).to.be.true;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
             expect(authorPost.raw.commentUpdate.spoiler).to.be.undefined;
@@ -76,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`The new Comment with spoiler=true has valid signature`, async () => {
             const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
             await recreatedPost.update();
-            await resolveWhenConditionIsTrue(recreatedPost, () => typeof recreatedPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: recreatedPost, predicate: () => typeof recreatedPost.updatedAt === "number" });
 
             await recreatedPost.stop();
             expect(recreatedPost.spoiler).to.be.true;
@@ -113,7 +113,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unspoilerEdit, true);
         });
         it(`A new CommentUpdate is published with spoiler=false`, async () => {
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost.spoiler === false);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.spoiler === false });
             expect(authorPost.edit.spoiler).to.be.false;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
             expect(authorPost.raw.commentUpdate.spoiler).to.be.undefined;
@@ -160,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
-            await resolveWhenConditionIsTrue(modPost, () => modPost.spoiler === true);
+            await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.spoiler === true });
             expect(modPost.edit.spoiler).to.be.true;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;
             expect(modPost.raw.commentUpdate.spoiler).to.be.undefined;
@@ -191,7 +191,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with spoiler=false`, async () => {
-            await resolveWhenConditionIsTrue(modPost, () => modPost.spoiler === false);
+            await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.spoiler === false });
             expect(modPost.edit.spoiler).to.be.false;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;
             expect(modPost.raw.commentUpdate.spoiler).to.be.undefined;

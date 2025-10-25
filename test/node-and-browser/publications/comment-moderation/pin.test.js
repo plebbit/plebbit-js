@@ -75,11 +75,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const posts = firstPage.comments;
             await removeAllPins(posts, plebbit);
             // wait until all posts are unpinned
-            await resolveWhenConditionIsTrue(sub, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
                 const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage(sub.posts.pageCids.new) : sub.posts.pages.hot;
                 const posts = firstPage.comments;
                 return posts.every((comment) => !comment.pinned);
-            });
+            } });
         });
 
         after(async () => {
@@ -115,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(pinEdit, true);
         });
         it(`A new CommentUpdate is published with pinned=true`, async () => {
-            await resolveWhenConditionIsTrue(postToPin, () => postToPin.pinned === true);
+            await resolveWhenConditionIsTrue({ toUpdate: postToPin, predicate: () => postToPin.pinned === true });
             expect(postToPin.pinned).to.be.true;
             expect(postToPin.raw.commentUpdate.pinned).to.be.true;
             expect(postToPin.raw.commentUpdate.edit).to.be.undefined;
@@ -132,10 +132,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue(sub, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
                 const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
                 return postInPage?.pinned;
-            });
+            } });
 
             expect(Object.keys(sub.posts.pageCids).every((key) => Object.keys(POSTS_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
             await sub.stop();
@@ -165,10 +165,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue(sub, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
                 const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
                 return postInPage?.pinned;
-            });
+            } });
 
             await sub.stop();
             for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
@@ -205,7 +205,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(pinEdit, true);
         });
         it(`A new CommentUpdate is published with pinned=false`, async () => {
-            await resolveWhenConditionIsTrue(secondPostToPin, () => secondPostToPin.pinned === false);
+            await resolveWhenConditionIsTrue({ toUpdate: secondPostToPin, predicate: () => secondPostToPin.pinned === false });
             expect(secondPostToPin.pinned).to.be.false;
             expect(secondPostToPin.raw.commentUpdate.pinned).to.be.false;
             expect(secondPostToPin.raw.commentUpdate.edit).to.be.undefined;
@@ -222,10 +222,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue(sub, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
                 const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
                 return !postInPage?.pinned;
-            });
+            } });
 
             await sub.stop();
 
@@ -268,7 +268,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         const populatePost = async () => {
             if (post.replyCount < 5) {
                 await Promise.all(new Array(10).fill(null).map((x) => publishRandomReply(post, plebbit)));
-                await resolveWhenConditionIsTrue(post, () => post.replyCount > 5);
+                await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount > 5 });
             }
         };
         before(async () => {
@@ -307,10 +307,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await postToRecreate.update();
 
-            await resolveWhenConditionIsTrue(postToRecreate, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: postToRecreate, predicate: async () => {
                 const replyInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(replyToPin.cid, postToRecreate.replies);
                 return replyInPage?.pinned;
-            });
+            } });
 
             await postToRecreate.stop();
 

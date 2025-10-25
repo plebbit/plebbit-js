@@ -56,7 +56,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: commentToBeEdited.signer
             });
             await publishWithExpectedResult(commentEdit, true);
-            await resolveWhenConditionIsTrue(commentToBeEdited, () => commentToBeEdited.content === editedText);
+            await resolveWhenConditionIsTrue({ toUpdate: commentToBeEdited, predicate: () => commentToBeEdited.content === editedText });
             expect(commentToBeEdited.edit.content).to.equal(editedText);
             expect(commentToBeEdited.raw.commentUpdate.edit.content).to.equal(editedText);
             expect(commentToBeEdited.raw.commentUpdate.edit.reason).to.equal(editReason);
@@ -75,7 +75,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const recreatedComment = await plebbit.getComment(commentToBeEdited.cid);
             await recreatedComment.update();
 
-            await resolveWhenConditionIsTrue(recreatedComment, () => typeof recreatedComment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: recreatedComment, predicate: () => typeof recreatedComment.updatedAt === "number" });
             await recreatedComment.stop();
 
             for (const commentJson of [
@@ -153,7 +153,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: commentToBeEdited.signer
             });
             await publishWithExpectedResult(commentEdit, true);
-            await resolveWhenConditionIsTrue(commentToBeEdited, () => commentToBeEdited.content === editedText);
+            await resolveWhenConditionIsTrue({ toUpdate: commentToBeEdited, predicate: () => commentToBeEdited.content === editedText });
             expect(commentToBeEdited.edit.content).to.equal(editedText);
             expect(commentToBeEdited.content).to.equal(editedText);
             expect(commentToBeEdited.original?.content).to.equal(originalContent);
@@ -178,7 +178,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: roleTest.signer
                 });
                 await publishWithExpectedResult(commentEdit, true);
-                await resolveWhenConditionIsTrue(commentToEdit, () => commentToEdit.edit?.content === editedText);
+                await resolveWhenConditionIsTrue({ toUpdate: commentToEdit, predicate: () => commentToEdit.edit?.content === editedText });
                 expect(commentToEdit.edit.content).to.equal(editedText);
                 expect(commentToEdit.content).to.equal(editedText);
                 expect(commentToEdit.original?.content).to.equal(originalContent);

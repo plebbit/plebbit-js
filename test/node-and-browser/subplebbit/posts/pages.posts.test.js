@@ -328,7 +328,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const post = await plebbit.getComment(newPost.cid);
                 await post.update();
-                await resolveWhenConditionIsTrue(post, () => post.replies.pages.best);
+                await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replies.pages.best });
                 await post.stop();
 
                 // Get a replies page

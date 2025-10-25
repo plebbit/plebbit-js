@@ -16,7 +16,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
             expect(post.replyCount).to.equal(0);
         });
 
@@ -28,14 +28,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             reply = await publishRandomReply(post, plebbit);
             await reply.update();
             await new Promise((resolve) => reply.once("update", resolve));
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 1 });
             expect(post.replyCount).to.equal(1);
         });
 
         it(`post.replyCount increases with a reply of a reply`, async () => {
             await publishRandomReply(reply, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
-            await resolveWhenConditionIsTrue(reply, () => reply.replyCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 2 });
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => reply.replyCount === 1 });
             expect(post.replyCount).to.equal(2);
             expect(reply.replyCount).to.equal(1);
         });
@@ -47,7 +47,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
             expect(post.lastChildCid).to.be.undefined;
         });
 
@@ -57,14 +57,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`commentUpdate.lastChildCid updates to the latest child comment when replying to post directly`, async () => {
             const reply = await publishRandomReply(post, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 1 });
             expect(post.replyCount).to.equal(1);
             expect(post.lastChildCid).to.equal(reply.cid);
         });
 
         it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
             await publishRandomReply(post.replies.pages.best.comments[0], plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 2 });
             expect(post.replyCount).to.equal(2);
             expect(post.lastChildCid).to.equal(post.replies.pages.best.comments[0].cid);
         });
@@ -76,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
             expect(post.lastReplyTimestamp).to.be.undefined;
         });
 
@@ -86,14 +86,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
             reply = await publishRandomReply(post, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 1 });
             expect(post.replyCount).to.equal(1);
             expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
         });
 
         it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
             const replyOfReply = await publishRandomReply(reply, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 2 });
             expect(post.replyCount).to.equal(2);
             expect(post.lastReplyTimestamp).to.equal(replyOfReply.timestamp);
         });
@@ -115,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`post.author.subplebbit.postScore increases with upvote to post`, async () => {
             await publishVote(post.cid, post.subplebbitAddress, 1, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.upvoteCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.upvoteCount === 1 });
             expect(post.upvoteCount).to.equal(1);
             expect(post.author.subplebbit.postScore).to.equal(1);
             expect(post.author.subplebbit.replyScore).to.equal(0);
@@ -125,8 +125,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer });
             await anotherPost.update();
             await publishVote(anotherPost.cid, anotherPost.subplebbitAddress, 1, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.postScore === 2);
-            await resolveWhenConditionIsTrue(anotherPost, () => anotherPost.upvoteCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.author.subplebbit.postScore === 2 });
+            await resolveWhenConditionIsTrue({ toUpdate: anotherPost, predicate: () => anotherPost.upvoteCount === 1 });
             expect(anotherPost.upvoteCount).to.equal(1);
             expect(anotherPost.author.subplebbit.postScore).to.equal(2);
             expect(anotherPost.author.subplebbit.replyScore).to.equal(0);
@@ -142,8 +142,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const reply = await publishRandomReply(post, plebbit, { signer: post.signer });
             await reply.update();
             await publishVote(reply.cid, reply.subplebbitAddress, 1, plebbit);
-            await resolveWhenConditionIsTrue(reply, () => reply.upvoteCount === 1);
-            await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.replyScore === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => reply.upvoteCount === 1 });
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.author.subplebbit.replyScore === 1 });
             expect(post.upvoteCount).to.equal(1);
             expect(post.author.subplebbit.postScore).to.equal(2);
             expect(post.author.subplebbit.replyScore).to.equal(1);
@@ -161,8 +161,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer });
             await anotherPost.update();
 
-            await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.lastCommentCid === anotherPost.cid);
-            await resolveWhenConditionIsTrue(anotherPost, () => typeof anotherPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.author.subplebbit.lastCommentCid === anotherPost.cid });
+            await resolveWhenConditionIsTrue({ toUpdate: anotherPost, predicate: () => typeof anotherPost.updatedAt === "number" });
             expect(post.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
             expect(anotherPost.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
             expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
@@ -173,8 +173,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
             const reply = await publishRandomReply(post, plebbit, { signer: post.signer });
             await reply.update();
-            await resolveWhenConditionIsTrue(post, () => post.replyCount >= 2);
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount >= 2 });
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
             expect(post.author.subplebbit.lastCommentCid).to.equal(reply.cid);
             expect(reply.author.subplebbit.lastCommentCid).to.equal(reply.cid);
             expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
@@ -193,7 +193,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
             expect(post.childCount).to.equal(0);
         });
 
@@ -205,21 +205,21 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             reply = await publishRandomReply(post, plebbit);
             await reply.update();
             await new Promise((resolve) => reply.once("update", resolve));
-            await resolveWhenConditionIsTrue(post, () => post.childCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.childCount === 1 });
             expect(post.childCount).to.equal(1);
         });
 
         it(`post.childCount does not increase with a reply of a reply`, async () => {
             await publishRandomReply(reply, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
-            await resolveWhenConditionIsTrue(reply, () => reply.replyCount === 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 2 });
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => reply.replyCount === 1 });
             expect(post.childCount).to.equal(1); // Only direct children, not grandchildren
             expect(reply.childCount).to.equal(1);
         });
 
         it(`post.childCount increases with multiple direct replies`, async () => {
             await publishRandomReply(post, plebbit);
-            await resolveWhenConditionIsTrue(post, () => post.childCount === 2);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.childCount === 2 });
             expect(post.childCount).to.equal(2);
         });
     });

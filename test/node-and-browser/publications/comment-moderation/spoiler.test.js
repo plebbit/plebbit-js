@@ -39,7 +39,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
-            await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === true);
+            await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: () => randomPost.spoiler === true });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod marking an author comment as spoiler");
             expect(randomPost.raw.commentUpdate.spoiler).to.be.true;
             expect(randomPost.raw.commentUpdate.edit).to.be.undefined;
@@ -65,7 +65,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with spoiler=false`, async () => {
-            await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === false);
+            await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: () => randomPost.spoiler === false });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod unspoilering an author comment");
             expect(randomPost.raw.commentUpdate.spoiler).to.be.false;
             expect(randomPost.raw.commentUpdate.edit).to.be.undefined;

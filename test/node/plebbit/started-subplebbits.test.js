@@ -29,7 +29,7 @@ describe(`plebbit._startedSubplebbits`, () => {
 
         const updatingSubplebbit = await plebbit.createSubplebbit({ address: startedSubplebbit.address });
         await updatingSubplebbit.update();
-        await resolveWhenConditionIsTrue(updatingSubplebbit, () => updatingSubplebbit.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: updatingSubplebbit, predicate: () => updatingSubplebbit.updatedAt });
         expect(updatingSubplebbit.address).to.equal(startedSubplebbit.address);
 
         expect(startedSubplebbit.listeners("update").length).to.be.greaterThan(updateListenersBeforeUpdate); // should use the subplebbit in plebbit._startedSubplebbits
@@ -46,7 +46,7 @@ describe(`plebbit._startedSubplebbits`, () => {
 
         const updatingSubplebbit = await plebbit.createSubplebbit({ address: startedSubplebbit.address });
         await updatingSubplebbit.update();
-        await resolveWhenConditionIsTrue(updatingSubplebbit, () => updatingSubplebbit.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: updatingSubplebbit, predicate: () => updatingSubplebbit.updatedAt });
         expect(updatingSubplebbit._mirroredStartedOrUpdatingSubplebbit?.subplebbit.address).to.equal(startedSubplebbit.address);
         expect(updatingSubplebbit.address).to.equal(startedSubplebbit.address);
         expect(plebbit._updatingSubplebbits[startedSubplebbit.address]).to.not.exist; // should use the started subplebbit
@@ -63,7 +63,7 @@ describe(`plebbit._startedSubplebbits`, () => {
         await subToEdit.edit({ title: "new title" }); // will edit the db
 
         // wait for updatingSubplebbit to emit an update with the new edit props
-        await resolveWhenConditionIsTrue(updatingSubplebbit, () => updatingSubplebbit.title === "new title");
+        await resolveWhenConditionIsTrue({ toUpdate: updatingSubplebbit, predicate: () => updatingSubplebbit.title === "new title" });
         expect(updatingSubplebbit.title).to.equal("new title");
         expect(plebbit._updatingSubplebbits[startedSubplebbit.address]).to.exist; // should not use the db now
 
@@ -90,7 +90,7 @@ describe(`plebbit._startedSubplebbits`, () => {
 
         const updatingSubplebbit = await plebbit.createSubplebbit({ address: sub.address });
         await updatingSubplebbit.update();
-        await resolveWhenConditionIsTrue(updatingSubplebbit, () => updatingSubplebbit.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: updatingSubplebbit, predicate: () => updatingSubplebbit.updatedAt });
         await updatingSubplebbit.delete();
 
         expect(plebbit._updatingSubplebbits[sub.address]).to.not.exist;

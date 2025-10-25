@@ -34,7 +34,7 @@ for (const pendingCommentDepth of depthsToTest) {
                 settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
             });
 
-            await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.updatedAt));
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
 
             expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty
 
@@ -46,7 +46,7 @@ for (const pendingCommentDepth of depthsToTest) {
             });
             approvedComment = pending.comment;
 
-            await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.modQueue.pageCids.pendingApproval)); // wait until we publish a new mod queue with this new comment
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.modQueue.pageCids.pendingApproval) }); // wait until we publish a new mod queue with this new comment
             await approvedComment.update();
         });
 
@@ -69,7 +69,7 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         it(`pending comment after approval will receive updates now`, async () => {
-            await resolveWhenConditionIsTrue(approvedComment, () => Boolean(approvedComment.updatedAt));
+            await resolveWhenConditionIsTrue({ toUpdate: approvedComment, predicate: () => Boolean(approvedComment.updatedAt) });
             expect(approvedComment.updatedAt).to.be.a("number");
             expect(approvedComment.pendingApproval).to.be.false;
             expect(approvedComment.approved).to.be.true;
@@ -148,7 +148,7 @@ for (const pendingCommentDepth of depthsToTest) {
             it(`Approved reply now shows up in parentComment.replies`, async () => {
                 const parentComment = await plebbit.getComment(approvedComment.parentCid);
                 await parentComment.update();
-                await resolveWhenConditionIsTrue(parentComment, () => Boolean(parentComment.updatedAt));
+                await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => Boolean(parentComment.updatedAt) });
                 let foundInReplies = false;
                 processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
                     if (comment.cid === approvedComment.cid) {
@@ -180,7 +180,7 @@ for (const pendingCommentDepth of depthsToTest) {
             it(`Approved reply now shows up in its post's flat pages`, async () => {
                 const postComment = await plebbit.getComment(approvedComment.postCid);
                 await postComment.update();
-                await resolveWhenConditionIsTrue(postComment, () => postComment.updatedAt);
+                await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
                 await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
                 const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];

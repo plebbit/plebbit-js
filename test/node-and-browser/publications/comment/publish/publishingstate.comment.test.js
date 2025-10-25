@@ -288,9 +288,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await mockPost.publish();
             await errorPromise;
             await resolveWhenConditionIsTrue(
-                mockPost,
-                () => recordedPublishingStates[recordedPublishingStates.length - 1] === "failed",
-                "publishingstatechange"
+                {
+                    toUpdate: mockPost,
+                    predicate: () => recordedPublishingStates[recordedPublishingStates.length - 1] === "failed",
+                    eventName: "publishingstatechange",
+                }
             );
 
             expect(mockPost.publishingState).to.equal("failed");

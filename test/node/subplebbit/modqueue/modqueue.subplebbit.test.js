@@ -34,7 +34,7 @@ describe(`Pending approval modqueue functionality`, async () => {
 
         expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty
 
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.updatedAt });
     });
 
     after(async () => {

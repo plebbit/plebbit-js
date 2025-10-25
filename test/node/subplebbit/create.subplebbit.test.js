@@ -35,7 +35,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
             // signer shape changes after createSubplebbit
             expect(remeda.pick(newSubplebbit, Object.keys(subArgs))).to.deep.equal(subArgs); // the args should exist after creating immedietely
         await newSubplebbit.start();
-        await resolveWhenConditionIsTrue(newSubplebbit, () => typeof newSubplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: newSubplebbit, predicate: () => typeof newSubplebbit.updatedAt === "number" });
         await newSubplebbit.stop();
 
         // Sub has finished its first sync loop, should have address now
@@ -111,7 +111,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const props = { title: "Test hello", description: "Hello there" };
         const sub = await createSubWithNoChallenge(props, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const post = await publishRandomPost(sub.address, plebbit, {});
         await waitTillPostInSubplebbitPages(post, plebbit);
         await publishRandomReply(post, plebbit, {});

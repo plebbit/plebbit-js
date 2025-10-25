@@ -74,7 +74,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 it(`Calling plebbit.createComment({${replyPostConfig.commentType}cid}) when ${replyPostConfig.commentType} is already updating in plebbit._updatingComments should get us CommentIpfs and CommentUpdate`, async () => {
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment1.update();
-                    await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
+                    await resolveWhenConditionIsTrue({ toUpdate: comment1, predicate: () => typeof comment1.updatedAt === "number" });
                     expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
 
                     const comment2 = await plebbit.createComment({ cid: comment1.cid });
@@ -122,7 +122,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     const comment = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment.update();
-                    await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number"); // wait until post/subplebbit subscription starts
+                    await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" }); // wait until post/subplebbit subscription starts
                     expect(plebbit._updatingComments[comment.cid].listenerCount("update")).to.equal(1);
 
                     await comment.stop();
@@ -144,7 +144,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     await Promise.all(
                         [comment1, comment2, comment3].map((comment) =>
-                            resolveWhenConditionIsTrue(comment, () => typeof comment1.updatedAt === "number")
+                            resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment1.updatedAt === "number" })
                         )
                     );
 
@@ -198,7 +198,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 it(`Calling plebbit.getComment(${replyPostConfig.commentType}Cid) should load both CommentIpfs and CommentUpdate if updating comment instance already has them`, async () => {
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment1.update();
-                    await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
+                    await resolveWhenConditionIsTrue({ toUpdate: comment1, predicate: () => typeof comment1.updatedAt === "number" });
 
                     expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
 
@@ -232,7 +232,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const postComment1 = await plebbit.createComment({ cid: postCommentCid });
 
             await postComment1.update();
-            await resolveWhenConditionIsTrue(postComment1, () => typeof postComment1.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: postComment1, predicate: () => typeof postComment1.updatedAt === "number" });
             expect(plebbit._updatingComments[postCommentCid].listenerCount("update")).to.equal(1);
 
             const postComment2 = await plebbit.createComment({ cid: postCommentCid });
@@ -250,7 +250,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishRandomReply(postComment2, plebbit);
 
             // we don't know if another test might publish a reply to postComment2, so we wait until we see a reply count of at least 1
-            await resolveWhenConditionIsTrue(postComment2, () => postComment2.replyCount >= 1);
+            await resolveWhenConditionIsTrue({ toUpdate: postComment2, predicate: () => postComment2.replyCount >= 1 });
 
             expect(postComment2.replyCount).to.be.greaterThanOrEqual(1);
 
@@ -273,7 +273,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 await reply.update();
 
-                await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
                 const postCid = reply.postCid;
                 // Verify that both the reply and its parent post are in _updatingComments
                 expect(plebbit._updatingComments[replyCid]).to.exist;
@@ -307,7 +307,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.not.exist;
 
                 await comment.update();
-                await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
                 expect(plebbit._updatingComments[commentCid]).to.exist;
                 expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.exist;
 
@@ -329,7 +329,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(plebbit._updatingSubplebbits[subplebbit.address]).to.exist;
 
             await comment.update();
-            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
             expect(plebbit._updatingComments[commentCid]).to.exist;
             expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.exist;
 

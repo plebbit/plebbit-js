@@ -72,7 +72,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`Can recreate a stringified local comment instance after comment.update() with plebbit.createComment`, async () => {
             const localComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
             await localComment.update();
-            await resolveWhenConditionIsTrue(localComment, () => typeof localComment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: localComment, predicate: () => typeof localComment.updatedAt === "number" });
             await localComment.stop();
             const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
             const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
@@ -126,7 +126,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(post.replies).to.be.a("object");
             await publishRandomReply(post, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => post.replyCount >= 1);
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount >= 1 });
             expect(post.content).to.be.a("string");
             expect(post.replyCount).to.be.at.least(1);
             expect(post.replies.pages.best.comments.length).to.be.at.least(1);

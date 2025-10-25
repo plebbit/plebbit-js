@@ -20,7 +20,7 @@ describeSkipIfRpc("Local publishing to subplebbit", async () => {
         await subplebbit.edit({ settings: { challenges } });
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         commentSigner = await plebbit.createSigner();
 
         // Get the pubsub topic for this subplebbit

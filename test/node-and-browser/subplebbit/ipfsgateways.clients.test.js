@@ -89,7 +89,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, JSON.parse(JSON.stringify(sub.toJSONIpfs())));
 
             const expectedWaitingRetryCount = 3;
-            await resolveWhenConditionIsTrue(sub, () => waitingRetryCount === expectedWaitingRetryCount, "updatingstatechange");
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => waitingRetryCount === expectedWaitingRetryCount, eventName: "updatingstatechange" });
 
             await sub.stop();
 

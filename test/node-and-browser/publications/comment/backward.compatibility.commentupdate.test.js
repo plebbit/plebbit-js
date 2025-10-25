@@ -32,7 +32,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             post = await publishRandomPost(subplebbit.address, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
             await post.stop();
         });
 
@@ -93,7 +93,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await postToUpdate.update();
             mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
 
-            await resolveWhenConditionIsTrue(postToUpdate, () => typeof postToUpdate.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: postToUpdate, predicate: () => typeof postToUpdate.updatedAt === "number" });
 
             await postToUpdate.stop();
 
@@ -126,7 +126,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await postToUpdate.update();
             mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
 
-            await resolveWhenConditionIsTrue(postToUpdate, () => typeof postToUpdate.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: postToUpdate, predicate: () => typeof postToUpdate.updatedAt === "number" });
 
             await postToUpdate.stop();
 

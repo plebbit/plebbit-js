@@ -21,7 +21,7 @@ describe(`subplebbit.updatingState from a local subplebbit`, async () => {
     it(`subplebbit.updatingState defaults to stopped`, async () => {
         const createdSubplebbit = await plebbit.createSubplebbit();
         await createdSubplebbit.start();
-        await resolveWhenConditionIsTrue(createdSubplebbit, () => typeof createdSubplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: createdSubplebbit, predicate: () => typeof createdSubplebbit.updatedAt === "number" });
         const subplebbit = await plebbit.getSubplebbit(createdSubplebbit.address);
         expect(subplebbit.updatingState).to.equal("stopped");
     });
@@ -29,7 +29,7 @@ describe(`subplebbit.updatingState from a local subplebbit`, async () => {
     itSkipIfRpc(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
         const startedSubplebbit = await createSubWithNoChallenge({}, plebbit);
         await startedSubplebbit.start();
-        await resolveWhenConditionIsTrue(startedSubplebbit, () => typeof startedSubplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: startedSubplebbit, predicate: () => typeof startedSubplebbit.updatedAt === "number" });
 
         const localUpdatingSub = await plebbit.createSubplebbit({ address: startedSubplebbit.address });
         const expectedStates = ["publishing-ipns", "succeeded", "stopped"];
@@ -62,7 +62,7 @@ describe(`subplebbit.updatingState from a local subplebbit`, async () => {
         updatingSub.on("update", () => updates.push(updates.length));
         await startedSub.start();
 
-        await resolveWhenConditionIsTrue(startedSub, () => startedSub.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: startedSub, predicate: () => startedSub.updatedAt });
 
         await updatingSub.update();
 
@@ -70,7 +70,7 @@ describe(`subplebbit.updatingState from a local subplebbit`, async () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         await publishRandomPost(startedSub.address, plebbit);
 
-        await resolveWhenConditionIsTrue(updatingSub, () => updates.length >= 2);
+        await resolveWhenConditionIsTrue({ toUpdate: updatingSub, predicate: () => updates.length >= 2 });
         await startedSub.delete();
 
         expect(updatingSubUpdatingStates).to.deep.equal(

@@ -61,7 +61,7 @@ for (const commentMod of commentModProps) {
                         settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
                     });
 
-                    await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.updatedAt));
+                    await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
 
                     const pending = await publishToModQueueWithDepth({
                         subplebbit,
@@ -71,7 +71,7 @@ for (const commentMod of commentModProps) {
                     });
                     commentToBeRejected = pending.comment;
 
-                    await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+                    await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.modQueue.pageCids.pendingApproval }); // wait until we publish a new mod queue with this new comment
                     await commentToBeRejected.update();
                 });
 
@@ -94,7 +94,7 @@ for (const commentMod of commentModProps) {
                 });
 
                 it(`Rejecting a pending comment will purge it from modQueue`, async () => {
-                    await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+                    await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => !subplebbit.modQueue.pageCids.pendingApproval }); // wait until we publish a new mod queue with this new comment
                     expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
                 });
 
@@ -182,7 +182,7 @@ for (const commentMod of commentModProps) {
                     it(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`, async () => {
                         const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
                         await parentComment.update();
-                        await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
+                        await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
                         const expectedResult = !shouldCommentBePurged;
                         let foundInReplies = false;
                         processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
@@ -216,7 +216,7 @@ for (const commentMod of commentModProps) {
                     it(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`, async () => {
                         const postComment = await plebbit.getComment(commentToBeRejected.postCid);
                         await postComment.update();
-                        await resolveWhenConditionIsTrue(postComment, () => postComment.updatedAt);
+                        await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
                         await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
                         const expectedResult = !shouldCommentBePurged;
@@ -324,7 +324,7 @@ for (const commentMod of commentModProps) {
                         const newComment = await remotePlebbit.createComment(commentToBeRejected);
 
                         await newComment.update();
-                        await resolveWhenConditionIsTrue(newComment, () => newComment.updatedAt);
+                        await resolveWhenConditionIsTrue({ toUpdate: newComment, predicate: () => newComment.updatedAt });
 
                         // will test for approved, removed, reason, etc
                         for (const commentModKey of Object.keys(commentMod)) {

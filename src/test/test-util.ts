@@ -742,7 +742,7 @@ export async function waitTillPostInSubplebbitInstancePages(
         } else return false;
     };
     if (sub.state === "stopped") await sub.update();
-    await resolveWhenConditionIsTrue(sub, isPostInSubPages);
+    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: isPostInSubPages });
 }
 
 export async function waitTillPostInSubplebbitPages(
@@ -802,7 +802,7 @@ export async function waitTillReplyInParentPagesInstance(
         }
     };
     if (parentComment.state === "stopped") throw Error("Parent comment is stopped, can't wait for reply in parent pages");
-    await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
+    await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: isReplyInParentPages });
 }
 
 export async function waitTillReplyInParentPages(
@@ -844,7 +844,27 @@ export function isRunningInBrowser(): boolean {
     return Boolean(globalThis["window"]);
 }
 
-export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName = "update") {
+export type ResolveWhenConditionIsTrueOptions = {
+    toUpdate: EventEmitter;
+    predicate: () => Promise<boolean>;
+    eventName?: string;
+};
+
+export async function resolveWhenConditionIsTrue(options: ResolveWhenConditionIsTrueOptions) {
+    if (!options) {
+        throw Error("resolveWhenConditionIsTrue requires an options object");
+    }
+
+    const { toUpdate, predicate, eventName = "update" } = options;
+    if (!toUpdate) {
+        throw Error("resolveWhenConditionIsTrue options.toUpdate is required");
+    }
+
+    if (typeof predicate !== "function") {
+        throw Error("resolveWhenConditionIsTrue options.predicate must be a function");
+    }
+
+    const normalizedEventName = eventName || "update";
     // should add a timeout?
 
     const listenerPromise = new Promise(async (resolve) => {
@@ -853,14 +873,14 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
                 const conditionStatus = await predicate();
                 if (conditionStatus) {
                     resolve(conditionStatus);
-                    toUpdate.removeListener(eventName, listener);
+                    toUpdate.removeListener(normalizedEventName, listener);
                 }
             } catch (error) {
                 console.error(error);
                 throw error;
             }
         };
-        toUpdate.on(eventName, listener);
+        toUpdate.on(normalizedEventName, listener);
         await listener(); // make sure we're checking at least once
     });
 
@@ -1484,7 +1504,7 @@ export async function createCommentUpdateWithInvalidSignature(commentCid: string
 
     await comment.update();
 
-    await resolveWhenConditionIsTrue(comment, async () => typeof comment.updatedAt === "number");
+    await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => typeof comment.updatedAt === "number" });
 
     const invalidCommentUpdateJson = comment.raw.commentUpdate!;
     await comment.stop();
@@ -1653,7 +1673,7 @@ export async function publishCommentWithDepth({ depth, subplebbit }: { depth: nu
 export async function getCommentWithCommentUpdateProps({ cid, plebbit }: { cid: string; plebbit: Plebbit }) {
     const comment = await plebbit.createComment({ cid });
     await comment.update();
-    await resolveWhenConditionIsTrue(comment, async () => Boolean(comment.updatedAt));
+    await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => Boolean(comment.updatedAt) });
     return comment;
 }
 
@@ -1776,7 +1796,7 @@ export async function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubp
     // didn't find any post with multiple pages, so we'll publish a new one
     const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
     await post.update();
-    await resolveWhenConditionIsTrue(post, async () => typeof post.updatedAt === "number");
+    await resolveWhenConditionIsTrue({ toUpdate: post, predicate: async () => typeof post.updatedAt === "number" });
     await forceSubplebbitToGenerateAllRepliesPages(post);
     return post;
 }

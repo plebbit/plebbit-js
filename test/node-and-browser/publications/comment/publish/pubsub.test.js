@@ -332,7 +332,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
                 await mockPost.publish();
 
-                await resolveWhenConditionIsTrue(mockPost, () => errors.length > 0, "error");
+                await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => errors.length > 0, eventName: "error" });
 
                 expect(mockPost.publishingState).to.equal("failed");
                 expect(mockPost.state).to.equal("stopped");

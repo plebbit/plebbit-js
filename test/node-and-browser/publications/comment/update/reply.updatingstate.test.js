@@ -128,7 +128,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             await mockReply.update();
 
-            await resolveWhenConditionIsTrue(mockReply, () => typeof mockReply.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockReply, predicate: () => typeof mockReply.updatedAt === "number" });
             const updatingMockReply = plebbit._updatingComments[mockReply.cid];
             expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.equal(0);
             await mockReply.stop();
@@ -211,7 +211,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             mockReplyToUseParentPagesForUpdates(reply);
             expect(reply.content).to.be.undefined;
             expect(reply.updatedAt).to.be.undefined;
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
             const nestedReply = await publishRandomReply(reply, plebbit);
             await waitTillReplyInParentPagesInstance(nestedReply, reply);
             const updatingMockReply = plebbit._updatingComments[reply.cid];
@@ -265,7 +265,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             await mockReply.update();
 
-            await resolveWhenConditionIsTrue(mockReply, () => typeof mockReply.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockReply, predicate: () => typeof mockReply.updatedAt === "number" });
             await mockReply.stop();
 
             expect(mockReply._commentUpdateIpfsPath).to.not.exist;
@@ -305,7 +305,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             mockReplyToUseParentPagesForUpdates(reply);
             expect(reply.content).to.be.undefined;
             expect(reply.updatedAt).to.be.undefined;
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.depth === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.depth === "number" });
             const nestedReply = await publishRandomReply(reply, plebbit);
             await waitTillReplyInParentPagesInstance(nestedReply, reply);
             await reply.stop();

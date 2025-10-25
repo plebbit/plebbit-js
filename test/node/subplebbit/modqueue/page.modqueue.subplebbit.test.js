@@ -33,7 +33,7 @@ describeSkipIfRpc("Modqueue depths", () => {
         });
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.updatedAt });
     });
 
     beforeEach(async () => {
@@ -61,7 +61,7 @@ describeSkipIfRpc("Modqueue depths", () => {
 
             await new Promise((resolve) => setTimeout(resolve, 3000)); // wait till subplebbit updates modqueue
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.modQueue.pageCids.pendingApproval });
 
             const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
 
@@ -87,7 +87,7 @@ describeSkipIfRpc("Modqueue depths", () => {
 
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait till subplebbit updates modqueue
 
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.modQueue.pageCids.pendingApproval });
 
         await remotePlebbit.destroy();
         const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);

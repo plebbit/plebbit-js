@@ -57,8 +57,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
             await resolveWhenConditionIsTrue(
-                commentToBeBanned,
-                () => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number"
+                {
+                    toUpdate: commentToBeBanned,
+                    predicate: () => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number",
+                }
             );
             expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
             expect(commentToBeBanned.reason).to.equal(reasonOfBan);

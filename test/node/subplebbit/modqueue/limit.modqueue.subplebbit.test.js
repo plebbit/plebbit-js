@@ -16,7 +16,7 @@ describe(`Modqueue limits`, () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.updatedAt));
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
     });
 
     after(async () => {
@@ -27,7 +27,7 @@ describe(`Modqueue limits`, () => {
     it("Should default maxPendingApprovalCount to 500", async function () {
         this.timeout(30000);
 
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.settings?.maxPendingApprovalCount === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.settings?.maxPendingApprovalCount === "number" });
         expect(subplebbit.settings?.maxPendingApprovalCount).to.equal(500);
     });
 
@@ -66,7 +66,7 @@ describe(`Modqueue limits`, () => {
 
     itSkipIfRpc("Should remove old pending comments from DB when hitting maxPendingApprovalCount limit", async function () {
         const limit = subplebbit.settings.maxPendingApprovalCount;
-        await resolveWhenConditionIsTrue(subplebbit, async () => subplebbit._dbHandler.queryCommentsPendingApproval().length === limit);
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => subplebbit._dbHandler.queryCommentsPendingApproval().length === limit });
 
         const pendingRows = subplebbit._dbHandler.queryCommentsPendingApproval();
         expect(pendingRows).to.have.length(limit);
@@ -86,7 +86,7 @@ describe(`Modqueue limits`, () => {
     it("Should drop oldest pending comment from modqueue pages", async function () {
         const limit = subplebbit.settings.maxPendingApprovalCount;
 
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids?.pendingApproval);
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.modQueue.pageCids?.pendingApproval });
 
         await new Promise((resolve) => setTimeout(resolve, 3000));
 

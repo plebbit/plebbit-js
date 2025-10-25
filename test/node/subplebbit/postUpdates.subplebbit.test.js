@@ -25,7 +25,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         subplebbit.setMaxListeners(100);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
     beforeEach(async () => {
@@ -53,8 +53,8 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await postRecreated.update();
         mockCommentToNotUsePagesForUpdates(postRecreated);
 
-        await resolveWhenConditionIsTrue(postRecreated, () => typeof postRecreated.updatedAt === "number");
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.postUpdates);
+        await resolveWhenConditionIsTrue({ toUpdate: postRecreated, predicate: () => typeof postRecreated.updatedAt === "number" });
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.postUpdates });
 
         expect(postRecreated._commentUpdateIpfsPath?.endsWith("/update")).to.be.true; // should fetch from post updates directory
         expect(postRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
@@ -73,7 +73,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             const parentCommentInstance = await publishCommentWithDepth({ depth: depth - 1, subplebbit });
 
             await parentCommentInstance.update();
-            await resolveWhenConditionIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: parentCommentInstance, predicate: () => typeof parentCommentInstance.updatedAt === "number" });
 
             await forceSubplebbitToGenerateAllRepliesPages(parentCommentInstance);
             log("Forced subplebbit to generate all replies pages of comment", parentCommentInstance.cid);
@@ -94,7 +94,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             const intervalId = setInterval(async () => {
                 const replyFromLocalPlebbit = await plebbit.createComment({ cid: reply.cid });
                 await replyFromLocalPlebbit.update();
-                await resolveWhenConditionIsTrue(replyFromLocalPlebbit, () => typeof replyFromLocalPlebbit.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: replyFromLocalPlebbit, predicate: () => typeof replyFromLocalPlebbit.updatedAt === "number" });
                 console.log("reply from local plebbit", replyFromLocalPlebbit.cid, "updatedAt", replyFromLocalPlebbit.updatedAt);
                 console.log("reply from remote plebbit", replyRecreated.cid, "updatedAt", replyRecreated.updatedAt);
                 await replyFromLocalPlebbit.stop();
@@ -103,7 +103,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             await replyRecreated.update();
             mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-            await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: replyRecreated, predicate: () => typeof replyRecreated.updatedAt === "number" });
 
             expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
             expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
@@ -125,8 +125,10 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         // But if we have a new bucket, 43200 for the last 12 hours, the post from previous tests should be moved to it
         subplebbit._postUpdatesBuckets = [43200, ...subplebbit._postUpdatesBuckets];
         await resolveWhenConditionIsTrue(
-            subplebbit,
-            () => Object.keys(subplebbit.postUpdates).length === 1 && Object.keys(subplebbit.postUpdates)[0] === "43200"
+            {
+                toUpdate: subplebbit,
+                predicate: () => Object.keys(subplebbit.postUpdates).length === 1 && Object.keys(subplebbit.postUpdates)[0] === "43200",
+            }
         );
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["43200"]);
     });
@@ -137,7 +139,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await post.update();
         mockCommentToNotUsePagesForUpdates(post);
 
-        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
         expect(post.content).to.be.a("string"); // comment ipfs has been loaded
         expect(post.updatedAt).to.be.a("number"); // comment update has been loaded
 
@@ -158,7 +160,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             mockReplyToUseParentPagesForUpdates(reply);
 
             // Wait for CommentIpfs update
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
             expect(reply.content).to.be.a("string"); // should load commentIpfs
             expect(reply.updatedAt).to.be.a("number"); // should load commentUpdate
             expect(reply._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates

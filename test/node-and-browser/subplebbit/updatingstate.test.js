@@ -42,7 +42,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             await publishRandomPost(subplebbit.address, plebbit);
             await subplebbit.update();
-            await resolveWhenConditionIsTrue(subplebbit, () => Number(subplebbit.updatedAt) > oldUpdatedAt);
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Number(subplebbit.updatedAt) > oldUpdatedAt });
             await subplebbit.stop();
             expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         });
@@ -108,7 +108,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             // First update should succeed with the initial valid record
             await subplebbit.update();
-            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number"); // wait until the subplebbit is updated
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" }); // wait until the subplebbit is updated
 
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
             await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbit.address, invalidSubplebbitRecord);
@@ -288,7 +288,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             // First update should succeed with the initial valid record
             await subplebbit.update();
-            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number"); // wait until the subplebbit is updated
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" }); // wait until the subplebbit is updated
 
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
             await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbit.address, invalidSubplebbitRecord);

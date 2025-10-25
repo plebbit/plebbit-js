@@ -52,7 +52,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             subplebbit = await plebbit.getSubplebbit(signers[0].address);
             post = await publishRandomPost(subplebbit.address, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
         });
 
         after(async () => {
@@ -117,7 +117,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             .map((flatSortName) =>
                 it(`flat sort (${flatSortName}) includes all nested fields, and has no replies field within its comments`, async () => {
                     await post.update();
-                    await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+                    await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
                     await post.stop();
 
                     const flatReplies = await loadAllPages(post.replies.pageCids[flatSortName], post.replies);

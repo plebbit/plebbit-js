@@ -26,7 +26,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             commentToMod = await publishRandomPost(signers[0].address, plebbit);
             await commentToMod.update();
-            await resolveWhenConditionIsTrue(commentToMod, () => typeof commentToMod.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: commentToMod, predicate: () => typeof commentToMod.updatedAt === "number" });
         });
 
         after(async () => {
@@ -91,7 +91,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(challengeRequest.commentModeration.commentModeration.extraProp).to.equal("1234");
             expect(challengeRequest.commentModeration.commentModeration.locked).to.be.true;
 
-            await resolveWhenConditionIsTrue(commentToMod, () => commentToMod.locked);
+            await resolveWhenConditionIsTrue({ toUpdate: commentToMod, predicate: () => commentToMod.locked });
             // if commentToEdit emits update that means the signature of update.edit is correct
             expect(commentToMod.locked).to.be.true; // should process only locked since it's the known field to the sub
             expect(commentToMod.extraProp).to.be.undefined;
@@ -156,7 +156,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(challengeRequest.commentModeration.author.extraProp).to.equal(extraProps.extraProp);
 
                 await commentToModWithAuthor.update();
-                await resolveWhenConditionIsTrue(commentToModWithAuthor, () => commentToModWithAuthor.removed === true);
+                await resolveWhenConditionIsTrue({ toUpdate: commentToModWithAuthor, predicate: () => commentToModWithAuthor.removed === true });
                 expect(commentToModWithAuthor.author.subplebbit.extraProp).to.be.undefined;
                 expect(commentToModWithAuthor.raw.commentUpdate.author.subplebbit.extraProp).to.be.undefined;
                 expect(commentToModWithAuthor.raw.commentUpdate.author.extraProp).to.be.undefined;

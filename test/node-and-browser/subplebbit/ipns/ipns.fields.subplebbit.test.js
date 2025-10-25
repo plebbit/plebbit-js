@@ -17,7 +17,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(subplebbit.pubsubTopicRoutingCid).to.equal(undefined);
 
             await subplebbit.update();
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.updatedAt });
         });
 
         after(async () => {

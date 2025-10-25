@@ -19,7 +19,7 @@ describe(`subplebbit.update - Local subs`, async () => {
     it(`Can receive updates from local sub`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(recreatedSub.state).to.equal("stopped");
         expect(recreatedSub.started).to.be.a("boolean"); // make sure it's creating a local sub, not remote
@@ -27,7 +27,7 @@ describe(`subplebbit.update - Local subs`, async () => {
         const oldUpdatedAt = JSON.parse(JSON.stringify(recreatedSub.updatedAt));
         await recreatedSub.update();
         await publishRandomPost(recreatedSub.address, plebbit);
-        await resolveWhenConditionIsTrue(recreatedSub, () => recreatedSub.updatedAt !== oldUpdatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: recreatedSub, predicate: () => recreatedSub.updatedAt !== oldUpdatedAt });
         expect(recreatedSub.updatedAt).to.be.greaterThan(oldUpdatedAt);
         await recreatedSub.stop();
         await sub.delete();
@@ -37,7 +37,7 @@ describe(`subplebbit.update - Local subs`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         expect(sub.started).to.be.a("boolean"); // make sure it's creating a local sub, not remote
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
         const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
         const oldUpdatedAt = JSON.parse(JSON.stringify(recreatedSub.updatedAt));

@@ -39,7 +39,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with nsfw=true`, async () => {
-            await resolveWhenConditionIsTrue(randomPost, () => randomPost.nsfw === true);
+            await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: () => randomPost.nsfw === true });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod marking an author comment as nsfw");
             expect(randomPost.raw.commentUpdate.nsfw).to.be.true;
             expect(randomPost.raw.commentUpdate.edit).to.be.undefined;
@@ -65,7 +65,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with nsfw=false`, async () => {
-            await resolveWhenConditionIsTrue(randomPost, () => randomPost.nsfw === false);
+            await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: () => randomPost.nsfw === false });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod unnsfwing an author comment");
             expect(randomPost.raw.commentUpdate.nsfw).to.be.false;
             expect(randomPost.raw.commentUpdate.edit).to.be.undefined;

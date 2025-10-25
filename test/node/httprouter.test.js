@@ -4,6 +4,8 @@ import { createSubWithNoChallenge, describeSkipIfRpc, resolveWhenConditionIsTrue
 
 import tcpPortUsed from "tcp-port-used";
 
+// TODO this test should create a new http router instead of relying on existing routers that may fail
+
 // TODO calling plebbit.destroy() should stop the address rewriter proxy
 describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () => {
     const kuboNodeForHttpRouter = "http://localhost:15006/api/v0";
@@ -90,7 +92,7 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
         const sub = await createSubWithNoChallenge({}, plebbit); // an online sub
 
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         await new Promise((resolve) => setTimeout(resolve, 2000)); // wait till it's propgated on the http router
 
         for (const httpRouterUrl of httpRouterUrls) {
@@ -99,7 +101,10 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
             for (const resourceToProvide of provideToTestAgainst) {
                 const providersUrl = `${httpRouterUrl}/routing/v1/providers/${resourceToProvide}`;
                 const res = await fetch(providersUrl, { method: "GET" });
-                expect(res.status).to.equal(200);
+                expect(res.status).to.equal(
+                    200,
+                    "http router " + httpRouterUrl + " has responded with wrong status code, did it provide correctly?"
+                );
                 const resJson = await res.json();
                 expect(resJson["Providers"]).to.be.a("array");
                 expect(resJson["Providers"].length).to.be.at.least(1);

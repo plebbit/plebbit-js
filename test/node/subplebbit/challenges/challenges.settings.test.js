@@ -79,7 +79,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit._usingDefaultChallenge).to.be.true;
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges.length).to.equal(defaultSettingsChallenges.length);
@@ -99,7 +99,7 @@ describe(`subplebbit.settings.challenges`, async () => {
     it(`Default challenges reject authors without an allowed address`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         const challengeVerificationPromise = new Promise((resolve) => subplebbit.once("challengeverification", resolve));
         const post = await generateMockPost(subplebbit.address, remotePlebbit);
@@ -118,7 +118,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
         await subplebbit.edit({ settings: { challenges: [] } });
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         const post = await publishRandomPost(subplebbit.address, plebbit); // won't get a challenge
         await waitTillPostInSubplebbitPages(post, plebbit);
 
@@ -150,7 +150,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit?.settings?.challenges).to.deep.equal(challenges);
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
 
@@ -185,7 +185,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit._usingDefaultChallenge).to.be.false;
         expect(subplebbit.challenges).to.deep.equal([]);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         expect(subplebbit.settings.challenges).to.deep.equal([]);
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) expect(_subplebbit.challenges).to.deep.equal([]);

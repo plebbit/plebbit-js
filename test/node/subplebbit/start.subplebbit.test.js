@@ -23,7 +23,7 @@ describe(`subplebbit.start`, async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
     after(async () => await plebbit.destroy());
 
@@ -40,7 +40,7 @@ describe(`subplebbit.start`, async () => {
     it(`Can start a sub after stopping it`, async () => {
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
-        await resolveWhenConditionIsTrue(newSub, () => typeof newSub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: newSub, predicate: () => typeof newSub.updatedAt === "number" });
         await publishRandomPost(newSub.address, plebbit);
         await newSub.stop();
         await newSub.start();
@@ -67,13 +67,13 @@ describe(`subplebbit.start`, async () => {
     it(`Subplebbit.start() will publish an update regardless if there's a new data`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         await sub.stop();
 
         const sub2 = await plebbit.createSubplebbit({ address: sub.address });
         expect(sub2.updatedAt).to.equal(sub.updatedAt);
         await sub2.start();
-        await resolveWhenConditionIsTrue(sub2, () => sub2.updatedAt !== sub.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: sub2, predicate: () => sub2.updatedAt !== sub.updatedAt });
         expect(sub2.updatedAt).to.not.equal(sub.updatedAt);
         await sub2.delete();
     });
@@ -81,18 +81,18 @@ describe(`subplebbit.start`, async () => {
     itSkipIfRpc(`subplebbit.start() recovers if the sync loop crashes once`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const originalFunc = sub._getDbInternalState.bind(sub);
         sub._getDbInternalState = async () => {
             throw Error("Mocking a failure in getting db internal state in tests");
         };
         publishRandomPost(sub.address, plebbit);
-        await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState === "failed", eventName: "startedstatechange" });
         expect(sub.startedState).to.equal("failed");
 
         sub._getDbInternalState = originalFunc;
 
-        await resolveWhenConditionIsTrue(sub, () => sub.startedState !== "failed", "startedstatechange");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState !== "failed", eventName: "startedstatechange" });
         const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
@@ -101,7 +101,7 @@ describe(`subplebbit.start`, async () => {
     itSkipIfRpc(`subplebbit.start() recovers if kubo API call  fails`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const ipfsClient = sub._clientsManager.getDefaultKuboRpcClient()._client;
 
         const originalFunc = ipfsClient.files.write;
@@ -110,12 +110,12 @@ describe(`subplebbit.start`, async () => {
         };
         publishRandomPost(sub.address, plebbit);
 
-        await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState === "failed", eventName: "startedstatechange" });
         expect(sub.startedState).to.equal("failed");
 
         ipfsClient.files.write = originalFunc;
 
-        await resolveWhenConditionIsTrue(sub, () => sub.startedState !== "failed", "startedstatechange");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState !== "failed", eventName: "startedstatechange" });
         const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
@@ -161,7 +161,7 @@ describe(`subplebbit.started`, async () => {
         const anotherSub = await createSubWithNoChallenge({}, plebbit);
         await anotherSub.start();
         expect(anotherSub.started).to.be.true;
-        await resolveWhenConditionIsTrue(anotherSub, () => typeof anotherSub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: anotherSub, predicate: () => typeof anotherSub.updatedAt === "number" });
         await anotherSub.delete();
         expect(anotherSub.started).to.be.false;
     });
@@ -211,7 +211,7 @@ describe(`Start lock`, async () => {
         const sub = await plebbit.createSubplebbit({ signer: subSigner });
         const sameSub = await plebbit.createSubplebbit({ address: sub.address });
         sub.start();
-        await resolveWhenConditionIsTrue(sub, () => fs.existsSync(lockPath));
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => fs.existsSync(lockPath) });
 
         try {
             await sameSub.start();
@@ -273,7 +273,7 @@ describe(`Start lock`, async () => {
         }
         await new Promise((resolve) => setTimeout(resolve, 11000)); // Wait for 11s for lock to be considered stale
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
@@ -302,7 +302,7 @@ describe(`Start lock`, async () => {
         const sub1 = await createSubWithNoChallenge({}, plebbit);
 
         await sub1.start();
-        await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub1, predicate: () => typeof sub1.updatedAt === "number" });
 
         const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
         try {
@@ -316,7 +316,7 @@ describe(`Start lock`, async () => {
         const sub1 = await createSubWithNoChallenge({}, plebbit);
 
         await sub1.start();
-        await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub1, predicate: () => typeof sub1.updatedAt === "number" });
 
         const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
         await sub2.update(); // should not fail
@@ -355,7 +355,7 @@ describe(`Start lock`, async () => {
         const updatingSub = await plebbit.createSubplebbit({ address: startedSub.address });
         expect(updatingSub.started).to.be.true;
         await updatingSub.update();
-        await resolveWhenConditionIsTrue(updatingSub, () => updatingSub.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: updatingSub, predicate: () => updatingSub.updatedAt });
         await updatingSub.stop(); // This should stop sub1 and sub2
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
@@ -374,7 +374,7 @@ describe(`Start lock`, async () => {
         await startedSub.start();
         expect(startedSub.started).to.be.true;
 
-        await resolveWhenConditionIsTrue(startedSub, () => typeof startedSub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: startedSub, predicate: () => typeof startedSub.updatedAt === "number" });
 
         const subToDelete = await plebbit.createSubplebbit({ address: startedSub.address });
         expect(subToDelete.started).to.be.true;
@@ -396,9 +396,9 @@ describe(`Start lock`, async () => {
     itSkipIfRpc(`subplebbit.stop() should remove stale cids and MFS paths from kubo node`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         await publishRandomPost(sub.address, plebbit);
-        await resolveWhenConditionIsTrue(sub, () => sub._cidsToUnPin.size > 0);
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub._cidsToUnPin.size > 0 });
         await sub.stop();
         const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(recreatedSub._cidsToUnPin.size).to.equal(0);
@@ -413,7 +413,7 @@ describe(`Publish loop resiliency`, async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
     after(async () => {
@@ -445,7 +445,7 @@ describe(`Publish loop resiliency`, async () => {
     it(`Subplebbit isn't publishing updates needlessly`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
         // there is no need to publish updates here, because we're not publishing new props or publications
         let triggerdUpdate = false;

@@ -108,7 +108,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             ];
 
             await mockPost.update();
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
             await mockPost.stop();
 
             expect(mockPost._commentUpdateIpfsPath).to.not.exist;
@@ -125,7 +125,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost); // we want to force it to fetch from the post updates
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
             await mockPost.stop();
 
             expect(mockPost._commentUpdateIpfsPath).to.exist;
@@ -345,7 +345,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             ];
 
             await mockPost.update();
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
             await mockPost.stop();
 
             expect(mockPost._commentUpdateIpfsPath).to.not.exist;
@@ -370,7 +370,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
 
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
             await mockPost.stop();
 
             expect(mockPost._commentUpdateIpfsPath).to.exist;

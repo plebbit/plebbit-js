@@ -43,7 +43,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.upvoteCount === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.upvoteCount === "number" });
             await mockPost.stop();
 
             expect(actualStates).to.deep.equal(expectedStates);
@@ -64,7 +64,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.upvoteCount === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.upvoteCount === "number" });
             await mockPost.stop();
 
             expect(actualStates).to.deep.equal(expectedStates);
@@ -125,7 +125,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
 
-            await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
 
             await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
 

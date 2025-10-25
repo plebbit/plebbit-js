@@ -49,7 +49,7 @@ const generateRandomSub = async () => {
     const plebbit = await mockPlebbit();
     const sub = await createSubWithNoChallenge({}, plebbit);
     await sub.start();
-    await resolveWhenConditionIsTrue(sub, () => sub.updatedAt);
+    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.updatedAt });
 
     const post = await publishRandomPost(sub.address, plebbit);
     await waitTillPostInSubplebbitInstancePages(post, sub);
@@ -126,7 +126,7 @@ describeSkipIfRpc(`DB importing`, async () => {
         const regularPlebbit = await mockPlebbit();
         const randomSub = await generateRandomSub();
         await randomSub.start();
-        await resolveWhenConditionIsTrue(randomSub, () => randomSub.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: randomSub, predicate: () => randomSub.updatedAt });
 
         const ipnsRecord = await randomSub._dbHandler.keyvGet("LAST_IPNS_RECORD");
 
@@ -143,7 +143,7 @@ describeSkipIfRpc(`DB importing`, async () => {
         // Should be included in tempPlebbit.subplebbits now
         const subplebbit = await tempPlebbit.createSubplebbit({ address: randomSub.address });
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt > randomSub.updatedAt);
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.updatedAt > randomSub.updatedAt });
 
         const ipnsRecordOfSubInDifferentKubo = await subplebbit._dbHandler.keyvGet("LAST_IPNS_RECORD");
 
@@ -200,7 +200,7 @@ describeSkipIfRpc("DB Migration", () => {
             const mockPost = await publishRandomPost(subplebbit.address, plebbit);
 
             await mockPost.update();
-            await resolveWhenConditionIsTrue(mockPost, () => mockPost.updatedAt);
+            await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => mockPost.updatedAt });
             expect(mockPost.updatedAt).to.be.a("number");
             expect(mockPost.author.subplebbit).to.be.a("object");
             await mockPost.stop();

@@ -15,7 +15,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         await subplebbit.edit({ settings: { challenges } });
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         commentSigner = await plebbit.createSigner(); // We're using the same signer for publishing so that publication.author.subplebbit is defined
     });
 

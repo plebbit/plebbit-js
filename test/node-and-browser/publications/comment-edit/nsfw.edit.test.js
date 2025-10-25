@@ -53,7 +53,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(nsfwEdit, true);
         });
         it(`A new CommentUpdate is published with nsfw=true`, async () => {
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost.nsfw === true);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.nsfw === true });
             expect(authorPost.edit.nsfw).to.be.true;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
             expect(authorPost.raw.commentUpdate.nsfw).to.be.undefined;
@@ -76,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`The new Comment with nsfw=true has valid signature`, async () => {
             const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
             await recreatedPost.update();
-            await resolveWhenConditionIsTrue(recreatedPost, () => typeof recreatedPost.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: recreatedPost, predicate: () => typeof recreatedPost.updatedAt === "number" });
 
             await recreatedPost.stop();
             expect(recreatedPost.nsfw).to.be.true;
@@ -113,7 +113,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unnsfwEdit, true);
         });
         it(`A new CommentUpdate is published with nsfw=false`, async () => {
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost.nsfw === false);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.nsfw === false });
             expect(authorPost.edit.nsfw).to.be.false;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
             expect(authorPost.raw.commentUpdate.nsfw).to.be.undefined;
@@ -159,7 +159,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with nsfw=true`, async () => {
-            await resolveWhenConditionIsTrue(modPost, () => modPost.nsfw === true);
+            await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.nsfw === true });
             expect(modPost.edit.nsfw).to.be.true;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;
             expect(modPost.raw.commentUpdate.nsfw).to.be.undefined;
@@ -190,7 +190,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with nsfw=false`, async () => {
-            await resolveWhenConditionIsTrue(modPost, () => modPost.nsfw === false);
+            await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.nsfw === false });
             expect(modPost.edit.nsfw).to.be.false;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;
             expect(modPost.raw.commentUpdate.nsfw).to.be.undefined;

@@ -72,7 +72,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with deleted=true for author deleted post`, async () => {
-            await resolveWhenConditionIsTrue(postToDelete, () => postToDelete.deleted === true);
+            await resolveWhenConditionIsTrue({ toUpdate: postToDelete, predicate: () => postToDelete.deleted === true });
             expect(postToDelete.deleted).to.be.true;
             expect(postToDelete.raw.commentUpdate.deleted).to.be.undefined;
             expect(postToDelete.raw.commentUpdate.edit.deleted).to.be.true;
@@ -86,10 +86,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: postToDelete.subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue(sub, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
                 const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToDelete.cid, sub.posts);
                 return postInPage === undefined;
-            });
+            } });
 
             await sub.stop();
 
@@ -132,7 +132,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate is published with deleted=true for mod deleted post`, async () => {
-            await resolveWhenConditionIsTrue(modPostToDelete, () => modPostToDelete.deleted === true);
+            await resolveWhenConditionIsTrue({ toUpdate: modPostToDelete, predicate: () => modPostToDelete.deleted === true });
             expect(modPostToDelete.deleted).to.be.true;
             expect(modPostToDelete.raw.commentUpdate.deleted).to.be.undefined;
             expect(modPostToDelete.raw.commentUpdate.edit.deleted).to.be.true;
@@ -191,7 +191,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(deleteEdit, true);
         });
         it(`A new CommentUpdate is pushed for removing a reply`, async () => {
-            await resolveWhenConditionIsTrue(replyToDelete, () => replyToDelete.deleted === true);
+            await resolveWhenConditionIsTrue({ toUpdate: replyToDelete, predicate: () => replyToDelete.deleted === true });
             expect(replyToDelete.deleted).to.be.true;
             expect(replyToDelete.reason).to.be.undefined;
         });
@@ -199,13 +199,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const parentComment = await plebbit.createComment({ cid: replyToDelete.parentCid });
             await parentComment.update();
 
-            await resolveWhenConditionIsTrue(parentComment, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: async () => {
                 const deletedReplyUnderPost = await iterateThroughPagesToFindCommentInParentPagesInstance(
                     replyToDelete.cid,
                     parentComment.replies
                 );
                 return deletedReplyUnderPost?.deleted === true;
-            });
+            } });
 
             // Need to test for all pages here
 

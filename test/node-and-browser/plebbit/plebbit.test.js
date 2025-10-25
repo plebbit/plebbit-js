@@ -236,7 +236,7 @@ describe(`plebbit.destroy`, async () => {
 
         const comment = await plebbit.createComment({ cid: commentCid });
         await comment.update();
-        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
         expect(plebbit._updatingComments[commentCid]).to.exist;
 
         await plebbit.destroy(); // should not fail
@@ -253,7 +253,7 @@ describe(`plebbit.destroy`, async () => {
 
         const reply = await plebbit.createComment({ cid: replyCid });
         await reply.update();
-        await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
         expect(plebbit._updatingComments[replyCid]).to.exist;
 
         await reply.stop();

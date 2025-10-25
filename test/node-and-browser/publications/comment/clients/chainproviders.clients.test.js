@@ -62,7 +62,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         await updatingPost.update();
 
-        await resolveWhenConditionIsTrue(updatingPost, () => typeof updatingPost.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: updatingPost, predicate: () => typeof updatingPost.updatedAt === "number" });
 
         await updatingPost.stop();
 
@@ -95,7 +95,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         await updatingPost.update();
 
-        await resolveWhenConditionIsTrue(updatingPost, () => typeof updatingPost.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: updatingPost, predicate: () => typeof updatingPost.updatedAt === "number" });
 
         await updatingPost.stop();
 
@@ -132,7 +132,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         await updatingPost.update();
 
-        await resolveWhenConditionIsTrue(updatingPost, () => typeof updatingPost.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: updatingPost, predicate: () => typeof updatingPost.updatedAt === "number" });
 
         await updatingPost.stop();
 
@@ -170,7 +170,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         await updatingPost.update();
 
-        await resolveWhenConditionIsTrue(updatingPost, () => typeof updatingPost.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: updatingPost, predicate: () => typeof updatingPost.updatedAt === "number" });
 
         await updatingPost.stop();
 
@@ -244,7 +244,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         await loadedPost.update();
 
-        await resolveWhenConditionIsTrue(loadedPost, () => typeof loadedPost.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: loadedPost, predicate: () => typeof loadedPost.updatedAt === "number" });
 
         await loadedPost.stop();
 
@@ -273,7 +273,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         await loadedPost.update();
 
-        await resolveWhenConditionIsTrue(loadedPost, () => typeof loadedPost.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: loadedPost, predicate: () => typeof loadedPost.updatedAt === "number" });
 
         await loadedPost.stop();
 

@@ -20,12 +20,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             subplebbit = await plebbit.getSubplebbit(signers[0].address);
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.posts.pages.hot);
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.posts.pages.hot });
 
             // Get a post instance
             postCommentInstance = await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
             await postCommentInstance.update();
-            await resolveWhenConditionIsTrue(postCommentInstance, () => typeof postCommentInstance.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: postCommentInstance, predicate: () => typeof postCommentInstance.updatedAt === "number" });
 
             // Find a post page comment
             postPageComment = subplebbit.posts.pages.hot.comments.find((c) => c.cid === postCommentInstance.cid);
@@ -43,8 +43,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await publishRandomReply(postWithRepliesInstance, plebbit);
                 await postWithRepliesInstance.update(); // Update again to fetch the new reply
                 await resolveWhenConditionIsTrue(
-                    postWithRepliesInstance,
-                    () => postWithRepliesInstance.replies.pages.best?.comments?.length > 0
+                    {
+                        toUpdate: postWithRepliesInstance,
+                        predicate: () => postWithRepliesInstance.replies.pages.best?.comments?.length > 0,
+                    }
                 );
                 console.log(`Reply created for post ${postWithRepliesInstance.cid}.`);
             }
@@ -183,10 +185,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 plebbit = await mockRemotePlebbit();
                 // Get a valid instance to use as source for invalid data tests
                 const sub = await plebbit.getSubplebbit(signers[0].address);
-                await resolveWhenConditionIsTrue(sub, () => typeof sub.lastPostCid === "string");
+                await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.lastPostCid === "string" });
                 sourcePostCommentInstance = await plebbit.getComment(sub.lastPostCid);
                 await sourcePostCommentInstance.update();
-                await resolveWhenConditionIsTrue(sourcePostCommentInstance, () => typeof sourcePostCommentInstance.updatedAt === "number");
+                await resolveWhenConditionIsTrue({ toUpdate: sourcePostCommentInstance, predicate: () => typeof sourcePostCommentInstance.updatedAt === "number" });
             });
             afterEach(async () => {
                 if (sourcePostCommentInstance) await sourcePostCommentInstance.stop();

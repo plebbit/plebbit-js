@@ -26,8 +26,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
             await postToVote.update();
             await replyToVote.update();
-            await resolveWhenConditionIsTrue(postToVote, () => typeof postToVote.updatedAt === "number");
-            await resolveWhenConditionIsTrue(replyToVote, () => typeof replyToVote.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: () => typeof postToVote.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: () => typeof replyToVote.updatedAt === "number" });
         });
 
         after(async () => {
@@ -49,7 +49,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const originalUpvote = remeda.clone(postToVote.upvoteCount);
             const vote = await generateMockVote(postToVote, 1, plebbit);
             await publishWithExpectedResult(vote, true);
-            await resolveWhenConditionIsTrue(postToVote, () => postToVote.upvoteCount === originalUpvote + 1);
+            await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: () => postToVote.upvoteCount === originalUpvote + 1 });
             expect(postToVote.upvoteCount).to.be.equal(originalUpvote + 1);
             expect(postToVote.downvoteCount).to.be.equal(0);
             expect(postToVote.author.subplebbit.replyScore).to.equal(0);
@@ -62,7 +62,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const originalUpvote = remeda.clone(replyToVote.downvoteCount);
             const vote = await generateMockVote(replyToVote, 1, plebbit);
             await publishWithExpectedResult(vote, true);
-            await resolveWhenConditionIsTrue(replyToVote, () => replyToVote.upvoteCount === originalUpvote + 1);
+            await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: () => replyToVote.upvoteCount === originalUpvote + 1 });
             expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
             expect(replyToVote.downvoteCount).to.equal(0);
             expect(replyToVote.author.subplebbit.replyScore).to.equal(1);
@@ -82,7 +82,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 vote: -1
             });
             await publishWithExpectedResult(vote, true);
-            await resolveWhenConditionIsTrue(postToVote, () => postToVote.upvoteCount === originalUpvote - 1);
+            await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: () => postToVote.upvoteCount === originalUpvote - 1 });
 
             expect(postToVote.upvoteCount).to.equal(originalUpvote - 1);
             expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
@@ -101,7 +101,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 vote: -1
             });
             await publishWithExpectedResult(vote, true);
-            await resolveWhenConditionIsTrue(replyToVote, () => replyToVote.upvoteCount === originalUpvote - 1);
+            await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: () => replyToVote.upvoteCount === originalUpvote - 1 });
 
             expect(replyToVote.upvoteCount).to.equal(originalUpvote - 1);
             expect(replyToVote.downvoteCount).to.equal(originalDownvote + 1);

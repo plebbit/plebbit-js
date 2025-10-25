@@ -129,7 +129,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult(edit, true);
             await authorPost.update();
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost.deleted);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.deleted });
             await authorPost.stop();
             expect(authorPost.deleted).to.be.true;
             expect(authorPost.raw.commentUpdate.edit.deleted).to.be.true;
@@ -195,7 +195,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(edit2, true);
 
             await authorPost.update();
-            await resolveWhenConditionIsTrue(authorPost, () => authorPost.deleted === secondEditProps.deleted);
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.deleted === secondEditProps.deleted });
 
             await authorPost.stop();
             expect(authorPost.deleted).to.equal(secondEditProps.deleted);

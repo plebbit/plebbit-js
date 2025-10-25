@@ -180,7 +180,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`Subplebbit should publish an update after the admin edits one of its props`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
-            await resolveWhenConditionIsTrue(sub, () => sub.description === editProps.description);
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.description === editProps.description });
             await sub.stop();
             expect(sub.description).to.equal(editProps.description);
         });
@@ -238,7 +238,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`Subplebbit should publish an update after the owner edits one of its props`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
-            await resolveWhenConditionIsTrue(sub, () => sub.description === editProps.description);
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.description === editProps.description });
             await sub.stop();
             expect(sub.description).to.equal(editProps.description);
             expect(sub.roles[newRoleAddress].role).to.equal("admin");

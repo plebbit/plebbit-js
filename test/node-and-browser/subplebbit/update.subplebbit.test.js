@@ -30,7 +30,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const oldUpdatedAt = remeda.clone(subplebbit.updatedAt);
             await subplebbit.update();
             await publishRandomPost(subplebbit.address, plebbit); // Invoke an update
-            await resolveWhenConditionIsTrue(subplebbit, () => oldUpdatedAt !== subplebbit.updatedAt);
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => oldUpdatedAt !== subplebbit.updatedAt });
             expect(oldUpdatedAt).to.not.equal(subplebbit.updatedAt);
             expect(subplebbit.address).to.equal("plebbit.eth");
             await subplebbit.stop();
@@ -160,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const remotePlebbit = await config.plebbitInstancePromise();
             const subplebbit = await remotePlebbit.createSubplebbit({ address: "plebbit.eth" }); // 'plebbit.eth' is part of test-server.js
             await subplebbit.update();
-            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
             await subplebbit.stop();
             let updatedHasBeenCalled = false;
 

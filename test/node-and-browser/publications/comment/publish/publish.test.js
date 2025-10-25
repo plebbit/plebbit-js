@@ -492,7 +492,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const timeBeforePublish = Date.now();
         await mockPost.publish();
 
-        await resolveWhenConditionIsTrue(mockPost, () => errors.length >= 1, "error");
+        await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => errors.length >= 1, eventName: "error" });
         const timeItTookToEmitError = Date.now() - timeBeforePublish;
         expect(timeItTookToEmitError).to.be.greaterThan(mockPost._setProviderFailureThresholdSeconds * 1000);
 

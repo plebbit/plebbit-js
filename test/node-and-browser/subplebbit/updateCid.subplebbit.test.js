@@ -20,7 +20,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
             expect(sub.updateCid).to.be.undefined;
 
             await sub.update();
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
             expect(sub.updateCid).to.be.a("string");
 
             await sub.stop();

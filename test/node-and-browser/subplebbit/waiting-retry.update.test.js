@@ -17,7 +17,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const waitingRetryErrs = [];
             tempSubplebbit.on("error", (err) => waitingRetryErrs.push(err));
             await tempSubplebbit.update();
-            await resolveWhenConditionIsTrue(tempSubplebbit, () => waitingRetryErrs.length === 2, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: tempSubplebbit, predicate: () => waitingRetryErrs.length === 2, eventName: "error" });
             await tempSubplebbit.stop();
 
             for (const err of waitingRetryErrs) {
@@ -49,7 +49,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const waitingRetryErrs = [];
             tempSubplebbit.on("error", (err) => waitingRetryErrs.push(err));
             await tempSubplebbit.update();
-            await resolveWhenConditionIsTrue(tempSubplebbit, () => waitingRetryErrs.length === 2, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: tempSubplebbit, predicate: () => waitingRetryErrs.length === 2, eventName: "error" });
             await tempSubplebbit.stop();
 
             // Check that the errors are as expected
@@ -70,7 +70,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             tempSubplebbit.on("error", (err) => waitingRetryErrs.push(err));
             await tempSubplebbit.update();
 
-            await resolveWhenConditionIsTrue(tempSubplebbit, () => waitingRetryErrs.length === 3, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: tempSubplebbit, predicate: () => waitingRetryErrs.length === 3, eventName: "error" });
 
             await tempSubplebbit.stop();
 

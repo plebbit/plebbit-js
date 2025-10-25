@@ -63,7 +63,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
             await sub.update();
 
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
             await sub.stop();
             expect(recordedStates).to.deep.equal(expectedStates);

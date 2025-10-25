@@ -15,7 +15,7 @@ describe(`Subplebbit.updateCid`, async () => {
         expect(sub.updateCid).to.be.undefined;
 
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" }); // wait until we publish a new record
         expect(sub.updateCid).to.be.a("string");
 
         await sub.delete();
@@ -25,7 +25,7 @@ describe(`Subplebbit.updateCid`, async () => {
         expect(sub.updateCid).to.be.undefined;
 
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" }); // wait until we publish a new record
         expect(sub.updateCid).to.be.a("string");
 
         const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
@@ -39,7 +39,7 @@ describe(`Subplebbit.updateCid`, async () => {
         expect(sub.updateCid).to.be.undefined;
 
         await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" }); // wait until we publish a new record
 
         const subJson = JSON.parse(JSON.stringify(sub));
         expect(subJson.updateCid).to.be.a("string");

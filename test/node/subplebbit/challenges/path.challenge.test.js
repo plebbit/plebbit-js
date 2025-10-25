@@ -41,7 +41,7 @@ describeSkipIfRpc(`subplebbit.settings.challenges with path`, async () => {
         expect(subplebbit?.settings?.challenges).to.deep.equal(challenges);
 
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
 
@@ -87,7 +87,7 @@ describeSkipIfRpc(`subplebbit.settings.challenges with path`, async () => {
 
         await subplebbit.edit({ settings: { challenges } });
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         // Test with wrong answer
         const mockPost = await generateMockPost(subplebbit.address, plebbit, false);
@@ -130,7 +130,7 @@ describeSkipIfRpc(`subplebbit.settings.challenges with path`, async () => {
 
         await subplebbit.edit({ settings: { challenges } });
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
 

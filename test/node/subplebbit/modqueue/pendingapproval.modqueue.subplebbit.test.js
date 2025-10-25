@@ -43,7 +43,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 }
             });
 
-            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         });
 
         after(async () => {
@@ -55,7 +55,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         it("Should put failed comment in pending approval queue when challenge has pendingApproval: true", async () => {
             // TODO: Test that when a challenge with pendingApproval fails,
             // the publication goes to pending approval instead of being rejected
-            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
             const { comment, challengeVerification } = await publishToModQueueWithDepth({
                 subplebbit,
@@ -80,7 +80,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
 
         it("Should store pending approval comments in subplebbit.modQueue.pageCids.pendingApproval", async () => {
             // TODO: Test that pending comments are stored in correct location
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids?.pendingApproval);
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.modQueue.pageCids?.pendingApproval });
             const page = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
             expect(page.comments.length).to.equal(1);
             const commentInPendingApprovalInPage = page.comments[0];
@@ -196,7 +196,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             it("A pending approval comment will not show up in parentComment.replies", async () => {
                 const parentComment = await plebbit.getComment(commentInPendingApproval.parentCid);
                 await parentComment.update();
-                await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
+                await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
                 let foundInReplies = false;
                 processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
                     if (comment.cid === commentInPendingApproval.cid) {
@@ -228,7 +228,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             it(`A pending approval comment will not show up in flat pages of post`, async () => {
                 const postComment = await plebbit.getComment(commentInPendingApproval.postCid);
                 await postComment.update();
-                await resolveWhenConditionIsTrue(postComment, () => postComment.updatedAt);
+                await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
                 await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
                 const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];

@@ -97,7 +97,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
             await comment.update();
-            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
             await comment.stop();
             await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
             let updatedHasBeenCalled = false;
@@ -115,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const postToStop = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
 
             await postToStop.update();
-            await resolveWhenConditionIsTrue(postToStop, () => typeof postToStop.updatedAt === "number"); // CommentIpfs and CommentUpdate should be defined now
+            await resolveWhenConditionIsTrue({ toUpdate: postToStop, predicate: () => typeof postToStop.updatedAt === "number" }); // CommentIpfs and CommentUpdate should be defined now
             await postToStop.stop();
 
             await postToStop.update();
@@ -129,7 +129,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`comment.update() is working as expected after comment.publish()`, async () => {
             const post = await publishRandomPost(subplebbitAddress, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
             expect(post.updatedAt).to.be.a("number");
             await post.stop();
         });
@@ -138,7 +138,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const post = await publishRandomPost(subplebbitAddress, plebbit);
             const reply = await publishRandomReply(post, plebbit);
             await reply.update();
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
 
             await reply.stop();
             expect(reply.updatedAt).to.be.a("number");
@@ -154,7 +154,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const parentComment = await publishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
-                    await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
+                    await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => typeof parentComment.updatedAt === "number" });
                     await forceSubplebbitToGenerateAllRepliesPages(parentComment);
                     await parentComment.stop();
 
@@ -168,7 +168,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     await replyRecreated.update();
                     mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-                    await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
+                    await resolveWhenConditionIsTrue({ toUpdate: replyRecreated, predicate: () => typeof replyRecreated.updatedAt === "number" });
 
                     expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
                     expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
@@ -190,7 +190,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
-                    await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
+                    await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => typeof parentComment.updatedAt === "number" });
                     await forceSubplebbitToGenerateAllRepliesPages(parentComment);
                     // keep parent comment updating
 
@@ -203,7 +203,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     await replyRecreated.update();
                     mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-                    await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
+                    await resolveWhenConditionIsTrue({ toUpdate: replyRecreated, predicate: () => typeof replyRecreated.updatedAt === "number" });
 
                     expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
                     expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
@@ -288,7 +288,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await createdComment.update();
             expect(createdComment.content).to.be.undefined; // Make sure it didn't use the props sub pages
 
-            await resolveWhenConditionIsTrue(createdComment, () => errors.length >= 1, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length >= 1, eventName: "error" });
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
 
@@ -312,7 +312,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
 
-            await resolveWhenConditionIsTrue(createdComment, () => errors.length >= 1, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length >= 1, eventName: "error" });
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_INVALID_JSON");
 
@@ -337,7 +337,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             createdComment.on("error", (err) => errors.push(err));
             await createdComment.update();
 
-            await resolveWhenConditionIsTrue(createdComment, () => errors.length >= 1, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length >= 1, eventName: "error" });
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
 
@@ -366,7 +366,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
             await Promise.all([
-                resolveWhenConditionIsTrue(createdComment, () => errors.length === 2, "error"),
+                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length === 2, eventName: "error" }),
                 publishRandomPost(subplebbitAddress, plebbit)
             ]);
 
@@ -405,7 +405,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await mockPostToReturnSpecificCommentUpdate(createdComment, invalidCommentUpdateJson);
 
             await Promise.all([
-                resolveWhenConditionIsTrue(createdComment, () => errors.length === 2, "error"),
+                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length === 2, eventName: "error" }),
                 publishRandomPost(subplebbitAddress, plebbit) // force sub to publish a new update
             ]);
 
@@ -443,7 +443,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(invalidCommentUpdateSchema));
 
             await Promise.all([
-                resolveWhenConditionIsTrue(createdComment, () => errors.length === 2, "error"),
+                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length === 2, eventName: "error" }),
                 publishRandomPost(subplebbitAddress, plebbit) // force sub to publish a new update
             ]);
 
@@ -474,7 +474,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await post.update();
             await mockPostToFailToLoadFromPostUpdates(post);
 
-            await resolveWhenConditionIsTrue(post, () => errors.length === 1, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => errors.length === 1, eventName: "error" });
             expect(post.updatingState).to.equal("waiting-retry"); // failing to load ipfs path is not critical error
 
             await post.stop();
@@ -495,7 +495,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await post.update();
             await mockPostToHaveSubplebbitWithNoPostUpdates(post);
 
-            await resolveWhenConditionIsTrue(post, () => errors.length === 1, "error");
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => errors.length === 1, eventName: "error" });
             expect(post.updatingState).to.equal("failed");
 
             await post.stop();

@@ -246,7 +246,7 @@ describeSkipIfRpc(`commentupdate`, async () => {
     it(`Can validate live CommentUpdate`, async () => {
         const comment = await plebbit.getComment(subplebbit.lastPostCid);
         await comment.update();
-        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+        await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
         await comment.stop();
         // If a comment emits "update" that means the commentUpdate have been verified correctly
 

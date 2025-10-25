@@ -79,7 +79,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate with locked=true is published`, async () => {
-            await resolveWhenConditionIsTrue(postToBeLocked, () => postToBeLocked.locked === true);
+            await resolveWhenConditionIsTrue({ toUpdate: postToBeLocked, predicate: () => postToBeLocked.locked === true });
             expect(postToBeLocked.locked).to.be.true;
             expect(postToBeLocked.reason).to.equal("To lock an author post");
             expect(postToBeLocked.raw.commentUpdate.reason).to.equal("To lock an author post");
@@ -92,10 +92,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await sub.update();
 
-            await resolveWhenConditionIsTrue(sub, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
                 const lockedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
                 return lockedPostInPage?.locked === true;
-            });
+            } });
 
             await sub.stop();
 
@@ -123,7 +123,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate with locked=true is published`, async () => {
-            await resolveWhenConditionIsTrue(modPost, () => modPost.locked === true);
+            await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.locked === true });
             expect(modPost.locked).to.be.true;
             expect(modPost.reason).to.equal("To lock a mod post");
             expect(modPost.raw.commentUpdate.reason).to.equal("To lock a mod post");
@@ -168,7 +168,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A new CommentUpdate with locked=false is published`, async () => {
-            await resolveWhenConditionIsTrue(postToBeLocked, () => postToBeLocked.locked === false);
+            await resolveWhenConditionIsTrue({ toUpdate: postToBeLocked, predicate: () => postToBeLocked.locked === false });
             expect(postToBeLocked.locked).to.be.false;
             expect(postToBeLocked.reason).to.equal("To unlock an author post");
             expect(postToBeLocked.raw.commentUpdate.reason).to.equal("To unlock an author post");
