@@ -926,6 +926,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             cidsToPurgeOffIpfsNode.forEach((cid) => this._cidsToUnPin.add(cid));
             cidsToPurgeOffIpfsNode.forEach((cid) => this._blocksToRm.push(cid));
+            if (this.updateCid) {
+                this._blocksToRm.push(this.updateCid); // remove old cid from kubo node so we new users don't load it from our node
+                this._cidsToUnPin.add(this.updateCid);
+            }
 
             log(
                 "Purged comment",
