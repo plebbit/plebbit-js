@@ -10,7 +10,15 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, FilesCpOptions, FilesRmOptions, FilesWriteOptions, RoutingProvideOptions } from "kubo-rpc-client";
+import type {
+    AddOptions,
+    AddResult,
+    BlockRmOptions,
+    FilesCpOptions,
+    FilesRmOptions,
+    FilesWriteOptions,
+    RoutingProvideOptions
+} from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -254,11 +262,7 @@ export function isIpfsPath(x: string): boolean {
     return x.startsWith("/ipfs/");
 }
 
-export type KuboRpcClientCreateOption =
-    | string
-    | URL
-    | Multiaddr
-    | (Record<string, unknown> & { url?: string | URL | Multiaddr });
+export type KuboRpcClientCreateOption = string | URL | Multiaddr | (Record<string, unknown> & { url?: string | URL | Multiaddr });
 
 function isMultiaddrLike(value: unknown): value is Multiaddr {
     if (typeof value !== "object" || value === null) return false;
@@ -567,7 +571,7 @@ export async function removeBlocksFromKuboNode({
     cids: string[];
     inputNumOfRetries?: number;
     options?: BlockRmOptions;
-}) {
+}): Promise<string[]> {
     const cidsToRemove = cids.map((cid) => CID.parse(cid));
     const numOfRetries = inputNumOfRetries ?? 3;
 
@@ -582,7 +586,7 @@ export async function removeBlocksFromKuboNode({
         operation.attempt(async (currentAttempt) => {
             try {
                 for await (const cid of kuboRpcClient.block.rm(cidsToRemove, options)) {
-                    removedCids.push(cid.cid.toString());
+                    removedCids.push(cid.cid.toV0().toString());
                 }
                 resolve(removedCids);
             } catch (error) {
@@ -654,7 +658,15 @@ export async function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient,
     const parts = gatewayMultiaddr.split("/").filter(Boolean);
     const gatewayUrl = `http://${parts[1]}:${parts[3]}`;
     const ipnsFetchUrl = `${gatewayUrl}/ipns/${ipnsName}?format=ipns-record`;
-    const ipnsRecordRaw = await (await fetch(ipnsFetchUrl)).bytes();
+    const res = await fetch(ipnsFetchUrl);
+    if (res.status !== 200)
+        throw new PlebbitError("ERR_FAILED_TO_LOAD_LOCAL_RAW_IPNS_RECORD", {
+            ipnsFetchUrl,
+            ipnsName,
+            status: res.status,
+            statusText: res.statusText
+        });
+    const ipnsRecordRaw = await res.bytes();
     try {
         return unmarshalIPNSRecord(ipnsRecordRaw);
     } catch (e) {

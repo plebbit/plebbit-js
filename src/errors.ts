@@ -291,6 +291,7 @@ export enum messages {
     ERR_FAILED_TO_IMPORT_IPFS_KEY = "Subplebbit failed to import IPFS key",
     ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD = "The local subplebbit has produced a new IPNS record with invalid signature. This is a crticial error",
     ERR_FAILED_TO_PARSE_LOCAL_RAW_IPNS_RECORD = "Failed to parse the local IPNS record within our kubo node",
+    ERR_FAILED_TO_LOAD_LOCAL_RAW_IPNS_RECORD = "Failed to load local IPNS record from within our kubo node",
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY = "Failed to import challenge file factory",
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE = "Failed to import challenge file",
     ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION = "invalid getChallenge response from subplebbit challenge",
