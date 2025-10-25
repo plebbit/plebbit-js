@@ -40,6 +40,7 @@ export class PlebbitTypedEmitter<T extends ListenerSignature<T>> extends TypedEm
 
     unmirror() {
         if (!this._mirroredClient || !this._stateListener) {
+            return;
             throw new Error("This client is not mirroring any other client");
         }
 
