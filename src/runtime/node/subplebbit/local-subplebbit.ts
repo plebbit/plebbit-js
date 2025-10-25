@@ -2678,9 +2678,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                         );
                     else
                         for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
-                            this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
-                                this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]
-                            );
+                            if (clientUrlDeeper in this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl])
+                                this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
+                                    this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]
+                                );
                 }
         if (startedSubplebbit.updateCid)
             await this.initInternalSubplebbitAfterFirstUpdateNoMerge(startedSubplebbit.toJSONInternalAfterFirstUpdate());
