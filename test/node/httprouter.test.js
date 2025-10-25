@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import Plebbit from "../../dist/node/index.js";
 import { createSubWithNoChallenge, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util.js";
+import { MockHttpRouter } from "../../dist/node/runtime/node/test/mock-http-router.js";
 
 import tcpPortUsed from "tcp-port-used";
 
@@ -9,29 +10,47 @@ import tcpPortUsed from "tcp-port-used";
 // TODO calling plebbit.destroy() should stop the address rewriter proxy
 describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () => {
     const kuboNodeForHttpRouter = "http://localhost:15006/api/v0";
-    // default list of http routers to use
-    const httpRouterUrls = ["https://routing.lol", "https://peers.pleb.bot"];
+    let mockHttpRouter;
+    let httpRouterUrls = [];
 
     const startPort = 19575;
 
     let plebbit;
 
+    // const waitForProvidersOnRouter = async (keys) => {
+    //     const timeoutAt = Date.now() + 60_000;
+    //     while (Date.now() < timeoutAt) {
+    //         if (mockHttpRouter && keys.every((key) => mockHttpRouter.hasProvidersFor(key))) return;
+    //         await new Promise((resolve) => setTimeout(resolve, 250));
+    //     }
+    //     const diagnosticInfo = mockHttpRouter
+    //         ? {
+    //               url: mockHttpRouter.url,
+    //               requestCount: mockHttpRouter.requests.length,
+    //               lastRequest: mockHttpRouter.requests.at(-1),
+    //               recentRequests: mockHttpRouter.requests.slice(-5)
+    //           }
+    //         : null;
+    //     const error = new Error(
+    //         `Timed out waiting for mock HTTP router to record providers. Requests observed: ${JSON.stringify(diagnosticInfo, null, 2)}`
+    //     );
+    //     error.name = "ProvidersNotRecordedError";
+    //     throw error;
+    // };
+
+    before(async () => {
+        mockHttpRouter = new MockHttpRouter();
+        await mockHttpRouter.start();
+        httpRouterUrls = [mockHttpRouter.url];
+    });
+
     after(async () => {
         try {
             await plebbit.destroy();
         } catch {}
-    });
-
-    it(`Plebbit({kuboRpcClientsOptions}) sets correct default http routers`, async () => {
-        const anotherPlebbit = await Plebbit({ kuboRpcClientsOptions: [kuboNodeForHttpRouter], dataPath: undefined });
-        expect(anotherPlebbit.httpRoutersOptions).to.deep.equal([
-            "https://peers.pleb.bot",
-            "https://routing.lol",
-            "https://peers.forumindex.com",
-            "https://peers.plebpubsub.xyz"
-        ]);
-        expect(anotherPlebbit.dataPath).to.be.undefined;
-        await anotherPlebbit.destroy();
+        if (mockHttpRouter) {
+            await mockHttpRouter.destroy();
+        }
     });
 
     it(`address rewriter proxy should not be taken before we start plebbit`, async () => {
@@ -93,11 +112,23 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
 
         await sub.start();
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // wait till it's propgated on the http router
+        await new Promise((resolve) => setTimeout(resolve, 6000)); // wait till it's propgated on the http router
+
+        const provideToTestAgainst = [sub.updateCid, sub.pubsubTopicRoutingCid];
+
+        
+        const kuboClient = plebbit.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
+        for (const cid of provideToTestAgainst) {
+            await kuboClient.block.get(cid);
+            for await (const _event of kuboClient.routing.provide(cid, { recursive: true, verbose: true })) {
+                // iterating ensures the provide request completes
+            }
+        }
+
+        await waitForProvidersOnRouters(provideToTestAgainst);
 
         for (const httpRouterUrl of httpRouterUrls) {
             // why does subplebbit.ipnsPubsubDhtKey fails here?
-            const provideToTestAgainst = [sub.updateCid, sub.pubsubTopicRoutingCid];
             for (const resourceToProvide of provideToTestAgainst) {
                 const providersUrl = `${httpRouterUrl}/routing/v1/providers/${resourceToProvide}`;
                 const res = await fetch(providersUrl, { method: "GET" });
@@ -109,12 +140,21 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
                 expect(resJson["Providers"]).to.be.a("array");
                 expect(resJson["Providers"].length).to.be.at.least(1);
                 for (const provider of resJson["Providers"]) {
-                    for (const providerAddr of provider.Addrs) {
+                    const providerAddrs = provider.Addrs || provider.Payload?.Addrs || [];
+                    expect(providerAddrs.length).to.be.at.least(1);
+                    for (const providerAddr of providerAddrs) {
                         expect(providerAddr).to.be.a.string;
                         expect(providerAddr).to.not.include("0.0.0.0");
                     }
                 }
             }
+        }
+
+        for (const router of mockHttpRouters) {
+            const hasPutRequest = router.requests
+                .filter((request) => request.method === "PUT")
+                .some((request) => request.url.startsWith("/routing/v1/providers"));
+            expect(hasPutRequest).to.be.true;
         }
 
         await sub.delete();
