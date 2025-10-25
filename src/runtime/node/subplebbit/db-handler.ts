@@ -1108,6 +1108,27 @@ export class DbHandler {
                   AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
                 GROUP BY c.parentCid
             ),
+            filtered_children AS (
+                SELECT
+                    c.parentCid AS cid,
+                    c.cid AS child_cid,
+                    ROW_NUMBER() OVER (PARTITION BY c.parentCid ORDER BY c.rowid DESC) AS child_rank
+                FROM ${TABLES.COMMENTS} c
+                JOIN ${TABLES.COMMENT_UPDATES} cu_child ON c.cid = cu_child.cid
+                LEFT JOIN (
+                    SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
+                ) deleted_lookup ON deleted_lookup.cid = c.cid
+                WHERE c.parentCid IS NOT NULL
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND (cu_child.removed IS NOT 1 AND cu_child.removed IS NOT TRUE)
+                  AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
+                  AND COALESCE(cu_child.approved, 1) != 0
+            ),
+            last_child_cids AS (
+                SELECT cid, child_cid AS actual_last_child_cid
+                FROM filtered_children
+                WHERE child_rank = 1
+            ),
             stale_child_counts AS (
                 SELECT parent.cid
                 FROM ${TABLES.COMMENTS} parent
@@ -1116,11 +1137,20 @@ export class DbHandler {
                 WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
                   AND COALESCE(cc.actual_child_count, 0) != COALESCE(cu_parent.childCount, 0)
             ),
+            stale_last_child_cids AS (
+                SELECT parent.cid
+                FROM ${TABLES.COMMENTS} parent
+                JOIN ${TABLES.COMMENT_UPDATES} cu_parent ON parent.cid = cu_parent.cid
+                LEFT JOIN last_child_cids lc ON lc.cid = parent.cid
+                WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
+                  AND COALESCE(lc.actual_last_child_cid, '') != COALESCE(cu_parent.lastChildCid, '')
+            ),
             all_updates AS (
                 SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
                 WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
                 UNION SELECT cid FROM stale_child_counts
+                UNION SELECT cid FROM stale_last_child_cids
             )
             SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
             WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
