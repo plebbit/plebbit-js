@@ -2,8 +2,18 @@ import http from "node:http";
 import { URL } from "node:url";
 import { CID } from "multiformats/cid";
 
+// From https://specs.ipfs.tech/routing/http-routing-v1
+
+type NormalizedProvider = {
+    Schema: string;
+    ID: string;
+    Addrs: string[];
+    Protocols?: string[];
+    AgentVersion?: string;
+};
+
 type ProviderRecord = {
-    provider: any;
+    provider: NormalizedProvider;
     receivedAt: number;
 };
 
@@ -191,8 +201,9 @@ export class MockHttpRouter {
             if (!Array.isArray(keys)) continue;
             for (const key of keys) {
                 if (typeof key !== "string" || !key) continue;
-                this._addProviderRecord(key, provider, now);
-                storedCount++;
+                if (this._addProviderRecord(key, provider, now)) {
+                    storedCount++;
+                }
             }
         }
 
@@ -297,9 +308,10 @@ export class MockHttpRouter {
             "Last-Modified": new Date(lastModified).toUTCString(),
             Vary: "Accept"
         });
+        const payloadProviders = providers.map((record) => record.provider);
         res.end(
             JSON.stringify({
-                Providers: providers.map((record) => record.provider)
+                Providers: payloadProviders.length ? payloadProviders : null
             })
         );
     }
@@ -312,9 +324,7 @@ export class MockHttpRouter {
         return latest || Date.now();
     }
 
-    private _getAddrsReference(
-        provider: any
-    ): { addrs: string[]; assign: (value: string[]) => void } | null {
+    private _getAddrsReference(provider: any): { addrs: string[]; assign: (value: string[]) => void } | null {
         if (Array.isArray(provider?.Payload?.Addrs)) {
             return {
                 addrs: provider.Payload.Addrs,
@@ -375,12 +385,17 @@ export class MockHttpRouter {
         return [];
     }
 
-    private _addProviderRecord(cid: string, provider: any, receivedAt: number) {
-        const record: ProviderRecord = { provider: this._cloneProvider(provider), receivedAt };
+    private _addProviderRecord(cid: string, provider: any, receivedAt: number): boolean {
+        const normalizedProvider = this._normalizeProvider(provider);
+        if (!normalizedProvider) return false;
+        const record: ProviderRecord = { provider: normalizedProvider, receivedAt };
         const existing = this._providerRecords.get(cid) ?? [];
-        const active = existing.filter((entry) => receivedAt - entry.receivedAt <= PROVIDER_TTL_MS);
+        const active = existing.filter(
+            (entry) => receivedAt - entry.receivedAt <= PROVIDER_TTL_MS && entry.provider.ID !== normalizedProvider.ID
+        );
         active.unshift(record);
         this._providerRecords.set(cid, active.slice(0, MAX_PROVIDERS_IN_RESPONSE));
+        return true;
     }
 
     private _getActiveProviders(cid: string): ProviderRecord[] {
@@ -416,6 +431,43 @@ export class MockHttpRouter {
             // not a valid CID, fall back to original string only
         }
         return [...variants];
+    }
+
+    private _normalizeProvider(provider: any): NormalizedProvider | null {
+        const payload = provider?.Payload ?? {};
+        const idCandidate = typeof payload.ID === "string" && payload.ID ? payload.ID : provider?.ID;
+        const id = typeof idCandidate === "string" && idCandidate ? idCandidate : undefined;
+        if (!id) return null;
+
+        const addrs = this._extractAddrs(provider);
+        if (!addrs.length) return null;
+
+        const protocols = this._getProviderProtocols(provider);
+        const normalizedProtocols = protocols.length ? Array.from(new Set(protocols)) : undefined;
+
+        const normalized: NormalizedProvider = {
+            Schema: "peer",
+            ID: id,
+            Addrs: addrs
+        };
+        if (normalizedProtocols?.length) normalized.Protocols = normalizedProtocols;
+
+        const agentVersion = payload.AgentVersion ?? provider?.AgentVersion;
+        if (typeof agentVersion === "string" && agentVersion) {
+            normalized.AgentVersion = agentVersion;
+        }
+
+        return normalized;
+    }
+
+    private _extractAddrs(provider: any): string[] {
+        const payloadAddrs = Array.isArray(provider?.Payload?.Addrs) ? provider.Payload.Addrs : [];
+        const rootAddrs = Array.isArray(provider?.Addrs) ? provider.Addrs : [];
+        const all = [...payloadAddrs, ...rootAddrs];
+        const normalized = all
+            .map((addr) => (typeof addr === "string" ? addr : null))
+            .filter((addr): addr is string => Boolean(addr));
+        return normalized.filter((addr, index) => normalized.indexOf(addr) === index);
     }
 
     private _cloneProvider(provider: any): any {
