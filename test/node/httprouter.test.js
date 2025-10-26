@@ -112,7 +112,6 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
 
         await sub.start();
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
-        await new Promise((resolve) => setTimeout(resolve, 6000)); // wait till it's propgated on the http router
 
         expect(sub.updateCid).to.be.a("string");
         expect(sub.pubsubTopicRoutingCid).to.be.a("string");
@@ -131,18 +130,6 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
             providerStatuses.map(({ label, cid, hasProviders }) => `${label} (${cid}): ${hasProviders ? "provided" : "missing"}`).join(", ")
         ).to.be.true;
 
-        const provideCidList = provideToTestAgainst.map(({ cid }) => cid);
-
-        const kuboClient = plebbit.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
-        for (const cid of provideCidList) {
-            await kuboClient.block.get(cid);
-            for await (const _event of kuboClient.routing.provide(cid, { recursive: true, verbose: true })) {
-                // iterating ensures the provide request completes
-            }
-        }
-
-        await waitForProvidersOnRouters(provideCidList);
-
         for (const httpRouterUrl of httpRouterUrls) {
             // why does subplebbit.ipnsPubsubDhtKey fails here?
             for (const { cid: resourceToProvide } of provideToTestAgainst) {
@@ -156,22 +143,25 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
                 expect(resJson["Providers"]).to.be.a("array");
                 expect(resJson["Providers"].length).to.be.at.least(1);
                 for (const provider of resJson["Providers"]) {
-                    const providerAddrs = provider.Addrs || provider.Payload?.Addrs || [];
+                    expect(provider.Schema).to.equal("peer");
+                    expect(provider.ID).to.be.a("string").and.to.have.length.greaterThan(0);
+                    const providerAddrs = provider.Addrs;
                     expect(providerAddrs.length).to.be.at.least(1);
                     for (const providerAddr of providerAddrs) {
                         expect(providerAddr).to.be.a.string;
                         expect(providerAddr).to.not.include("0.0.0.0");
                     }
+                    if (provider.Protocols) {
+                        expect(provider.Protocols).to.be.an("array");
+                    }
                 }
             }
         }
 
-        for (const router of mockHttpRouters) {
-            const hasPutRequest = router.requests
-                .filter((request) => request.method === "PUT")
-                .some((request) => request.url.startsWith("/routing/v1/providers"));
-            expect(hasPutRequest).to.be.true;
-        }
+        const hasPutRequest = mockHttpRouter.requests
+            .filter((request) => request.method === "PUT")
+            .some((request) => request.url.startsWith("/routing/v1/providers"));
+        expect(hasPutRequest).to.be.true;
 
         await sub.delete();
     });
