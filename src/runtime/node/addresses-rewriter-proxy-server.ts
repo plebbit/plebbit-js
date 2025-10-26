@@ -222,10 +222,9 @@ export class AddressesRewriterProxyServer {
         const { request: httpRequest } = this.proxyTarget.protocol === "https:" ? https : http;
         const agent = this.proxyTarget.protocol === "https:" ? this._httpsAgent : this._httpAgent;
 
-        const requestOptions: Exclude<Parameters<typeof httpRequest>[0], string> = {
+        const requestOptions: http.RequestOptions = {
             hostname: this.proxyTarget.hostname,
             protocol: this.proxyTarget.protocol,
-            //@ts-expect-error
             path: req.url,
             method: req.method,
             headers: {
@@ -237,6 +236,9 @@ export class AddressesRewriterProxyServer {
             agent,
             timeout: 10000
         };
+        if (this.proxyTarget.port) {
+            requestOptions.port = this.proxyTarget.port;
+        }
 
         const proxyReq = httpRequest(requestOptions);
 
