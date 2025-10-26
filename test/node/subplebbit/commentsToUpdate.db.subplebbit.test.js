@@ -1,8 +1,9 @@
 import { expect } from "chai";
 import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler.js";
 import assert from "assert";
+import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
-describe("db-handler.queryCommentsToBeUpdated", function () {
+describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
     this.timeout(120_000);
 
     let dbHandler;
