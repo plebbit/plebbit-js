@@ -49,7 +49,7 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactoryInput> = {
     question: question,
     "evm-contract-call": evmContractCall,
     "publication-match": publicationMatch,
-    "mintpass": mintpass
+    mintpass: mintpass
 };
 
 const validateChallengeFileFactory = (challengeFileFactory: ChallengeFileFactory, challengeIndex: number, subplebbit: LocalSubplebbit) => {
@@ -296,11 +296,6 @@ const getChallengeVerification = async (
 
     const res = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
-    // there's basically 3 scenarios,
-    // all challenges pass, no pending approval,
-    // at least one challenge without pendingApproval: true fails, no pending approval,
-    // all challenges that fail have pendingApproval: true, it goes to pending approval.
-
     let challengeVerification: Pick<ChallengeVerificationMessageType, "challengeSuccess" | "challengeErrors">;
     // was able to verify without asking author for challenges
     if ("challengeSuccess" in res) {
@@ -317,6 +312,11 @@ const getChallengeVerification = async (
 
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
     addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
+
+    // there's basically 3 scenarios,
+    // all challenges pass, no pending approval. {challengeSuccess: true}
+    // at least one challenge without pendingApproval: true fails, no pending approval. {challengeSuccess: false}
+    // all challenges that fail have pendingApproval: true, it goes to pending approval. {challengeSuccess: true, pendingApproval: true}
 
     // all challenges that failed have pendingApproval: true, therefore it will go to pending approval
     const allFailuresRequirePendingApproval =
