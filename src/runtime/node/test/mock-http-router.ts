@@ -1,5 +1,6 @@
 import http from "node:http";
 import { URL } from "node:url";
+import { CID } from "multiformats/cid";
 
 type ProviderRecord = {
     provider: any;
@@ -384,13 +385,37 @@ export class MockHttpRouter {
 
     private _getActiveProviders(cid: string): ProviderRecord[] {
         const now = Date.now();
-        const records = this._providerRecords.get(cid);
-        if (!records || !records.length) return [];
-        const active = records.filter((record) => now - record.receivedAt <= PROVIDER_TTL_MS);
-        if (active.length !== records.length) {
-            this._providerRecords.set(cid, active);
+        const variants = this._getCidVariants(cid);
+        const results: ProviderRecord[] = [];
+        for (const variant of variants) {
+            const records = this._providerRecords.get(variant);
+            if (!records?.length) continue;
+            const active = records.filter((record) => now - record.receivedAt <= PROVIDER_TTL_MS);
+            if (active.length !== records.length) {
+                this._providerRecords.set(variant, active);
+            }
+            results.push(...active);
         }
-        return active;
+        return results;
+    }
+
+    private _getCidVariants(cid: string): string[] {
+        const variants = new Set<string>([cid]);
+        try {
+            const parsed = CID.parse(cid);
+            variants.add(parsed.toV1().toString());
+            try {
+                variants.add(parsed.toV0().toString());
+            } catch {
+                // CID cannot be converted to v0 (non-dagpb), ignore
+            }
+            if (parsed.code !== 0x55) {
+                variants.add(CID.createV1(0x55, parsed.multihash).toString());
+            }
+        } catch {
+            // not a valid CID, fall back to original string only
+        }
+        return [...variants];
     }
 
     private _cloneProvider(provider: any): any {

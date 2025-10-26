@@ -114,22 +114,38 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         await new Promise((resolve) => setTimeout(resolve, 6000)); // wait till it's propgated on the http router
 
-        const provideToTestAgainst = [sub.updateCid, sub.pubsubTopicRoutingCid];
+        expect(sub.updateCid).to.be.a("string");
+        expect(sub.pubsubTopicRoutingCid).to.be.a("string");
+        const provideToTestAgainst = [
+            { label: "sub.updateCid", cid: sub.updateCid },
+            { label: "sub.pubsubTopicRoutingCid", cid: sub.pubsubTopicRoutingCid }
+        ];
 
-        
+        const providerStatuses = provideToTestAgainst.map(({ cid, label }) => ({
+            label,
+            cid,
+            hasProviders: mockHttpRouter.hasProvidersFor(cid)
+        }));
+        expect(
+            providerStatuses.every(({ hasProviders }) => hasProviders),
+            providerStatuses.map(({ label, cid, hasProviders }) => `${label} (${cid}): ${hasProviders ? "provided" : "missing"}`).join(", ")
+        ).to.be.true;
+
+        const provideCidList = provideToTestAgainst.map(({ cid }) => cid);
+
         const kuboClient = plebbit.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
-        for (const cid of provideToTestAgainst) {
+        for (const cid of provideCidList) {
             await kuboClient.block.get(cid);
             for await (const _event of kuboClient.routing.provide(cid, { recursive: true, verbose: true })) {
                 // iterating ensures the provide request completes
             }
         }
 
-        await waitForProvidersOnRouters(provideToTestAgainst);
+        await waitForProvidersOnRouters(provideCidList);
 
         for (const httpRouterUrl of httpRouterUrls) {
             // why does subplebbit.ipnsPubsubDhtKey fails here?
-            for (const resourceToProvide of provideToTestAgainst) {
+            for (const { cid: resourceToProvide } of provideToTestAgainst) {
                 const providersUrl = `${httpRouterUrl}/routing/v1/providers/${resourceToProvide}`;
                 const res = await fetch(providersUrl, { method: "GET" });
                 expect(res.status).to.equal(
