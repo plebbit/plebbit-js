@@ -233,4 +233,50 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         const cids = commentCidsNeedingUpdate();
         expect(cids).to.include(post.cid);
     });
+
+    it("propagates updates through ancestor chain for deep replies", async () => {
+        const baseTimestamp = currentTimestamp();
+        const post = insertComment({ timestamp: baseTimestamp });
+        insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, updatedAt: baseTimestamp, insertedAt: baseTimestamp });
+
+        const depth1 = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { insertedAt: baseTimestamp + 1 }
+        });
+        insertCommentUpdate(depth1, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: baseTimestamp + 1,
+            insertedAt: baseTimestamp + 1
+        });
+
+        const depth2 = insertComment({
+            depth: 2,
+            parentCid: depth1.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { insertedAt: baseTimestamp + 2 }
+        });
+        insertCommentUpdate(depth2, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: baseTimestamp + 2,
+            insertedAt: baseTimestamp + 2
+        });
+
+        const depth3Timestamp = baseTimestamp + 5;
+        insertComment({
+            depth: 3,
+            parentCid: depth2.cid,
+            postCid: post.cid,
+            timestamp: depth3Timestamp,
+            overrides: { insertedAt: depth3Timestamp }
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(depth2.cid, "direct parent of the deep reply should be scheduled for update");
+        expect(cids).to.include(depth1.cid, "grandparent comment should be scheduled via parent chain");
+        expect(cids).to.include(post.cid, "post should be scheduled via parent chain");
+    });
 });
