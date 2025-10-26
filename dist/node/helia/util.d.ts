@@ -1,4 +1,5 @@
 import type { HeliaWithLibp2pPubsub } from "./types.js";
+import type { PeerId } from "@libp2p/interface";
 import Logger from "@plebbit/plebbit-logger";
 export declare function connectToPubsubPeers({ helia, pubsubTopic, maxPeers, options, log }: {
     helia: HeliaWithLibp2pPubsub;
@@ -8,5 +9,5 @@ export declare function connectToPubsubPeers({ helia, pubsubTopic, maxPeers, opt
     options?: {
         signal?: AbortSignal;
     };
-}): Promise<import("@libp2p/interface").Connection[]>;
-export declare function waitForTopicPeers(helia: HeliaWithLibp2pPubsub, topic: string, minPeers?: number, timeoutMs?: number): Promise<import("@libp2p/interface").PeerId[]>;
+}): Promise<Awaited<ReturnType<typeof helia.libp2p.dial>>[]>;
+export declare function waitForTopicPeers(helia: HeliaWithLibp2pPubsub, topic: string, minPeers?: number, timeoutMs?: number): Promise<PeerId[]>;

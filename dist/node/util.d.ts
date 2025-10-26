@@ -1,8 +1,9 @@
 import { messages } from "./errors.js";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { CID } from "kubo-rpc-client";
+import type { Multiaddr } from "@multiformats/multiaddr";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient, FilesRmOptions, RoutingProvideOptions } from "kubo-rpc-client";
+import type { AddOptions, AddResult, BlockRmOptions, FilesRmOptions, FilesWriteOptions, RoutingProvideOptions } from "kubo-rpc-client";
 import type { DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeRequestMessageWithPostSubplebbitAuthor, DecryptedChallengeRequestMessageWithReplySubplebbitAuthor, DecryptedChallengeRequestPublication, PublicationFromDecryptedChallengeRequest, PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest } from "./pubsub-messages/types.js";
 import EventEmitter from "events";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
@@ -29,7 +30,10 @@ export declare function isStringDomain(x: string | undefined): boolean;
 export declare function isIpns(x: string): boolean;
 export declare function isIpfsCid(x: string): boolean;
 export declare function isIpfsPath(x: string): boolean;
-export declare function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption: Parameters<typeof CreateKuboRpcClient>[0]): KuboRpcClient["_clientOptions"];
+export type KuboRpcClientCreateOption = string | URL | Multiaddr | (Record<string, unknown> & {
+    url?: string | URL | Multiaddr;
+});
+export declare function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption: KuboRpcClientCreateOption): KuboRpcClient["_clientOptions"];
 export declare function hideClassPrivateProps(_this: any): void;
 export declare function derivePublicationFromChallengeRequest<T extends Pick<DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeRequestMessageType, keyof DecryptedChallengeRequestPublication>>(request: T): T extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor ? PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest : PublicationFromDecryptedChallengeRequest;
 export declare function isRequestPubsubPublicationOfReply(request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): request is DecryptedChallengeRequestMessageWithReplySubplebbitAuthor;
@@ -59,13 +63,23 @@ export declare function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, conte
     inputNumOfRetries?: number;
     options?: AddOptions;
 }): Promise<AddResult>;
+type KuboFilesWriteParameters = Parameters<Plebbit["clients"]["kuboRpcClients"][string]["_client"]["files"]["write"]>;
+export declare function writeKuboFilesWithTimeout({ ipfsClient: kuboRpcClient, log, path, content, inputNumOfRetries, options, timeoutMs }: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "files">;
+    log: Logger;
+    path: KuboFilesWriteParameters[0];
+    content: KuboFilesWriteParameters[1];
+    inputNumOfRetries?: number;
+    options?: FilesWriteOptions;
+    timeoutMs?: number;
+}): Promise<void>;
 export declare function removeBlocksFromKuboNode({ ipfsClient: kuboRpcClient, log, cids, inputNumOfRetries, options }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "block">;
     log: Logger;
     cids: string[];
     inputNumOfRetries?: number;
     options?: BlockRmOptions;
-}): Promise<unknown>;
+}): Promise<string[]>;
 export declare function removeMfsFilesSafely({ kuboRpcClient, paths, log, inputNumOfRetries, rmOptions }: {
     kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string];
     paths: string[];
@@ -74,3 +88,4 @@ export declare function removeMfsFilesSafely({ kuboRpcClient, paths, log, inputN
     rmOptions?: FilesRmOptions;
 }): Promise<void>;
 export declare function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient, ipnsName: string): Promise<import("ipns").IPNSRecord>;
+export {};

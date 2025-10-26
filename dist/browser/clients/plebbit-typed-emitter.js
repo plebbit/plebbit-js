@@ -31,6 +31,7 @@ export class PlebbitTypedEmitter extends TypedEmitter {
     }
     unmirror() {
         if (!this._mirroredClient || !this._stateListener) {
+            return;
             throw new Error("This client is not mirroring any other client");
         }
         // Remove state change listener

@@ -240,6 +240,14 @@ export function isIpfsCid(x) {
 export function isIpfsPath(x) {
     return x.startsWith("/ipfs/");
 }
+function isMultiaddrLike(value) {
+    if (typeof value !== "object" || value === null)
+        return false;
+    if (!("bytes" in value))
+        return false;
+    const candidate = value;
+    return candidate.bytes instanceof Uint8Array;
+}
 export function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption) {
     if (!kuboRpcRawOption)
         throw Error("Need to define the ipfs options");
@@ -251,7 +259,7 @@ export function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption) {
             ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
         };
     }
-    else if ("bytes" in kuboRpcRawOption)
+    else if (isMultiaddrLike(kuboRpcRawOption))
         return { url: kuboRpcRawOption };
     else
         return kuboRpcRawOption;
@@ -385,10 +393,15 @@ export async function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, lo
             try {
                 const addRes = await kuboRpcClient.add(content, addOptions);
                 // I think it's not needed to provide now that the re-providing bug has been fixed
-                // const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
-                // for await (const event of provideEvents) {
-                //     log.trace(`Provide event for ${addRes.cid}:`, event);
-                // }
+                try {
+                    const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
+                    for await (const event of provideEvents) {
+                        log.trace(`Provide event for ${addRes.cid}:`, event);
+                    }
+                }
+                catch (e) {
+                    log("Minor Error, not a big deal: Failed to provide after add", e);
+                }
                 resolve(addRes);
             }
             catch (error) {
@@ -422,6 +435,32 @@ export async function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, content
         });
     });
 }
+export async function writeKuboFilesWithTimeout({ ipfsClient: kuboRpcClient, log, path, content, inputNumOfRetries, options, timeoutMs }) {
+    const numOfRetries = inputNumOfRetries ?? 3;
+    const timeoutMilliseconds = timeoutMs ?? 15_000;
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 2000
+        });
+        operation.attempt(async (currentAttempt) => {
+            try {
+                await pTimeout(kuboRpcClient.files.write(path, content, options), {
+                    milliseconds: timeoutMilliseconds,
+                    message: `Timed out writing to MFS path ${path} after ${timeoutMilliseconds}ms`
+                });
+                resolve();
+            }
+            catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to write content to MFS path ${path}:`, error);
+                if (operation.retry(error))
+                    return;
+                reject(operation.mainError() || error);
+            }
+        });
+    });
+}
 export async function removeBlocksFromKuboNode({ ipfsClient: kuboRpcClient, log, cids, inputNumOfRetries, options }) {
     const cidsToRemove = cids.map((cid) => CID.parse(cid));
     const numOfRetries = inputNumOfRetries ?? 3;
@@ -435,7 +474,7 @@ export async function removeBlocksFromKuboNode({ ipfsClient: kuboRpcClient, log,
         operation.attempt(async (currentAttempt) => {
             try {
                 for await (const cid of kuboRpcClient.block.rm(cidsToRemove, options)) {
-                    removedCids.push(cid.cid.toString());
+                    removedCids.push(cid.cid.toV0().toString());
                 }
                 resolve(removedCids);
             }
@@ -487,7 +526,15 @@ export async function getIpnsRecordInLocalKuboNode(kuboRpcClient, ipnsName) {
     const parts = gatewayMultiaddr.split("/").filter(Boolean);
     const gatewayUrl = `http://${parts[1]}:${parts[3]}`;
     const ipnsFetchUrl = `${gatewayUrl}/ipns/${ipnsName}?format=ipns-record`;
-    const ipnsRecordRaw = await (await fetch(ipnsFetchUrl)).bytes();
+    const res = await fetch(ipnsFetchUrl);
+    if (res.status !== 200)
+        throw new PlebbitError("ERR_FAILED_TO_LOAD_LOCAL_RAW_IPNS_RECORD", {
+            ipnsFetchUrl,
+            ipnsName,
+            status: res.status,
+            statusText: res.statusText
+        });
+    const ipnsRecordRaw = await res.bytes();
     try {
         return unmarshalIPNSRecord(ipnsRecordRaw);
     }

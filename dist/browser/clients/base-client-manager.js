@@ -429,17 +429,15 @@ export class BaseClientsManager {
     }
     // IPFS P2P methods
     async resolveIpnsToCidP2P(ipnsName, loadOpts) {
-        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
+        const ipnsResolveOpts = { nocache: true, recursive: true, ...loadOpts };
         const ipfsClient = this.getIpfsClientWithKuboRpcClientFunctions();
         const performIpnsResolve = async () => {
-            const resolvedCidOfIpns = await last(ipfsClient.name.resolve(ipnsName, { nocache: true, recursive: true, ...loadOpts }));
+            const resolvedCidOfIpns = await last(ipfsClient.name.resolve(ipnsName, ipnsResolveOpts));
             if (!resolvedCidOfIpns)
                 throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", {
                     resolvedCidOfIpns,
                     ipnsName,
-                    kuboRpcOrHelia,
-                    ipfsClient,
-                    loadOpts
+                    ipnsResolveOpts
                 });
             return CidPathSchema.parse(resolvedCidOfIpns);
         };
@@ -449,16 +447,14 @@ export class BaseClientsManager {
                 milliseconds: loadOpts.timeoutMs,
                 message: new PlebbitError("ERR_IPNS_RESOLUTION_P2P_TIMEOUT", {
                     ipnsName,
-                    loadOpts,
-                    ipfsClient: kuboRpcOrHelia,
-                    kuboRpcOrHelia
+                    ipnsResolveOpts
                 })
             });
             return result;
         }
         catch (error) {
             //@ts-expect-error
-            error.details = { ...error.details, ipnsName, loadOpts, ipfsClient: kuboRpcOrHelia };
+            error.details = { ...error.details, ipnsName, ipnsResolveOpts };
             throw error;
         }
         throw Error("Should not reach this block in resolveIpnsToCidP2P");
@@ -472,16 +468,14 @@ export class BaseClientsManager {
             const data = uint8ArrayConcat(rawData);
             const fileContent = uint8ArrayToString(data);
             if (typeof fileContent !== "string")
-                throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, loadOpts, ipfsClient, kuboRpcOrHelia });
+                throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, loadOpts });
             if (data.byteLength === loadOpts.maxFileSizeBytes) {
                 const calculatedCid = await calculateIpfsHash(fileContent);
                 if (calculatedCid !== cidV0)
-                    throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", {
+                    throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", {
                         cid: cidV0,
                         loadOpts,
-                        endedDownloadAtFileContentLength: data.byteLength,
-                        ipfsClient,
-                        kuboRpcOrHelia
+                        endedDownloadAtFileContentLength: data.byteLength
                     });
             }
             return fileContent;
@@ -490,7 +484,7 @@ export class BaseClientsManager {
             // Wrap the fetch function with pTimeout to ensure it times out properly
             const result = await pTimeout(fetchPromise(), {
                 milliseconds: loadOpts.timeoutMs,
-                message: new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, loadOpts, ipfsClient })
+                message: new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, loadOpts })
             });
             return result;
         }
@@ -498,17 +492,17 @@ export class BaseClientsManager {
             if (e instanceof PlebbitError)
                 throw e;
             else if (e instanceof Error && e.name === "TimeoutError")
-                throw new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, error: e, loadOpts, ipfsClient });
+                throw new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, error: e, loadOpts });
             else
-                throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, error: e, loadOpts, ipfsClient });
+                throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, error: e, loadOpts });
         }
     }
     async _verifyGatewayResponseMatchesCid(gatewayResponseBody, cid, loadOpts) {
         const calculatedCid = await calculateIpfsHash(gatewayResponseBody);
         if (gatewayResponseBody.length === loadOpts.maxFileSizeBytes && calculatedCid !== cid)
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, loadOpts, gatewayResponseBody });
+            throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { cid, loadOpts, gatewayResponseBody });
         if (calculatedCid !== cid)
-            throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid, gatewayResponseBody, loadOpts });
+            throw new PlebbitError("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid, gatewayResponseBody, loadOpts });
     }
     // Resolver methods here
     _getKeyOfCachedDomainTextRecord(domainAddress, txtRecord) {

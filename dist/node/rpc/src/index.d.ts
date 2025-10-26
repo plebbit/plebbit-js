@@ -26,6 +26,7 @@ declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         [subscriptionId: number]: Publication;
     };
     authKey: string | undefined;
+    private _trackedSubplebbitListeners;
     private _getIpFromConnectionRequest;
     private _onSettingsChange;
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions);
@@ -37,6 +38,8 @@ declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     getSubplebbitPostsPage(params: any): Promise<PageIpfs>;
     getCommentRepliesPage(params: any): Promise<PageIpfs>;
     createSubplebbit(params: any): Promise<RpcInternalSubplebbitRecordBeforeFirstUpdateType>;
+    private _trackSubplebbitListener;
+    private _untrackSubplebbitListener;
     _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number): void;
     startSubplebbit(params: any, connectionId: string): Promise<number>;
     stopSubplebbit(params: any): Promise<boolean>;

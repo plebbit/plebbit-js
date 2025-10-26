@@ -1,6 +1,6 @@
 import { createHelia } from "helia";
 import { ipns } from "@helia/ipns";
-import { gossipsub } from "@chainsafe/libp2p-gossipsub";
+import { gossipsub } from "@libp2p/gossipsub";
 import { identify } from "@libp2p/identify";
 import { CID } from "multiformats/cid";
 import { peerIdFromString } from "@libp2p/peer-id";
@@ -71,7 +71,6 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
     const ipnsNameResolver = ipns(helia, {
         routers: [createIpnsFetchRouter(helia), createIpnsPubusubRouter(helia)]
     });
-    //@ts-expect-error
     ipnsNameResolver.routers = ipnsNameResolver.routers.slice(1); // remove gateway ipns routing and keep only pubsub
     const throwIfHeliaIsStoppingOrStopped = () => {
         if (helia.libp2p.status === "stopped" || helia.libp2p.status === "stopping")
