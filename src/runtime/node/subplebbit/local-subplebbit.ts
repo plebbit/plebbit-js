@@ -704,7 +704,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const file = await retryKuboIpfsAddAndProvide({
             ipfsClient: kuboRpcClient._client,
             log,
-            content: JSON.stringify(newSubplebbitRecord),
+            content: deterministicStringify(newSubplebbitRecord), // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
             addOptions: { pin: true },
             provideOptions: { recursive: true }
         });
