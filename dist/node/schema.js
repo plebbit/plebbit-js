@@ -13,11 +13,11 @@ export const nonNegativeIntStringSchema = z
 export const Uint8ArraySchema = z.custom((value) => value instanceof Uint8Array, { message: "Expected Uint8Array" });
 const LibraryChainProvider = z.enum(["viem", "ethers.js", "web3.js"]);
 export const ChainProviderSchema = z.object({
-    urls: z.string().url().or(LibraryChainProvider).array(),
+    urls: z.url().or(LibraryChainProvider).array(),
     chainId: z.number().int()
 });
-const IpfsGatewayUrlSchema = z.string().url().startsWith("http", "IPFS gateway URL must start with http:// or https://");
-const RpcUrlSchema = z.string().url().startsWith("ws", "Plebbit RPC URL must start with ws:// or wss://"); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
+const IpfsGatewayUrlSchema = z.url().startsWith("http", "IPFS gateway URL must start with http:// or https://");
+const RpcUrlSchema = z.url().startsWith("ws", "Plebbit RPC URL must start with ws:// or wss://"); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
 const KuboRpcCreateClientOptionSchema = z.custom(); // Kubo-rpc-client library will do the validation for us
 const DirectoryPathSchema = z.string(); // TODO add validation for path
 const defaultChainProviders = {
@@ -46,12 +46,6 @@ export const PlebbitUserOptionBaseSchema = z.object({
     dataPath: DirectoryPathSchema.optional(),
     chainProviders: z.record(ChainTickerSchema, ChainProviderSchema),
     resolveAuthorAddresses: z.boolean(),
-    // Options for tests only. Should not be used in production
-    publishInterval: z.number().positive(), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
-    updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
-    noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
-    validatePages: z.boolean(), // if false, plebbit-js will not validate pages in commentUpdate/Subplebbit/getPage
-    userAgent: UserAgentSchema,
     libp2pJsClientsOptions: z
         .object({
         key: z.string().min(1),
@@ -60,7 +54,13 @@ export const PlebbitUserOptionBaseSchema = z.object({
     })
         .array()
         .max(1, "Only one libp2pJsClientOptions is allowed at the moment")
-        .optional()
+        .optional(),
+    validatePages: z.boolean(), // if false, plebbit-js will not validate pages in commentUpdate/Subplebbit/getPage
+    userAgent: UserAgentSchema,
+    // Options for tests only. Should not be used in production
+    publishInterval: z.number().positive(), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
+    updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
+    noData: z.boolean() // if true, dataPath is ignored, all database and cache data is saved in memory
 });
 const defaultPubsubKuboRpcClientsOptions = [
     { url: "https://pubsubprovider.xyz/api/v0" },

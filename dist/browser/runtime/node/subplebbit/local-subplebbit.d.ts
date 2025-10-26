@@ -22,6 +22,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _stopHasBeenCalled;
     private _publishLoopPromise?;
     private _updateLoopPromise?;
+    private _firstUpdateAfterStart;
     private _internalStateUpdateId;
     private _mirroredStartedOrUpdatingSubplebbit?;
     private _pendingEditProps;
@@ -46,6 +47,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _calculateNewPostUpdates;
     private _calculateLatestUpdateTrigger;
     private _requireSubplebbitUpdateIfModQueueChanged;
+    _resolveIpnsAndLogIfPotentialProblematicSequence(): Promise<void>;
     private updateSubplebbitIpnsIfNeeded;
     private shouldResolveDomainForVerification;
     private _validateSubSizeSchemaAndSignatureBeforePublishing;

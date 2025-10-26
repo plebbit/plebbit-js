@@ -398,6 +398,21 @@ export async function mockPlebbitNoDataPathWithOnlyKuboClient(opts) {
     });
     return plebbit;
 }
+export async function mockPlebbitNoDataPathWithOnlyKuboClientNoAdd(opts) {
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+            plebbitRpcClientsOptions: undefined,
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
+    });
+    Object.values(plebbit.clients.kuboRpcClients)[0]._client.add = () => {
+        throw Error("Add is not supported");
+    };
+    return plebbit;
+}
 export async function mockRpcServerPlebbit(plebbitOptions) {
     const plebbit = await mockPlebbitV2({
         plebbitOptions,
@@ -474,6 +489,8 @@ export async function publishVote(commentCid, subplebbitAddress, vote, plebbit, 
     return voteObj;
 }
 export async function publishWithExpectedResult(publication, expectedChallengeSuccess, expectedReason) {
+    const emittedErrors = [];
+    publication.on("error", (err) => emittedErrors.push(err));
     const challengeVerificationPromise = new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
             if (verificationMsg.reason === messages["ERR_DUPLICATE_COMMENT"]) {
@@ -497,7 +514,8 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
         publication,
         expectedChallengeSuccess,
         expectedReason,
-        waitTime: 90000
+        waitTime: 90000,
+        emittedErrorsOnPublicationInstance: emittedErrors
     };
     const validateResponsePromise = pTimeout(challengeVerificationPromise, {
         milliseconds: 90000,
@@ -544,7 +562,7 @@ export async function waitTillPostInSubplebbitInstancePages(post, sub) {
     };
     if (sub.state === "stopped")
         await sub.update();
-    await resolveWhenConditionIsTrue(sub, isPostInSubPages);
+    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: isPostInSubPages });
 }
 export async function waitTillPostInSubplebbitPages(post, plebbit) {
     const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
@@ -584,7 +602,7 @@ export async function waitTillReplyInParentPagesInstance(reply, parentComment) {
     };
     if (parentComment.state === "stopped")
         throw Error("Parent comment is stopped, can't wait for reply in parent pages");
-    await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
+    await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: isReplyInParentPages });
 }
 export async function waitTillReplyInParentPages(reply, plebbit) {
     const parentComment = await plebbit.createComment({ cid: reply.parentCid });
@@ -613,7 +631,18 @@ export function isRpcFlagOn() {
 export function isRunningInBrowser() {
     return Boolean(globalThis["window"]);
 }
-export async function resolveWhenConditionIsTrue(toUpdate, predicate, eventName = "update") {
+export async function resolveWhenConditionIsTrue(options) {
+    if (!options) {
+        throw Error("resolveWhenConditionIsTrue requires an options object");
+    }
+    const { toUpdate, predicate, eventName = "update" } = options;
+    if (!toUpdate) {
+        throw Error("resolveWhenConditionIsTrue options.toUpdate is required");
+    }
+    if (typeof predicate !== "function") {
+        throw Error("resolveWhenConditionIsTrue options.predicate must be a function");
+    }
+    const normalizedEventName = eventName || "update";
     // should add a timeout?
     const listenerPromise = new Promise(async (resolve) => {
         const listener = async () => {
@@ -621,7 +650,7 @@ export async function resolveWhenConditionIsTrue(toUpdate, predicate, eventName 
                 const conditionStatus = await predicate();
                 if (conditionStatus) {
                     resolve(conditionStatus);
-                    toUpdate.removeListener(eventName, listener);
+                    toUpdate.removeListener(normalizedEventName, listener);
                 }
             }
             catch (error) {
@@ -629,7 +658,7 @@ export async function resolveWhenConditionIsTrue(toUpdate, predicate, eventName 
                 throw error;
             }
         };
-        toUpdate.on(eventName, listener);
+        toUpdate.on(normalizedEventName, listener);
         await listener(); // make sure we're checking at least once
     });
     await listenerPromise;
@@ -1079,7 +1108,7 @@ export async function createCommentUpdateWithInvalidSignature(commentCid) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({});
     const comment = await plebbit.getComment(commentCid);
     await comment.update();
-    await resolveWhenConditionIsTrue(comment, async () => typeof comment.updatedAt === "number");
+    await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => typeof comment.updatedAt === "number" });
     const invalidCommentUpdateJson = comment.raw.commentUpdate;
     await comment.stop();
     invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
@@ -1178,7 +1207,8 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment, commentP
     if (updatingComment.replyCount && updatingComment.replyCount < numOfCommentsToPublish)
         throw Error("Reply count is less than the number of comments published");
 }
-export async function findOrPublishCommentWithDepth({ depth, subplebbit }) {
+export async function findOrPublishCommentWithDepth({ depth, subplebbit, plebbit }) {
+    const plebbitWithDefault = plebbit || subplebbit._plebbit;
     let commentFromPreloadedPages;
     if (subplebbit.posts.pages.hot) {
         processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
@@ -1188,12 +1218,12 @@ export async function findOrPublishCommentWithDepth({ depth, subplebbit }) {
         });
     }
     if (commentFromPreloadedPages)
-        return subplebbit._plebbit.createComment(commentFromPreloadedPages);
-    let curComment = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
+        return plebbitWithDefault.createComment(commentFromPreloadedPages);
+    let curComment = await publishRandomPost(subplebbit.address, plebbitWithDefault);
     if (curComment.depth === depth)
         return curComment;
     while (curComment.depth < depth) {
-        curComment = await publishRandomReply(curComment, subplebbit._plebbit, {});
+        curComment = await publishRandomReply(curComment, plebbitWithDefault, {});
         if (curComment.depth === depth)
             return curComment;
     }
@@ -1219,7 +1249,7 @@ export async function publishCommentWithDepth({ depth, subplebbit }) {
 export async function getCommentWithCommentUpdateProps({ cid, plebbit }) {
     const comment = await plebbit.createComment({ cid });
     await comment.update();
-    await resolveWhenConditionIsTrue(comment, async () => Boolean(comment.updatedAt));
+    await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => Boolean(comment.updatedAt) });
     return comment;
 }
 export async function publishCommentToModQueue({ subplebbit, plebbit, parentComment }) {
@@ -1301,7 +1331,7 @@ export async function findOrGeneratePostWithMultiplePages(subplebbit) {
     // didn't find any post with multiple pages, so we'll publish a new one
     const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
     await post.update();
-    await resolveWhenConditionIsTrue(post, async () => typeof post.updatedAt === "number");
+    await resolveWhenConditionIsTrue({ toUpdate: post, predicate: async () => typeof post.updatedAt === "number" });
     await forceSubplebbitToGenerateAllRepliesPages(post);
     return post;
 }

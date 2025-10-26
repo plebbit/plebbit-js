@@ -249,7 +249,10 @@ export function findCommentInPageInstanceRecursively(pageInstance, targetCid) {
     for (const preloadedPage of Object.values(pageInstance.pages)) {
         if (!preloadedPage)
             continue;
-        const pageIpfs = { comments: preloadedPage.comments.map((page) => page.raw), nextCid: preloadedPage.nextCid };
+        const pageIpfs = {
+            comments: preloadedPage.comments.map((parsedPageComment) => parsedPageComment.raw),
+            nextCid: preloadedPage.nextCid
+        };
         const foundComment = findCommentInHierarchicalPageIpfsRecursively(pageIpfs, targetCid);
         if (foundComment)
             return foundComment;

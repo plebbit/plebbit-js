@@ -282,6 +282,7 @@ export var messages;
     messages["ERR_FAILED_TO_IMPORT_IPFS_KEY"] = "Subplebbit failed to import IPFS key";
     messages["ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD"] = "The local subplebbit has produced a new IPNS record with invalid signature. This is a crticial error";
     messages["ERR_FAILED_TO_PARSE_LOCAL_RAW_IPNS_RECORD"] = "Failed to parse the local IPNS record within our kubo node";
+    messages["ERR_FAILED_TO_LOAD_LOCAL_RAW_IPNS_RECORD"] = "Failed to load local IPNS record from within our kubo node";
     messages["ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY"] = "Failed to import challenge file factory";
     messages["ERR_FAILED_TO_IMPORT_CHALLENGE_FILE"] = "Failed to import challenge file";
     messages["ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION"] = "invalid getChallenge response from subplebbit challenge";

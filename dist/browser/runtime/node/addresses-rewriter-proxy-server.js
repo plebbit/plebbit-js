@@ -159,7 +159,6 @@ export class AddressesRewriterProxyServer {
         const requestOptions = {
             hostname: this.proxyTarget.hostname,
             protocol: this.proxyTarget.protocol,
-            //@ts-expect-error
             path: req.url,
             method: req.method,
             headers: {
@@ -171,6 +170,9 @@ export class AddressesRewriterProxyServer {
             agent,
             timeout: 10000
         };
+        if (this.proxyTarget.port) {
+            requestOptions.port = this.proxyTarget.port;
+        }
         const proxyReq = httpRequest(requestOptions);
         // Handle timeout
         proxyReq.setTimeout(10000, () => {

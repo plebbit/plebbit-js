@@ -1,6 +1,4 @@
-// NOTE: Ed25519PublicKey, Ed25519PrivateKey are not public apis, could break when upgrading libp2p-crypto
-//@ts-expect-error
-import { Ed25519PublicKey, Ed25519PrivateKey } from "libp2p-crypto/src/keys/ed25519-class.js";
+import { privateKeyFromRaw, privateKeyToProtobuf, publicKeyFromRaw, publicKeyToProtobuf } from "@libp2p/crypto/keys";
 import PeerId from "peer-id";
 import * as ed from "@noble/ed25519";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
@@ -31,11 +29,6 @@ export const getBufferedPlebbitAddressFromPublicKey = async (publicKeyBase64) =>
     const buffered = uint8ArrayFromString(publicKeyBase64, "base64");
     return peerId.toBytes();
 };
-const _makeSureBytesAreUint8Array = (bytes) => {
-    if (!(bytes instanceof Uint8Array))
-        return new Uint8Array(bytes);
-    return bytes;
-};
 export const getIpfsKeyFromPrivateKey = async (privateKeyBase64) => {
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
         throw Error(`getIpfsKeyFromPrivateKey privateKeyBase64 not a string`);
@@ -55,9 +48,9 @@ export const getIpfsKeyFromPrivateKey = async (privateKeyBase64) => {
     const privateAndPublicKeyBuffer = new Uint8Array(64);
     privateAndPublicKeyBuffer.set(privateKeyBuffer);
     privateAndPublicKeyBuffer.set(publicKeyBuffer, 32);
-    const ed25519PrivateKeyInstance = new Ed25519PrivateKey(privateAndPublicKeyBuffer, publicKeyBuffer);
+    const ed25519PrivateKeyInstance = privateKeyFromRaw(privateAndPublicKeyBuffer);
     // the "ipfs key" adds a suffix, then the private key, then the public key, it is not the raw private key
-    return _makeSureBytesAreUint8Array(ed25519PrivateKeyInstance.bytes);
+    return privateKeyToProtobuf(ed25519PrivateKeyInstance);
 };
 export const getPublicKeyFromPrivateKey = async (privateKeyBase64) => {
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
@@ -97,16 +90,16 @@ export const getPeerIdFromPublicKey = async (publicKeyBase64) => {
     if (publicKeyBuffer.length !== 32)
         throw Error(`getPeerIdFromPublicKey publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`);
     // the PeerId public key is not a raw public key, it adds a suffix
-    const ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
-    const peerId = await PeerId.createFromPubKey(_makeSureBytesAreUint8Array(ed25519PublicKeyInstance.bytes));
+    const ed25519PublicKeyInstance = publicKeyFromRaw(publicKeyBuffer);
+    const peerId = await PeerId.createFromPubKey(publicKeyToProtobuf(ed25519PublicKeyInstance));
     return peerId;
 };
 export const getPeerIdFromPublicKeyBuffer = async (publicKeyBuffer) => {
     if (publicKeyBuffer.length !== 32)
         throw Error(`getPeerIdFromPublicKeyBuffer publicKeyBuffer ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`);
     // the PeerId public key is not a raw public key, it adds a suffix
-    const ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
-    const peerId = await PeerId.createFromPubKey(_makeSureBytesAreUint8Array(ed25519PublicKeyInstance.bytes));
+    const ed25519PublicKeyInstance = publicKeyFromRaw(publicKeyBuffer);
+    const peerId = await PeerId.createFromPubKey(publicKeyToProtobuf(ed25519PublicKeyInstance));
     return peerId;
 };
 export const convertBase58IpnsNameToBase36Cid = (ipnsName) => {
@@ -148,9 +141,9 @@ export const getPlebbitAddressFromPublicKeySync = (publicKeyBase64) => {
     }
     if (publicKeyBuffer.length !== 32)
         throw Error(`getPlebbitAddressFromPublicKeySync publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`);
-    // Create the Ed25519PublicKey instance
-    const ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
-    const publicKeyBytes = _makeSureBytesAreUint8Array(ed25519PublicKeyInstance.bytes);
+    // Marshal to libp2p protobuf bytes to build the identity multihash
+    const ed25519PublicKeyInstance = publicKeyFromRaw(publicKeyBuffer);
+    const publicKeyBytes = publicKeyToProtobuf(ed25519PublicKeyInstance);
     // For Ed25519 keys, create identity hash multihash
     const multihash = new Uint8Array(2 + publicKeyBytes.length);
     multihash[0] = 0x00; // Identity hash code

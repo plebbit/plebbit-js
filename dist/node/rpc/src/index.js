@@ -32,6 +32,7 @@ class PlebbitWsServer extends TypedEmitter {
         this.subscriptionCleanups = {};
         // store publishing publications so they can be used by publishChallengeAnswers
         this.publishing = {};
+        this._trackedSubplebbitListeners = new WeakMap();
         this._getIpFromConnectionRequest = (req) => req.socket.remoteAddress; // we set it up here so we can mock it in tests
         this._onSettingsChange = {};
         const log = Logger("plebbit-js:PlebbitWsServer");
@@ -201,6 +202,32 @@ class PlebbitWsServer extends TypedEmitter {
             throw Error("Failed to create a local subplebbit. This is a critical error");
         return subplebbit.toJSONInternalRpcBeforeFirstUpdate();
     }
+    _trackSubplebbitListener(subplebbit, event, listener) {
+        let listenersByEvent = this._trackedSubplebbitListeners.get(subplebbit);
+        if (!listenersByEvent) {
+            listenersByEvent = new Map();
+            this._trackedSubplebbitListeners.set(subplebbit, listenersByEvent);
+        }
+        let listeners = listenersByEvent.get(event);
+        if (!listeners) {
+            listeners = new Set();
+            listenersByEvent.set(event, listeners);
+        }
+        listeners.add(listener);
+    }
+    _untrackSubplebbitListener(subplebbit, event, listener) {
+        const listenersByEvent = this._trackedSubplebbitListeners.get(subplebbit);
+        if (!listenersByEvent)
+            return;
+        const listeners = listenersByEvent.get(event);
+        if (!listeners)
+            return;
+        listeners.delete(listener);
+        if (listeners.size === 0)
+            listenersByEvent.delete(event);
+        if (listenersByEvent.size === 0)
+            this._trackedSubplebbitListeners.delete(subplebbit);
+    }
     _setupStartedEvents(subplebbit, connectionId, subscriptionId) {
         const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "startSubplebbit", subscription: subscriptionId, event, result, connectionId });
         const getUpdateJson = () => typeof subplebbit.updatedAt === "number"
@@ -208,16 +235,22 @@ class PlebbitWsServer extends TypedEmitter {
             : subplebbit.toJSONInternalRpcBeforeFirstUpdate();
         const updateListener = () => sendEvent("update", getUpdateJson());
         subplebbit.on("update", updateListener);
+        this._trackSubplebbitListener(subplebbit, "update", updateListener);
         const startedStateListener = () => sendEvent("startedstatechange", subplebbit.startedState);
         subplebbit.on("startedstatechange", startedStateListener);
+        this._trackSubplebbitListener(subplebbit, "startedstatechange", startedStateListener);
         const requestListener = (request) => sendEvent("challengerequest", encodeChallengeRequest(request));
         subplebbit.on("challengerequest", requestListener);
+        this._trackSubplebbitListener(subplebbit, "challengerequest", requestListener);
         const challengeListener = (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge));
         subplebbit.on("challenge", challengeListener);
+        this._trackSubplebbitListener(subplebbit, "challenge", challengeListener);
         const challengeAnswerListener = (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer));
         subplebbit.on("challengeanswer", challengeAnswerListener);
+        this._trackSubplebbitListener(subplebbit, "challengeanswer", challengeAnswerListener);
         const challengeVerificationListener = (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
         subplebbit.on("challengeverification", challengeVerificationListener);
+        this._trackSubplebbitListener(subplebbit, "challengeverification", challengeVerificationListener);
         const errorListener = (error) => {
             const rpcError = error;
             if (subplebbit.state === "started")
@@ -228,15 +261,23 @@ class PlebbitWsServer extends TypedEmitter {
             sendEvent("error", rpcError);
         };
         subplebbit.on("error", errorListener);
+        this._trackSubplebbitListener(subplebbit, "error", errorListener);
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             subplebbit.removeListener("update", updateListener);
+            this._untrackSubplebbitListener(subplebbit, "update", updateListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
+            this._untrackSubplebbitListener(subplebbit, "startedstatechange", startedStateListener);
             subplebbit.removeListener("challengerequest", requestListener);
+            this._untrackSubplebbitListener(subplebbit, "challengerequest", requestListener);
             subplebbit.removeListener("challenge", challengeListener);
+            this._untrackSubplebbitListener(subplebbit, "challenge", challengeListener);
             subplebbit.removeListener("challengeanswer", challengeAnswerListener);
+            this._untrackSubplebbitListener(subplebbit, "challengeanswer", challengeAnswerListener);
             subplebbit.removeListener("challengeverification", challengeVerificationListener);
+            this._untrackSubplebbitListener(subplebbit, "challengeverification", challengeVerificationListener);
             subplebbit.removeListener("error", errorListener);
+            this._untrackSubplebbitListener(subplebbit, "error", errorListener);
         };
     }
     async startSubplebbit(params, connectionId) {
@@ -289,15 +330,15 @@ class PlebbitWsServer extends TypedEmitter {
         // remove all listeners
         subplebbit.emit("update", subplebbit);
         subplebbit.emit("startedstatechange", subplebbit.startedState);
-        subplebbit.removeAllListeners("challengerequest");
-        subplebbit.removeAllListeners("challenge");
-        subplebbit.removeAllListeners("challengeanswer");
-        subplebbit.removeAllListeners("challengeverification");
-        subplebbit.removeAllListeners("update");
-        subplebbit.removeAllListeners("startedstatechange");
-        subplebbit.removeAllListeners("statechange");
-        subplebbit.removeAllListeners("updatingstatechange");
-        subplebbit.removeAllListeners("error");
+        const trackedListeners = this._trackedSubplebbitListeners.get(subplebbit);
+        if (trackedListeners) {
+            for (const [event, listeners] of trackedListeners) {
+                for (const listener of listeners) {
+                    subplebbit.removeListener(event, listener);
+                }
+            }
+            this._trackedSubplebbitListeners.delete(subplebbit);
+        }
     }
     async editSubplebbit(params) {
         const address = SubplebbitAddressSchema.parse(params[0]);
@@ -317,6 +358,7 @@ class PlebbitWsServer extends TypedEmitter {
         }
         await subplebbit.edit(editSubplebbitOptions);
         if (editSubplebbitOptions.address && startedSubplebbits[address]) {
+            // if (editSubplebbitOptions.address && startedSubplebbits[address] && editSubplebbitOptions.address !== address) {
             startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];
             delete startedSubplebbits[address];
         }
@@ -501,6 +543,7 @@ class PlebbitWsServer extends TypedEmitter {
         const subplebbit = isSubStarted
             ? await getStartedSubplebbit(address)
             : await this.plebbit.createSubplebbit({ address });
+        const maybeLocalSubplebbit = subplebbit instanceof LocalSubplebbit ? subplebbit : undefined;
         const sendSubJson = () => {
             let jsonToSend;
             if (subplebbit instanceof LocalSubplebbit)
@@ -514,12 +557,19 @@ class PlebbitWsServer extends TypedEmitter {
         };
         const updateListener = () => sendSubJson();
         subplebbit.on("update", updateListener);
+        if (maybeLocalSubplebbit)
+            this._trackSubplebbitListener(maybeLocalSubplebbit, "update", updateListener);
         const updatingStateListener = () => sendEvent("updatingstatechange", subplebbit.updatingState);
         subplebbit.on("updatingstatechange", updatingStateListener);
+        if (maybeLocalSubplebbit)
+            this._trackSubplebbitListener(maybeLocalSubplebbit, "updatingstatechange", updatingStateListener);
         // listener for startestatechange
         const startedStateListener = () => sendEvent("updatingstatechange", subplebbit.startedState);
-        if (isSubStarted)
+        if (isSubStarted) {
             subplebbit.on("startedstatechange", startedStateListener);
+            if (maybeLocalSubplebbit)
+                this._trackSubplebbitListener(maybeLocalSubplebbit, "startedstatechange", startedStateListener);
+        }
         const errorListener = (error) => {
             const rpcError = error;
             if (subplebbit.state === "started")
@@ -530,12 +580,22 @@ class PlebbitWsServer extends TypedEmitter {
             sendEvent("error", rpcError);
         };
         subplebbit.on("error", errorListener);
+        if (maybeLocalSubplebbit)
+            this._trackSubplebbitListener(maybeLocalSubplebbit, "error", errorListener);
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             subplebbit.removeListener("update", updateListener);
+            if (maybeLocalSubplebbit)
+                this._untrackSubplebbitListener(maybeLocalSubplebbit, "update", updateListener);
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
+            if (maybeLocalSubplebbit)
+                this._untrackSubplebbitListener(maybeLocalSubplebbit, "updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
+            if (maybeLocalSubplebbit)
+                this._untrackSubplebbitListener(maybeLocalSubplebbit, "error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
+            if (isSubStarted && maybeLocalSubplebbit)
+                this._untrackSubplebbitListener(maybeLocalSubplebbit, "startedstatechange", startedStateListener);
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")
                 subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, params }));

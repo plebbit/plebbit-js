@@ -62,6 +62,7 @@ export declare function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceM
 export declare function mockRemotePlebbit(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
 export declare function mockPlebbitNoDataPathWithOnlyKuboClient(opts?: MockPlebbitOptions): Promise<Plebbit>;
+export declare function mockPlebbitNoDataPathWithOnlyKuboClientNoAdd(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
 export declare function mockRpcRemotePlebbit(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function mockRPCLocalPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
@@ -80,7 +81,12 @@ export declare function createSubWithNoChallenge(props: CreateNewLocalSubplebbit
 export declare function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit): Promise<Comment>;
 export declare function isRpcFlagOn(): boolean;
 export declare function isRunningInBrowser(): boolean;
-export declare function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName?: string): Promise<void>;
+export type ResolveWhenConditionIsTrueOptions = {
+    toUpdate: EventEmitter;
+    predicate: () => Promise<boolean>;
+    eventName?: string;
+};
+export declare function resolveWhenConditionIsTrue(options: ResolveWhenConditionIsTrueOptions): Promise<void>;
 export declare function disableValidationOfSignatureBeforePublishing(publication: Publication): Promise<void>;
 export declare function overrideCommentInstancePropsAndSign(comment: Comment, props: CreateCommentOptions): Promise<void>;
 export declare function overrideCommentEditInstancePropsAndSign(commentEdit: CommentEdit, props: CreateCommentEditOptions): Promise<void>;
@@ -815,9 +821,10 @@ export declare function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, 
 export declare function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit): void;
 export declare function mockCommentToNotUsePagesForUpdates(comment: Comment): void;
 export declare function forceSubplebbitToGenerateAllRepliesPages(comment: Comment, commentProps?: CreateCommentOptions): Promise<void>;
-export declare function findOrPublishCommentWithDepth({ depth, subplebbit }: {
+export declare function findOrPublishCommentWithDepth({ depth, subplebbit, plebbit }: {
     depth: number;
     subplebbit: RemoteSubplebbit;
+    plebbit?: Plebbit;
 }): Promise<Comment>;
 export declare function publishCommentWithDepth({ depth, subplebbit }: {
     depth: number;
