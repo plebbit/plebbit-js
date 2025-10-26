@@ -1,13 +1,13 @@
 import { expect } from "chai";
 import {
     createSubWithNoChallenge,
-    getAvailablePlebbitConfigsToTestAgainst,
+    describeSkipIfRpc,
     mockPlebbit,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { getIpnsRecordInLocalKuboNode } from "../../../../dist/node/util.js";
 
-describe(`Generation of new IPNS records`, async () => {
+describeSkipIfRpc(`Generation of new IPNS records`, async () => {
     let plebbit, subplebbit;
     let kuboRpcClientOfSubplebbit;
     let numberOfEmittedUpdates = 0;
