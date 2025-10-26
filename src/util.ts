@@ -459,10 +459,15 @@ export async function retryKuboIpfsAddAndProvide({
             try {
                 const addRes = await kuboRpcClient.add(content, addOptions);
                 // I think it's not needed to provide now that the re-providing bug has been fixed
-                // const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
-                // for await (const event of provideEvents) {
-                //     log.trace(`Provide event for ${addRes.cid}:`, event);
-                // }
+
+                try {
+                    const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
+                    for await (const event of provideEvents) {
+                        log.trace(`Provide event for ${addRes.cid}:`, event);
+                    }
+                } catch (e) {
+                    log("Minor Error, not a big deal: Failed to provide after add", e);
+                }
                 resolve(addRes);
             } catch (error) {
                 log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add and provide content to IPFS:`, error);
