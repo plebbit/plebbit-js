@@ -704,7 +704,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const file = await retryKuboIpfsAddAndProvide({
             ipfsClient: kuboRpcClient._client,
             log,
-            content: deterministicStringify(newSubplebbitRecord),
+            content: JSON.stringify(newSubplebbitRecord),
             addOptions: { pin: true },
             provideOptions: { recursive: true }
         });
