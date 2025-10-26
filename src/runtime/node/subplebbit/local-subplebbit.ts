@@ -630,7 +630,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         ).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
 
-        const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
+        const currentTimestamp = timestamp();
+        const updatedAt = typeof this?.updatedAt === "number" && this.updatedAt >= currentTimestamp ? this.updatedAt + 1 : currentTimestamp;
         const editIdsToIncludeInNextUpdate = this._pendingEditProps.map((editProps) => editProps.editId);
         const pendingSubplebbitIpfsEditProps = Object.assign(
             {}, //@ts-expect-error
@@ -1833,7 +1834,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             calculatedCommentUpdate.replyCount
         );
 
-        const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
+        const currentTimestamp = timestamp();
+
+        const newUpdatedAt =
+            typeof storedCommentUpdate?.updatedAt === "number" && storedCommentUpdate.updatedAt >= currentTimestamp
+                ? storedCommentUpdate.updatedAt + 1
+                : currentTimestamp;
 
         const commentUpdatePriorToSigning: Omit<CommentUpdateType, "signature"> = {
             ...cleanUpBeforePublishing({
