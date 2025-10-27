@@ -25,7 +25,7 @@ describe("pending approval", () => {
 
     const wrongAnswers = async (challenges) => challenges.map(() => "wrong");
 
-    it("sends comments with only pending-approval failures to pending approval", async () => {
+    it("fails comments when pending-approval challenges are answered incorrectly", async () => {
         const challengeSettings = [
             {
                 name: "question",
@@ -43,6 +43,31 @@ describe("pending approval", () => {
 
         const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
 
+        expect(verification.pendingApproval).to.equal(undefined);
+        expect(verification.challengeSuccess).to.equal(false);
+        expect(verification.challengeErrors[0]).to.equal("Wrong answer.");
+        expect(verification.challengeErrors[1]).to.equal("Wrong answer.");
+    });
+
+    it("sends comments with correct challenge answers to pending approval", async () => {
+        const challengeSettings = [
+            {
+                name: "question",
+                options: { question: "Password?", answer: "password-1" },
+                pendingApproval: true
+            },
+            {
+                name: "question",
+                options: { question: "Second password?", answer: "password-2" },
+                pendingApproval: true
+            }
+        ];
+        const subplebbit = await createSubplebbitWithChallenges(plebbit, challengeSettings);
+        const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
+
+        const answers = async () => ["password-1", "password-2"];
+        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, answers);
+
         expect(verification.pendingApproval).to.equal(true);
         expect(verification.challengeSuccess).to.equal(true);
         expect(verification.challengeErrors).to.equal(undefined);
@@ -59,11 +84,12 @@ describe("pending approval", () => {
         const subplebbit = await createSubplebbitWithChallenges(plebbit, challengeSettings);
         const challengeRequestMessage = { vote: { author: { address: "author-vote" } } };
 
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
+        const correctAnswers = async () => ["password"];
+        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, correctAnswers);
 
         expect(verification.pendingApproval).to.equal(undefined);
-        expect(verification.challengeSuccess).to.equal(false);
-        expect(verification.challengeErrors[0]).to.equal("Wrong answer.");
+        expect(verification.challengeSuccess).to.equal(true);
+        expect(verification.challengeErrors).to.equal(undefined);
     });
 
     it("requires every failing challenge to have pendingApproval enabled", async () => {
@@ -89,7 +115,7 @@ describe("pending approval", () => {
         expect(verification.challengeErrors[1]).to.equal("Wrong answer.");
     });
 
-    it("sends mixed success/failure comments to pending approval when all failing challenges require it", async () => {
+    it("fails mixed success/failure comments even when challenges require pending approval", async () => {
         const challengeSettings = [
             {
                 name: "question",
@@ -113,9 +139,10 @@ describe("pending approval", () => {
         const answers = async () => ["first", "wrong", "wrong"];
         const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, answers);
 
-        expect(verification.pendingApproval).to.equal(true);
-        expect(verification.challengeSuccess).to.equal(true);
-        expect(verification.challengeErrors).to.equal(undefined);
+        expect(verification.pendingApproval).to.equal(undefined);
+        expect(verification.challengeSuccess).to.equal(false);
+        expect(verification.challengeErrors[1]).to.equal("Wrong answer.");
+        expect(verification.challengeErrors[2]).to.equal("Wrong answer.");
     });
 
     it("ignores excluded failing challenges when determining pending approval", async () => {
@@ -142,7 +169,26 @@ describe("pending approval", () => {
         expect(verification.challengeErrors).to.equal(undefined);
     });
 
-    it("keeps sending rate-limited authors to pending approval", async () => {
+    it("does not send excluded pending-approval challenges to pending approval", async () => {
+        const challengeSettings = [
+            {
+                name: "question",
+                options: { question: "Password?", answer: "password" },
+                pendingApproval: true,
+                exclude: [{ address: ["author-comment"] }]
+            }
+        ];
+        const subplebbit = await createSubplebbitWithChallenges(plebbit, challengeSettings);
+        const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
+
+        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
+
+        expect(verification.pendingApproval).to.equal(undefined);
+        expect(verification.challengeSuccess).to.equal(true);
+        expect(verification.challengeErrors).to.equal(undefined);
+    });
+
+    it("keeps failing rate-limited authors that answer pending-approval challenges incorrectly", async () => {
         const challengeSettings = [
             {
                 name: "question",
@@ -159,9 +205,9 @@ describe("pending approval", () => {
         const second = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswer);
 
         for (const verification of [first, second]) {
-            expect(verification.pendingApproval).to.equal(true);
-            expect(verification.challengeSuccess).to.equal(true);
-            expect(verification.challengeErrors).to.equal(undefined);
+            expect(verification.pendingApproval).to.equal(undefined);
+            expect(verification.challengeSuccess).to.equal(false);
+            expect(verification.challengeErrors[0]).to.equal("Wrong answer.");
         }
     });
 
@@ -180,16 +226,16 @@ describe("pending approval", () => {
             challengeAnswers: ["wrong"]
         };
         const wrongVerification = await getChallengeVerification(wrongRequest, subplebbit, async () => ["wrong"]);
-        expect(wrongVerification.pendingApproval).to.equal(true);
-        expect(wrongVerification.challengeSuccess).to.equal(true);
-        expect(wrongVerification.challengeErrors).to.equal(undefined);
+        expect(wrongVerification.pendingApproval).to.equal(undefined);
+        expect(wrongVerification.challengeSuccess).to.equal(false);
+        expect(wrongVerification.challengeErrors[0]).to.equal("Wrong answer.");
 
         const correctRequest = {
             comment: { author: { address: "author-comment" } },
             challengeAnswers: ["secret"]
         };
         const correctVerification = await getChallengeVerification(correctRequest, subplebbit, async () => ["secret"]);
-        expect(correctVerification.pendingApproval).to.equal(undefined);
+        expect(correctVerification.pendingApproval).to.equal(true);
         expect(correctVerification.challengeSuccess).to.equal(true);
         expect(correctVerification.challengeErrors).to.equal(undefined);
     });

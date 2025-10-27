@@ -141,14 +141,14 @@ describe("getChallengeVerification", () => {
             return ["wrong", String(eval(challenges[1].challenge))];
         };
         let challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, getChallengeAnswersFail1);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification.challengeSuccess).to.equal(true);
 
         // fail only the second challenge, should still succeed
         const getChallengeAnswersFail2 = (challenges) => {
             return ["wrong", String(eval(challenges[1].challenge))];
         };
         challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, getChallengeAnswersFail2);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification.challengeSuccess).to.equal(true);
 
         // fail both challenge, should fail
         const getChallengeAnswersFailAll = (challenges) => {
@@ -164,7 +164,7 @@ describe("getChallengeVerification", () => {
             return [String(eval(challenges[0].challenge)), String(eval(challenges[1].challenge))];
         };
         challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, getChallengeAnswersSucceedAll);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification.challengeSuccess).to.equal(true);
     });
 
     it("password preanswer and no preanswer", async () => {
@@ -192,7 +192,7 @@ describe("getChallengeVerification", () => {
             throw Error("should not call");
         };
         let challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, shouldNotCall);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification.challengeSuccess).to.equal(true);
 
         // wrong preanswered
         challengeRequestMessage = {
@@ -211,7 +211,7 @@ describe("getChallengeVerification", () => {
             return ["password"];
         };
         challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, getChallengeAnswers);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification.challengeSuccess).to.equal(true);
 
         // wrong answered via challenge
         const getChallengeAnswersWrong = async (challenges) => {
@@ -254,7 +254,7 @@ describe("getChallengeVerification", () => {
 
         // first rate limit not triggered
         let challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, shouldNotCall);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification.challengeSuccess).to.equal(true);
 
         // first rate limit triggered
         challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, shouldNotCall);
@@ -320,12 +320,18 @@ describe("getChallengeVerification", () => {
             challengeAnswersFail1,
             subplebbit
         );
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification).to.deep.equal({
+            challengeSuccess: true,
+            pendingApprovalSuccess: false
+        });
 
         // fail only the second challenge, should still succeed
         const challengeAnswersFail2 = [String(eval(pendingChallenges[0].challenge)), "wrong"];
         challengeVerification = await getChallengeVerificationFromChallengeAnswers(pendingChallenges, challengeAnswersFail2, subplebbit);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: true });
+        expect(challengeVerification).to.deep.equal({
+            challengeSuccess: true,
+            pendingApprovalSuccess: false
+        });
 
         // fail both challenge, should fail
         const challengeAnswersFailAll = ["wrong", "wrong"];
@@ -333,6 +339,7 @@ describe("getChallengeVerification", () => {
         expect(challengeVerification.challengeSuccess).to.equal(false);
         expect(challengeVerification.challengeErrors[1]).to.equal("Wrong answer.");
         expect(challengeVerification.challengeErrors[3]).to.equal("Wrong answer.");
+        expect("pendingApprovalSuccess" in challengeVerification).to.equal(false);
     });
 });
 
