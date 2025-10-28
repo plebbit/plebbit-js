@@ -16,6 +16,20 @@ import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../si
 import env from "../version.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { messages } from "../errors.js";
+export function createPendingApprovalChallenge(overrides = {}) {
+    const { options, exclude, ...rest } = overrides;
+    return {
+        ...rest,
+        name: rest.name ?? "question",
+        options: {
+            question: "Pending approval password?",
+            answer: "pending",
+            ...(options ?? {})
+        },
+        pendingApproval: rest.pendingApproval ?? true,
+        exclude: exclude ?? [{ role: ["moderator"] }]
+    };
+}
 function generateRandomTimestamp(parentTimestamp) {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
     let randomTimestamp = -1;
@@ -1252,16 +1266,21 @@ export async function getCommentWithCommentUpdateProps({ cid, plebbit }) {
     await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => Boolean(comment.updatedAt) });
     return comment;
 }
-export async function publishCommentToModQueue({ subplebbit, plebbit, parentComment }) {
+export async function publishCommentToModQueue({ subplebbit, plebbit, parentComment, commentProps }) {
+    if (!commentProps?.challengeRequest?.challengeAnswers)
+        throw Error("You need to challengeRequest.challengeAnswers to pass the challenge and get to pending approval");
     const remotePlebbit = plebbit || (await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true })); // this plebbit is not connected to kubo rpc client of subplebbit
     const pendingComment = parentComment
-        ? await generateMockComment(parentComment, remotePlebbit, false)
+        ? await generateMockComment(parentComment, remotePlebbit, false, {
+            content: "Pending reply" + " " + Math.random(),
+            ...commentProps
+        })
         : await generateMockPost(subplebbit.address, remotePlebbit, false, {
-            content: "Pending post" + " " + Math.random()
+            content: "Pending post" + " " + Math.random(),
+            ...commentProps
         });
-    pendingComment.removeAllListeners("challenge");
     pendingComment.once("challenge", async () => {
-        await pendingComment.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+        throw Error("Should not received challenge with challengeRequest props");
     });
     const challengeVerificationPromise = new Promise((resolve) => pendingComment.once("challengeverification", resolve));
     await publishWithExpectedResult(pendingComment, true); // a pending approval is technically challengeSucess = true
@@ -1269,9 +1288,11 @@ export async function publishCommentToModQueue({ subplebbit, plebbit, parentComm
         throw Error("The comment did not go to pending approval");
     return { comment: pendingComment, challengeVerification: await challengeVerificationPromise };
 }
-export async function publishToModQueueWithDepth({ subplebbit, depth, plebbit, modCommentProps }) {
+export async function publishToModQueueWithDepth({ subplebbit, depth, plebbit, modCommentProps, commentProps }) {
+    if (!commentProps?.challengeRequest?.challengeAnswers)
+        throw Error("You need to challengeRequest.challengeAnswers to pass the challenge and get to pending approval");
     if (depth === 0)
-        return publishCommentToModQueue({ subplebbit, plebbit });
+        return publishCommentToModQueue({ subplebbit, plebbit, commentProps });
     else {
         // we assume mod can publish comments without mod queue
         const remotePlebbit = plebbit || subplebbit._plebbit;
@@ -1281,11 +1302,11 @@ export async function publishToModQueueWithDepth({ subplebbit, depth, plebbit, m
         }
         // we have created a tree of comments and now we can publish the pending comment underneath it
         const pendingReply = await generateMockComment(commentsPublishedByMod[commentsPublishedByMod.length - 1], remotePlebbit, false, {
-            content: "Pending reply" + " " + Math.random()
+            content: "Pending reply" + " " + Math.random(),
+            ...commentProps
         });
-        pendingReply.removeAllListeners("challenge");
-        pendingReply.once("challenge", async () => {
-            await pendingReply.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+        pendingReply.once("challenge", () => {
+            throw Error("Should not received challenge with challengeRequest props");
         });
         const challengeVerificationPromise = new Promise((resolve) => pendingReply.once("challengeverification", resolve));
         await publishWithExpectedResult(pendingReply, true); // a pending approval is technically challengeSucess = true

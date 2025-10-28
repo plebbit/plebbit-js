@@ -56,7 +56,10 @@ const validateChallengeOrChallengeResult = (challengeOrChallengeResult, challeng
 const getPendingChallengesOrChallengeVerification = async (challengeRequestMessage, subplebbit) => {
     // if sub has no challenges, no need to send a challenge
     if (!Array.isArray(subplebbit.settings?.challenges))
-        return { challengeSuccess: true };
+        return {
+            challengeSuccess: true,
+            pendingApprovalSuccess: false
+        };
     const challengeOrChallengeResults = [];
     // interate over all challenges of the subplebbit, can be more than 1
     for (const i in subplebbit.settings.challenges) {
@@ -103,6 +106,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
     let challengeFailureCount = 0;
     let pendingChallenges = [];
     const challengeErrors = {};
+    let pendingApprovalSuccess = false;
     for (const i in challengeOrChallengeResults) {
         const challengeIndex = Number(i);
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
@@ -124,7 +128,9 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
             challengeErrors[challengeIndex] = challengeOrChallengeResult.error;
         }
         else if ("success" in challengeOrChallengeResult && challengeOrChallengeResult.success === true) {
-            // do nothing
+            if (subplebbit.challenges?.[challengeIndex]?.pendingApproval) {
+                pendingApprovalSuccess = true;
+            }
         }
         else {
             // index is needed to exlude based on other challenge success in getChallengeVerification
@@ -144,13 +150,16 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
     }
     // create return value
     if (challengeSuccess === true) {
-        return { challengeSuccess };
+        return { challengeSuccess, pendingApprovalSuccess };
     }
     else if (challengeSuccess === false) {
-        return { challengeSuccess, challengeErrors };
+        return {
+            challengeSuccess,
+            challengeErrors
+        };
     }
     else {
-        return { pendingChallenges };
+        return { pendingChallenges, pendingApprovalSuccess };
     }
 };
 const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, challengeAnswers, subplebbit) => {
@@ -173,6 +182,7 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
     }
     let challengeFailureCount = 0;
     const challengeErrors = {};
+    let pendingApprovalSuccess = false;
     for (let i in challengeResults) {
         const challengeIndex = Number(i);
         if (!subplebbit.settings?.challenges?.[challengeIndex])
@@ -190,6 +200,9 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
             challengeFailureCount++;
             challengeErrors[challengeIndex] = challengeResult.error;
         }
+        else if (challengeResult.success === true && subplebbit.settings.challenges[challengeIndex]?.pendingApproval) {
+            pendingApprovalSuccess = true;
+        }
     }
     if (challengeFailureCount > 0) {
         return {
@@ -198,7 +211,8 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
         };
     }
     return {
-        challengeSuccess: true
+        challengeSuccess: true,
+        pendingApprovalSuccess
     };
 };
 const getChallengeVerification = async (challengeRequestMessage, subplebbit, getChallengeAnswers) => {
@@ -214,30 +228,37 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     if (!Array.isArray(subplebbit.settings?.challenges))
         throw Error("subplebbit.settings?.challenges is not defined");
     const res = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+    let pendingApprovalSuccess = "pendingApprovalSuccess" in res ? res.pendingApprovalSuccess : false;
     let challengeVerification;
     // was able to verify without asking author for challenges
-    if ("challengeSuccess" in res) {
+    if ("pendingChallenges" in res) {
+        const challengeAnswers = await getChallengeAnswers(res.pendingChallenges.map((challenge) => remeda.omit(challenge, ["index", "verify"])));
+        const verificationFromPending = await getChallengeVerificationFromChallengeAnswers(res.pendingChallenges, challengeAnswers, subplebbit);
+        if ("pendingApprovalSuccess" in verificationFromPending) {
+            pendingApprovalSuccess = pendingApprovalSuccess || verificationFromPending.pendingApprovalSuccess;
+            challengeVerification = remeda.omit(verificationFromPending, ["pendingApprovalSuccess"]);
+        }
+        else {
+            pendingApprovalSuccess = false;
+            challengeVerification = verificationFromPending;
+        }
+    }
+    else {
         challengeVerification = { challengeSuccess: res.challengeSuccess };
         if ("challengeErrors" in res)
             challengeVerification.challengeErrors = res.challengeErrors;
     }
-    // author still has some pending challenges to complete
-    else {
-        const challengeAnswers = await getChallengeAnswers(res.pendingChallenges.map((challenge) => remeda.omit(challenge, ["index", "verify"])));
-        challengeVerification = await getChallengeVerificationFromChallengeAnswers(res.pendingChallenges, challengeAnswers, subplebbit);
-    }
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
     addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
-    // there's basically 3 scenarios,
-    // all challenges pass, no pending approval. {challengeSuccess: true}
-    // at least one challenge without pendingApproval: true fails, no pending approval. {challengeSuccess: false}
-    // all challenges that fail have pendingApproval: true, it goes to pending approval. {challengeSuccess: true, pendingApproval: true}
-    // all challenges that failed have pendingApproval: true, therefore it will go to pending approval
-    const allFailuresRequirePendingApproval = challengeVerification.challengeErrors &&
-        Object.keys(challengeVerification.challengeErrors).every((challengeIndexString) => Boolean(subplebbit.challenges?.[Number(challengeIndexString)]?.pendingApproval));
-    if (challengeRequestMessage.comment && // only comments have pendingApproval
-        allFailuresRequirePendingApproval) {
-        return { ...challengeVerification, pendingApproval: true, challengeSuccess: true, challengeErrors: undefined };
+    // scenarios:
+    // - all required challenges pass without pendingApproval flag -> publish normally
+    // - any challenge fails -> fail request
+    // - requester passes every challenge and at least one non-excluded challenge has pendingApproval -> send to pending approval
+    const shouldSendToPendingApproval = Boolean(challengeRequestMessage.comment) &&
+        challengeVerification.challengeSuccess === true &&
+        pendingApprovalSuccess;
+    if (shouldSendToPendingApproval) {
+        return { ...challengeVerification, pendingApproval: true };
     }
     return challengeVerification;
 };

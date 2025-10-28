@@ -7,7 +7,7 @@ import Publication from "../publications/publication.js";
 import { EventEmitter } from "events";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
-import type { CreateNewLocalSubplebbitUserOptions, SubplebbitIpfsType } from "../subplebbit/types.js";
+import type { CreateNewLocalSubplebbitUserOptions, SubplebbitIpfsType, SubplebbitChallengeSetting } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type { CommentIpfsWithCidDefined, CommentWithinRepliesPostsPageJson, CreateCommentOptions } from "../publications/comment/types.js";
@@ -24,6 +24,7 @@ interface MockPlebbitOptions {
     mockResolve?: boolean;
     remotePlebbit?: boolean;
 }
+export declare function createPendingApprovalChallenge(overrides?: Partial<SubplebbitChallengeSetting>): SubplebbitChallengeSetting;
 export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockComment(parentPostOrComment: CommentIpfsWithCidDefined, plebbit: Plebbit, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockVote(parentPostOrComment: CommentIpfsWithCidDefined, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
@@ -834,19 +835,21 @@ export declare function getCommentWithCommentUpdateProps({ cid, plebbit }: {
     cid: string;
     plebbit: Plebbit;
 }): Promise<Comment>;
-export declare function publishCommentToModQueue({ subplebbit, plebbit, parentComment }: {
+export declare function publishCommentToModQueue({ subplebbit, plebbit, parentComment, commentProps }: {
     subplebbit: RemoteSubplebbit;
     plebbit?: Plebbit;
     parentComment?: Comment;
+    commentProps?: Partial<CreateCommentOptions>;
 }): Promise<{
     comment: Comment;
     challengeVerification: DecryptedChallengeVerificationMessageType;
 }>;
-export declare function publishToModQueueWithDepth({ subplebbit, depth, plebbit, modCommentProps }: {
+export declare function publishToModQueueWithDepth({ subplebbit, depth, plebbit, modCommentProps, commentProps }: {
     subplebbit: RemoteSubplebbit;
     plebbit: Plebbit;
     depth: number;
     modCommentProps?: Partial<CreateCommentOptions>;
+    commentProps?: Partial<CreateCommentOptions>;
 }): Promise<{
     comment: Comment;
     challengeVerification: unknown;

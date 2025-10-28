@@ -5,21 +5,21 @@ type PendingChallenge = Challenge & {
     index: number;
 };
 export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<DecryptedChallengeAnswer["challengeAnswers"]>;
-declare const plebbitJsChallenges: Record<string, ChallengeFileFactoryInput>;
-declare const getPendingChallengesOrChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit) => Promise<{
+type ChallengeVerificationSuccess = {
     challengeSuccess: true;
-} | {
-    challengeSuccess: false;
-    challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]>;
-} | {
+    pendingApprovalSuccess: boolean;
+};
+type ChallengeVerificationPending = {
     pendingChallenges: PendingChallenge[];
-}>;
-declare const getChallengeVerificationFromChallengeAnswers: (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: LocalSubplebbit) => Promise<{
-    challengeSuccess: true;
-} | {
+    pendingApprovalSuccess: boolean;
+};
+type ChallengeVerificationFailure = {
     challengeSuccess: false;
     challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]>;
-}>;
+};
+declare const plebbitJsChallenges: Record<string, ChallengeFileFactoryInput>;
+declare const getPendingChallengesOrChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit) => Promise<ChallengeVerificationSuccess | ChallengeVerificationPending | ChallengeVerificationFailure>;
+declare const getChallengeVerificationFromChallengeAnswers: (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: LocalSubplebbit) => Promise<ChallengeVerificationSuccess | ChallengeVerificationFailure>;
 declare const getChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit, getChallengeAnswers: GetChallengeAnswers) => Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess"> & {
     pendingApproval?: boolean;
 }>;
