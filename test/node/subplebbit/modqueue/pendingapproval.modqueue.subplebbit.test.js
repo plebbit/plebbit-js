@@ -15,11 +15,13 @@ import {
     publishToModQueueWithDepth,
     generateMockVote,
     generateMockComment,
-    itSkipIfRpc
+    itSkipIfRpc,
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
 const depthsToTest = [0, 1, 2];
+const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 for (const commentInPendingApprovalDepth of depthsToTest) {
     describe(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
@@ -37,7 +39,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             await subplebbit.start();
             modSigner = await plebbit.createSigner();
             await subplebbit.edit({
-                settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] },
+                settings: { challenges: [createPendingApprovalChallenge()] },
                 roles: {
                     [modSigner.address]: { role: "moderator" }
                 }
@@ -61,7 +63,8 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 subplebbit,
                 plebbit: remotePlebbit,
                 depth: commentInPendingApprovalDepth,
-                modCommentProps: { signer: modSigner }
+                modCommentProps: { signer: modSigner },
+                commentProps: pendingApprovalCommentProps
             });
 
             commentInPendingApproval = comment;

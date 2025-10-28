@@ -10,11 +10,13 @@ import {
     publishToModQueueWithDepth,
     loadAllPages,
     itSkipIfRpc,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
 const depthsToTest = [0, 1, 2];
+const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 for (const pendingCommentDepth of depthsToTest) {
     describe(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
@@ -31,7 +33,7 @@ for (const pendingCommentDepth of depthsToTest) {
                 roles: {
                     [modSigner.address]: { role: "moderator" }
                 },
-                settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
+                settings: { challenges: [createPendingApprovalChallenge()] }
             });
 
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
@@ -42,7 +44,8 @@ for (const pendingCommentDepth of depthsToTest) {
                 subplebbit,
                 plebbit: remotePlebbit,
                 depth: pendingCommentDepth,
-                modCommentProps: { signer: modSigner }
+                modCommentProps: { signer: modSigner },
+                commentProps: pendingApprovalCommentProps
             });
             approvedComment = pending.comment;
 

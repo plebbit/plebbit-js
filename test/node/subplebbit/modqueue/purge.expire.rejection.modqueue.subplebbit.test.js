@@ -5,8 +5,11 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     publishToModQueueWithDepth,
-    describeSkipIfRpc
+    describeSkipIfRpc,
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
+
+const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const ONE_MINUTE = 60;
 const DEFAULT_MOD_PROPS = { approved: false, reason: "Expired disapproval" };
@@ -20,17 +23,7 @@ async function createTestContext({ retentionSeconds } = {}) {
     const modSigner = await plebbit.createSigner();
 
     const initialSettings = JSON.parse(JSON.stringify(subplebbit.settings ?? {}));
-    const mergedChallenges = [
-        {
-            name: "publication-match",
-            options: {
-                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth)$" }]),
-                error: "Posting in this community requires a username (author address) that ends with .eth or .sol."
-            },
-            exclude: [{ role: ["moderator", "admin", "owner"] }],
-            pendingApproval: true
-        }
-    ];
+    const mergedChallenges = [createPendingApprovalChallenge()];
 
     const editedSettings = {
         ...initialSettings,
@@ -65,10 +58,14 @@ async function createDisapprovedComment(ctx, { depth = 1, moderationProps = DEFA
         subplebbit: ctx.subplebbit,
         plebbit: ctx.remotePlebbit,
         depth,
-        modCommentProps: { signer: ctx.modSigner }
+        modCommentProps: { signer: ctx.modSigner },
+        commentProps: pendingApprovalCommentProps
     });
     const pendingComment = pending.comment;
-    await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval) });
+    await resolveWhenConditionIsTrue({
+        toUpdate: ctx.subplebbit,
+        predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval)
+    });
 
     const commentModeration = await ctx.plebbit.createCommentModeration({
         subplebbitAddress: ctx.subplebbit.address,
@@ -78,10 +75,13 @@ async function createDisapprovedComment(ctx, { depth = 1, moderationProps = DEFA
     });
     await publishWithExpectedResult(commentModeration, true);
 
-    await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => {
-        const storedUpdate = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: pendingComment.cid });
-        return Boolean(storedUpdate && storedUpdate.approved === false);
-    } });
+    await resolveWhenConditionIsTrue({
+        toUpdate: ctx.subplebbit,
+        predicate: () => {
+            const storedUpdate = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: pendingComment.cid });
+            return Boolean(storedUpdate && storedUpdate.approved === false);
+        }
+    });
 
     return pendingComment;
 }
@@ -91,10 +91,14 @@ async function createApprovedComment(ctx, { depth = 1 } = {}) {
         subplebbit: ctx.subplebbit,
         plebbit: ctx.remotePlebbit,
         depth,
-        modCommentProps: { signer: ctx.modSigner }
+        modCommentProps: { signer: ctx.modSigner },
+        commentProps: pendingApprovalCommentProps
     });
     const pendingComment = pending.comment;
-    await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval) });
+    await resolveWhenConditionIsTrue({
+        toUpdate: ctx.subplebbit,
+        predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval)
+    });
 
     const commentModeration = await ctx.plebbit.createCommentModeration({
         subplebbitAddress: ctx.subplebbit.address,
@@ -104,19 +108,25 @@ async function createApprovedComment(ctx, { depth = 1 } = {}) {
     });
     await publishWithExpectedResult(commentModeration, true);
 
-    await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => {
-        const storedUpdate = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: pendingComment.cid });
-        return Boolean(storedUpdate && storedUpdate.approved === true);
-    } });
+    await resolveWhenConditionIsTrue({
+        toUpdate: ctx.subplebbit,
+        predicate: () => {
+            const storedUpdate = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: pendingComment.cid });
+            return Boolean(storedUpdate && storedUpdate.approved === true);
+        }
+    });
 
     return pendingComment;
 }
 async function setPendingApproval(ctx, commentCid, pending = true) {
     ctx.subplebbit._dbHandler._db.prepare(`UPDATE comments SET pendingApproval = ? WHERE cid = ?`).run(pending ? 1 : 0, commentCid);
-    await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => {
-        const comment = ctx.subplebbit._dbHandler.queryComment(commentCid);
-        return Boolean(comment && (pending ? comment.pendingApproval : !comment.pendingApproval));
-    } });
+    await resolveWhenConditionIsTrue({
+        toUpdate: ctx.subplebbit,
+        predicate: () => {
+            const comment = ctx.subplebbit._dbHandler.queryComment(commentCid);
+            return Boolean(comment && (pending ? comment.pendingApproval : !comment.pendingApproval));
+        }
+    });
 }
 
 function backdateAllDisapprovals(ctx, commentCid, secondsAgo) {
@@ -248,11 +258,15 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 subplebbit: ctx.subplebbit,
                 plebbit: ctx.remotePlebbit,
                 depth: 1,
-                modCommentProps: { signer: ctx.modSigner }
+                modCommentProps: { signer: ctx.modSigner },
+                commentProps: pendingApprovalCommentProps
             });
             commentCid = pending.comment.cid;
             parentCid = pending.comment.parentCid;
-            await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval) });
+            await resolveWhenConditionIsTrue({
+                toUpdate: ctx.subplebbit,
+                predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval)
+            });
             commentBeforeModeration = ctx.subplebbit._dbHandler.queryComment(commentCid);
 
             const moderation = await ctx.plebbit.createCommentModeration({
@@ -263,7 +277,10 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             });
             await publishWithExpectedResult(moderation, true);
 
-            await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => !ctx.subplebbit._dbHandler.queryComment(commentCid) });
+            await resolveWhenConditionIsTrue({
+                toUpdate: ctx.subplebbit,
+                predicate: () => !ctx.subplebbit._dbHandler.queryComment(commentCid)
+            });
             parentUpdateAfterImmediatePurge = parentCid
                 ? ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: parentCid })
                 : undefined;
@@ -365,10 +382,13 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 subplebbit: ctx.subplebbit,
                 plebbit: ctx.remotePlebbit,
                 depth: 0,
-                modCommentProps: { signer: ctx.modSigner }
+                commentProps: pendingApprovalCommentProps
             });
             commentCid = pending.comment.cid;
-            await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval) });
+            await resolveWhenConditionIsTrue({
+                toUpdate: ctx.subplebbit,
+                predicate: () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval)
+            });
             commentBeforeModeration = ctx.subplebbit._dbHandler.queryComment(commentCid);
 
             const moderation = await ctx.plebbit.createCommentModeration({
@@ -378,7 +398,10 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 commentCid
             });
             await publishWithExpectedResult(moderation, true);
-            await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => !ctx.subplebbit._dbHandler.queryComment(commentCid) });
+            await resolveWhenConditionIsTrue({
+                toUpdate: ctx.subplebbit,
+                predicate: () => !ctx.subplebbit._dbHandler.queryComment(commentCid)
+            });
         });
 
         after(async () => {
@@ -537,12 +560,15 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 commentCid: disapprovedComment.cid
             });
             await publishWithExpectedResult(secondModeration, true);
-            await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => {
-                const updates = ctx.subplebbit._dbHandler._db
-                    .prepare(`SELECT COUNT(1) as count FROM commentModerations WHERE commentCid = ?`)
-                    .get(disapprovedComment.cid);
-                return updates?.count >= 2;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: ctx.subplebbit,
+                predicate: () => {
+                    const updates = ctx.subplebbit._dbHandler._db
+                        .prepare(`SELECT COUNT(1) as count FROM commentModerations WHERE commentCid = ?`)
+                        .get(disapprovedComment.cid);
+                    return updates?.count >= 2;
+                }
+            });
 
             updateSpecificModerationTimestamp(ctx, disapprovedComment.cid, 0, retentionSeconds + 15);
             updateSpecificModerationTimestamp(ctx, disapprovedComment.cid, 1, 5);
@@ -577,10 +603,13 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             });
             await publishWithExpectedResult(approval, true);
 
-            await resolveWhenConditionIsTrue({ toUpdate: ctx.subplebbit, predicate: () => {
-                const stored = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: disapprovedComment.cid });
-                return Boolean(stored && stored.approved === true);
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: ctx.subplebbit,
+                predicate: () => {
+                    const stored = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: disapprovedComment.cid });
+                    return Boolean(stored && stored.approved === true);
+                }
+            });
 
             backdateAllDisapprovals(ctx, disapprovedComment.cid, retentionSeconds + 30);
             ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);

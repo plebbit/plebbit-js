@@ -29,7 +29,16 @@ describe(`Pending approval modqueue functionality`, async () => {
             roles: {
                 [modSigner.address]: { role: "moderator" }
             },
-            settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" }, pendingApproval: true }] }
+            settings: {
+                challenges: [
+                    {
+                        name: "question",
+                        options: { question: "1+1=?", answer: "2" },
+                        pendingApproval: true,
+                        exclude: [{ role: ["moderator"] }]
+                    }
+                ]
+            }
         });
 
         expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty

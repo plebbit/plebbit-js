@@ -12,11 +12,13 @@ import {
     publishToModQueueWithDepth,
     generateMockVote,
     loadAllPages,
-    itSkipIfRpc
+    itSkipIfRpc,
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
 const depthsToTest = [0, 1, 2];
+const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const commentModProps = [
     { approved: false, reason: "Test reason 1234" },
@@ -58,7 +60,7 @@ for (const commentMod of commentModProps) {
                         roles: {
                             [modSigner.address]: { role: "moderator" }
                         },
-                        settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
+                        settings: { challenges: [createPendingApprovalChallenge()] }
                     });
 
                     await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
@@ -67,7 +69,8 @@ for (const commentMod of commentModProps) {
                         subplebbit,
                         plebbit: remotePlebbit,
                         depth: pendingCommentDepth,
-                        modCommentProps: { signer: modSigner }
+                        modCommentProps: { signer: modSigner },
+                        commentProps: pendingApprovalCommentProps
                     });
                     commentToBeRejected = pending.comment;
 

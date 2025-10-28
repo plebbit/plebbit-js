@@ -15,7 +15,12 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
-import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types.js";
+import type {
+    CreateNewLocalSubplebbitUserOptions,
+    LocalSubplebbitJson,
+    SubplebbitIpfsType,
+    SubplebbitChallengeSetting
+} from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type {
@@ -70,6 +75,21 @@ interface MockPlebbitOptions {
     stubStorage?: boolean;
     mockResolve?: boolean;
     remotePlebbit?: boolean;
+}
+
+export function createPendingApprovalChallenge(overrides: Partial<SubplebbitChallengeSetting> = {}): SubplebbitChallengeSetting {
+    const { options, exclude, ...rest } = overrides;
+    return {
+        ...rest,
+        name: rest.name ?? "question",
+        options: {
+            question: "Pending approval password?",
+            answer: "pending",
+            ...(options ?? {})
+        },
+        pendingApproval: rest.pendingApproval ?? true,
+        exclude: exclude ?? [{ role: ["moderator"] }]
+    } as SubplebbitChallengeSetting;
 }
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
@@ -1700,23 +1720,30 @@ export async function getCommentWithCommentUpdateProps({ cid, plebbit }: { cid: 
 export async function publishCommentToModQueue({
     subplebbit,
     plebbit,
-    parentComment
+    parentComment,
+    commentProps
 }: {
     subplebbit: RemoteSubplebbit;
     plebbit?: Plebbit;
     parentComment?: Comment;
+    commentProps?: Partial<CreateCommentOptions>;
 }): Promise<{ comment: Comment; challengeVerification: DecryptedChallengeVerificationMessageType }> {
+    if (!commentProps?.challengeRequest?.challengeAnswers)
+        throw Error("You need to challengeRequest.challengeAnswers to pass the challenge and get to pending approval");
+
     const remotePlebbit = plebbit || (await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true })); // this plebbit is not connected to kubo rpc client of subplebbit
     const pendingComment = parentComment
-        ? await generateMockComment(parentComment as CommentIpfsWithCidDefined, remotePlebbit, false)
+        ? await generateMockComment(parentComment as CommentIpfsWithCidDefined, remotePlebbit, false, {
+              content: "Pending reply" + " " + Math.random(),
+              ...commentProps
+          })
         : await generateMockPost(subplebbit.address, remotePlebbit, false, {
-              content: "Pending post" + " " + Math.random()
+              content: "Pending post" + " " + Math.random(),
+              ...commentProps
           });
 
-    pendingComment.removeAllListeners("challenge");
-
     pendingComment.once("challenge", async () => {
-        await pendingComment.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+        throw Error("Should not received challenge with challengeRequest props");
     });
 
     const challengeVerificationPromise = new Promise((resolve) =>
@@ -1734,14 +1761,18 @@ export async function publishToModQueueWithDepth({
     subplebbit,
     depth,
     plebbit,
-    modCommentProps
+    modCommentProps,
+    commentProps
 }: {
     subplebbit: RemoteSubplebbit;
     plebbit: Plebbit;
     depth: number;
     modCommentProps?: Partial<CreateCommentOptions>;
+    commentProps?: Partial<CreateCommentOptions>;
 }) {
-    if (depth === 0) return publishCommentToModQueue({ subplebbit, plebbit });
+    if (!commentProps?.challengeRequest?.challengeAnswers)
+        throw Error("You need to challengeRequest.challengeAnswers to pass the challenge and get to pending approval");
+    if (depth === 0) return publishCommentToModQueue({ subplebbit, plebbit, commentProps });
     else {
         // we assume mod can publish comments without mod queue
         const remotePlebbit = plebbit || subplebbit._plebbit;
@@ -1757,14 +1788,13 @@ export async function publishToModQueueWithDepth({
             remotePlebbit,
             false,
             {
-                content: "Pending reply" + " " + Math.random()
+                content: "Pending reply" + " " + Math.random(),
+                ...commentProps
             }
         );
 
-        pendingReply.removeAllListeners("challenge");
-
-        pendingReply.once("challenge", async () => {
-            await pendingReply.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+        pendingReply.once("challenge", () => {
+            throw Error("Should not received challenge with challengeRequest props");
         });
 
         const challengeVerificationPromise = new Promise((resolve) => pendingReply.once("challengeverification", resolve));

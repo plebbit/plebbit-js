@@ -4,11 +4,13 @@ import {
     resolveWhenConditionIsTrue,
     publishToModQueueWithDepth,
     describeSkipIfRpc,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { testCommentFieldsInModQueuePageJson } from "../../../node-and-browser/pages/pages-test-util.js";
 
 const depthsToTest = [0, 1, 2, 3, 4, 5];
+const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 describeSkipIfRpc("Modqueue depths", () => {
     let plebbit, subplebbit, modSigner;
@@ -23,12 +25,7 @@ describeSkipIfRpc("Modqueue depths", () => {
                 [modSigner.address]: { role: "moderator" }
             },
             settings: {
-                challenges: [
-                    {
-                        ...subplebbit.settings.challenges[0],
-                        pendingApproval: true
-                    }
-                ]
+                challenges: [createPendingApprovalChallenge()]
             }
         });
 
@@ -55,7 +52,13 @@ describeSkipIfRpc("Modqueue depths", () => {
             const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
             for (let i = 0; i < numOfComments; i++) {
                 pendingComments.push(
-                    await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner }, plebbit: remotePlebbit })
+                    await publishToModQueueWithDepth({
+                        subplebbit,
+                        depth,
+                        modCommentProps: { signer: modSigner },
+                        plebbit: remotePlebbit,
+                        commentProps: pendingApprovalCommentProps
+                    })
                 );
             }
 
@@ -79,7 +82,13 @@ describeSkipIfRpc("Modqueue depths", () => {
 
         for (const depth of depthsToTest) {
             pendingComments.push(
-                await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner }, plebbit: remotePlebbit })
+                await publishToModQueueWithDepth({
+                    subplebbit,
+                    depth,
+                    modCommentProps: { signer: modSigner },
+                    plebbit: remotePlebbit,
+                    commentProps: pendingApprovalCommentProps
+                })
             );
         }
 

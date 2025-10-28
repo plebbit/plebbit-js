@@ -4,8 +4,12 @@ import {
     resolveWhenConditionIsTrue,
     publishToModQueueWithDepth,
     itSkipIfRpc,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
+const pendingApprovalChallengeCommentProps = {
+    challengeRequest: { challengeAnswers: ["pending"] }
+};
 
 describe(`Modqueue limits`, () => {
     let plebbit;
@@ -36,14 +40,9 @@ describe(`Modqueue limits`, () => {
 
         const limit = 2;
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-        const challengeWithPendingApproval = {
-            ...subplebbit.settings.challenges[0],
-            pendingApproval: true
-        };
-
         await subplebbit.edit({
             settings: {
-                challenges: [challengeWithPendingApproval],
+                challenges: [createPendingApprovalChallenge()],
                 maxPendingApprovalCount: limit
             }
         });
@@ -55,7 +54,12 @@ describe(`Modqueue limits`, () => {
         const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
         for (let index = 0; index < totalToPublish; index++) {
-            const { comment, challengeVerification } = await publishToModQueueWithDepth({ subplebbit, depth: 0, plebbit: remotePlebbit });
+            const { comment, challengeVerification } = await publishToModQueueWithDepth({
+                subplebbit,
+                depth: 0,
+                plebbit: remotePlebbit,
+                commentProps: pendingApprovalChallengeCommentProps
+            });
             expect(comment.pendingApproval).to.be.true;
             pendingComments.push(comment);
         }
