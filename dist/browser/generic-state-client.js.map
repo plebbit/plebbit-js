@@ -1,0 +1,1 @@
+{"version":3,"file":"generic-state-client.js","sourceRoot":"","sources":["../../src/generic-state-client.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,mBAAmB,EAAE,MAAM,oCAAoC,CAAC;AAEzE,OAAO,EAAE,qBAAqB,EAAE,MAAM,WAAW,CAAC;AAElD,MAAM,OAAO,kBAAqC,SAAQ,mBAA2C;IAGjG,YAAY,KAAQ;QAChB,KAAK,EAAE,CAAC;QACR,IAAI,CAAC,KAAK,GAAG,KAAK,CAAC;QACnB,qBAAqB,CAAC,IAAI,CAAC,CAAC;IAChC,CAAC;CACJ"}
