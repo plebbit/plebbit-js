@@ -467,10 +467,10 @@ export class DbHandler {
         }
 
         if (needToMigrate) {
-            if (currentDbVersion <= 15) {
-                await this._purgeCommentsWithInvalidSchemaOrSignature();
-                await this._purgeCommentEditsWithInvalidSchemaOrSignature();
-            }
+            await this._purgeCommentsWithInvalidSchemaOrSignature();
+            await this._purgeCommentEditsWithInvalidSchemaOrSignature();
+            this._purgePublicationTablesWithDuplicateSignatures();
+
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
             await this.initDbIfNeeded(); // to init keyv
@@ -597,6 +597,73 @@ export class DbHandler {
             }
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
+    }
+
+    private _purgePublicationTablesWithDuplicateSignatures() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgePublicationTablesWithDuplicateSignatures");
+        const publicationTables = [TABLES.COMMENTS, TABLES.COMMENT_EDITS, TABLES.COMMENT_MODERATIONS, TABLES.COMMENT_UPDATES] as const;
+
+        for (const tableName of publicationTables) {
+            const columnNames = this._getColumnNames(tableName);
+            if (!columnNames.includes("signature")) {
+                log.trace(`Skipping duplicate signature purge for ${tableName} because column signature is missing.`);
+                continue;
+            }
+
+            const jsonValidExpr = (alias: string) => `json_valid(${alias}.signature) = 1`;
+            const signatureExtractExpr = (alias: string) => `json_extract(${alias}.signature, '$.signature')`;
+
+            const duplicateRows = this._db
+                .prepare(
+                    `
+                        SELECT newer.rowid AS rowid
+                        FROM ${tableName} AS newer
+                        WHERE ${jsonValidExpr("newer")}
+                          AND ${signatureExtractExpr("newer")} IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1
+                              FROM ${tableName} AS older
+                              WHERE ${jsonValidExpr("older")}
+                                AND ${signatureExtractExpr("older")} = ${signatureExtractExpr("newer")}
+                                AND older.rowid < newer.rowid
+                          )
+                    `
+                )
+                .all() as { rowid: number }[];
+
+            if (duplicateRows.length === 0) continue;
+
+            if (tableName === TABLES.COMMENTS) {
+                const duplicateCids = this._db
+                    .prepare(
+                        `
+                            SELECT cid
+                            FROM ${TABLES.COMMENTS} AS newer
+                            WHERE ${jsonValidExpr("newer")}
+                              AND ${signatureExtractExpr("newer")} IS NOT NULL
+                              AND EXISTS (
+                                  SELECT 1
+                                  FROM ${TABLES.COMMENTS} AS older
+                                  WHERE ${jsonValidExpr("older")}
+                                    AND ${signatureExtractExpr("older")} = ${signatureExtractExpr("newer")}
+                                    AND older.rowid < newer.rowid
+                              )
+                        `
+                    )
+                    .all() as { cid: string }[];
+                for (const { cid } of duplicateCids) this.purgeComment(cid);
+                log(`Purged ${duplicateCids.length} duplicate comment row(s) based on signature.signature with higher rowid values.`);
+                continue;
+            }
+
+            const deleteStmt = this._db.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`);
+            const deleteMany = this._db.transaction((rows: { rowid: number }[]) => {
+                for (const row of rows) deleteStmt.run(row.rowid);
+            });
+            deleteMany(duplicateRows);
+
+            log(`Purged ${duplicateRows.length} duplicate row(s) from ${tableName} based on signature.signature with higher rowid values.`);
+        }
     }
 
     private async _purgeCommentEditsWithInvalidSchemaOrSignature() {
