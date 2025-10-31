@@ -42,6 +42,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
             parentCid: depth === 0 ? null : parentCid,
             signature: overrides.signature ?? { type: "ed25519", signature: "sig", publicKey: "pk", signedPropertyNames: [] },
             protocolVersion,
+            pendingApproval: overrides.pendingApproval ?? null,
             insertedAt: overrides.insertedAt ?? resolvedTimestamp
         };
 
@@ -59,6 +60,12 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
             upvoteCount = 0,
             downvoteCount = 0,
             lastChildCid = null,
+            replies = null,
+            lastReplyTimestamp = null,
+            postUpdatesBucket = 0,
+            removed = null,
+            approved = null,
+            edit = null,
             insertedAt
         } = {}
     ) => {
@@ -74,10 +81,13 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
                 protocolVersion,
                 signature: "sig",
                 author: { subplebbit: { firstCommentTimestamp: comment.timestamp, lastCommentCid: comment.cid } },
-                replies: null,
+                replies,
                 lastChildCid,
-                lastReplyTimestamp: null,
-                postUpdatesBucket: 0,
+                lastReplyTimestamp,
+                postUpdatesBucket,
+                removed,
+                approved,
+                edit,
                 publishedToPostUpdatesMFS,
                 insertedAt: resolvedInsertedAt
             }
@@ -278,5 +288,411 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         expect(cids).to.include(depth2.cid, "direct parent of the deep reply should be scheduled for update");
         expect(cids).to.include(depth1.cid, "grandparent comment should be scheduled via parent chain");
         expect(cids).to.include(post.cid, "post should be scheduled via parent chain");
+    });
+
+    it("requeues parent when replies JSON references a deleted child", async () => {
+        const post = insertComment();
+        insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, replyCount: 1, childCount: 1, lastChildCid: post.cid });
+
+        const parent = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: currentTimestamp() + 1,
+            overrides: { insertedAt: currentTimestamp() + 1 }
+        });
+
+        const staleChildCid = nextCid("purged");
+        const staleReplies = JSON.stringify({
+            pages: {
+                best: {
+                    comments: [
+                        {
+                            comment: {
+                                cid: staleChildCid,
+                                parentCid: parent.cid,
+                                postCid: post.cid,
+                                depth: parent.depth + 1,
+                                subplebbitAddress
+                            },
+                            commentUpdate: {
+                                cid: staleChildCid,
+                                replyCount: 0,
+                                childCount: 0,
+                                updatedAt: currentTimestamp(),
+                                protocolVersion,
+                                author: { subplebbit: { firstCommentTimestamp: currentTimestamp(), lastCommentCid: staleChildCid } }
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        insertCommentUpdate(parent, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: staleChildCid,
+            replies: staleReplies
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(
+            parent.cid,
+            "parent comment should be enqueued because replies JSON still references the purged child comment"
+        );
+    });
+
+    it("requeues parent when replies JSON embeds stale child updatedAt", async () => {
+        const post = insertComment();
+        insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, replyCount: 1, childCount: 1, lastChildCid: post.cid });
+
+        const parent = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: currentTimestamp() + 1,
+            overrides: { insertedAt: currentTimestamp() + 1 }
+        });
+
+        const child = insertComment({
+            depth: 2,
+            parentCid: parent.cid,
+            postCid: post.cid,
+            timestamp: currentTimestamp() + 2,
+            overrides: { insertedAt: currentTimestamp() + 2 }
+        });
+
+        const childInitialUpdatedAt = currentTimestamp() + 3;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: childInitialUpdatedAt,
+            insertedAt: childInitialUpdatedAt
+        });
+
+        const repliesSnapshot = JSON.stringify({
+            pages: {
+                best: {
+                    comments: [
+                        {
+                            comment: {
+                                cid: child.cid,
+                                parentCid: parent.cid,
+                                postCid: post.cid,
+                                depth: child.depth,
+                                subplebbitAddress
+                            },
+                            commentUpdate: {
+                                cid: child.cid,
+                                replyCount: 0,
+                                childCount: 0,
+                                updatedAt: childInitialUpdatedAt,
+                                protocolVersion,
+                                author: {
+                                    subplebbit: {
+                                        firstCommentTimestamp: child.timestamp,
+                                        lastCommentCid: child.cid
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        insertCommentUpdate(parent, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: child.cid,
+            replies: repliesSnapshot
+        });
+
+        const childNewUpdatedAt = childInitialUpdatedAt + 10;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 0,
+            updatedAt: childNewUpdatedAt,
+            insertedAt: childNewUpdatedAt
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(parent.cid, "parent comment should be enqueued because replies JSON embeds outdated child updatedAt");
+    });
+
+    it("requeues parent when replies JSON references a child whose comment update row was purged", async () => {
+        const post = insertComment();
+        insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, replyCount: 1, childCount: 1, lastChildCid: post.cid });
+
+        const parent = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid });
+        const child = insertComment({ depth: 2, parentCid: parent.cid, postCid: post.cid });
+
+        const childUpdatedAt = currentTimestamp();
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 0,
+            childCount: 0,
+            updatedAt: childUpdatedAt,
+            insertedAt: childUpdatedAt
+        });
+
+        const repliesSnapshot = JSON.stringify({
+            pages: {
+                best: {
+                    comments: [
+                        {
+                            comment: {
+                                cid: child.cid,
+                                parentCid: parent.cid,
+                                postCid: post.cid,
+                                depth: child.depth,
+                                subplebbitAddress
+                            },
+                            commentUpdate: {
+                                cid: child.cid,
+                                replyCount: 0,
+                                childCount: 0,
+                                updatedAt: childUpdatedAt,
+                                protocolVersion,
+                                author: {
+                                    subplebbit: {
+                                        firstCommentTimestamp: child.timestamp,
+                                        lastCommentCid: child.cid
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        insertCommentUpdate(parent, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: child.cid,
+            replies: repliesSnapshot
+        });
+
+        dbHandler._db.prepare(`DELETE FROM commentUpdates WHERE cid = ?`).run(child.cid);
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(
+            parent.cid,
+            "parent comment should be enqueued because replies JSON references a child without a stored comment update row"
+        );
+    });
+
+    it("requeues parent when child comment is marked removed but replies still include it", async () => {
+        const post = insertComment();
+        insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, replyCount: 1, childCount: 1, lastChildCid: post.cid });
+
+        const parent = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid });
+        const child = insertComment({ depth: 2, parentCid: parent.cid, postCid: post.cid });
+
+        const childUpdatedAt = currentTimestamp();
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 0,
+            childCount: 0,
+            updatedAt: childUpdatedAt,
+            insertedAt: childUpdatedAt
+        });
+
+        const repliesSnapshot = JSON.stringify({
+            pages: {
+                best: {
+                    comments: [
+                        {
+                            comment: {
+                                cid: child.cid,
+                                parentCid: parent.cid,
+                                postCid: post.cid,
+                                depth: child.depth,
+                                subplebbitAddress
+                            },
+                            commentUpdate: {
+                                cid: child.cid,
+                                replyCount: 0,
+                                childCount: 0,
+                                updatedAt: childUpdatedAt,
+                                protocolVersion,
+                                author: {
+                                    subplebbit: {
+                                        firstCommentTimestamp: child.timestamp,
+                                        lastCommentCid: child.cid
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        insertCommentUpdate(parent, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: child.cid,
+            replies: repliesSnapshot
+        });
+
+        const removalUpdatedAt = childUpdatedAt + 5;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 0,
+            replyCount: 0,
+            childCount: 0,
+            removed: 1,
+            updatedAt: removalUpdatedAt,
+            insertedAt: removalUpdatedAt
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(
+            parent.cid,
+            "parent comment should be enqueued because a child present in replies has been marked removed"
+        );
+    });
+
+    it("requeues parent when child comment is deleted via edit but replies still include it", async () => {
+        const post = insertComment();
+        insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, replyCount: 1, childCount: 1, lastChildCid: post.cid });
+
+        const parent = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid });
+        const child = insertComment({ depth: 2, parentCid: parent.cid, postCid: post.cid });
+
+        const childUpdatedAt = currentTimestamp();
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 0,
+            childCount: 0,
+            updatedAt: childUpdatedAt,
+            insertedAt: childUpdatedAt
+        });
+
+        const repliesSnapshot = JSON.stringify({
+            pages: {
+                best: {
+                    comments: [
+                        {
+                            comment: {
+                                cid: child.cid,
+                                parentCid: parent.cid,
+                                postCid: post.cid,
+                                depth: child.depth,
+                                subplebbitAddress
+                            },
+                            commentUpdate: {
+                                cid: child.cid,
+                                replyCount: 0,
+                                childCount: 0,
+                                updatedAt: childUpdatedAt,
+                                protocolVersion,
+                                author: {
+                                    subplebbit: {
+                                        firstCommentTimestamp: child.timestamp,
+                                        lastCommentCid: child.cid
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        insertCommentUpdate(parent, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: child.cid,
+            replies: repliesSnapshot
+        });
+
+        const deletionUpdatedAt = childUpdatedAt + 5;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 0,
+            replyCount: 0,
+            childCount: 0,
+            updatedAt: deletionUpdatedAt,
+            insertedAt: deletionUpdatedAt,
+            edit: JSON.stringify({ deleted: true })
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(
+            parent.cid,
+            "parent comment should be enqueued because a child present in replies has been deleted"
+        );
+    });
+
+    it("requeues parent when replies JSON includes a pending-approval child", async () => {
+        const post = insertComment();
+        insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, replyCount: 1, childCount: 1, lastChildCid: post.cid });
+
+        const parent = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid });
+        const pendingChild = insertComment({
+            depth: 2,
+            parentCid: parent.cid,
+            postCid: post.cid,
+            overrides: { pendingApproval: 1 }
+        });
+
+        const childUpdatedAt = currentTimestamp();
+        insertCommentUpdate(pendingChild, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 0,
+            childCount: 0,
+            updatedAt: childUpdatedAt,
+            insertedAt: childUpdatedAt
+        });
+
+        const repliesSnapshot = JSON.stringify({
+            pages: {
+                best: {
+                    comments: [
+                        {
+                            comment: {
+                                cid: pendingChild.cid,
+                                parentCid: parent.cid,
+                                postCid: post.cid,
+                                depth: pendingChild.depth,
+                                subplebbitAddress
+                            },
+                            commentUpdate: {
+                                cid: pendingChild.cid,
+                                replyCount: 0,
+                                childCount: 0,
+                                updatedAt: childUpdatedAt,
+                                protocolVersion,
+                                author: {
+                                    subplebbit: {
+                                        firstCommentTimestamp: pendingChild.timestamp,
+                                        lastCommentCid: pendingChild.cid
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        insertCommentUpdate(parent, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: pendingChild.cid,
+            replies: repliesSnapshot
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(
+            parent.cid,
+            "parent comment should be enqueued because replies include a pending approval child that is filtered out of counts"
+        );
     });
 });
