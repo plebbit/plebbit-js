@@ -884,6 +884,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             editTableRow.extraProps = remeda.pick(commentEditRaw, extraPropsInEdit);
         }
 
+        const isEditDuplicate = this._dbHandler.hasCommentEditWithSignatureEncoded(editTableRow.signature.signature);
+        if (isEditDuplicate) {
+            throw new PlebbitError("ERR_DUPLICATE_COMMENT_EDIT", { editTableRow });
+        }
+
         this._dbHandler.insertCommentEdits([editTableRow]);
     }
 
@@ -903,6 +908,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             modSignerAddress,
             insertedAt: timestamp()
         };
+
+        const isCommentModDuplicate = this._dbHandler.hasCommentModerationWithSignatureEncoded(modTableRow.signature.signature);
+        if (isCommentModDuplicate) {
+            throw new PlebbitError("ERR_DUPLICATE_COMMENT_MODERATION", { modTableRow });
+        }
 
         const extraPropsInMod = remeda.difference(
             remeda.keys.strict(commentModRaw),
@@ -1106,6 +1116,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentPubsub.signature.publicKey);
 
         const strippedOutCommentIpfs = CommentIpfsSchema.strip().parse(commentIpfs); // remove unknown props
+
+        const isCommentDuplicate = this._dbHandler.hasCommentWithSignatureEncoded(commentPubsub.signature.signature);
+        if (isCommentDuplicate) {
+            this._cidsToUnPin.add(commentCid);
+            throw new PlebbitError("ERR_DUPLICATE_COMMENT", { file, commentIpfs, commentPubsub });
+        }
+
         const commentRow = <CommentsTableRow>{
             ...strippedOutCommentIpfs,
             cid: commentCid,
@@ -1312,18 +1329,27 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!challengeResult.challengeSuccess) return this._publishFailedChallengeVerification(challengeResult, request.challengeRequestId);
         else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
-            const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
+            // call below could fail if the comment is duplicated
+            let failureReason: string | undefined;
+            let toEncrypt:
+                | (DecryptedChallengeVerification & Required<Pick<DecryptedChallengeVerificationMessageType, "encrypted">>)
+                | undefined;
+
+            try {
+                toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
+            } catch (e) {
+                if ((e as PlebbitError).code) failureReason = (e as PlebbitError).message;
+            }
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
-                challengeSuccess: true,
-                reason: undefined,
                 encrypted: toEncrypt?.encrypted, // could be undefined
                 challengeErrors: challengeResult.challengeErrors,
                 userAgent: this._plebbit.userAgent,
                 protocolVersion: env.PROTOCOL_VERSION,
-                timestamp: timestamp()
+                timestamp: timestamp(),
+                ...(failureReason ? { reason: failureReason, challengeSuccess: false } : { challengeSuccess: true, reason: undefined })
             });
             const challengeVerification = <ChallengeVerificationMessageType>{
                 ...toSignMsg,
