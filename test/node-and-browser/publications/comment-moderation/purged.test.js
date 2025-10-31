@@ -29,7 +29,6 @@ const roles = [
 ];
 
 // I suspect libp2p config is not emitting error
-
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     [0, 1, 2, 3].map((commentDepth) => {
         describeSkipIfRpc(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
