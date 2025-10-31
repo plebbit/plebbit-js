@@ -8,7 +8,8 @@ import {
     publishRandomPost,
     getAvailablePlebbitConfigsToTestAgainst,
     waitTillPostInSubplebbitPages,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
@@ -113,15 +114,29 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             await customPlebbit.destroy();
         });
 
+        // at the moment we changed the algo so it would resolve the first record to get as long as it's higher than updatedAt
+        // there's no freshness window anymore
         it(`Fetching algo goes with the highest updatedAt of records if all of them are older than 60 min`, async () => {
             const customPlebbit = await config.plebbitInstancePromise({
                 plebbitOptions: { ipfsGatewayUrls: [hourLateGateway, twoHoursLateGateway] }
             });
             const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+            await sub.update();
 
             // should go with the hour old, not the two hours
-            const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
             const bufferSeconds = 10;
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: () => {
+                    const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
+                    return (
+                        typeof sub.updatedAt === "number" &&
+                        sub.updatedAt >= timestampHourAgo - bufferSeconds &&
+                        sub.updatedAt <= timestampHourAgo + bufferSeconds
+                    );
+                }
+            });
+            const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
 
             expect(sub.updatedAt)
                 .to.greaterThanOrEqual(timestampHourAgo - bufferSeconds)
