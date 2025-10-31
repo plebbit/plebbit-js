@@ -1,26 +1,30 @@
 import { defineConfig } from "vitest/config";
+import { playwright } from "@vitest/browser-playwright";
 import mocharc from "./.mocharc.json";
 
 const mochaTimeout = mocharc.timeout;
+const isFirefox = process.env.VITEST_BROWSER === "firefox";
+const playwrightProvider = playwright(
+    isFirefox
+        ? {}
+        : {
+              launchOptions: {
+                  args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-web-security"]
+              }
+          }
+);
 
 export default defineConfig({
     test: {
         // Browser mode configuration
         browser: {
             enabled: true,
-            provider: "playwright",
+            provider: playwrightProvider,
             headless: true,
             screenshotFailures: false,
             instances: [
                 {
-                    browser: process.env.VITEST_BROWSER === "firefox" ? "firefox" : "chromium",
-                    launch: {
-                        args:
-                            process.env.VITEST_BROWSER === "firefox"
-                                ? [] // Firefox doesn't need special security args
-                                : ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-web-security"]
-                        // Remove executablePath to let Playwright use its global browser installation
-                    }
+                    browser: isFirefox ? "firefox" : "chromium"
                 }
             ]
         },
