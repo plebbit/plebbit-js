@@ -27,7 +27,6 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`post.replyCount increases with a direct reply`, async () => {
             reply = await publishRandomReply(post, plebbit);
             await reply.update();
-            await new Promise((resolve) => reply.once("update", resolve));
             await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 1 });
             expect(post.replyCount).to.equal(1);
         });
@@ -63,10 +62,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
-            await publishRandomReply(post.replies.pages.best.comments[0], plebbit);
+            const lastReply = await publishRandomReply(post.replies.pages.best.comments[0], plebbit);
             await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount === 2 });
             expect(post.replyCount).to.equal(2);
-            expect(post.lastChildCid).to.equal(post.replies.pages.best.comments[0].cid);
+            expect(post.lastChildCid).to.equal(lastReply.cid);
         });
     });
 
@@ -161,7 +160,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer });
             await anotherPost.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.author.subplebbit.lastCommentCid === anotherPost.cid });
+            await resolveWhenConditionIsTrue({
+                toUpdate: post,
+                predicate: () => post.author.subplebbit.lastCommentCid === anotherPost.cid
+            });
             await resolveWhenConditionIsTrue({ toUpdate: anotherPost, predicate: () => typeof anotherPost.updatedAt === "number" });
             expect(post.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
             expect(anotherPost.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
