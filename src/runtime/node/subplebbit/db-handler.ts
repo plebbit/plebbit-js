@@ -1136,6 +1136,8 @@ export class DbHandler {
     }
 
     queryCommentsToBeUpdated(): CommentsTableRow[] {
+        // TODO optimize this query in the future
+        // Make sure tests in commentsToUpdate.db.subplebbit.test.js are passing
         const query = `
             WITH RECURSIVE 
             direct_updates AS (
@@ -1212,12 +1214,44 @@ export class DbHandler {
                 WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
                   AND COALESCE(lc.actual_last_child_cid, '') != COALESCE(cu_parent.lastChildCid, '')
             ),
+            replies_json AS (
+                SELECT
+                    cu_parent.cid AS parentCid,
+                    json_extract(comment_entry.value, '$.comment.cid') AS comment_child_cid,
+                    json_extract(comment_entry.value, '$.commentUpdate.cid') AS update_child_cid,
+                    json_extract(comment_entry.value, '$.commentUpdate.updatedAt') AS json_child_updated_at
+                FROM ${TABLES.COMMENT_UPDATES} cu_parent
+                INNER JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+                JOIN json_each(cu_parent.replies, '$.pages') pages
+                JOIN json_each(pages.value, '$.comments') comment_entry
+                WHERE cu_parent.replies IS NOT NULL
+                  AND json_type(cu_parent.replies, '$.pages') = 'object'
+                  AND (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
+            ),
+            stale_replies_json AS (
+                SELECT r.parentCid AS cid
+                FROM replies_json r
+                LEFT JOIN ${TABLES.COMMENTS} existing_child ON existing_child.cid = COALESCE(r.comment_child_cid, r.update_child_cid)
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} actual_child_update ON actual_child_update.cid = COALESCE(r.comment_child_cid, r.update_child_cid)
+                WHERE COALESCE(r.comment_child_cid, r.update_child_cid) IS NOT NULL
+                  AND (
+                      existing_child.cid IS NULL
+                      OR actual_child_update.cid IS NULL
+                      OR (
+                          r.json_child_updated_at IS NOT NULL
+                              AND actual_child_update.cid IS NOT NULL
+                              AND CAST(r.json_child_updated_at AS INTEGER) < actual_child_update.updatedAt
+                      )
+                  )
+                GROUP BY r.parentCid
+            ),
             all_updates AS (
                 SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
                 WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
                 UNION SELECT cid FROM stale_child_counts
                 UNION SELECT cid FROM stale_last_child_cids
+                UNION SELECT cid FROM stale_replies_json
             )
             SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
             WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
