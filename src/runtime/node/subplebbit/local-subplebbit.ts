@@ -382,12 +382,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this.initDbHandlerIfNeeded();
             try {
                 await this._updateStartedValue();
-                if (this.started) {
-                    throw new PlebbitError("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
-                        address: this.address,
-                        dataPath: this._plebbit.dataPath
-                    });
-                }
+
                 const subDbExists = this._dbHandler.subDbExists();
                 if (!subDbExists)
                     throw new PlebbitError("CAN_NOT_LOAD_LOCAL_SUBPLEBBIT_IF_DB_DOES_NOT_EXIST", {
@@ -395,10 +390,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                         dataPath: this._plebbit.dataPath
                     });
 
-                await this._dbHandler.initDbIfNeeded();
+                const dbConfig = this.state === "updating" ? { readonly: true } : undefined;
+                await this._dbHandler.initDbIfNeeded(dbConfig);
 
                 await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
-                if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
+                if (!this.signer) throw new PlebbitError("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
 
                 await this._updateStartedValue();
                 log("Loaded local subplebbit", this.address, "from db");
@@ -2794,12 +2790,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // different instance is updating, let's mirror it
             await this._initMirroringStartedOrUpdatingSubplebbit(this._plebbit._updatingSubplebbits[this.address] as LocalSubplebbit);
             return;
-        } else if (this.started) {
-            // this sub is started in another process, we need to emit an error to user
-            throw new PlebbitError("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
-                address: this.address,
-                dataPath: this._plebbit.dataPath
-            });
         } else {
             // this sub is not started or updated anywhere, but maybe another process will call edit() on it
             this._plebbit._updatingSubplebbits[this.address] = this;
