@@ -1225,6 +1225,11 @@ export async function mockPlebbitWithHeliaConfig(opts?: MockPlebbitOptions) {
         const mockedPubsubClient = createMockPubsubClient();
         const heliaLibp2pJsClient = heliaPlebbit.clients.libp2pJsClients[Object.keys(heliaPlebbit.clients.libp2pJsClients)[0]];
         heliaLibp2pJsClient.heliaWithKuboRpcClientFunctions.pubsub = mockedPubsubClient.pubsub; // that should work for publishing/subscribing
+        const originalStop = heliaLibp2pJsClient._helia.stop.bind(heliaLibp2pJsClient._helia);
+        heliaLibp2pJsClient._helia.stop = async () => {
+            await originalStop();
+            await mockedPubsubClient.stop();
+        };
     }
 
     return heliaPlebbit;
