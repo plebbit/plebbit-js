@@ -1,6 +1,6 @@
-import { getAvailablePlebbitConfigsToTestAgainst, setPlebbitConfigs } from "../../../test-util.js";
-import { resolveHangingScenarioModule } from "../scenarios/hanging-test-util.js";
-import type { HangingScenarioDefinition } from "../scenarios/hanging-test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst, setPlebbitConfigs } from "../../test-util.js";
+import { resolveHangingScenarioModule } from "./scenarios/hanging-test-util.js";
+import type { HangingScenarioDefinition } from "./scenarios/hanging-test-util.js";
 
 declare const self: any;
 
@@ -23,7 +23,7 @@ self.addEventListener("message", async (event: any) => {
             throw new Error("hanging.worker: no plebbit configs available");
         }
 
-        const scenarioModuleUrl = new URL(`../scenarios/${scenarioModuleBaseName}`, import.meta.url);
+        const scenarioModuleUrl = new URL(`./scenarios/${scenarioModuleBaseName}`, import.meta.url);
         const scenarioModule = await import(scenarioModuleUrl.href);
         const scenarioDefinition: HangingScenarioDefinition = resolveHangingScenarioModule(
             scenarioModule,

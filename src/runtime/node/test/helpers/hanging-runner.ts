@@ -1,5 +1,5 @@
-import { resolveHangingScenarioModule } from "../../../../test/node-and-browser/plebbit/scenarios/hanging-test-util.js";
-import type { HangingScenarioDefinition } from "../../../../test/node-and-browser/plebbit/scenarios/hanging-test-util.js";
+import { resolveHangingScenarioModule } from "../../../../test/node-and-browser/hanging-test/scenarios/hanging-test-util.js";
+import type { HangingScenarioDefinition } from "../../../../test/node-and-browser/hanging-test/scenarios/hanging-test-util.js";
 
 const WAIT_TIMEOUT_MS = Number(process.env.HANGING_RUNNER_WAIT ?? 1000);
 const WAIT_POLL_MS = Number(process.env.HANGING_RUNNER_POLL ?? 25);
@@ -44,10 +44,7 @@ async function run(): Promise<void> {
             throw new Error(`hanging-runner: failed to read config code from PLEBBIT_CONFIGS="${configCodesEnv}"`);
         }
 
-        const scenarioModuleUrl = new URL(
-            `../../../../test/node-and-browser/plebbit/scenarios/${scenarioModuleBaseName}`,
-            import.meta.url
-        );
+        const scenarioModuleUrl = new URL(`../../../../test/node-and-browser/hanging-test/scenarios/${scenarioModuleBaseName}`, import.meta.url);
         const scenarioModule = await import(scenarioModuleUrl.href);
         const scenarioDefinition: HangingScenarioDefinition = resolveHangingScenarioModule(
             scenarioModule,

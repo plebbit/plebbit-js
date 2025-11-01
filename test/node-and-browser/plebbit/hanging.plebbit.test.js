@@ -1,16 +1,16 @@
 import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
-import { resolveHangingScenarioModule } from "../../../dist/node/test/node-and-browser/plebbit/scenarios/hanging-test-util.js";
+import { resolveHangingScenarioModule } from "../../../dist/node/test/node-and-browser/hanging-test/scenarios/hanging-test-util.js";
 
 const DESTROY_TIMEOUT_MS = 10_000;
 const SCENARIO_MANIFEST_FILENAME = "scenario-manifest.json";
-const SCENARIO_DIST_DIR_URL = new URL("../../../dist/node/test/node-and-browser/plebbit/scenarios/", import.meta.url);
+const SCENARIO_DIST_DIR_URL = new URL("../../../dist/node/test/node-and-browser/hanging-test/scenarios/", import.meta.url);
 const SCENARIO_MANIFEST_URL = new URL(SCENARIO_MANIFEST_FILENAME, SCENARIO_DIST_DIR_URL);
 const isNodeEnvironment = typeof process !== "undefined" && !!process.versions?.node;
 const configs = getAvailablePlebbitConfigsToTestAgainst();
 const scenarioDefinitions = await loadScenarioDefinitions();
 
 if (!scenarioDefinitions.length) {
-    throw new Error("No hanging-test scenarios found. Add *.scenario.ts files under src/test/node-and-browser/plebbit/scenarios.");
+    throw new Error("No hanging-test scenarios found. Add *.scenario.ts files under src/test/node-and-browser/hanging-test/scenarios.");
 }
 
 // This test can not be run with debugger or else it would fail
@@ -61,7 +61,7 @@ if (isNodeEnvironment) {
 async function runHangingScenarioInWorker({ configCode, timeoutMs, scenarioModuleBaseName }) {
     return new Promise((resolve, reject) => {
         const worker = new Worker(
-            new URL("../../../dist/node/test/node-and-browser/plebbit/helpers/hanging.worker.js", import.meta.url),
+            new URL("../../../dist/node/test/node-and-browser/hanging-test/hanging.worker.js", import.meta.url),
             {
                 type: "module"
             }
