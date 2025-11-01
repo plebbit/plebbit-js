@@ -7,14 +7,10 @@ import { createScenarioContext, defineHangingScenario } from "./hanging-test-uti
  */
 export default defineHangingScenario({
     id: "destroy-only",
-    description: "Baseline: instantiate a Plebbit client and destroy it",
+    description: "instantiate a Plebbit client and destroy it",
     run: async ({ configCode }) => {
         const { plebbit } = await createScenarioContext(configCode);
 
-        try {
-            // Intentionally left blank; add steps here if you need extra setup.
-        } finally {
-            await plebbit.destroy();
-        }
+        await plebbit.destroy();
     }
 });
