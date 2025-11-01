@@ -466,7 +466,7 @@ export async function retryKuboIpfsAddAndProvide({
                         log.trace(`Provide event for ${addRes.cid}:`, event);
                     }
                 } catch (e) {
-                    log("Minor Error, not a big deal: Failed to provide after add", e);
+                    log.trace("Minor Error, not a big deal: Failed to provide after add", e);
                 }
                 resolve(addRes);
             } catch (error) {
