@@ -1,7 +1,9 @@
 import { expect } from "chai";
+import lockfile from "proper-lockfile";
+import path from "path";
 import {
     createSubWithNoChallenge,
-    isRpcFlagOn,
+    itSkipIfRpc,
     mockPlebbit,
     publishRandomPost,
     resolveWhenConditionIsTrue
@@ -79,5 +81,32 @@ describe(`subplebbit.update - Local subs`, async () => {
         expect(emittedUpdates).to.equal(0);
 
         await sub.delete();
+    });
+
+    itSkipIfRpc(`Local subplebbit should update properly even when another process holds the start lock`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
+        await sub.stop();
+
+        const subDbPath = path.join(plebbit.dataPath, "subplebbits", sub.address);
+        const lockfilePath = `${subDbPath}.start.lock`;
+
+        const releaseLock = await lockfile.lock(subDbPath, {
+            lockfilePath,
+            retries: 0,
+            onCompromised: () => {}
+        });
+
+        const secondPlebbit = await mockPlebbit({ dataPath: plebbit.dataPath });
+
+        try {
+            const recreatedSub = await secondPlebbit.createSubplebbit({ address: sub.address });
+            expect(recreatedSub.updatedAt).to.be.a("number");
+        } catch (e) {
+            throw e;
+        } finally {
+            await secondPlebbit.destroy();
+        }
     });
 });
