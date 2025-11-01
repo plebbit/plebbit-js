@@ -1,20 +1,22 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-interface RunDestroyInChildProcessOptions {
+interface RunHangingScenarioInChildProcessOptions {
     configCode: string;
     timeoutMs: number;
+    scenarioModuleBaseName: string;
 }
 
-const runnerPath = fileURLToPath(new URL("./destroy-runner.js", import.meta.url));
+const runnerPath = fileURLToPath(new URL("./hanging-runner.js", import.meta.url));
 
-export async function runDestroyInChildProcess({
+export async function runHangingScenarioInChildProcess({
     configCode,
-    timeoutMs
-}: RunDestroyInChildProcessOptions): Promise<void> {
+    timeoutMs,
+    scenarioModuleBaseName
+}: RunHangingScenarioInChildProcessOptions): Promise<void> {
     return new Promise((resolve, reject) => {
         const env = { ...process.env, PLEBBIT_CONFIGS: configCode };
-        const child = spawn(process.execPath, [runnerPath], {
+        const child = spawn(process.execPath, [runnerPath, "--scenario", scenarioModuleBaseName], {
             env,
             stdio: ["ignore", "pipe", "pipe"]
         });
@@ -36,7 +38,8 @@ export async function runDestroyInChildProcess({
             settled = true;
             child.kill("SIGKILL");
             const message = [
-                `destroy-runner timed out after ${timeoutMs}ms`,
+                `hanging-runner timed out after ${timeoutMs}ms`,
+                `scenario: ${scenarioModuleBaseName}`,
                 stdout.trim() ? `stdout:\n${stdout.trim()}` : "",
                 stderr.trim() ? `stderr:\n${stderr.trim()}` : ""
             ]
@@ -60,9 +63,9 @@ export async function runDestroyInChildProcess({
                 resolve();
                 return;
             }
-
             const message = [
-                `destroy-runner exited with code ${code ?? "null"}${signal ? ` (signal ${signal})` : ""}`,
+                `hanging-runner exited with code ${code ?? "null"}${signal ? ` (signal ${signal})` : ""}`,
+                `scenario: ${scenarioModuleBaseName}`,
                 stdout.trim() ? `stdout:\n${stdout.trim()}` : "",
                 stderr.trim() ? `stderr:\n${stderr.trim()}` : ""
             ]

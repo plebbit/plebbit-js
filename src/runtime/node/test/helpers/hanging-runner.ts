@@ -1,42 +1,60 @@
-import { getAvailablePlebbitConfigsToTestAgainst } from "../../../../test/test-util.js";
+import { resolveHangingScenarioModule } from "../../../../test/node-and-browser/plebbit/scenarios/hanging-test-util.js";
+import type { HangingScenarioDefinition } from "../../../../test/node-and-browser/plebbit/scenarios/hanging-test-util.js";
 
-const WAIT_TIMEOUT_MS = Number(process.env.DESTROY_RUNNER_WAIT ?? 1000);
-const WAIT_POLL_MS = Number(process.env.DESTROY_RUNNER_POLL ?? 25);
+const WAIT_TIMEOUT_MS = Number(process.env.HANGING_RUNNER_WAIT ?? 1000);
+const WAIT_POLL_MS = Number(process.env.HANGING_RUNNER_POLL ?? 25);
 const nodeProcess = process as NodeJS.Process & {
     _getActiveHandles: () => unknown[];
     _getActiveRequests: () => unknown[];
 };
 
+interface ParsedArgs {
+    scenarioModuleBaseName?: string;
+}
+
+function parseArgs(argv: string[]): ParsedArgs {
+    const parsed: ParsedArgs = {};
+    for (let index = 0; index < argv.length; index += 1) {
+        const value = argv[index];
+        if (value === "--scenario") {
+            parsed.scenarioModuleBaseName = argv[index + 1];
+            index += 1;
+            continue;
+        }
+        if (value?.startsWith("--scenario=")) {
+            parsed.scenarioModuleBaseName = value.slice("--scenario=".length);
+        }
+    }
+    return parsed;
+}
+
 async function run(): Promise<void> {
     try {
-        const configs = getAvailablePlebbitConfigsToTestAgainst();
-        if (!configs.length) {
-            throw new Error("destroy-runner: no plebbit configs available");
+        const { scenarioModuleBaseName } = parseArgs(process.argv.slice(2));
+        if (!scenarioModuleBaseName) {
+            throw new Error('hanging-runner: "--scenario <file>" argument is required');
         }
 
-        const { plebbitInstancePromise } = configs[0];
-        const plebbit = await plebbitInstancePromise();
-
-        try {
-            console.error(
-                JSON.stringify(
-                    {
-                        message: "plebbit clients summary",
-                        kuboRpcClients: Object.keys(plebbit.clients?.kuboRpcClients ?? {}),
-                        pubsubKuboRpcClients: Object.keys(plebbit.clients?.pubsubKuboRpcClients ?? {}),
-                        ipfsGateways: Object.keys(plebbit.clients?.ipfsGateways ?? {}),
-                        libp2pJsClients: Object.keys(plebbit.clients?.libp2pJsClients ?? {}),
-                        httpRoutersOptions: plebbit.httpRoutersOptions,
-                        dataPath: plebbit.dataPath
-                    },
-                    null,
-                    2
-                )
-            );
-        } catch {
-            // ignore logging errors
+        const configCodesEnv = process.env.PLEBBIT_CONFIGS;
+        if (!configCodesEnv) {
+            throw new Error("hanging-runner: PLEBBIT_CONFIGS environment variable is required");
         }
-        await plebbit.destroy();
+        const [configCode] = configCodesEnv.split(",").map((code) => code.trim()).filter(Boolean);
+        if (!configCode) {
+            throw new Error(`hanging-runner: failed to read config code from PLEBBIT_CONFIGS="${configCodesEnv}"`);
+        }
+
+        const scenarioModuleUrl = new URL(
+            `../../../../test/node-and-browser/plebbit/scenarios/${scenarioModuleBaseName}`,
+            import.meta.url
+        );
+        const scenarioModule = await import(scenarioModuleUrl.href);
+        const scenarioDefinition: HangingScenarioDefinition = resolveHangingScenarioModule(
+            scenarioModule,
+            scenarioModuleBaseName
+        );
+
+        await scenarioDefinition.run({ configCode });
 
         const report = await waitForCleanup();
         const hasRemainingHandles = report.remainingHandles > 0;
@@ -49,7 +67,7 @@ async function run(): Promise<void> {
             console.error(JSON.stringify(report, null, 2));
         }
     } catch (error) {
-        console.error("destroy-runner failure:", error);
+        console.error("hanging-runner failure:", error);
         process.exitCode = 1;
     }
 }
