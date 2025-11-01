@@ -947,6 +947,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     }
 
     async destroy() {
+        const log = Logger("plebbit-js:plebbit:destroy");
         if (this.destroyed) return;
         this.destroyed = true;
         // Clean up connections
@@ -985,6 +986,10 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             }
         }
 
+        const kuboClients = [...Object.values(this.clients.kuboRpcClients), ...Object.values(this.clients.pubsubKuboRpcClients)];
+
+        await Promise.all(kuboClients.map(async (client) => client._client.stop()));
+
         await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
 
         // Get all methods on the instance and override them to throw errors if used after destruction
@@ -995,5 +1000,6 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                     throw new PlebbitError("ERR_PLEBBIT_IS_DESTROYED");
                 };
             });
+        log("Destroyed plebbit instance");
     }
 }
