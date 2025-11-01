@@ -282,7 +282,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 _client: kuboRpcClient,
                 _clientOptions: clientOptions,
                 peers: kuboRpcClient.swarm.peers,
-                url: clientOptions.url!.toString()
+                url: clientOptions.url!.toString(),
+                destroy: async () => {}
             };
         }
     }
@@ -302,7 +303,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                     const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                     return peers;
                 },
-                url: clientOptions.url!.toString()
+                url: clientOptions.url!.toString(),
+                destroy: async () => {}
             };
         }
     }
@@ -988,7 +990,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         const kuboClients = [...Object.values(this.clients.kuboRpcClients), ...Object.values(this.clients.pubsubKuboRpcClients)];
 
-        await Promise.all(kuboClients.map(async (client) => client._client.stop()));
+        await Promise.all(kuboClients.map(async (client) => client.destroy()));
 
         await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
 

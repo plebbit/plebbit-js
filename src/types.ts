@@ -118,6 +118,7 @@ export interface KuboRpcClient {
     _client: ReturnType<typeof CreateIpfsClient>; // Private API, shouldn't be used by consumers
     url: string;
     _clientOptions: IpfsHttpClientOptions;
+    destroy: () => Promise<void>;
 }
 
 export type PubsubSubscriptionHandler = Extract<Parameters<KuboRpcClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
@@ -130,6 +131,7 @@ export interface PubsubClient {
     _client: Pick<KuboRpcClient["_client"], "pubsub" | "stop">; // Private API, shouldn't be used by consumers
     _clientOptions: KuboRpcClient["_clientOptions"];
     url: string;
+    destroy: () => Promise<void>;
 }
 
 export interface GatewayClient {

@@ -553,6 +553,7 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
         for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)) {
             const mockClient = createMockPubsubClient();
             plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = mockClient;
+            plebbit.clients.pubsubKuboRpcClients[pubsubUrl].destroy = mockClient.stop;
         }
 
     plebbit.on("error", (e) => {
