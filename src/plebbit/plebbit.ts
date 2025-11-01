@@ -994,6 +994,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
 
+        await Promise.all(Object.values(this.clients.plebbitRpcClients).map((client) => client.destroy()));
+
         // Get all methods on the instance and override them to throw errors if used after destruction
         Object.getOwnPropertyNames(Object.getPrototypeOf(this))
             .filter((prop) => typeof (this as any)[prop] === "function")
