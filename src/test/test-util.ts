@@ -550,19 +550,14 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubKuboRpcClientsOptions || forceMockPubsub)
-        for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
-            plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
+        for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)) {
+            const mockClient = createMockPubsubClient();
+            plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = mockClient;
+        }
 
     plebbit.on("error", (e) => {
         log.error("Plebbit error", e);
     });
-
-    for (const element of Object.keys(plebbit.clients.kuboRpcClients)) {
-        // provide will throw on tests because we're not connected to any peers
-        plebbit.clients.kuboRpcClients[element]._client.routing.provide = async function* () {
-            yield { type: "mock", data: {} } as any; // Cast to satisfy RoutingQueryEvent type
-        };
-    }
 
     return plebbit;
 }
