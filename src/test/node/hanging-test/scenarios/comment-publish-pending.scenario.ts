@@ -1,4 +1,4 @@
-import { generateMockPost, publishRandomPost } from "../../../test-util.js";
+import { generateMockPost } from "../../../test-util.js";
 import { createScenarioContext, defineHangingScenario } from "./hanging-test-util.js";
 
 /**
@@ -11,8 +11,7 @@ export default defineHangingScenario({
     id: "comment-publish-pending",
     description: "publish a comment over pubsub without succeeding and instead hanging. Then destroy plebbit",
     run: async ({ configCode }) => {
-        const mathCliSub = "12D3KooWQZC4W7LEEMUALiM8fSL7vtXuhC2Pf7DJ4MRqk39qEwHd";
-
+        const mathCliSub = "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z";
         const { plebbit, config } = await createScenarioContext(configCode);
 
         const post = await generateMockPost(mathCliSub, plebbit);
