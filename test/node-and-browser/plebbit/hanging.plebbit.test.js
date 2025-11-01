@@ -4,6 +4,7 @@ const DESTROY_TIMEOUT_MS = 10_000;
 const isNodeEnvironment = typeof process !== "undefined" && !!process.versions?.node;
 const configs = getAvailablePlebbitConfigsToTestAgainst();
 
+// This test can not be run with debugger or else it would fail
 if (isNodeEnvironment) {
     let runDestroyInChildProcess;
 
@@ -14,7 +15,7 @@ if (isNodeEnvironment) {
     });
 
     configs.map((config) => {
-        describe(`plebbit.destroy() - ${config.name}`, () => {
+        describe(`Plebbit instance has no hanging streams or sockets after plebbit.destroy() - ${config.name}`, () => {
             it("does not keep the Node process alive", async function () {
                 this.timeout(DESTROY_TIMEOUT_MS + 2_000);
                 await runDestroyInChildProcess({
@@ -26,7 +27,7 @@ if (isNodeEnvironment) {
     });
 } else {
     configs.map((config) => {
-        describe(`plebbit.destroy() - ${config.name}`, () => {
+        describe(`Plebbit instance has no hanging streams or sockets after plebbit.destroy() - ${config.name}`, () => {
             it("does not keep the browser worker alive", async function () {
                 this.timeout(DESTROY_TIMEOUT_MS + 2_000);
                 await runDestroyInWorker({

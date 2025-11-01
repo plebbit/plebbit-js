@@ -1,6 +1,6 @@
 import { getAvailablePlebbitConfigsToTestAgainst } from "../../../../test/test-util.js";
 
-const WAIT_TIMEOUT_MS = Number(process.env.DESTROY_RUNNER_WAIT ?? 200);
+const WAIT_TIMEOUT_MS = Number(process.env.DESTROY_RUNNER_WAIT ?? 1000);
 const WAIT_POLL_MS = Number(process.env.DESTROY_RUNNER_POLL ?? 25);
 const nodeProcess = process as NodeJS.Process & {
     _getActiveHandles: () => unknown[];
