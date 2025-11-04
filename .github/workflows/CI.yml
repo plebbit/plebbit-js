@@ -126,6 +126,7 @@ jobs:
               with:
                   name: vitest-browser-${{ matrix.environment }}-${{ matrix.config }}
                   path: .vitest-reports
+                  include-hidden-files: true
                   if-no-files-found: ignore
 
             - run: cat test_server.log
