@@ -1,5 +1,6 @@
 import io, { Socket } from "socket.io-client";
 import type { PubsubClient, PubsubSubscriptionHandler } from "../types.js";
+import { v4 as uuidV4 } from "uuid";
 
 const port = 25963;
 
@@ -11,7 +12,12 @@ const ensurePubsubActive = () => {
 
 class MockPubsubHttpClient {
     public pubsub: PubsubClient["_client"]["pubsub"];
-    private subscriptions: { topic: string; rawCallback: PubsubSubscriptionHandler; callback: (...args: any[]) => any }[];
+    private subscriptions: {
+        subscriptionId: string;
+        topic: string;
+        rawCallback: PubsubSubscriptionHandler;
+        callback: (...args: any[]) => any;
+    }[];
 
     constructor(dropRate?: number) {
         // dropRate should be between 0 and 1
@@ -31,20 +37,30 @@ class MockPubsubHttpClient {
                     rawCallback({ from: undefined, seqno: undefined, topicIDs: undefined, data: new Uint8Array(msg) });
                 };
                 ioClient.on(topic, callback);
-                this.subscriptions.push({ topic, rawCallback, callback });
+                const uniqueSubId = uuidV4();
+                this.subscriptions.push({ topic, rawCallback, callback, subscriptionId: uniqueSubId });
             },
             unsubscribe: async (topic: string, rawCallback?: PubsubSubscriptionHandler) => {
                 ensurePubsubActive();
                 if (!rawCallback) {
-                    ioClient.off(topic);
-                    this.subscriptions = this.subscriptions.filter((sub) => sub.topic !== topic);
-                } else {
-                    const toUnsubscribeIndex = this.subscriptions.findIndex(
-                        (sub) => sub.topic === topic && sub.rawCallback === rawCallback
+                    const subscriptionsWithTopic = this.subscriptions.filter((sub) => sub.topic === topic);
+
+                    if (subscriptionsWithTopic.length === 0) return;
+
+                    subscriptionsWithTopic.forEach((sub) => {
+                        ioClient.off(topic, sub.callback);
+                        ioClient.off(topic, sub.rawCallback); // probably not needed but just to be on the safe side
+                    });
+
+                    this.subscriptions = this.subscriptions.filter(
+                        (sub) => !subscriptionsWithTopic.map((sub) => sub.subscriptionId).includes(sub.subscriptionId)
                     );
-                    if (toUnsubscribeIndex === -1) return;
-                    ioClient.off(topic, this.subscriptions[toUnsubscribeIndex].callback);
-                    this.subscriptions = this.subscriptions.filter((_, i) => i !== toUnsubscribeIndex);
+                } else {
+                    const toUnsubscribe = this.subscriptions.find((sub) => sub.topic === topic && sub.rawCallback === rawCallback);
+                    if (!toUnsubscribe) return;
+                    ioClient.off(topic, toUnsubscribe.callback);
+                    ioClient.off(topic, toUnsubscribe.rawCallback);
+                    this.subscriptions = this.subscriptions.filter((sub) => sub.subscriptionId !== toUnsubscribe.subscriptionId);
                 }
             },
             ls: async () => {
@@ -64,6 +80,11 @@ class MockPubsubHttpClient {
             await ioClient?.disconnect();
             //@ts-expect-error
             ioClient = undefined;
+            //@ts-expect-error
+            if (globalThis["window"] && globalThis["window"]["io"]) {
+                //@ts-expect-error
+                delete globalThis["window"]["io"];
+            }
         }
     }
 }
