@@ -5,6 +5,9 @@ const port = 25963;
 
 let usersOfMock = 0;
 let ioClient: Socket;
+const ensurePubsubActive = () => {
+    if (!ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
+};
 
 class MockPubsubHttpClient {
     public pubsub: PubsubClient["_client"]["pubsub"];
@@ -16,11 +19,13 @@ class MockPubsubHttpClient {
 
         this.pubsub = {
             publish: async (topic: string, message: Uint8Array) => {
+                ensurePubsubActive();
                 if (typeof dropRate === "number") {
                     if (Math.random() > dropRate) ioClient.emit(topic, message);
                 } else ioClient.emit(topic, message);
             },
             subscribe: async (topic: string, rawCallback: PubsubSubscriptionHandler) => {
+                ensurePubsubActive();
                 const callback = (msg: Buffer) => {
                     //@ts-expect-error
                     rawCallback({ from: undefined, seqno: undefined, topicIDs: undefined, data: new Uint8Array(msg) });
@@ -29,6 +34,7 @@ class MockPubsubHttpClient {
                 this.subscriptions.push({ topic, rawCallback, callback });
             },
             unsubscribe: async (topic: string, rawCallback?: PubsubSubscriptionHandler) => {
+                ensurePubsubActive();
                 if (!rawCallback) {
                     ioClient.off(topic);
                     this.subscriptions = this.subscriptions.filter((sub) => sub.topic !== topic);
@@ -42,9 +48,13 @@ class MockPubsubHttpClient {
                 }
             },
             ls: async () => {
+                ensurePubsubActive();
                 return this.subscriptions.map((sub) => sub.topic);
             },
-            peers: async () => []
+            peers: async () => {
+                ensurePubsubActive();
+                return [];
+            }
         };
     }
 
