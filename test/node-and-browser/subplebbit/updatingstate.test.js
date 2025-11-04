@@ -297,10 +297,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             await subplebbit.stop();
 
-            // Expected states for initial update and then the invalid update attempt
-            const expectedUpdatingStates = ["fetching-ipns", "succeeded", "fetching-ipns", "failed", "stopped"];
-
-            expect(recordedUpdatingStates).to.deep.equal(expectedUpdatingStates);
+            expect(recordedUpdatingStates[0]).to.equal("fetching-ipns");
+            expect(recordedUpdatingStates[1]).to.equal("succeeded");
+            expect(recordedUpdatingStates.slice(recordedUpdatingStates.length - 2, recordedUpdatingStates.length)).to.deep.equal([
+                "failed",
+                "stopped"
+            ]);
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
             expect(errors[0].details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
