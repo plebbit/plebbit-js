@@ -553,7 +553,7 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
         for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)) {
             const mockClient = createMockPubsubClient();
             plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = mockClient;
-            plebbit.clients.pubsubKuboRpcClients[pubsubUrl].destroy = mockClient.stop;
+            plebbit.clients.pubsubKuboRpcClients[pubsubUrl].destroy = mockClient.destroy.bind(mockClient);
         }
 
     plebbit.on("error", (e) => {
@@ -1229,7 +1229,7 @@ export async function mockPlebbitWithHeliaConfig(opts?: MockPlebbitOptions) {
         const originalStop = heliaLibp2pJsClient._helia.stop.bind(heliaLibp2pJsClient._helia);
         heliaLibp2pJsClient._helia.stop = async () => {
             await originalStop();
-            await mockedPubsubClient.stop();
+            await mockedPubsubClient.destroy();
         };
     }
 

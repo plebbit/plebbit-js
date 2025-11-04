@@ -48,7 +48,7 @@ class MockPubsubHttpClient {
         };
     }
 
-    async stop() {
+    async destroy() {
         usersOfMock--;
         if (usersOfMock === 0) {
             await ioClient?.disconnect();
@@ -58,7 +58,7 @@ class MockPubsubHttpClient {
     }
 }
 
-export const createMockPubsubClient = (dropRate?: number): PubsubClient["_client"] => {
+export const createMockPubsubClient = (dropRate?: number): MockPubsubHttpClient => {
     //@ts-expect-error
     if (globalThis["window"] && !globalThis["window"]["io"]) globalThis["window"]["io"] = io(`ws://localhost:${port}`);
     //@ts-expect-error
