@@ -13,6 +13,10 @@ pubsubIoServer.on("connection", async (connectedPeer) => {
         peers = peers.filter((peer) => peer.id !== connectedPeer.id);
     });
     connectedPeer.onAny(async (topic, message) => {
+        if (peers.length <= 1)
+            throw Error(
+                "Only a single peer is connected, are you sure other peers from mocked pubsub ws server are there? topic is " + topic
+            );
         for (const curPeer of peers) curPeer.emit(topic, message);
     });
     peers.push(connectedPeer);
