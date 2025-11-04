@@ -1,9 +1,16 @@
+import { mkdirSync } from "node:fs";
 import { defineConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
 import mocharc from "./.mocharc.json";
 
 const mochaTimeout = mocharc.timeout;
 const isFirefox = process.env.VITEST_BROWSER === "firefox";
+const vitestReportDir = ".vitest-reports";
+const vitestJsonReportPath = `${vitestReportDir}/browser-tests.json`;
+const vitestHtmlReportPath = `${vitestReportDir}/browser-tests/index.html`;
+
+mkdirSync(vitestReportDir, { recursive: true });
+
 const playwrightProvider = playwright(
     isFirefox
         ? {}
@@ -39,7 +46,6 @@ export default defineConfig({
         setupFiles: ["./test/vitest-browser-setup.js"],
 
         // Sequential execution configuration
-        fileParallelism: false, // Run test files sequentially instead of in parallel
 
         // Environment variables
         env: {
@@ -52,6 +58,9 @@ export default defineConfig({
 
         // some tests are skipped if no remote plebbit RPC configs are available
         passWithNoTests: true,
+
+        // Default summary, verbose stream, JSON artifact, and HTML UI bundle
+        reporters: ["default", "verbose", ["json", { outputFile: vitestJsonReportPath }], ["html", { outputFile: vitestHtmlReportPath }]],
 
         // Timeouts
         testTimeout: mochaTimeout,

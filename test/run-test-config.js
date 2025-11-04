@@ -426,7 +426,7 @@ const runNodeTests = () => {
 const runBrowserTests = () => {
     const vitestBin = path.join(projectRoot, "node_modules", ".bin", "vitest");
 
-    let vitestArgs = ["run", "--reporter=verbose"];
+    let vitestArgs = ["run"];
     const vitestConfigPath = path.join(projectRoot, "config", "vitest.config.js");
 
     if (environment.toLowerCase().includes("chrome")) {
@@ -438,6 +438,15 @@ const runBrowserTests = () => {
     }
 
     vitestArgs.push("--config", vitestConfigPath);
+
+    const reporterOverrides = getAllOptions(options, "reporter");
+    if (reporterOverrides.length > 0) {
+        reporterOverrides.forEach((reporter) => {
+            if (typeof reporter === "string") {
+                vitestArgs.push("--reporter", reporter);
+            }
+        });
+    }
 
     console.log(`Running Vitest with environment: ${environment}`);
     console.log(`Vitest binary: ${vitestBin}`);

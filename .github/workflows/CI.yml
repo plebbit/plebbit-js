@@ -120,6 +120,14 @@ jobs:
             - name: Run browser tests with config
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
 
+            - name: Upload Vitest browser reports
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vitest-browser-${{ matrix.environment }}-${{ matrix.config }}
+                  path: .vitest-reports
+                  if-no-files-found: ignore
+
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
