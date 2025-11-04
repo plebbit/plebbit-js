@@ -136,11 +136,9 @@ console.log(`Running tests in ${environment} environment`);
 
 const logPrefix = getLastOption(options, "log-prefix");
 const stdoutLogPath =
-    resolveMaybePath(getLastOption(options, "stdout-log")) ??
-    (logPrefix ? resolveMaybePath(`${logPrefix}.stdout.log`) : undefined);
+    resolveMaybePath(getLastOption(options, "stdout-log")) ?? (logPrefix ? resolveMaybePath(`${logPrefix}.stdout.log`) : undefined);
 const stderrLogPath =
-    resolveMaybePath(getLastOption(options, "stderr-log")) ??
-    (logPrefix ? resolveMaybePath(`${logPrefix}.stderr.log`) : undefined);
+    resolveMaybePath(getLastOption(options, "stderr-log")) ?? (logPrefix ? resolveMaybePath(`${logPrefix}.stderr.log`) : undefined);
 
 const mochaSpecOverrides = getAllOptions(options, "mocha-spec");
 const mochaSpecPaths =
@@ -161,9 +159,7 @@ const parseTimeoutMs = (value) => {
 
 let runTimeoutMs = parseTimeoutMs(getLastOption(options, "run-timeout-ms"));
 if (runTimeoutMs === undefined) {
-    runTimeoutMs = parseTimeoutMs(
-        env.TEST_NODE_LOCAL_TIMEOUT_MS ?? env.RUN_TEST_TIMEOUT_MS ?? env.TEST_RUN_TIMEOUT_MS
-    );
+    runTimeoutMs = parseTimeoutMs(env.TEST_NODE_LOCAL_TIMEOUT_MS ?? env.RUN_TEST_TIMEOUT_MS ?? env.TEST_RUN_TIMEOUT_MS);
 }
 if (runTimeoutMs === undefined && isNodeEnvironment) {
     runTimeoutMs = 25 * 60 * 1000;
@@ -183,11 +179,7 @@ if (mochaTimeoutValue === true) {
     mochaTimeoutValue = undefined;
 }
 if (mochaTimeoutValue === undefined) {
-    mochaTimeoutValue = pickFirstDefined(
-        env.MOCHA_TIMEOUT,
-        env.TEST_NODE_LOCAL_MOCHA_TIMEOUT_MS,
-        isNodeEnvironment ? "300000" : undefined
-    );
+    mochaTimeoutValue = pickFirstDefined(env.MOCHA_TIMEOUT, env.TEST_NODE_LOCAL_MOCHA_TIMEOUT_MS, isNodeEnvironment ? "300000" : undefined);
 }
 
 const waitForStreamFinish = (stream) =>
@@ -198,14 +190,7 @@ const waitForStreamFinish = (stream) =>
 
 const runNodeTests = () => {
     const mochaBin = path.join(projectRoot, "node_modules", "mocha", "bin", "mocha.js");
-    const mochaArgs = [
-        "--recursive",
-        "--exit",
-        "--forbid-only",
-        "--bail",
-        "--config",
-        path.join(projectRoot, "config", ".mocharc.json")
-    ];
+    const mochaArgs = ["--recursive", "--exit", "--forbid-only", "--bail", "--config", path.join(projectRoot, "config", ".mocharc.json")];
 
     if (options.has("parallel")) {
         mochaArgs.push("--parallel");
@@ -283,9 +268,7 @@ const runNodeTests = () => {
         try {
             const result = signal ? mochaProcess.kill(signal) : mochaProcess.kill();
             if (!result) {
-                console.error(
-                    `Attempt to send ${label ?? signal ?? "default"} to Mocha returned false.`
-                );
+                console.error(`Attempt to send ${label ?? signal ?? "default"} to Mocha returned false.`);
             }
             return result;
         } catch (error) {
@@ -383,9 +366,7 @@ const runNodeTests = () => {
                 return;
             }
             timedOut = true;
-            console.error(
-                `Mocha did not finish within ${Math.round(runTimeoutMs / 1000)} seconds. Sending SIGTERM...`
-            );
+            console.error(`Mocha did not finish within ${Math.round(runTimeoutMs / 1000)} seconds. Sending SIGTERM...`);
             attemptTerminate("timeout");
             sigtermHandle = setTimeout(() => {
                 if (exitHandled) {
@@ -395,9 +376,7 @@ const runNodeTests = () => {
                 attemptHardKill("timeout escalation");
                 sigkillHandle = setTimeout(() => {
                     if (!exitHandled) {
-                        console.error(
-                            "Mocha did not exit after SIGKILL. Forcing wrapper process to finish."
-                        );
+                        console.error("Mocha did not exit after SIGKILL. Forcing wrapper process to finish.");
                         finalize(124);
                     }
                 }, 2000);
@@ -411,9 +390,7 @@ const runNodeTests = () => {
             }
             console.error("Attempting final SIGKILL before hard exit...");
             attemptHardKill("absolute timeout");
-            console.error(
-                `Hard timeout reached (${runTimeoutMs + 7000}ms since start). Forcing wrapper exit.`
-            );
+            console.error(`Hard timeout reached (${runTimeoutMs + 7000}ms since start). Forcing wrapper exit.`);
             finalize(124);
         }, runTimeoutMs + 7000);
     }
@@ -424,9 +401,7 @@ const runNodeTests = () => {
         }
 
         if (timedOut) {
-            console.error(
-                `Mocha run terminated after exceeding ${runTimeoutMs}ms (observed via ${source} event).`
-            );
+            console.error(`Mocha run terminated after exceeding ${runTimeoutMs}ms (observed via ${source} event).`);
             finalize(124);
             return;
         }
@@ -468,9 +443,7 @@ const runBrowserTests = () => {
     console.log(`Vitest binary: ${vitestBin}`);
     console.log(`Vitest config: ${vitestConfigPath}`);
     console.log(`Vitest args: ${vitestArgs.join(" ")}`);
-    console.log(
-        `Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}, VITEST_BROWSER=${env.VITEST_BROWSER}`
-    );
+    console.log(`Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}, VITEST_BROWSER=${env.VITEST_BROWSER}`);
 
     const vitestProcess = spawn(vitestBin, vitestArgs, {
         stdio: "inherit",
