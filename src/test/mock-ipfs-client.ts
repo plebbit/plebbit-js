@@ -6,8 +6,51 @@ const port = 25963;
 
 let usersOfMock = 0;
 let ioClient: Socket;
-const ensurePubsubActive = () => {
+let pendingConnectionWait: Promise<void> | undefined;
+let pendingConnectionHandlers:
+    | {
+          onConnect: () => void;
+          onError: (error: Error) => void;
+      }
+    | undefined;
+
+const cleanupPendingConnectionWait = () => {
+    if (pendingConnectionHandlers && ioClient) {
+        ioClient.off("connect", pendingConnectionHandlers.onConnect);
+        ioClient.off("connect_error", pendingConnectionHandlers.onError);
+    }
+    pendingConnectionHandlers = undefined;
+    pendingConnectionWait = undefined;
+};
+
+const waitForSocketConnection = async () => {
     if (!ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
+    if (ioClient.connected) return;
+
+    if (!pendingConnectionWait) {
+        pendingConnectionWait = new Promise<void>((resolve, reject) => {
+            const onConnect = () => {
+                cleanupPendingConnectionWait();
+                resolve();
+            };
+            const onError = (error: Error) => {
+                cleanupPendingConnectionWait();
+                reject(error ?? new Error("Failed to connect to mock pubsub server"));
+            };
+
+            pendingConnectionHandlers = { onConnect, onError };
+            ioClient.once("connect", onConnect);
+            ioClient.once("connect_error", onError);
+        });
+    }
+
+    await pendingConnectionWait;
+};
+
+const ensurePubsubActive = async () => {
+    if (!ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
+    if (!ioClient.active) throw new Error("IOClient in MockPubsubHttpClient is not active");
+    if (!ioClient.connected) await waitForSocketConnection();
 };
 
 class MockPubsubHttpClient {
@@ -25,13 +68,13 @@ class MockPubsubHttpClient {
 
         this.pubsub = {
             publish: async (topic: string, message: Uint8Array) => {
-                ensurePubsubActive();
+                await ensurePubsubActive();
                 if (typeof dropRate === "number") {
                     if (Math.random() > dropRate) ioClient.emit(topic, message);
                 } else ioClient.emit(topic, message);
             },
             subscribe: async (topic: string, rawCallback: PubsubSubscriptionHandler) => {
-                ensurePubsubActive();
+                await ensurePubsubActive();
                 const callback = (msg: Buffer) => {
                     //@ts-expect-error
                     rawCallback({ from: undefined, seqno: undefined, topicIDs: undefined, data: new Uint8Array(msg) });
@@ -41,7 +84,7 @@ class MockPubsubHttpClient {
                 this.subscriptions.push({ topic, rawCallback, callback, subscriptionId: uniqueSubId });
             },
             unsubscribe: async (topic: string, rawCallback?: PubsubSubscriptionHandler) => {
-                ensurePubsubActive();
+                await ensurePubsubActive();
                 if (!rawCallback) {
                     const subscriptionsWithTopic = this.subscriptions.filter((sub) => sub.topic === topic);
 
@@ -64,11 +107,11 @@ class MockPubsubHttpClient {
                 }
             },
             ls: async () => {
-                ensurePubsubActive();
+                await ensurePubsubActive();
                 return this.subscriptions.map((sub) => sub.topic);
             },
             peers: async () => {
-                ensurePubsubActive();
+                await ensurePubsubActive();
                 return [];
             }
         };
@@ -77,6 +120,11 @@ class MockPubsubHttpClient {
     async destroy() {
         usersOfMock--;
         if (usersOfMock === 0) {
+            if (pendingConnectionHandlers) {
+                pendingConnectionHandlers.onError(new Error("MockPubsubHttpClient destroyed before the socket connected"));
+            } else {
+                cleanupPendingConnectionWait();
+            }
             await ioClient?.disconnect();
             //@ts-expect-error
             ioClient = undefined;
@@ -88,6 +136,11 @@ class MockPubsubHttpClient {
         }
     }
 }
+
+export const waitForMockPubsubConnection = async () => {
+    if (!ioClient) throw new Error("MockPubsubHttpClient has not been instantiated");
+    await waitForSocketConnection();
+};
 
 export const createMockPubsubClient = (dropRate?: number): MockPubsubHttpClient => {
     //@ts-expect-error
