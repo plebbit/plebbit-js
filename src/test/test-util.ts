@@ -1921,12 +1921,16 @@ export async function getRandomPostCidFromSub(subplebbitAddress: string, plebbit
 const skipFunction = (_: any) => {};
 skipFunction.skip = () => {};
 
+//@ts-expect-error
 export const describeSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["describe"];
 
+//@ts-expect-error
 export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : skipFunction;
 
+//@ts-expect-error
 export const itSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["it"];
 
+//@ts-expect-error
 export const itIfRpc = isRpcFlagOn() ? globalThis["it"] : skipFunction;
 
 export function mockViemClient({

@@ -103,7 +103,7 @@ class InMemoryDbHandlerMock {
 }
 
 describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", function () {
-    this.timeout(120_000);
+    test.setTimeout(120_000);
 
     let plebbit;
     let subplebbit;

@@ -1,13 +1,19 @@
 import { mkdirSync } from "node:fs";
-import { defineConfig } from "vitest/config";
+import { defineConfig, defineProject } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
-import mocharc from "./.mocharc.json";
 
-const mochaTimeout = mocharc.timeout;
+const sharedTimeoutMs = Number.parseInt(process.env.VITEST_TIMEOUT ?? "60000", 10) || 60000;
+
 const isFirefox = process.env.VITEST_BROWSER === "firefox";
 const vitestReportDir = ".vitest-reports";
 const vitestJsonReportPath = `${vitestReportDir}/browser-tests.json`;
 const vitestHtmlReportPath = `${vitestReportDir}/browser-tests/index.html`;
+const sharedReporters = [
+    "default",
+    "verbose",
+    ["json", { outputFile: vitestJsonReportPath }],
+    ["html", { outputFile: vitestHtmlReportPath }]
+];
 
 mkdirSync(vitestReportDir, { recursive: true });
 
@@ -21,9 +27,9 @@ const playwrightProvider = playwright(
           }
 );
 
-export default defineConfig({
+const browserProject = defineProject({
+    name: "browser",
     test: {
-        // Browser mode configuration
         browser: {
             enabled: true,
             provider: playwrightProvider,
@@ -35,19 +41,9 @@ export default defineConfig({
                 }
             ]
         },
-
-        // Test file patterns - browser-specific and cross-platform tests
         include: ["test/*browser/**/*.test.js"],
-
-        // Enable Vitest globals (describe, it, expect, etc.) for mocha-style tests
         globals: true,
-
-        // Add missing Mocha globals that some tests expect
         setupFiles: ["./test/vitest-browser-setup.js"],
-
-        // Sequential execution configuration
-
-        // Environment variables
         env: {
             PLEBBIT_CONFIGS: process.env.PLEBBIT_CONFIGS,
             DEBUG: process.env.DEBUG,
@@ -55,32 +51,22 @@ export default defineConfig({
             FORCE_COLOR: process.env.FORCE_COLOR,
             CI: process.env.CI
         },
-
-        // some tests are skipped if no remote plebbit RPC configs are available
         passWithNoTests: true,
-
-        // Default summary, verbose stream, JSON artifact, and HTML UI bundle
-        reporters: ["default", "verbose", ["json", { outputFile: vitestJsonReportPath }], ["html", { outputFile: vitestHtmlReportPath }]],
-
-        // Timeouts
-        testTimeout: mochaTimeout,
-        hookTimeout: mochaTimeout,
-        browserStartTimeout: mochaTimeout
+        reporters: sharedReporters,
+        testTimeout: sharedTimeoutMs,
+        hookTimeout: sharedTimeoutMs,
+        browserStartTimeout: sharedTimeoutMs,
+        dangerouslyIgnoreUnhandledErrors: false,
+        fileParallelism: false
     },
-
-    // Define global constants for build-time replacement
     define: {
         "process.env.PLEBBIT_CONFIGS": JSON.stringify(process.env.PLEBBIT_CONFIGS),
         "process.env.DEBUG": JSON.stringify(process.env.DEBUG),
-        // Also set window.PLEBBIT_CONFIGS for browser environment
         "globalThis.PLEBBIT_CONFIGS": JSON.stringify(process.env.PLEBBIT_CONFIGS),
         "window.PLEBBIT_CONFIGS": JSON.stringify(process.env.PLEBBIT_CONFIGS)
     },
-
-    // Redirect Node.js imports to browser builds (just like webpack does)
     resolve: {
         alias: [
-            // Handle any depth of relative paths to dist/node
             {
                 find: /^((\.\.\/)+)dist\/node(\/.*)?$/,
                 replacement: (match, relativePath, lastSlash, subPath) => {
@@ -90,4 +76,36 @@ export default defineConfig({
             }
         ]
     }
+});
+
+const nodeProject = defineProject({
+    name: "node",
+    test: {
+        environment: "node",
+        globals: true,
+        setupFiles: ["./test/vitest-node-setup.js"],
+        include: [
+            "test/node/**/*.test.{js,ts}",
+            "test/node-and-browser/**/*.test.{js,ts}",
+            "test/challenges/**/*.test.{js,ts}"
+        ],
+        allowOnly: false,
+        passWithNoTests: false,
+        dangerouslyIgnoreUnhandledErrors: false,
+        reporters: sharedReporters,
+        fileParallelism: false
+    }
+});
+
+const getTarget = () => {
+    const direct = process.env.VITEST_MODE ?? process.env.VITEST_TARGET;
+    return typeof direct === "string" ? direct.toLowerCase() : undefined;
+};
+
+export default defineConfig(() => {
+    const target = getTarget();
+    if (target === "browser") {
+        return browserProject;
+    }
+    return nodeProject;
 });

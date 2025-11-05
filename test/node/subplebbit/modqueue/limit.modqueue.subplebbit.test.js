@@ -29,14 +29,14 @@ describe(`Modqueue limits`, () => {
     });
 
     it("Should default maxPendingApprovalCount to 500", async function () {
-        this.timeout(30000);
+        test.setTimeout(30000);
 
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.settings?.maxPendingApprovalCount === "number" });
         expect(subplebbit.settings?.maxPendingApprovalCount).to.equal(500);
     });
 
     it("Should allow comments to be published to pending approvals over maxPendingApprovalCount ", async function () {
-        this.timeout(60000);
+        test.setTimeout(60000);
 
         const limit = 2;
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));

@@ -4,7 +4,7 @@ import assert from "assert";
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
-    this.timeout(120_000);
+    test.setTimeout(120_000);
 
     let dbHandler;
     let subplebbitAddress;

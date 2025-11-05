@@ -34,7 +34,8 @@ const setupConnectionContext = (rpcServer, connectionId) => {
 };
 
 describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
-    this.timeout(60000);
+    test.setTimeout(60000);
+    let rpcServer;
 
     before(() => {
         setPlebbitJs(async (options) => mockRpcServerPlebbit({ dataPath: tempy.directory(), ...(options || {}) }));
@@ -44,20 +45,19 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
         restorePlebbitJs();
     });
 
-    afterEach(async function () {
-        if (this.rpcServer) {
+    afterEach(async () => {
+        if (rpcServer) {
             try {
-                await this.rpcServer.destroy();
+                await rpcServer.destroy();
             } catch (error) {
                 console.error("rpc.listeners.test destroy error", error);
             }
-            this.rpcServer = undefined;
+            rpcServer = undefined;
         }
     });
 
     it("does not track listeners when creating a subplebbit", async function () {
-        const rpcServer = await createPlebbitWsServer({ port: getTestPort() });
-        this.rpcServer = rpcServer;
+        rpcServer = await createPlebbitWsServer({ port: getTestPort() });
         mockRpcServerForTests(rpcServer);
 
         const trackedCalls = [];
@@ -77,8 +77,7 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
     });
 
     it("tracks listeners on startSubplebbit and removes them on stopSubplebbit", async function () {
-        const rpcServer = await createPlebbitWsServer({ port: getTestPort() });
-        this.rpcServer = rpcServer;
+        rpcServer = await createPlebbitWsServer({ port: getTestPort() });
         mockRpcServerForTests(rpcServer);
 
         const connectionId = "start-stop-connection";
@@ -134,8 +133,7 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
     });
 
     it("removes tracked listeners when deleting a started subplebbit", async function () {
-        const rpcServer = await createPlebbitWsServer({ port: getTestPort() });
-        this.rpcServer = rpcServer;
+        rpcServer = await createPlebbitWsServer({ port: getTestPort() });
         mockRpcServerForTests(rpcServer);
 
         const connectionId = "delete-connection";

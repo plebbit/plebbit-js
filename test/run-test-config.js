@@ -7,6 +7,61 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
+const vitestConfigPath = path.join(projectRoot, "config", "vitest.config.js");
+
+const DEFAULT_NODE_OPTIONS = [
+    "--experimental-specifier-resolution=node",
+    "--trace-warnings",
+    "--unhandled-rejections=strict",
+    "--trace-deprecation"
+];
+
+const sendSignalToProcessTree = (childProcess, signal) => {
+    if (!childProcess || childProcess.killed) {
+        return false;
+    }
+    if (process.platform !== "win32") {
+        try {
+            process.kill(-childProcess.pid, signal);
+            return true;
+        } catch (error) {
+            if (error.code !== "ESRCH") {
+                console.error(`Failed to send ${signal} to process group ${childProcess.pid}:`, error);
+            }
+        }
+    }
+    try {
+        childProcess.kill(signal);
+        return true;
+    } catch (error) {
+        if (error.code !== "ESRCH") {
+            console.error(`Failed to send ${signal} to process ${childProcess.pid}:`, error);
+        }
+    }
+    return false;
+};
+
+const terminateProcessTree = (childProcess, label) => {
+    if (!childProcess || childProcess.killed) {
+        return;
+    }
+    sendSignalToProcessTree(childProcess, "SIGTERM");
+    setTimeout(() => {
+        if (!childProcess.killed) {
+            console.warn(`Process ${childProcess.pid} still alive after SIGTERM (${label}); sending SIGKILL.`);
+            sendSignalToProcessTree(childProcess, "SIGKILL");
+        }
+    }, 1000);
+};
+
+const applyNodeOptionsToEnv = (targetEnv) => {
+    const existing = typeof targetEnv.NODE_OPTIONS === "string" ? targetEnv.NODE_OPTIONS.trim() : "";
+    const customOptions = process.env.VITEST_NODE_OPTIONS ? process.env.VITEST_NODE_OPTIONS.split(/\s+/).filter(Boolean) : [];
+    const combined = [...customOptions, ...DEFAULT_NODE_OPTIONS, existing].filter(Boolean).join(" ").trim();
+    if (combined.length > 0) {
+        targetEnv.NODE_OPTIONS = combined;
+    }
+};
 
 // Add helper function to get browser version
 function getBrowserVersion(browserPath, browserName) {
@@ -87,7 +142,25 @@ function prepareWriteStream(filePath) {
 }
 
 const rawArgs = process.argv.slice(2);
-const { options } = parseArgs(rawArgs);
+const { options, positionals } = parseArgs(rawArgs);
+
+const normalizeBooleanFlag = (flagName) => {
+    const values = options.get(flagName);
+    if (!values) {
+        return;
+    }
+    const extras = values.filter((value) => value !== true);
+    if (extras.length > 0) {
+        extras.forEach((extra) => {
+            if (typeof extra === "string") {
+                positionals.push(extra);
+            }
+        });
+    }
+    options.set(flagName, [true]);
+};
+
+["parallel"].forEach((flag) => normalizeBooleanFlag(flag));
 
 const environment = getLastOption(options, "environment") ?? "node";
 const normalizedEnvironment = environment.toLowerCase();
@@ -140,11 +213,13 @@ const stdoutLogPath =
 const stderrLogPath =
     resolveMaybePath(getLastOption(options, "stderr-log")) ?? (logPrefix ? resolveMaybePath(`${logPrefix}.stderr.log`) : undefined);
 
-const mochaSpecOverrides = getAllOptions(options, "mocha-spec");
+if (options.has("mocha-spec")) {
+    console.warn("The --mocha-spec flag is deprecated. Pass test paths as positional arguments instead.");
+}
+
+const cliSpecArgs = positionals.length > 0 ? positionals : [];
 const mochaSpecPaths =
-    mochaSpecOverrides.length > 0
-        ? mochaSpecOverrides.map((spec) => resolveMaybePath(spec)).filter(Boolean)
-        : [path.join(__dirname, "node-and-browser")];
+    cliSpecArgs.length > 0 ? cliSpecArgs.map((spec) => resolveMaybePath(spec)).filter(Boolean) : [path.join(__dirname, "node-and-browser")];
 
 const parseTimeoutMs = (value) => {
     if (value === undefined || value === true) {
@@ -174,12 +249,25 @@ const pickFirstDefined = (...values) => {
     return undefined;
 };
 
-let mochaTimeoutValue = getLastOption(options, "mocha-timeout");
-if (mochaTimeoutValue === true) {
-    mochaTimeoutValue = undefined;
+let vitestTimeoutValue = getLastOption(options, "vitest-timeout");
+if (vitestTimeoutValue === undefined) {
+    vitestTimeoutValue = getLastOption(options, "mocha-timeout");
 }
-if (mochaTimeoutValue === undefined) {
-    mochaTimeoutValue = pickFirstDefined(env.MOCHA_TIMEOUT, env.TEST_NODE_LOCAL_MOCHA_TIMEOUT_MS, isNodeEnvironment ? "300000" : undefined);
+if (vitestTimeoutValue === true) {
+    vitestTimeoutValue = undefined;
+}
+if (vitestTimeoutValue === undefined) {
+    vitestTimeoutValue = pickFirstDefined(
+        env.VITEST_TIMEOUT,
+        env.MOCHA_TIMEOUT,
+        env.TEST_NODE_LOCAL_MOCHA_TIMEOUT_MS,
+        isNodeEnvironment ? "300000" : undefined
+    );
+}
+
+const npmLifecycleEvent = env.npm_lifecycle_event || env.NPM_LIFECYCLE_EVENT;
+if (vitestTimeoutValue === undefined && npmLifecycleEvent === "test:node:parallel:remote") {
+    vitestTimeoutValue = "600000";
 }
 
 const waitForStreamFinish = (stream) =>
@@ -189,25 +277,39 @@ const waitForStreamFinish = (stream) =>
     });
 
 const runNodeTests = () => {
-    const mochaBin = path.join(projectRoot, "node_modules", "mocha", "bin", "mocha.js");
-    const mochaArgs = ["--recursive", "--exit", "--forbid-only", "--bail", "--config", path.join(projectRoot, "config", ".mocharc.json")];
+    applyNodeOptionsToEnv(env);
+    env.VITEST_MODE = "node";
 
-    if (options.has("parallel")) {
-        mochaArgs.push("--parallel");
+    const vitestCli = path.join(projectRoot, "node_modules", "vitest", "vitest.mjs");
+    const vitestArgs = ["run", "--config", vitestConfigPath, "--allowOnly", "false", "--bail", "1"];
+
+    const isParallelMode = options.has("parallel");
+    if (isParallelMode) {
+        vitestArgs.push("--fileParallelism");
         const jobs = getLastOption(options, "jobs");
         if (jobs !== undefined && jobs !== true) {
-            mochaArgs.push("--jobs", String(jobs));
+            vitestArgs.push("--maxWorkers", String(jobs));
         }
     }
 
-    if (mochaTimeoutValue !== undefined) {
-        mochaArgs.push("--timeout", String(mochaTimeoutValue));
+    const reporterOverrides = getAllOptions(options, "reporter");
+    if (reporterOverrides.length > 0) {
+        reporterOverrides.forEach((reporter) => {
+            if (typeof reporter === "string" && reporter.length > 0) {
+                vitestArgs.push("--reporter", reporter);
+            }
+        });
     }
 
-    mochaArgs.push(...mochaSpecPaths);
+    if (vitestTimeoutValue !== undefined) {
+        const timeoutString = String(vitestTimeoutValue);
+        vitestArgs.push("--testTimeout", timeoutString, "--hookTimeout", timeoutString, "--teardownTimeout", timeoutString);
+    }
 
-    console.log("Mocha binary:", mochaBin);
-    console.log("Mocha arguments:", mochaArgs.join(" "));
+    vitestArgs.push(...mochaSpecPaths);
+
+    console.log("Vitest CLI:", vitestCli);
+    console.log("Vitest arguments:", vitestArgs.join(" "));
     if (runTimeoutMs !== undefined) {
         console.log(`Run timeout (wrapper): ${runTimeoutMs}ms`);
     } else {
@@ -224,32 +326,31 @@ const runNodeTests = () => {
     const stdoutStream = stdoutLogPath ? prepareWriteStream(stdoutLogPath) : undefined;
     const stderrStream = stderrLogPath ? prepareWriteStream(stderrLogPath) : undefined;
 
-    const mochaProcess = spawn(process.execPath, [mochaBin, ...mochaArgs], {
+    const runnerProcess = spawn(process.execPath, [vitestCli, ...vitestArgs], {
         cwd: projectRoot,
         env,
-        stdio: captureStreams ? ["ignore", "pipe", "pipe"] : "inherit"
+        stdio: captureStreams ? ["ignore", "pipe", "pipe"] : "inherit",
+        detached: true
     });
 
     const forwardSignal = (signal) => {
-        if (!mochaProcess.killed) {
-            try {
-                mochaProcess.kill(signal);
-            } catch (error) {
-                console.error(`Failed to forward ${signal} to Mocha:`, error);
-            }
+        if (!runnerProcess.killed) {
+            sendSignalToProcessTree(runnerProcess, signal);
         }
     };
 
     ["SIGINT", "SIGTERM"].forEach((signal) => {
         process.on(signal, () => forwardSignal(signal));
     });
+    const handleProcessExit = () => terminateProcessTree(runnerProcess, "wrapper exit");
+    process.once("exit", handleProcessExit);
 
     if (captureStreams) {
-        mochaProcess.stdout?.on("data", (chunk) => {
+        runnerProcess.stdout?.on("data", (chunk) => {
             stdoutStream?.write(chunk);
             process.stdout.write(chunk);
         });
-        mochaProcess.stderr?.on("data", (chunk) => {
+        runnerProcess.stderr?.on("data", (chunk) => {
             stderrStream?.write(chunk);
             process.stderr.write(chunk);
         });
@@ -265,23 +366,18 @@ const runNodeTests = () => {
     const isWindows = process.platform === "win32";
 
     const sendSignal = (signal, label) => {
-        try {
-            const result = signal ? mochaProcess.kill(signal) : mochaProcess.kill();
-            if (!result) {
-                console.error(`Attempt to send ${label ?? signal ?? "default"} to Mocha returned false.`);
-            }
-            return result;
-        } catch (error) {
-            console.error(`Failed to send ${label ?? signal ?? "default"} to Mocha:`, error);
-            return false;
+        const result = sendSignalToProcessTree(runnerProcess, signal);
+        if (!result) {
+            console.error(`Attempt to send ${label ?? signal ?? "default"} to Vitest returned false.`);
         }
+        return result;
     };
 
     const taskKillWindows = (stage) => {
         if (!isWindows) {
             return;
         }
-        const args = ["/pid", String(mochaProcess.pid), "/t", "/f"];
+        const args = ["/pid", String(runnerProcess.pid), "/t", "/f"];
         try {
             const killer = spawn("taskkill", args, {
                 windowsHide: true,
@@ -296,7 +392,7 @@ const runNodeTests = () => {
     };
 
     const attemptTerminate = (stage) => {
-        console.error(`Attempting to terminate Mocha (${stage}).`);
+        console.error(`Attempting to terminate Vitest (${stage}).`);
         if (sendSignal("SIGTERM", "SIGTERM") || sendSignal("SIGINT", "SIGINT")) {
             taskKillWindows(stage);
             return;
@@ -308,7 +404,7 @@ const runNodeTests = () => {
     };
 
     const attemptHardKill = (stage) => {
-        console.error(`Attempting hard kill of Mocha (${stage}).`);
+        console.error(`Attempting hard kill of Vitest (${stage}).`);
         sendSignal("SIGKILL", "SIGKILL");
         sendSignal(undefined, "default kill");
         taskKillWindows(`${stage} hard kill`);
@@ -366,17 +462,17 @@ const runNodeTests = () => {
                 return;
             }
             timedOut = true;
-            console.error(`Mocha did not finish within ${Math.round(runTimeoutMs / 1000)} seconds. Sending SIGTERM...`);
+            console.error(`Vitest did not finish within ${Math.round(runTimeoutMs / 1000)} seconds. Sending SIGTERM...`);
             attemptTerminate("timeout");
             sigtermHandle = setTimeout(() => {
                 if (exitHandled) {
                     return;
                 }
-                console.error("Mocha still running after SIGTERM. Sending SIGKILL...");
+                console.error("Vitest still running after SIGTERM. Sending SIGKILL...");
                 attemptHardKill("timeout escalation");
                 sigkillHandle = setTimeout(() => {
                     if (!exitHandled) {
-                        console.error("Mocha did not exit after SIGKILL. Forcing wrapper process to finish.");
+                        console.error("Vitest did not exit after SIGKILL. Forcing wrapper process to finish.");
                         finalize(124);
                     }
                 }, 2000);
@@ -401,13 +497,13 @@ const runNodeTests = () => {
         }
 
         if (timedOut) {
-            console.error(`Mocha run terminated after exceeding ${runTimeoutMs}ms (observed via ${source} event).`);
+            console.error(`Vitest run terminated after exceeding ${runTimeoutMs}ms (observed via ${source} event).`);
             finalize(124);
             return;
         }
 
         if (signal) {
-            console.error(`Mocha exited due to signal ${signal} (${source} event).`);
+            console.error(`Vitest exited due to signal ${signal} (${source} event).`);
             finalize(1);
             return;
         }
@@ -415,19 +511,23 @@ const runNodeTests = () => {
         finalize(typeof code === "number" ? code : 1);
     };
 
-    mochaProcess.once("error", (error) => {
-        console.error("Failed to start Mocha:", error);
+    runnerProcess.once("error", (error) => {
+        console.error("Failed to start Vitest:", error);
         finalize(1);
     });
-    mochaProcess.once("exit", (code, signal) => settle(code, signal, "exit"));
-    mochaProcess.once("close", (code, signal) => settle(code, signal, "close"));
+    runnerProcess.once("exit", (code, signal) => {
+        process.off("exit", handleProcessExit);
+        settle(code, signal, "exit");
+    });
+    runnerProcess.once("close", (code, signal) => settle(code, signal, "close"));
 };
 
 const runBrowserTests = () => {
     const vitestBin = path.join(projectRoot, "node_modules", ".bin", "vitest");
 
-    let vitestArgs = ["run"];
-    const vitestConfigPath = path.join(projectRoot, "config", "vitest.config.js");
+    env.VITEST_MODE = "browser";
+
+    let vitestArgs = ["run", "--config", vitestConfigPath];
 
     if (environment.toLowerCase().includes("chrome")) {
         env.VITEST_BROWSER = "chromium";
@@ -436,8 +536,6 @@ const runBrowserTests = () => {
         env.VITEST_BROWSER = "firefox";
         console.log("Using Playwright's Firefox browser");
     }
-
-    vitestArgs.push("--config", vitestConfigPath);
 
     const reporterOverrides = getAllOptions(options, "reporter");
     if (reporterOverrides.length > 0) {
@@ -457,10 +555,25 @@ const runBrowserTests = () => {
     const vitestProcess = spawn(vitestBin, vitestArgs, {
         stdio: "inherit",
         env,
-        shell: true
+        shell: true,
+        detached: true
     });
 
+    const terminateBrowserRunner = () => {
+        terminateProcessTree(vitestProcess, "browser runner exit");
+    };
+
+    ["SIGINT", "SIGTERM"].forEach((signal) => {
+        process.on(signal, () => {
+            if (!vitestProcess.killed) {
+                sendSignalToProcessTree(vitestProcess, signal);
+            }
+        });
+    });
+    process.on("exit", terminateBrowserRunner);
+
     vitestProcess.on("exit", (code) => {
+        process.off("exit", terminateBrowserRunner);
         process.exit(code);
     });
 };

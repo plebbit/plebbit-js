@@ -3,7 +3,7 @@ import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc("db-handler duplicate signature purge during migration", function () {
-    this.timeout(120_000);
+    test.setTimeout(120_000);
 
     let dbHandler;
     let subplebbitAddress;
