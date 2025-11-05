@@ -516,7 +516,6 @@ const runNodeTests = () => {
         finalize(1);
     });
     runnerProcess.once("exit", (code, signal) => {
-        process.off("exit", handleProcessExit);
         settle(code, signal, "exit");
     });
     runnerProcess.once("close", (code, signal) => settle(code, signal, "close"));
