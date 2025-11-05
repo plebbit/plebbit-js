@@ -703,6 +703,7 @@ export async function publishVote(
 
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     const emittedErrors: Error[] = [];
+    const timeoutMs = 60000;
     publication.on("error", (err) => emittedErrors.push(err));
     const challengeVerificationPromise = new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
@@ -728,12 +729,12 @@ export async function publishWithExpectedResult(publication: Publication, expect
         publication,
         expectedChallengeSuccess,
         expectedReason,
-        waitTime: 90000,
+        waitTime: timeoutMs,
         emittedErrorsOnPublicationInstance: emittedErrors
     };
 
     const validateResponsePromise = pTimeout(challengeVerificationPromise, {
-        milliseconds: 90000,
+        milliseconds: timeoutMs,
         message: error
     });
 
