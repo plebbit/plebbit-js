@@ -1,6 +1,10 @@
 import { expect } from "chai";
 
-import { getAvailablePlebbitConfigsToTestAgainst, mockPlebbitToTimeoutFetchingCid, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
+import {
+    getAvailablePlebbitConfigsToTestAgainst,
+    mockPlebbitToTimeoutFetchingCid,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util.js";
 
 import { _signJson } from "../../../dist/node/signer/signatures.js";
 
@@ -17,7 +21,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const waitingRetryErrs = [];
             tempSubplebbit.on("error", (err) => waitingRetryErrs.push(err));
             await tempSubplebbit.update();
-            await resolveWhenConditionIsTrue({ toUpdate: tempSubplebbit, predicate: () => waitingRetryErrs.length === 2, eventName: "error" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: tempSubplebbit,
+                predicate: () => waitingRetryErrs.length === 2,
+                eventName: "error"
+            });
             await tempSubplebbit.stop();
 
             for (const err of waitingRetryErrs) {
@@ -43,14 +51,21 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`subplebbit.update() emits emits error if resolving subplebbit IPNS times out`, async () => {
             const nonExistentIpns = "12D3KooWHS5A6Ey4V8fLWD64jpPn2EKi4r4btGN6FfkNgMTnfqVa"; // Random non-existent IPNS
+            const originalTimeOutIpns = JSON.parse(JSON.stringify(plebbit._timeouts["subplebbit-ipns"]));
             plebbit._timeouts["subplebbit-ipns"] = 100; // mocking maximum timeout for subplebbit record loading
 
             const tempSubplebbit = await plebbit.createSubplebbit({ address: nonExistentIpns });
             const waitingRetryErrs = [];
             tempSubplebbit.on("error", (err) => waitingRetryErrs.push(err));
             await tempSubplebbit.update();
-            await resolveWhenConditionIsTrue({ toUpdate: tempSubplebbit, predicate: () => waitingRetryErrs.length === 2, eventName: "error" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: tempSubplebbit,
+                predicate: () => waitingRetryErrs.length === 2,
+                eventName: "error"
+            });
             await tempSubplebbit.stop();
+
+            plebbit._timeouts["subplebbit-ipns"] = originalTimeOutIpns;
 
             // Check that the errors are as expected
             for (const err of waitingRetryErrs) {
@@ -63,6 +78,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const validIpns = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR"; // this IPNS exists
 
             // plebbit._timeouts["subplebbit-ipns"] = 100;
+            const originalTimeOutIpfs = JSON.parse(JSON.stringify(plebbit._timeouts["subplebbit-ipfs"]));
+
             plebbit._timeouts["subplebbit-ipfs"] = 100;
             const tempSubplebbit = await plebbit.createSubplebbit({ address: validIpns });
             await mockPlebbitToTimeoutFetchingCid(plebbit);
@@ -70,9 +87,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             tempSubplebbit.on("error", (err) => waitingRetryErrs.push(err));
             await tempSubplebbit.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: tempSubplebbit, predicate: () => waitingRetryErrs.length === 3, eventName: "error" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: tempSubplebbit,
+                predicate: () => waitingRetryErrs.length === 3,
+                eventName: "error"
+            });
 
             await tempSubplebbit.stop();
+            plebbit._timeouts["subplebbit-ipfs"] = originalTimeOutIpfs;
 
             for (const err of waitingRetryErrs) {
                 expect(err.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
