@@ -47,22 +47,17 @@ jobs:
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
             - name: Run node tests (local config)
+              id: run_node_tests_local
               run: DEBUG="plebbit*" node test/run-test-config.js --parallel --environment node --mocha-spec test/node --run-timeout-ms 1740000 --log-prefix test_node_local
               shell: bash
-            - name: Show Mocha test logs
-              if: ${{ always() }}
-              run: |
-                  if [ "${{ job.status }}" = "success" ]; then
-                      echo "Skipping Mocha log dump because job succeeded."
-                      exit 0
-                  fi
-                  echo "::group::test_node_local.stdout.log"
-                  cat test_node_local.stdout.log || true
-                  echo "::endgroup::"
-                  echo "::group::test_node_local.stderr.log"
-                  cat test_node_local.stderr.log || true
-                  echo "::endgroup::"
-              shell: bash
+            - name: Upload Vitest reports (node local)
+              if: ${{ failure() && steps.run_node_tests_local.outcome == 'failure' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vitest-node-local-${{ matrix.os }}
+                  path: .vitest-reports
+                  include-hidden-files: true
+                  if-no-files-found: ignore
             - run: cat test_server.log
               if: ${{ always() && job.status != 'success' }}
               shell: bash
@@ -87,7 +82,16 @@ jobs:
 
             - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
             - name: Run tests with config
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node
+              id: run_node_tests_remote
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment node
+            - name: Upload Vitest reports (node remote)
+              if: ${{ failure() && steps.run_node_tests_remote.outcome == 'failure' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vitest-node-${{ matrix.config }}
+                  path: .vitest-reports
+                  include-hidden-files: true
+                  if-no-files-found: ignore
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
@@ -118,10 +122,11 @@ jobs:
 
             # Run tests based on environment and config
             - name: Run browser tests with config
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
+              id: run_browser_tests
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
 
             - name: Upload Vitest browser reports
-              if: ${{ always() }}
+              if: ${{ failure() && steps.run_browser_tests.outcome == 'failure' }}
               uses: actions/upload-artifact@v4
               with:
                   name: vitest-browser-${{ matrix.environment }}-${{ matrix.config }}
@@ -147,7 +152,16 @@ jobs:
             - run: npm run build
             # Setup tests for plebbit-js using rpc here
             - run: DEBUG="plebbit*" npm run test:server:node:rpc 2>&1 | tee test_server.log & npm run test:server:wait-on
-            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
+            - id: run_rpc_tests
+              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
+            - name: Upload Vitest reports (rpc)
+              if: ${{ failure() && steps.run_rpc_tests.outcome == 'failure' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vitest-rpc
+                  path: .vitest-reports
+                  include-hidden-files: true
+                  if-no-files-found: ignore
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
