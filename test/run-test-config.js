@@ -168,6 +168,11 @@ const isNodeEnvironment = normalizedEnvironment === "node";
 
 const env = { ...process.env };
 
+// Force DEBUG to keep colorized output locally; CI already injects its own settings
+if (!env.GITHUB_ACTIONS && env.DEBUG_COLORS === undefined) {
+    env.DEBUG_COLORS = "1";
+}
+
 let plebbitConfigs = getLastOption(options, "plebbit-config");
 if (typeof plebbitConfigs === "string") {
     plebbitConfigs = plebbitConfigs.trim();
