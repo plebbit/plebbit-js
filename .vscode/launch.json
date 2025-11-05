@@ -5,13 +5,12 @@
             "type": "node",
             "request": "launch",
             "runtimeVersion": "20",
-            "runtimeArgs": ["--es-module-specifier-resolution", "node"],
             "name": "Launch current file with NodeJS",
             "skipFiles": ["<node_internals>/**"],
             "program": "${file}",
             "console": "integratedTerminal",
             "env": {
-                "DEBUG": "plebbit-js:*, -plebbit*trace",
+                "DEBUG": "plebbit*,libp2p*, helia*",
                 "USE_RPC": "1"
             }
         },
@@ -25,20 +24,23 @@
             "console": "integratedTerminal",
             "env": {
                 "DEBUG": "plebbit-js:*, -plebbit*trace",
-                "REMOTE_PLEBBIT_CONFIGS": "remote-kubo-rpc"
+                "REMOTE_PLEBBIT_CONFIGS": "remote-kubo-rpc",
+                "START_RPC_SERVER": "1"
             }
         },
         {
             "args": [
-                "--no-timeouts",
+                "run",
                 "--config",
-                "${workspaceFolder}/config/.mocharc.json",
+                "${workspaceFolder}/config/vitest.launch.config.js",
+                "--bail",
+                "1",
                 "${workspaceFolder}/rpc/test/node-and-browser/plebbit-ws-server.test.js"
             ],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Test RPC SERVER",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
             "request": "launch",
             "skipFiles": ["<node_internals>/**"],
             "type": "node",
@@ -47,11 +49,18 @@
             }
         },
         {
-            "args": ["--no-timeouts", "--bail", "--config", "${workspaceFolder}/config/.mocharc.json", "${file}"],
+            "args": [
+                "run",
+                "--config",
+                "${workspaceFolder}/config/vitest.launch.config.js",
+                "--bail",
+                "0",
+                "${file}"
+            ],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Debug current file (remote)",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
             "request": "launch",
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
@@ -64,16 +73,23 @@
             ],
             "type": "node",
             "env": {
-                "DEBUG": "plebbit*",
-                "PLEBBIT_CONFIGS": "remote-libp2pjs,remote-kubo-rpc,remote-ipfs-gateway"
+                "DEBUG": "plebbit*, -plebbit*trace",
+                "PLEBBIT_CONFIGS": "remote-ipfs-gateway,remote-kubo-rpc,remote-libp2pjs"
             }
         },
         {
-            "args": ["--no-timeouts", "--bail", "--config", "${workspaceFolder}/config/.mocharc.json", "${file}"],
+            "args": [
+                "run",
+                "--config",
+                "${workspaceFolder}/config/vitest.launch.config.js",
+                "--bail",
+                "1",
+                "${file}"
+            ],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Debug current file (local)",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
             "request": "launch",
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
@@ -91,11 +107,18 @@
             }
         },
         {
-            "args": ["--no-timeouts", "--bail", "--config", "${workspaceFolder}/config/.mocharc.json", "${file}"],
+            "args": [
+                "run",
+                "--config",
+                "${workspaceFolder}/config/vitest.launch.config.js",
+                "--bail",
+                "1",
+                "${file}"
+            ],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "(RPC) - Debug current file",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
             "request": "launch",
             "outFiles": [],
             "runtimeArgs": ["--max-old-space-size=18192"],
@@ -114,20 +137,20 @@
         },
         {
             "args": [
-                "--no-timeouts",
-                "--recursive",
-                "--jobs",
-                "4",
-                "--parallel",
-                "--bail",
+                "run",
                 "--config",
-                "${workspaceFolder}/config/.mocharc.json",
+                "${workspaceFolder}/config/vitest.launch.config.js",
+                "--fileParallelism",
+                "--maxWorkers",
+                "4",
+                "--bail",
+                "1",
                 "${workspaceFolder}/test/node-and-browser"
             ],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Node and browser tests (Parallel)",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
             "request": "launch",
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
@@ -146,17 +169,17 @@
         },
         {
             "args": [
-                "--no-timeouts",
-                "--recursive",
-                "--bail",
+                "run",
                 "--config",
-                "${workspaceFolder}/config/.mocharc.json",
+                "${workspaceFolder}/config/vitest.launch.config.js",
+                "--bail",
+                "1",
                 "${workspaceFolder}/test/node-and-browser"
             ],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Node and browser tests (Sequential)",
             "console": "integratedTerminal",
-            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
             "request": "launch",
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
