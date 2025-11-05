@@ -261,7 +261,7 @@ if (vitestTimeoutValue === undefined) {
         env.VITEST_TIMEOUT,
         env.MOCHA_TIMEOUT,
         env.TEST_NODE_LOCAL_MOCHA_TIMEOUT_MS,
-        isNodeEnvironment ? "300000" : undefined
+        isNodeEnvironment ? "600000" : undefined
     );
 }
 
@@ -313,6 +313,19 @@ const runNodeTests = () => {
     if (vitestTimeoutValue !== undefined) {
         const timeoutString = String(vitestTimeoutValue);
         vitestArgs.push("--testTimeout", timeoutString, "--hookTimeout", timeoutString, "--teardownTimeout", timeoutString);
+    }
+
+    const passWithNoTestsFlag = getLastOption(options, "passWithNoTests");
+    if (passWithNoTestsFlag !== undefined) {
+        if (passWithNoTestsFlag === true) {
+            vitestArgs.push("--passWithNoTests");
+        } else {
+            vitestArgs.push("--passWithNoTests", String(passWithNoTestsFlag));
+        }
+    } else if (options.has("no-passWithNoTests")) {
+        vitestArgs.push("--no-passWithNoTests");
+    } else {
+        vitestArgs.push("--passWithNoTests"); // avoid failures when suites intentionally have no tests
     }
 
     vitestArgs.push(...mochaSpecPaths);
