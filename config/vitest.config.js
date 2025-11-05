@@ -5,15 +5,17 @@ import { playwright } from "@vitest/browser-playwright";
 const sharedTimeoutMs = Number.parseInt(process.env.VITEST_TIMEOUT ?? "60000", 10) || 60000;
 
 const isFirefox = process.env.VITEST_BROWSER === "firefox";
+const isGithubActions = Boolean(process.env.GITHUB_ACTIONS);
 const vitestReportDir = ".vitest-reports";
 const vitestJsonReportPath = `${vitestReportDir}/browser-tests.json`;
 const vitestHtmlReportPath = `${vitestReportDir}/browser-tests/index.html`;
-const sharedReporters = [
+const baseReporters = [
     "default",
     "verbose",
     ["json", { outputFile: vitestJsonReportPath }],
     ["html", { outputFile: vitestHtmlReportPath }]
 ];
+const sharedReporters = isGithubActions ? [...baseReporters, "github-actions"] : baseReporters;
 
 mkdirSync(vitestReportDir, { recursive: true });
 
