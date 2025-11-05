@@ -226,25 +226,6 @@ const cliSpecArgs = positionals.length > 0 ? positionals : [];
 const mochaSpecPaths =
     cliSpecArgs.length > 0 ? cliSpecArgs.map((spec) => resolveMaybePath(spec)).filter(Boolean) : [path.join(__dirname, "node-and-browser")];
 
-const parseTimeoutMs = (value) => {
-    if (value === undefined || value === true) {
-        return undefined;
-    }
-    const parsed = Number.parseInt(String(value), 10);
-    if (Number.isNaN(parsed) || parsed < 0) {
-        return undefined;
-    }
-    return parsed;
-};
-
-let runTimeoutMs = parseTimeoutMs(getLastOption(options, "run-timeout-ms"));
-if (runTimeoutMs === undefined) {
-    runTimeoutMs = parseTimeoutMs(env.TEST_NODE_LOCAL_TIMEOUT_MS ?? env.RUN_TEST_TIMEOUT_MS ?? env.TEST_RUN_TIMEOUT_MS);
-}
-if (runTimeoutMs === undefined && isNodeEnvironment) {
-    runTimeoutMs = 25 * 60 * 1000;
-}
-
 const pickFirstDefined = (...values) => {
     for (const value of values) {
         if (value !== undefined && value !== true && value !== "") {
@@ -337,11 +318,6 @@ const runNodeTests = () => {
 
     console.log("Vitest CLI:", vitestCli);
     console.log("Vitest arguments:", vitestArgs.join(" "));
-    if (runTimeoutMs !== undefined) {
-        console.log(`Run timeout (wrapper): ${runTimeoutMs}ms`);
-    } else {
-        console.log("Run timeout (wrapper): disabled");
-    }
     if (stdoutLogPath || stderrLogPath) {
         console.log("Log capture:", {
             stdout: stdoutLogPath ?? "console only",
@@ -383,78 +359,13 @@ const runNodeTests = () => {
         });
     }
 
-    let timedOut = false;
     let exitHandled = false;
-    let timeoutHandle;
-    let sigtermHandle;
-    let sigkillHandle;
-    let absoluteTimeoutHandle;
-
-    const isWindows = process.platform === "win32";
-
-    const sendSignal = (signal, label) => {
-        const result = sendSignalToProcessTree(runnerProcess, signal);
-        if (!result) {
-            console.error(`Attempt to send ${label ?? signal ?? "default"} to Vitest returned false.`);
-        }
-        return result;
-    };
-
-    const taskKillWindows = (stage) => {
-        if (!isWindows) {
-            return;
-        }
-        const args = ["/pid", String(runnerProcess.pid), "/t", "/f"];
-        try {
-            const killer = spawn("taskkill", args, {
-                windowsHide: true,
-                stdio: ["ignore", "ignore", "inherit"]
-            });
-            killer.once("error", (error) => {
-                console.error(`Failed to run taskkill during ${stage}:`, error);
-            });
-        } catch (error) {
-            console.error(`Failed to spawn taskkill during ${stage}:`, error);
-        }
-    };
-
-    const attemptTerminate = (stage) => {
-        console.error(`Attempting to terminate Vitest (${stage}).`);
-        if (sendSignal("SIGTERM", "SIGTERM") || sendSignal("SIGINT", "SIGINT")) {
-            taskKillWindows(stage);
-            return;
-        }
-        if (!sendSignal(undefined, "default kill")) {
-            console.error("Direct process.kill without signal reported failure.");
-        }
-        taskKillWindows(stage);
-    };
-
-    const attemptHardKill = (stage) => {
-        console.error(`Attempting hard kill of Vitest (${stage}).`);
-        sendSignal("SIGKILL", "SIGKILL");
-        sendSignal(undefined, "default kill");
-        taskKillWindows(`${stage} hard kill`);
-    };
 
     const cleanupAndExit = async (code) => {
         if (exitHandled) {
             return;
         }
         exitHandled = true;
-
-        if (timeoutHandle) {
-            clearTimeout(timeoutHandle);
-        }
-        if (sigtermHandle) {
-            clearTimeout(sigtermHandle);
-        }
-        if (sigkillHandle) {
-            clearTimeout(sigkillHandle);
-        }
-        if (absoluteTimeoutHandle) {
-            clearTimeout(absoluteTimeoutHandle);
-        }
 
         const closePromises = [];
         if (stdoutStream) {
@@ -483,49 +394,8 @@ const runNodeTests = () => {
         });
     };
 
-    if (runTimeoutMs !== undefined && runTimeoutMs > 0) {
-        const scheduleKill = () => {
-            if (exitHandled) {
-                return;
-            }
-            timedOut = true;
-            console.error(`Vitest did not finish within ${Math.round(runTimeoutMs / 1000)} seconds. Sending SIGTERM...`);
-            attemptTerminate("timeout");
-            sigtermHandle = setTimeout(() => {
-                if (exitHandled) {
-                    return;
-                }
-                console.error("Vitest still running after SIGTERM. Sending SIGKILL...");
-                attemptHardKill("timeout escalation");
-                sigkillHandle = setTimeout(() => {
-                    if (!exitHandled) {
-                        console.error("Vitest did not exit after SIGKILL. Forcing wrapper process to finish.");
-                        finalize(124);
-                    }
-                }, 2000);
-            }, 5000);
-        };
-
-        timeoutHandle = setTimeout(scheduleKill, runTimeoutMs);
-        absoluteTimeoutHandle = setTimeout(() => {
-            if (exitHandled) {
-                return;
-            }
-            console.error("Attempting final SIGKILL before hard exit...");
-            attemptHardKill("absolute timeout");
-            console.error(`Hard timeout reached (${runTimeoutMs + 7000}ms since start). Forcing wrapper exit.`);
-            finalize(124);
-        }, runTimeoutMs + 7000);
-    }
-
     const settle = (code, signal, source) => {
         if (exitHandled) {
-            return;
-        }
-
-        if (timedOut) {
-            console.error(`Vitest run terminated after exceeding ${runTimeoutMs}ms (observed via ${source} event).`);
-            finalize(124);
             return;
         }
 
