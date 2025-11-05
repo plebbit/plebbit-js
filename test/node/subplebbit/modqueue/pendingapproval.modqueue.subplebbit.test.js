@@ -36,7 +36,6 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             remotePlebbit = await mockGatewayPlebbit();
             subplebbit = await plebbit.createSubplebbit();
             subplebbit.setMaxListeners(100);
-            await subplebbit.start();
             modSigner = await plebbit.createSigner();
             await subplebbit.edit({
                 settings: { challenges: [createPendingApprovalChallenge()] },
@@ -44,6 +43,8 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                     [modSigner.address]: { role: "moderator" }
                 }
             });
+
+            await subplebbit.start();
 
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         });

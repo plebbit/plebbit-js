@@ -54,7 +54,6 @@ for (const commentMod of commentModProps) {
                     remotePlebbit = await mockGatewayPlebbit();
                     subplebbit = await plebbit.createSubplebbit();
                     subplebbit.setMaxListeners(100);
-                    await subplebbit.start();
                     modSigner = await plebbit.createSigner();
                     await subplebbit.edit({
                         roles: {
@@ -63,6 +62,7 @@ for (const commentMod of commentModProps) {
                         settings: { challenges: [createPendingApprovalChallenge()] }
                     });
 
+                    await subplebbit.start();
                     await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
 
                     const pending = await publishToModQueueWithDepth({
@@ -74,7 +74,10 @@ for (const commentMod of commentModProps) {
                     });
                     commentToBeRejected = pending.comment;
 
-                    await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.modQueue.pageCids.pendingApproval }); // wait until we publish a new mod queue with this new comment
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: subplebbit,
+                        predicate: () => subplebbit.modQueue.pageCids.pendingApproval
+                    }); // wait until we publish a new mod queue with this new comment
                     await commentToBeRejected.update();
                 });
 
@@ -97,7 +100,10 @@ for (const commentMod of commentModProps) {
                 });
 
                 it(`Rejecting a pending comment will purge it from modQueue`, async () => {
-                    await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => !subplebbit.modQueue.pageCids.pendingApproval }); // wait until we publish a new mod queue with this new comment
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: subplebbit,
+                        predicate: () => !subplebbit.modQueue.pageCids.pendingApproval
+                    }); // wait until we publish a new mod queue with this new comment
                     expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
                 });
 
