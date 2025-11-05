@@ -42,6 +42,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     private _timeoutSeconds: number;
     private _openConnectionPromise?: Promise<any>;
+    private _destroyRequested: boolean;
     constructor(rpcServerUrl: string) {
         super();
         assert(rpcServerUrl, "plebbit.plebbitRpcClientsOptions needs to be defined to create a new rpc client");
@@ -69,6 +70,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         };
         hideClassPrivateProps(this);
         this.state = "stopped";
+        this._destroyRequested = false;
     }
 
     setState(newState: PlebbitRpcClient["state"]) {
@@ -79,6 +81,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
 
     async _init() {
         const log = Logger("plebbit-js:plebbit-rpc-client:_init");
+        if (this._destroyRequested) return;
         // wait for websocket connection to open
         let lastWebsocketError: Error | undefined;
         if (!(this._webSocketClient instanceof WebSocketClient)) {
@@ -114,6 +117,10 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
             // forward errors to Plebbit
             this._webSocketClient.on("error", (error) => {
                 lastWebsocketError = error;
+                if (this._destroyRequested) {
+                    log("Ignoring websocket error emitted after destroy request", error);
+                    return;
+                }
                 this.emit("error", error);
             });
 
@@ -153,6 +160,10 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         try {
             await this._openConnectionPromise;
         } catch (e) {
+            if (this._destroyRequested) {
+                log("Aborted RPC connection before it finished opening because destroy was requested", this._websocketServerUrl);
+                return;
+            }
             const err = new PlebbitError("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
                 timeoutSeconds: this._timeoutSeconds,
                 error: lastWebsocketError,
@@ -165,19 +176,29 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     }
 
     async destroy() {
+        if (this._destroyRequested) return;
+        this._destroyRequested = true;
+        const cleanupSubscriptionLocally = (subscriptionId: string) => {
+            delete this._subscriptionEvents[subscriptionId];
+            delete this._pendingSubscriptionMsgs[subscriptionId];
+        };
         for (const subscriptionId of Object.keys(this._subscriptionEvents))
             try {
-                await this.unsubscribe(Number(subscriptionId));
+                if (this.state === "connected") {
+                    await this.unsubscribe(Number(subscriptionId));
+                } else cleanupSubscriptionLocally(subscriptionId);
             } catch (e) {
                 log.error("Failed to unsubscribe to subscription ID", subscriptionId, e);
+                cleanupSubscriptionLocally(subscriptionId);
             }
 
         try {
-            this._webSocketClient.close();
+            if (this._webSocketClient instanceof WebSocketClient) this._webSocketClient.close();
         } catch (e) {
             log.error("Failed to close websocket", e);
         }
 
+        this._openConnectionPromise = undefined;
         this.setState("stopped");
     }
 
