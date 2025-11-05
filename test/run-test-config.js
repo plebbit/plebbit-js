@@ -266,13 +266,13 @@ if (vitestTimeoutValue === undefined) {
         env.VITEST_TIMEOUT,
         env.MOCHA_TIMEOUT,
         env.TEST_NODE_LOCAL_MOCHA_TIMEOUT_MS,
-        isNodeEnvironment ? "600000" : undefined
+        isNodeEnvironment ? "60000" : undefined
     );
 }
 
 const npmLifecycleEvent = env.npm_lifecycle_event || env.NPM_LIFECYCLE_EVENT;
 if (vitestTimeoutValue === undefined && npmLifecycleEvent === "test:node:parallel:remote") {
-    vitestTimeoutValue = "600000";
+    vitestTimeoutValue = "60000";
 }
 
 const waitForStreamFinish = (stream) =>
