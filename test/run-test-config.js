@@ -281,9 +281,18 @@ const runNodeTests = () => {
     env.VITEST_MODE = "node";
 
     const vitestCli = path.join(projectRoot, "node_modules", "vitest", "vitest.mjs");
-    const vitestArgs = ["run", "--config", vitestConfigPath, "--allowOnly", "false", "--bail", "1"];
+    const vitestArgs = ["run", "--config", vitestConfigPath, "--allowOnly", "false"];
 
     const isParallelMode = options.has("parallel");
+    const userProvidedBail = options.has("bail");
+    if (userProvidedBail) {
+        const bailValue = getLastOption(options, "bail");
+        const normalizedBail = bailValue === undefined || bailValue === true ? "1" : String(bailValue);
+        vitestArgs.push("--bail", normalizedBail);
+    } else if (!isParallelMode) {
+        vitestArgs.push("--bail", "1");
+    }
+
     if (isParallelMode) {
         vitestArgs.push("--fileParallelism");
         const jobs = getLastOption(options, "jobs");
