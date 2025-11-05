@@ -69,7 +69,6 @@
                 "<node_internals>/**",
                 "**/node_modules/**",
                 "${workspaceFolder}/dist/browser/**",
-                "${workspaceFolder}/test-karma-webpack/**"
             ],
             "type": "node",
             "env": {
@@ -98,7 +97,6 @@
                 "<node_internals>/**",
                 "**/node_modules/**",
                 "${workspaceFolder}/dist/browser/**",
-                "${workspaceFolder}/test-karma-webpack/**"
             ],
             "type": "node",
             "env": {
@@ -126,7 +124,6 @@
                 "<node_internals>/**",
                 "**/node_modules/**",
                 "${workspaceFolder}/dist/browser/**",
-                "${workspaceFolder}/test-karma-webpack/**"
             ],
             "type": "node",
             "env": {
@@ -159,7 +156,6 @@
                 "<node_internals>/**",
                 "**/node_modules/**",
                 "${workspaceFolder}/dist/browser/**",
-                "${workspaceFolder}/test-karma-webpack/**"
             ],
             "type": "node",
             "env": {
@@ -188,7 +184,6 @@
                 "<node_internals>/**",
                 "**/node_modules/**",
                 "${workspaceFolder}/dist/browser/**",
-                "${workspaceFolder}/test-karma-webpack/**"
             ],
             "type": "node",
             "env": {
