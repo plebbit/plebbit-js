@@ -154,8 +154,6 @@ function backdateCommentUpdate(ctx, commentCid, secondsAgo) {
 }
 
 describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
-    test.setTimeout(120_000);
-
     describe("default retention configuration", () => {
         let plebbit;
         let subplebbit;

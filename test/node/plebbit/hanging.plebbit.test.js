@@ -25,7 +25,6 @@ for (const scenario of scenarioDefinitions) {
         for (const config of configs) {
             describe(`[Config: ${config.name}]`, () => {
                 it("does not keep the Node process alive", async function () {
-                    test.setTimeout(DESTROY_TIMEOUT_MS + 2_000);
                     await runHangingScenarioInChildProcess({
                         configCode: config.testConfigCode,
                         timeoutMs: DESTROY_TIMEOUT_MS,

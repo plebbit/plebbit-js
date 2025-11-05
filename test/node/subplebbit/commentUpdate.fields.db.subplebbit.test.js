@@ -6,7 +6,6 @@ import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 const PROTOCOL_VERSION = "1.0.0";
 
 describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
-    test.setTimeout(120_000);
 
     let dbHandler;
     let subplebbitAddress;

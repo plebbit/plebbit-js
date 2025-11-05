@@ -34,7 +34,6 @@ const setupConnectionContext = (rpcServer, connectionId) => {
 };
 
 describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
-    test.setTimeout(60000);
     let rpcServer;
 
     before(() => {
