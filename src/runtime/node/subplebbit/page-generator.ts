@@ -356,7 +356,9 @@ export class PageGenerator {
         const nonPreloadedSorts = remeda.keys.strict(POSTS_SORT_TYPES).filter((sortName) => sortName !== preloadedPageSortName);
         await Promise.all(
             nonPreloadedSorts.map(async (sortName) => {
-                sortResults.push(await this.sortChunkAddIpfsNonPreloaded(rawPosts, sortName, pageOptions));
+                sortResults.push(
+                    await this.sortChunkAddIpfsNonPreloaded(rawPosts, sortName, { ...pageOptions, firstPageSizeBytes: 1024 * 1024 })
+                );
             })
         );
 
