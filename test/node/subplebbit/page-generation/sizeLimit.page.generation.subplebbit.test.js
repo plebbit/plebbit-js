@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { describeSkipIfRpc } from "../../../../dist/node/test/test-util.js";
+import { beforeEach, it } from "vitest";
 import { PageGenerator } from "../../../../dist/node/runtime/node/subplebbit/page-generator.js";
 import { PlebbitError } from "../../../../dist/node/plebbit-error.js";
 import { Buffer } from "buffer";
@@ -111,9 +112,9 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
     it("throws when generateSubplebbitPosts encounters a post with deeply nested replies that exceed the active page size limit", async () => {
         const preloadedSort = "hot";
-    const { oversizedPost, secondaryPost, oversizedReplySize, oversizedReplyChunkSize } = createPostsWithDeepReplies();
-    expect(oversizedReplySize).to.be.greaterThan(MB);
-    expect(oversizedReplyChunkSize).to.be.greaterThan(MB);
+        const { oversizedPost, secondaryPost, oversizedReplySize, oversizedReplyChunkSize } = createPostsWithDeepReplies();
+        expect(oversizedReplySize).to.be.greaterThan(MB);
+        expect(oversizedReplyChunkSize).to.be.greaterThan(MB);
 
         const fakeDbHandler = {
             queryPostsWithActiveScore: () => [oversizedPost, secondaryPost]
@@ -139,15 +140,15 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
             }
         });
 
+        const preloadedPageSizeBytes = Math.max(oversizedReplyChunkSize - 32 * 1024, MB + 1);
+        expect(preloadedPageSizeBytes).to.be.lessThan(oversizedReplyChunkSize);
+
         const previewChunk = pageGenerator._chunkComments({
             comments: [oversizedPost, secondaryPost].map(({ comment, commentUpdate }) => ({ comment, commentUpdate })),
-            firstPageSizeBytes: 2 * MB
+            firstPageSizeBytes: preloadedPageSizeBytes
         });
         const previewChunkSize = Buffer.byteLength(JSON.stringify({ comments: previewChunk[0] }), "utf8");
         expect(previewChunkSize).to.be.greaterThan(MB);
-
-        const preloadedPageSizeBytes = Math.max(oversizedReplyChunkSize - 32 * 1024, MB + 1);
-        expect(preloadedPageSizeBytes).to.be.lessThan(oversizedReplyChunkSize);
 
         let caughtError;
         try {
@@ -159,6 +160,106 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         expect(caughtError).to.be.instanceOf(PlebbitError);
         expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
         // expect(caughtError.details).to.include({ sortName: "active" });
+    });
+
+    it("throws when generateSubplebbitPosts handles a depth-limited reply chain that still exceeds the page size", async () => {
+        const subplebbitAddress = "test-subplebbit-depth-limited";
+        const baseTimestamp = Math.floor(Date.now() / 1000);
+        const depthLimitedReply = buildDepthLimitedChainEntry({
+            parentCid: "cid-root-depth",
+            parentDepth: 0,
+            postCid: "cid-root-depth",
+            subplebbitAddress,
+            baseTimestamp,
+            maxDepth: 10,
+            contentRepeat: 4000
+        });
+
+        expect(depthLimitedReply.maxDepthReached).to.equal(10);
+        expect(depthLimitedReply.entrySize).to.be.greaterThan(MB);
+        expect(depthLimitedReply.chunkSize).to.be.greaterThan(MB);
+
+        const oversizedPost = {
+            comment: {
+                cid: "cid-root-depth",
+                depth: 0,
+                timestamp: baseTimestamp,
+                postCid: "cid-root-depth",
+                parentCid: null,
+                subplebbitAddress,
+                content: "root-depth-content"
+            },
+            commentUpdate: {
+                upvoteCount: 5,
+                downvoteCount: 0,
+                replyCount: 1,
+                childCount: 1,
+                protocolVersion: "1.0.0",
+                signature: "signature",
+                author: { address: "author-depth" },
+                replies: {
+                    pages: { best: { comments: [depthLimitedReply.entry] } },
+                    pageCids: {}
+                }
+            },
+            activeScore: baseTimestamp + 1000
+        };
+
+        const secondaryPost = {
+            comment: {
+                cid: "cid-root-depth-secondary",
+                depth: 0,
+                timestamp: baseTimestamp - 5,
+                postCid: "cid-root-depth-secondary",
+                parentCid: null,
+                subplebbitAddress,
+                content: "root-depth-secondary"
+            },
+            commentUpdate: {
+                upvoteCount: 1,
+                downvoteCount: 0,
+                replyCount: 0,
+                childCount: 0,
+                protocolVersion: "1.0.0",
+                signature: "signature",
+                author: { address: "author-depth-secondary" }
+            },
+            activeScore: baseTimestamp - 5
+        };
+
+        const fakeDbHandler = {
+            queryPostsWithActiveScore: () => [oversizedPost, secondaryPost]
+        };
+
+        const fakeIpfsClient = createFakeIpfsClient();
+        const generator = new PageGenerator({
+            address: subplebbitAddress,
+            _dbHandler: fakeDbHandler,
+            _clientsManager: {
+                getDefaultKuboRpcClient: () => ({ _client: fakeIpfsClient })
+            }
+        });
+
+        const previewChunk = generator._chunkComments({
+            comments: [oversizedPost, secondaryPost].map(({ comment, commentUpdate }) => ({ comment, commentUpdate })),
+            firstPageSizeBytes: depthLimitedReply.chunkSize
+        });
+        const previewChunkSize = Buffer.byteLength(JSON.stringify({ comments: previewChunk[0] }), "utf8");
+        expect(previewChunkSize).to.be.greaterThan(MB);
+
+        const preloadedPageSizeBytes = Math.max(depthLimitedReply.chunkSize - 32 * 1024, MB + 1);
+        expect(preloadedPageSizeBytes).to.be.lessThan(depthLimitedReply.chunkSize);
+
+        let caughtError;
+        try {
+            await generator.generateSubplebbitPosts("hot", preloadedPageSizeBytes);
+        } catch (error) {
+            caughtError = error;
+        }
+
+        expect(caughtError).to.be.instanceOf(PlebbitError);
+        expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
+        expect(["active", "new"]).to.include(caughtError.details.sortName);
     });
 
     it("throws when generatePostPages processes deeply nested replies exceeding the page limit", async () => {
@@ -259,11 +360,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
             }
         });
 
-        const {
-            entry: oversizedPending,
-            chunkSize: modQueueChunkSize,
-            entrySize: modQueueEntrySize
-        } = createOversizedModQueueEntry();
+        const { entry: oversizedPending, chunkSize: modQueueChunkSize, entrySize: modQueueEntrySize } = createOversizedModQueueEntry();
         expect(modQueueEntrySize).to.be.greaterThan(MB);
         expect(modQueueChunkSize).to.be.greaterThan(MB);
         generator._bundleLatestCommentUpdateWithQueuedComments = async () => oversizedPending;
@@ -484,6 +581,75 @@ function buildReplyEntryMeetingSize({
     }
 
     throw Error(`Failed to build reply entry meeting size ${minSizeBytes}`);
+}
+
+function buildDepthLimitedChainEntry({
+    parentCid,
+    parentDepth,
+    postCid,
+    subplebbitAddress,
+    baseTimestamp,
+    maxDepth = 10,
+    minSizeBytes = TARGET_OVERSIZED_SIZE
+}) {
+    let contentRepeat = 4000;
+    let attempts = 0;
+
+    while (attempts < 50) {
+        let timestampCursor = baseTimestamp;
+
+        function buildLevel(currentDepth) {
+            const cid = `${parentCid}-chain-depth-${currentDepth}`;
+            const comment = {
+                cid,
+                depth: parentDepth + currentDepth,
+                timestamp: timestampCursor,
+                parentCid: currentDepth === 1 ? parentCid : `${parentCid}-chain-depth-${currentDepth - 1}`,
+                postCid,
+                subplebbitAddress,
+                content: "chain-depth-content-".repeat(contentRepeat)
+            };
+
+            const commentUpdate = {
+                upvoteCount: 0,
+                downvoteCount: 0,
+                replyCount: 0,
+                childCount: 0,
+                protocolVersion: "1.0.0",
+                signature: "signature",
+                author: { address: `author-${cid}` }
+            };
+
+            timestampCursor += 1;
+
+            if (currentDepth < maxDepth) {
+                const child = buildLevel(currentDepth + 1);
+                commentUpdate.replyCount = 1;
+                commentUpdate.childCount = 1;
+                commentUpdate.replies = {
+                    pages: { best: { comments: [child.entry] } },
+                    pageCids: {}
+                };
+                return {
+                    entry: { comment, commentUpdate },
+                    maxDepthReached: child.maxDepthReached
+                };
+            }
+
+            return { entry: { comment, commentUpdate }, maxDepthReached: comment.depth };
+        }
+
+        const built = buildLevel(1);
+        const entrySize = Buffer.byteLength(JSON.stringify(built.entry), "utf8");
+        const chunkSize = Buffer.byteLength(JSON.stringify({ comments: [built.entry] }), "utf8");
+
+        if (chunkSize >= minSizeBytes) return { entry: built.entry, entrySize, chunkSize, maxDepthReached: built.maxDepthReached };
+
+        contentRepeat += 500;
+        attempts += 1;
+    }
+
+    throw Error(`Failed to build depth-limited reply entry meeting size ${minSizeBytes}`);
 }
 
 function buildHeavyReplyEntry({
