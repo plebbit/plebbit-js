@@ -11,6 +11,27 @@ const MAX_COMMENT_SIZE_BYTES = 40 * 1024;
 const RANDOM_CID_V0 = "QmbKFFGL9EMwdMVrkJUqz2yQAorzUBExchK1qogsU8BJ7e";
 const RANDOM_POST_CID_V0 = "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f";
 const RANDOM_REPLY_CID_V0 = "QmX7yV8dWgyMUiw5DSBt5ABToBWqi55GVEtnidAbNGGFoG";
+const AUTHOR_ADDRESS = "12D3KooWLjZGiL8t2FyNZc21EMKw1SLR7U6khv4RW9sEFKD4aFXJ";
+
+function createCommentAuthor(label) {
+    const tag = typeof label === "string" && label.length > 0 ? label : "placeholder";
+    return {
+        address: AUTHOR_ADDRESS,
+        displayName: `Author ${tag}`
+    };
+}
+
+function createCommentUpdateAuthor(label) {
+    const tag = typeof label === "string" && label.length > 0 ? label : "placeholder";
+    return {
+        subplebbit: {
+            firstCommentTimestamp: 1700000000,
+            lastCommentCid: RANDOM_CID_V0,
+            postScore: 2,
+            replyScore: 1
+        }
+    };
+}
 
 function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES - 512) {
     const unit = `${prefix}-chunk-`;
@@ -231,12 +252,18 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         expect(depthLimitedReply.entrySize).to.be.greaterThan(MB);
         expect(depthLimitedReply.chunkSize).to.be.greaterThan(MB);
 
+        const depthCommentAuthor = createCommentAuthor("depth");
+        const depthCommentUpdateAuthor = createCommentUpdateAuthor("depth");
+        const depthSecondaryCommentAuthor = createCommentAuthor("depth-secondary");
+        const depthSecondaryCommentUpdateAuthor = createCommentUpdateAuthor("depth-secondary");
         const oversizedPost = {
             comment: {
                 depth: 0,
                 timestamp: baseTimestamp,
                 subplebbitAddress,
-                content: "root-depth-content"
+                content: "root-depth-content",
+                previousCid: RANDOM_CID_V0,
+                author: depthCommentAuthor
             },
             commentUpdate: {
                 cid: depthLimitedPostCid,
@@ -246,7 +273,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
                 childCount: 1,
                 protocolVersion: "1.0.0",
                 signature: "signature",
-                author: { address: "author-depth" },
+                author: depthCommentUpdateAuthor,
                 replies: {
                     pages: { best: { comments: [depthLimitedReply.entry] } },
                     pageCids: {}
@@ -260,7 +287,9 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
                 depth: 0,
                 timestamp: baseTimestamp - 5,
                 subplebbitAddress,
-                content: "root-depth-secondary"
+                content: "root-depth-secondary",
+                previousCid: RANDOM_CID_V0,
+                author: depthSecondaryCommentAuthor
             },
             commentUpdate: {
                 cid: secondaryDepthLimitedPostCid,
@@ -270,7 +299,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
                 childCount: 0,
                 protocolVersion: "1.0.0",
                 signature: "signature",
-                author: { address: "author-depth-secondary" }
+                author: depthSecondaryCommentUpdateAuthor
             },
             activeScore: baseTimestamp - 5
         };
@@ -538,12 +567,16 @@ function createBasicPostEntry({ cid, content, timestamp, subplebbitAddress, acti
     if (Buffer.byteLength(safeContent, "utf8") > MAX_COMMENT_SIZE_BYTES) {
         throw Error(`Test fixture comment ${cid} exceeds ${MAX_COMMENT_SIZE_BYTES} bytes`);
     }
+    const commentAuthor = createCommentAuthor(`${cid}`);
+    const commentUpdateAuthor = createCommentUpdateAuthor(`${cid}`);
     return {
         comment: {
             depth: 0,
             timestamp,
             subplebbitAddress,
-            content: safeContent
+            content: safeContent,
+            previousCid: RANDOM_CID_V0,
+            author: commentAuthor
         },
         commentUpdate: {
             cid,
@@ -553,7 +586,7 @@ function createBasicPostEntry({ cid, content, timestamp, subplebbitAddress, acti
             childCount: 0,
             protocolVersion: "1.0.0",
             signature: "signature",
-            author: { address: `author-${cid}` }
+            author: commentUpdateAuthor
         },
         activeScore
     };
@@ -600,12 +633,18 @@ function createPostsWithDeepReplies() {
         replySuffix: "light"
     }).topLevelReply;
 
+    const primaryCommentAuthor = createCommentAuthor("primary");
+    const primaryCommentUpdateAuthor = createCommentUpdateAuthor("primary");
+    const secondaryCommentAuthor = createCommentAuthor("secondary");
+    const secondaryCommentUpdateAuthor = createCommentUpdateAuthor("secondary");
     const oversizedPost = {
         comment: {
             depth: 0,
             timestamp: baseTimestamp,
             subplebbitAddress,
-            content: "root-content-primary"
+            content: "root-content-primary",
+            previousCid: RANDOM_CID_V0,
+            author: primaryCommentAuthor
         },
         commentUpdate: {
             cid: primaryPostCid,
@@ -615,7 +654,7 @@ function createPostsWithDeepReplies() {
             childCount: 1,
             protocolVersion: "1.0.0",
             signature: "signature",
-            author: { address: "author-primary" },
+            author: primaryCommentUpdateAuthor,
             replies: {
                 pages: { best: { comments: [oversizedReply.entry] } },
                 pageCids: {}
@@ -629,7 +668,9 @@ function createPostsWithDeepReplies() {
             depth: 0,
             timestamp: baseTimestamp + 10,
             subplebbitAddress,
-            content: "root-content-secondary"
+            content: "root-content-secondary",
+            previousCid: RANDOM_CID_V0,
+            author: secondaryCommentAuthor
         },
         commentUpdate: {
             cid: secondaryPostCid,
@@ -639,7 +680,7 @@ function createPostsWithDeepReplies() {
             childCount: 1,
             protocolVersion: "1.0.0",
             signature: "signature",
-            author: { address: "author-secondary" },
+            author: secondaryCommentUpdateAuthor,
             replies: {
                 pages: { best: { comments: [secondaryReply] } },
                 pageCids: {}
@@ -784,7 +825,8 @@ function buildDepthLimitedChainEntry({
                 parentCid: currentDepth === 1 ? parentCid : RANDOM_CID_V0,
                 postCid,
                 subplebbitAddress,
-                content: repeatWithinCommentLimit("chain-depth-content-", contentRepeat)
+                content: repeatWithinCommentLimit("chain-depth-content-", contentRepeat),
+                author: createCommentAuthor(`${cid}`)
             };
 
             const commentUpdate = {
@@ -795,7 +837,7 @@ function buildDepthLimitedChainEntry({
                 childCount: leafCount,
                 protocolVersion: "1.0.0",
                 signature: "signature",
-                author: { address: `author-${cid}` }
+                author: createCommentUpdateAuthor(`${cid}`)
             };
 
             timestampCursor += 1;
@@ -809,7 +851,8 @@ function buildDepthLimitedChainEntry({
                         parentCid: cid,
                         postCid,
                         subplebbitAddress,
-                        content: createCommentContent(`${leafCid}`)
+                        content: createCommentContent(`${leafCid}`),
+                        author: createCommentAuthor(`${leafCid}`)
                     },
                     commentUpdate: {
                         cid: leafCid,
@@ -819,7 +862,7 @@ function buildDepthLimitedChainEntry({
                         childCount: 0,
                         protocolVersion: "1.0.0",
                         signature: "signature",
-                        author: { address: `author-${leafCid}` }
+                        author: createCommentUpdateAuthor(`${leafCid}`)
                     }
                 };
             });
@@ -882,7 +925,8 @@ function buildHeavyReplyEntry({
                 parentCid: topReplyCid,
                 postCid,
                 subplebbitAddress,
-                content: repeatWithinCommentLimit("nested-reply-", nestedContentRepeat)
+                content: repeatWithinCommentLimit("nested-reply-", nestedContentRepeat),
+                author: createCommentAuthor(`${childCid}`)
             },
             commentUpdate: {
                 cid: childCid,
@@ -892,7 +936,7 @@ function buildHeavyReplyEntry({
                 childCount: 0,
                 protocolVersion: "1.0.0",
                 signature: "signature",
-                author: { address: `author-${childCid}` }
+                author: createCommentUpdateAuthor(`${childCid}`)
             }
         };
     });
@@ -904,7 +948,8 @@ function buildHeavyReplyEntry({
             parentCid,
             postCid,
             subplebbitAddress,
-            content: "heavy-reply"
+            content: "heavy-reply",
+            author: createCommentAuthor(`${topReplyCid}`)
         },
         commentUpdate: {
             cid: topReplyCid,
@@ -914,7 +959,7 @@ function buildHeavyReplyEntry({
             childCount: nestedComments.length,
             protocolVersion: "1.0.0",
             signature: "signature",
-            author: { address: `author-${topReplyCid}` },
+            author: createCommentUpdateAuthor(`${topReplyCid}`),
             replies: {
                 pages: { best: { comments: nestedComments } },
                 pageCids: {}
