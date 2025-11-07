@@ -485,7 +485,7 @@ export class PageGenerator {
                 sortResults.push(
                     await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, {
                         ...pageOptions,
-                        firstPageSizeBytes: 1024 * 1024
+                        firstPageSizeBytes: 1024 * 1024 // pageCids will always have first pages with limit of 1mib, regardless of preloadedPageSizeBytes
                     })
                 );
             })
