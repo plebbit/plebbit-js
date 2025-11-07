@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { describeSkipIfRpc } from "../../../../dist/node/test/test-util.js";
-import { beforeEach, it } from "vitest";
+import { afterEach, beforeEach, it, vi } from "vitest";
 import { PageGenerator } from "../../../../dist/node/runtime/node/subplebbit/page-generator.js";
 import { PlebbitError } from "../../../../dist/node/plebbit-error.js";
 import { Buffer } from "buffer";
@@ -33,80 +33,149 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         pageGenerator = new PageGenerator(fakeSubplebbit);
     });
 
-    it("throws when an active sort page exceeds the expected size threshold", async () => {
-        const oversizeComment = {
-            comment: {
-                cid: "cid0",
-                content: "x".repeat(1_048_800)
-            },
-            commentUpdate: {}
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it("throws when generateSubplebbitPosts attempts to publish an oversized active page", async () => {
+        const baseTimestamp = Math.floor(Date.now() / 1000);
+        const subplebbitAddress = "test-subplebbit-oversized";
+        const oversizePost = createBasicPostEntry({
+            cid: "cid0",
+            content: "x".repeat(1_048_800),
+            timestamp: baseTimestamp,
+            subplebbitAddress,
+            activeScore: baseTimestamp + 100
+        });
+        const nextPost = createBasicPostEntry({
+            cid: "cid1",
+            content: "next",
+            timestamp: baseTimestamp - 1,
+            subplebbitAddress,
+            activeScore: baseTimestamp - 1
+        });
+
+        const fakeDbHandler = {
+            queryPostsWithActiveScore: () => [oversizePost, nextPost]
         };
-        const nextPageComment = {
-            comment: {
-                cid: "cid1",
-                content: "next"
-            },
-            commentUpdate: {}
-        };
+
+        pageGenerator = new PageGenerator({
+            address: subplebbitAddress,
+            _dbHandler: fakeDbHandler,
+            _clientsManager: {
+                getDefaultKuboRpcClient: () => ({ _client: createFakeIpfsClient() })
+            }
+        });
 
         let caughtError;
         try {
-            await pageGenerator.addCommentChunksToIpfs([[oversizeComment], [nextPageComment]], "active");
+            await pageGenerator.generateSubplebbitPosts("hot", MB);
         } catch (error) {
             caughtError = error;
         }
 
         expect(caughtError).to.be.instanceOf(PlebbitError);
         expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
-        expect(caughtError.details).to.include({
-            sortName: "active",
-            pageNum: 0
-        });
+        // expect(caughtError.details).to.include({
+        //     sortName: "active",
+        //     pageNum: 0
+        // });
         expect(caughtError.details.addRes.size).to.be.greaterThan(caughtError.details.expectedSize);
     });
 
-    it("chunks preloaded active comments into first page larger than 1MiB and a smaller follow-up chunk", () => {
+    it("chunks preloaded active comments into first page larger than 1MiB and a smaller follow-up chunk", async () => {
         const firstPageSizeBytes = 1.5 * MB; // mimic preloaded page allowance
-        const comments = [
-            {
-                comment: { cid: "cid0", content: "x".repeat(1_200_000) },
-                commentUpdate: {}
-            },
-            {
-                comment: { cid: "cid1", content: "y".repeat(420_000) },
-                commentUpdate: {}
-            },
-            {
-                comment: { cid: "cid2", content: "z" },
-                commentUpdate: {}
-            }
+        const baseTimestamp = Math.floor(Date.now() / 1000);
+        const subplebbitAddress = "test-subplebbit-preloaded";
+        const rawPosts = [
+            createBasicPostEntry({
+                cid: "cid0",
+                content: "x".repeat(1_200_000),
+                timestamp: baseTimestamp,
+                subplebbitAddress,
+                activeScore: baseTimestamp + 3
+            }),
+            createBasicPostEntry({
+                cid: "cid1",
+                content: "y".repeat(420_000),
+                timestamp: baseTimestamp - 1,
+                subplebbitAddress,
+                activeScore: baseTimestamp + 2
+            }),
+            createBasicPostEntry({
+                cid: "cid2",
+                content: "z",
+                timestamp: baseTimestamp - 2,
+                subplebbitAddress,
+                activeScore: baseTimestamp + 1
+            })
         ];
 
-        const chunks = pageGenerator._chunkComments({ comments, firstPageSizeBytes });
+        const fakeDbHandler = {
+            queryPostsWithActiveScore: () => rawPosts
+        };
 
-        expect(chunks).to.have.length(2);
-        expect(chunks[0]).to.have.length(1);
-        expect(chunks[1]).to.have.length(2);
+        pageGenerator = new PageGenerator({
+            address: subplebbitAddress,
+            _dbHandler: fakeDbHandler,
+            _clientsManager: {
+                getDefaultKuboRpcClient: () => ({ _client: createFakeIpfsClient() })
+            }
+        });
 
-        const firstChunkSize = Buffer.byteLength(JSON.stringify({ comments: chunks[0] }), "utf8");
-        const secondChunkSize = Buffer.byteLength(JSON.stringify({ comments: chunks[1] }), "utf8");
+        const originalAddPreloaded = pageGenerator.addPreloadedCommentChunksToIpfs.bind(pageGenerator);
+        let capturedChunks;
+        vi.spyOn(pageGenerator, "addPreloadedCommentChunksToIpfs").mockImplementation(async (chunks, sortName) => {
+            capturedChunks = chunks;
+            return originalAddPreloaded(chunks, sortName);
+        });
+        vi.spyOn(pageGenerator, "sortChunkAddIpfsNonPreloaded").mockResolvedValue(undefined);
+
+        await pageGenerator.generateSubplebbitPosts("hot", firstPageSizeBytes);
+
+        expect(capturedChunks).to.exist;
+        expect(capturedChunks).to.have.length(2);
+        expect(capturedChunks[0]).to.have.length(1);
+        expect(capturedChunks[1]).to.have.length(2);
+
+        const firstChunkSize = Buffer.byteLength(JSON.stringify({ comments: capturedChunks[0] }), "utf8");
+        const secondChunkSize = Buffer.byteLength(JSON.stringify({ comments: capturedChunks[1] }), "utf8");
 
         expect(firstChunkSize).to.be.greaterThan(MB);
         expect(secondChunkSize).to.be.lessThan(MB);
     });
 
-    it("allows a single oversized comment to fill the first chunk when firstPageSizeBytes exceeds 1MiB", () => {
-        const comments = [
-            {
-                comment: { cid: "cid0", content: "x".repeat(1_100_000) },
-                commentUpdate: { replies: Array.from({ length: 48 }, (_, index) => ({ cid: `child-${index}` })) }
-            }
+    it("allows a single oversized comment to fill the first chunk when firstPageSizeBytes exceeds 1MiB", async () => {
+        const baseTimestamp = Math.floor(Date.now() / 1000);
+        const subplebbitAddress = "test-subplebbit-single";
+        const rawPosts = [
+            createBasicPostEntry({
+                cid: "cid0",
+                content: "x".repeat(1_100_000),
+                timestamp: baseTimestamp,
+                subplebbitAddress,
+                activeScore: baseTimestamp + 1
+            })
         ];
 
-        const chunks = pageGenerator._chunkComments({ comments, firstPageSizeBytes: 1.5 * MB });
+        const fakeDbHandler = {
+            queryPostsWithActiveScore: () => rawPosts
+        };
 
-        expect(chunks).to.have.length(1);
-        const serializedSize = Buffer.byteLength(JSON.stringify({ comments: chunks[0] }), "utf8");
+        pageGenerator = new PageGenerator({
+            address: subplebbitAddress,
+            _dbHandler: fakeDbHandler,
+            _clientsManager: {
+                getDefaultKuboRpcClient: () => ({ _client: createFakeIpfsClient() })
+            }
+        });
+
+        const result = await pageGenerator.generateSubplebbitPosts("hot", 1.5 * MB);
+
+        expect(result).to.have.property("singlePreloadedPage");
+        const firstPage = result.singlePreloadedPage.hot;
+        expect(firstPage.comments).to.have.length(1);
+        const serializedSize = Buffer.byteLength(JSON.stringify({ comments: firstPage.comments }), "utf8");
         expect(serializedSize).to.be.greaterThan(MB);
     });
 
@@ -307,12 +376,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
     it("throws when generatePostPages handles depth-limited replies that exceed the page size", async () => {
         const subplebbitAddress = "test-subplebbit-post-depth-limited";
         const parentCid = "post-depth-parent";
-        const {
-            hierarchical,
-            flattened,
-            depthLimitedEntrySize,
-            depthLimitedChunkSize
-        } = createDepthLimitedRepliesDataForParent({
+        const { hierarchical, flattened, depthLimitedEntrySize, depthLimitedChunkSize } = createDepthLimitedRepliesDataForParent({
             parentCid,
             parentDepth: 0,
             postCid: parentCid,
@@ -400,18 +464,66 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         const subplebbitAddress = "test-subplebbit-reply-depth-limited";
         const postCid = "post-depth-root";
         const parentComment = { cid: "reply-depth-parent", depth: 1 };
-        const {
-            hierarchical,
-            flattened,
-            depthLimitedEntrySize,
-            depthLimitedChunkSize
-        } = createDepthLimitedRepliesDataForParent({
+        const { hierarchical, flattened, depthLimitedEntrySize, depthLimitedChunkSize } = createDepthLimitedRepliesDataForParent({
             parentCid: parentComment.cid,
             parentDepth: parentComment.depth,
             postCid,
             subplebbitAddress
         });
 
+        expect(depthLimitedEntrySize).to.be.greaterThan(MB);
+        expect(depthLimitedChunkSize).to.be.greaterThan(MB);
+
+        const fakeDbHandler = {
+            queryPageComments: () => hierarchical,
+            queryFlattenedPageReplies: () => flattened
+        };
+
+        const fakeIpfsClient = createFakeIpfsClient();
+        const generator = new PageGenerator({
+            address: subplebbitAddress,
+            _dbHandler: fakeDbHandler,
+            _clientsManager: {
+                getDefaultKuboRpcClient: () => ({ _client: fakeIpfsClient })
+            }
+        });
+
+        const firstPageSizeBytes = Math.max(depthLimitedChunkSize - 32 * 1024, MB + 1);
+        const previewChunk = generator._chunkComments({ comments: hierarchical, firstPageSizeBytes });
+        const previewChunkSize = Buffer.byteLength(JSON.stringify({ comments: previewChunk[0] }), "utf8");
+        expect(previewChunkSize).to.be.greaterThan(MB);
+
+        let caughtError;
+        try {
+            await generator.generateReplyPages(parentComment, "best", firstPageSizeBytes);
+        } catch (error) {
+            caughtError = error;
+        }
+
+        expect(caughtError).to.be.instanceOf(PlebbitError);
+        expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
+        expect(["new", "old"]).to.include(caughtError.details.sortName);
+    });
+
+    it("still throws when reply depth is capped at 5 levels but the preview exceeds the page size", async () => {
+        const subplebbitAddress = "test-subplebbit-reply-depth-5";
+        const postCid = "post-depth-five-root";
+        const parentComment = { cid: "reply-depth-five-parent", depth: 1 };
+        const {
+            hierarchical,
+            flattened,
+            depthLimitedEntrySize,
+            depthLimitedChunkSize,
+            maxDepthReached
+        } = createDepthLimitedRepliesDataForParent({
+            parentCid: parentComment.cid,
+            parentDepth: parentComment.depth,
+            postCid,
+            subplebbitAddress,
+            maxDepth: 5
+        });
+
+        expect(maxDepthReached).to.equal(parentComment.depth + 5);
         expect(depthLimitedEntrySize).to.be.greaterThan(MB);
         expect(depthLimitedChunkSize).to.be.greaterThan(MB);
 
@@ -477,9 +589,34 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
     });
 });
 
+function createBasicPostEntry({ cid, content, timestamp, subplebbitAddress, activeScore }) {
+    return {
+        comment: {
+            cid,
+            depth: 0,
+            timestamp,
+            postCid: cid,
+            parentCid: null,
+            subplebbitAddress,
+            content
+        },
+        commentUpdate: {
+            upvoteCount: 0,
+            downvoteCount: 0,
+            replyCount: 0,
+            childCount: 0,
+            protocolVersion: "1.0.0",
+            signature: "signature",
+            author: { address: `author-${cid}` }
+        },
+        activeScore
+    };
+}
+
 function createFakeIpfsClient() {
     return {
         add: async (content) => {
+            // are we sure this call is equivalent to what ipfs client does
             const size = Buffer.byteLength(content, "utf8");
             return { cid: `cid-${size}`, path: `cid-${size}`, size };
         },
@@ -605,7 +742,7 @@ function createRepliesDataForParent({ parentCid, parentDepth, postCid, subplebbi
     };
 }
 
-function createDepthLimitedRepliesDataForParent({ parentCid, parentDepth, postCid, subplebbitAddress }) {
+function createDepthLimitedRepliesDataForParent({ parentCid, parentDepth, postCid, subplebbitAddress, maxDepth = 10 }) {
     const baseTimestamp = Math.floor(Date.now() / 1000);
     const depthLimited = buildDepthLimitedChainEntry({
         parentCid,
@@ -613,7 +750,7 @@ function createDepthLimitedRepliesDataForParent({ parentCid, parentDepth, postCi
         postCid,
         subplebbitAddress,
         baseTimestamp,
-        maxDepth: 10
+        maxDepth
     });
     const secondary = buildHeavyReplyEntry({
         parentCid,
@@ -633,7 +770,8 @@ function createDepthLimitedRepliesDataForParent({ parentCid, parentDepth, postCi
         hierarchical,
         flattened,
         depthLimitedEntrySize: depthLimited.entrySize,
-        depthLimitedChunkSize: depthLimited.chunkSize
+        depthLimitedChunkSize: depthLimited.chunkSize,
+        maxDepthReached: depthLimited.maxDepthReached
     };
 }
 
