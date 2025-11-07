@@ -7,6 +7,21 @@ import { Buffer } from "buffer";
 
 const MB = 1024 * 1024;
 const TARGET_OVERSIZED_SIZE = MB + 10 * 1024;
+const MAX_COMMENT_SIZE_BYTES = 40 * 1024;
+
+function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES - 512) {
+    const unit = `${prefix}-chunk-`;
+    const unitBytes = Buffer.byteLength(unit, "utf8");
+    const repeat = Math.max(1, Math.floor(targetBytes / unitBytes));
+    return unit.repeat(repeat);
+}
+
+function repeatWithinCommentLimit(base, desiredRepeat) {
+    const baseBytes = Buffer.byteLength(base, "utf8");
+    const maxRepeat = Math.max(1, Math.floor(MAX_COMMENT_SIZE_BYTES / baseBytes));
+    const repeat = Math.max(1, Math.min(desiredRepeat, maxRepeat));
+    return base.repeat(repeat);
+}
 describeSkipIfRpc("page-generator enforces expected size limits", function () {
     let pageGenerator;
 
@@ -14,7 +29,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         const fakeRpcClient = {
             add: async (content) => {
                 const size = Buffer.byteLength(content, "utf8");
-                const cid = `CID${size}`;
+                const cid = "QmbKFFGL9EMwdMVrkJUqz2yQAorzUBExchK1qogsU8BJ7e"; // random CID
                 return { cid, path: cid, size };
             },
             routing: {
@@ -38,29 +53,13 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
     });
 
     it("throws when generateSubplebbitPosts attempts to publish an oversized active page", async () => {
-        const baseTimestamp = Math.floor(Date.now() / 1000);
-        const subplebbitAddress = "test-subplebbit-oversized";
-        const oversizePost = createBasicPostEntry({
-            cid: "cid0",
-            content: "x".repeat(1_048_800),
-            timestamp: baseTimestamp,
-            subplebbitAddress,
-            activeScore: baseTimestamp + 100
-        });
-        const nextPost = createBasicPostEntry({
-            cid: "cid1",
-            content: "next",
-            timestamp: baseTimestamp - 1,
-            subplebbitAddress,
-            activeScore: baseTimestamp - 1
-        });
-
+        const { oversizedPost, secondaryPost } = createPostsWithDeepReplies();
         const fakeDbHandler = {
-            queryPostsWithActiveScore: () => [oversizePost, nextPost]
+            queryPostsWithActiveScore: () => [oversizedPost, secondaryPost]
         };
 
         pageGenerator = new PageGenerator({
-            address: subplebbitAddress,
+            address: oversizedPost.comment.subplebbitAddress,
             _dbHandler: fakeDbHandler,
             _clientsManager: {
                 getDefaultKuboRpcClient: () => ({ _client: createFakeIpfsClient() })
@@ -76,40 +75,24 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
         expect(caughtError).to.be.instanceOf(PlebbitError);
         expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
-        // expect(caughtError.details).to.include({
-        //     sortName: "active",
-        //     pageNum: 0
-        // });
+        expect(["active", "new"]).to.include(caughtError.details.sortName);
+        expect(caughtError.details.pageNum).to.equal(0);
         expect(caughtError.details.addRes.size).to.be.greaterThan(caughtError.details.expectedSize);
     });
 
     it("chunks preloaded active comments into first page larger than 1MiB and a smaller follow-up chunk", async () => {
-        const firstPageSizeBytes = 1.5 * MB; // mimic preloaded page allowance
-        const baseTimestamp = Math.floor(Date.now() / 1000);
         const subplebbitAddress = "test-subplebbit-preloaded";
-        const rawPosts = [
-            createBasicPostEntry({
-                cid: "cid0",
-                content: "x".repeat(1_200_000),
-                timestamp: baseTimestamp,
-                subplebbitAddress,
-                activeScore: baseTimestamp + 3
-            }),
-            createBasicPostEntry({
-                cid: "cid1",
-                content: "y".repeat(420_000),
-                timestamp: baseTimestamp - 1,
-                subplebbitAddress,
-                activeScore: baseTimestamp + 2
-            }),
-            createBasicPostEntry({
-                cid: "cid2",
-                content: "z",
-                timestamp: baseTimestamp - 2,
-                subplebbitAddress,
-                activeScore: baseTimestamp + 1
-            })
-        ];
+        const { oversizedPost, secondaryPost } = createPostsWithDeepReplies();
+        const thirdPost = createBasicPostEntry({
+            cid: "cid2",
+            timestamp: oversizedPost.comment.timestamp - 5,
+            subplebbitAddress,
+            activeScore: oversizedPost.activeScore - 5
+        });
+        const rawPosts = [oversizedPost, secondaryPost, thirdPost];
+        const singleOversizedChunk = Buffer.byteLength(JSON.stringify({ comments: [oversizedPost] }), "utf8");
+        const firstTwoChunk = Buffer.byteLength(JSON.stringify({ comments: [oversizedPost, secondaryPost] }), "utf8");
+        const firstPageSizeBytes = Math.max(MB + 1, Math.min(singleOversizedChunk + 64 * 1024, firstTwoChunk - 1024));
 
         const fakeDbHandler = {
             queryPostsWithActiveScore: () => rawPosts
@@ -146,17 +129,9 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
     });
 
     it("allows a single oversized comment to fill the first chunk when firstPageSizeBytes exceeds 1MiB", async () => {
-        const baseTimestamp = Math.floor(Date.now() / 1000);
-        const subplebbitAddress = "test-subplebbit-single";
-        const rawPosts = [
-            createBasicPostEntry({
-                cid: "cid0",
-                content: "x".repeat(1_100_000),
-                timestamp: baseTimestamp,
-                subplebbitAddress,
-                activeScore: baseTimestamp + 1
-            })
-        ];
+        const { oversizedPost } = createPostsWithDeepReplies();
+        const subplebbitAddress = oversizedPost.comment.subplebbitAddress;
+        const rawPosts = [oversizedPost];
 
         const fakeDbHandler = {
             queryPostsWithActiveScore: () => rawPosts
@@ -509,19 +484,14 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         const subplebbitAddress = "test-subplebbit-reply-depth-5";
         const postCid = "post-depth-five-root";
         const parentComment = { cid: "reply-depth-five-parent", depth: 1 };
-        const {
-            hierarchical,
-            flattened,
-            depthLimitedEntrySize,
-            depthLimitedChunkSize,
-            maxDepthReached
-        } = createDepthLimitedRepliesDataForParent({
-            parentCid: parentComment.cid,
-            parentDepth: parentComment.depth,
-            postCid,
-            subplebbitAddress,
-            maxDepth: 5
-        });
+        const { hierarchical, flattened, depthLimitedEntrySize, depthLimitedChunkSize, maxDepthReached } =
+            createDepthLimitedRepliesDataForParent({
+                parentCid: parentComment.cid,
+                parentDepth: parentComment.depth,
+                postCid,
+                subplebbitAddress,
+                maxDepth: 5
+            });
 
         expect(maxDepthReached).to.equal(parentComment.depth + 5);
         expect(depthLimitedEntrySize).to.be.greaterThan(MB);
@@ -557,39 +527,13 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
         expect(["new", "old"]).to.include(caughtError.details.sortName);
     });
-
-    it("throws when generateModQueuePages encounters an oversized pending comment", async () => {
-        const fakeDbHandler = {
-            queryCommentsPendingApproval: () => [{ cid: "pending-cid" }]
-        };
-        const fakeIpfsClient = createFakeIpfsClient();
-        const generator = new PageGenerator({
-            address: "test-subplebbit-modqueue",
-            _dbHandler: fakeDbHandler,
-            _clientsManager: {
-                getDefaultKuboRpcClient: () => ({ _client: fakeIpfsClient })
-            }
-        });
-
-        const { entry: oversizedPending, chunkSize: modQueueChunkSize, entrySize: modQueueEntrySize } = createOversizedModQueueEntry();
-        expect(modQueueEntrySize).to.be.greaterThan(MB);
-        expect(modQueueChunkSize).to.be.greaterThan(MB);
-        generator._bundleLatestCommentUpdateWithQueuedComments = async () => oversizedPending;
-
-        let caughtError;
-        try {
-            await generator.generateModQueuePages();
-        } catch (error) {
-            caughtError = error;
-        }
-
-        expect(caughtError).to.be.instanceOf(PlebbitError);
-        expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
-        expect(caughtError.details).to.include({ sortName: "pendingApproval" });
-    });
 });
 
-function createBasicPostEntry({ cid, content, timestamp, subplebbitAddress, activeScore }) {
+function createBasicPostEntry({ cid, content, timestamp, subplebbitAddress, activeScore, contentSizeBytes }) {
+    const safeContent = content ?? createCommentContent(`post-${cid}`, contentSizeBytes);
+    if (Buffer.byteLength(safeContent, "utf8") > MAX_COMMENT_SIZE_BYTES) {
+        throw Error(`Test fixture comment ${cid} exceeds ${MAX_COMMENT_SIZE_BYTES} bytes`);
+    }
     return {
         comment: {
             cid,
@@ -598,7 +542,7 @@ function createBasicPostEntry({ cid, content, timestamp, subplebbitAddress, acti
             postCid: cid,
             parentCid: null,
             subplebbitAddress,
-            content
+            content: safeContent
         },
         commentUpdate: {
             upvoteCount: 0,
@@ -775,43 +719,6 @@ function createDepthLimitedRepliesDataForParent({ parentCid, parentDepth, postCi
     };
 }
 
-function createOversizedModQueueEntry(minSizeBytes = TARGET_OVERSIZED_SIZE) {
-    const cid = "pending-cid";
-    const timestamp = Math.floor(Date.now() / 1000);
-    let repeat = 20000;
-    let entry;
-    let entrySize = 0;
-    let chunkSize = 0;
-    let attempts = 0;
-
-    while (chunkSize < minSizeBytes) {
-        entry = {
-            comment: {
-                cid,
-                postCid: cid,
-                parentCid: null,
-                subplebbitAddress: "test-subplebbit-modqueue",
-                timestamp,
-                depth: 0,
-                content: "modqueue-entry-".repeat(repeat)
-            },
-            commentUpdate: {
-                cid,
-                protocolVersion: "1.0.0",
-                signature: { type: "ed25519", signature: "sig", publicKey: "pk", signedPropertyNames: [] },
-                pendingApproval: true
-            }
-        };
-        entrySize = Buffer.byteLength(JSON.stringify(entry), "utf8");
-        chunkSize = Buffer.byteLength(JSON.stringify({ comments: [entry] }), "utf8");
-        repeat += 5000;
-        attempts += 1;
-        if (attempts > 20) throw Error("Failed to build oversized mod queue entry");
-    }
-
-    return { entry, chunkSize, entrySize };
-}
-
 function buildReplyEntryMeetingSize({
     parentCid,
     parentDepth,
@@ -862,6 +769,7 @@ function buildDepthLimitedChainEntry({
     minSizeBytes = TARGET_OVERSIZED_SIZE
 }) {
     let contentRepeat = 4000;
+    let leafCount = 25;
     let attempts = 0;
 
     while (attempts < 50) {
@@ -876,14 +784,14 @@ function buildDepthLimitedChainEntry({
                 parentCid: currentDepth === 1 ? parentCid : `${parentCid}-chain-depth-${currentDepth - 1}`,
                 postCid,
                 subplebbitAddress,
-                content: "chain-depth-content-".repeat(contentRepeat)
+                content: repeatWithinCommentLimit("chain-depth-content-", contentRepeat)
             };
 
             const commentUpdate = {
                 upvoteCount: 0,
                 downvoteCount: 0,
-                replyCount: 0,
-                childCount: 0,
+                replyCount: leafCount,
+                childCount: leafCount,
                 protocolVersion: "1.0.0",
                 signature: "signature",
                 author: { address: `author-${cid}` }
@@ -891,17 +799,48 @@ function buildDepthLimitedChainEntry({
 
             timestampCursor += 1;
 
+            const leafReplies = Array.from({ length: leafCount }, (_, leafIndex) => {
+                const leafCid = `${cid}-leaf-${leafIndex}`;
+                return {
+                    comment: {
+                        cid: leafCid,
+                        depth: comment.depth + 1,
+                        timestamp: timestampCursor + leafIndex + 1,
+                        parentCid: cid,
+                        postCid,
+                        subplebbitAddress,
+                        content: createCommentContent(`${leafCid}`)
+                    },
+                    commentUpdate: {
+                        upvoteCount: 0,
+                        downvoteCount: 0,
+                        replyCount: 0,
+                        childCount: 0,
+                        protocolVersion: "1.0.0",
+                        signature: "signature",
+                        author: { address: `author-${leafCid}` }
+                    }
+                };
+            });
+
             if (currentDepth < maxDepth) {
                 const child = buildLevel(currentDepth + 1);
-                commentUpdate.replyCount = 1;
-                commentUpdate.childCount = 1;
+                commentUpdate.replyCount = leafReplies.length + 1;
+                commentUpdate.childCount = leafReplies.length + 1;
                 commentUpdate.replies = {
-                    pages: { best: { comments: [child.entry] } },
+                    pages: { best: { comments: [child.entry, ...leafReplies] } },
                     pageCids: {}
                 };
                 return {
                     entry: { comment, commentUpdate },
                     maxDepthReached: child.maxDepthReached
+                };
+            }
+
+            if (leafReplies.length > 0) {
+                commentUpdate.replies = {
+                    pages: { best: { comments: leafReplies } },
+                    pageCids: {}
                 };
             }
 
@@ -915,6 +854,7 @@ function buildDepthLimitedChainEntry({
         if (chunkSize >= minSizeBytes) return { entry: built.entry, entrySize, chunkSize, maxDepthReached: built.maxDepthReached };
 
         contentRepeat += 500;
+        leafCount += 10;
         attempts += 1;
     }
 
@@ -942,7 +882,7 @@ function buildHeavyReplyEntry({
                 parentCid: topReplyCid,
                 postCid,
                 subplebbitAddress,
-                content: "nested-reply-".repeat(nestedContentRepeat)
+                content: repeatWithinCommentLimit("nested-reply-", nestedContentRepeat)
             },
             commentUpdate: {
                 upvoteCount: 0,
