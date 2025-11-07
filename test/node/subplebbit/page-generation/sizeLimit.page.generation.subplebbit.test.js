@@ -8,6 +8,9 @@ import { Buffer } from "buffer";
 const MB = 1024 * 1024;
 const TARGET_OVERSIZED_SIZE = MB + 10 * 1024;
 const MAX_COMMENT_SIZE_BYTES = 40 * 1024;
+const RANDOM_CID_V0 = "QmbKFFGL9EMwdMVrkJUqz2yQAorzUBExchK1qogsU8BJ7e";
+const RANDOM_POST_CID_V0 = "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f";
+const RANDOM_REPLY_CID_V0 = "QmX7yV8dWgyMUiw5DSBt5ABToBWqi55GVEtnidAbNGGFoG";
 
 function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES - 512) {
     const unit = `${prefix}-chunk-`;
@@ -15,6 +18,7 @@ function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES - 512
     const repeat = Math.max(1, Math.floor(targetBytes / unitBytes));
     return unit.repeat(repeat);
 }
+
 
 function repeatWithinCommentLimit(base, desiredRepeat) {
     const baseBytes = Buffer.byteLength(base, "utf8");
@@ -66,6 +70,8 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
             }
         });
 
+        // this test should be changed so instead of throwing it would produce a specific posts structure we can agree to
+        // in general all generate functions should never throw because it halts the subplebbit's publish loop
         let caughtError;
         try {
             await pageGenerator.generateSubplebbitPosts("hot", MB);
@@ -84,7 +90,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
         const subplebbitAddress = "test-subplebbit-preloaded";
         const { oversizedPost, secondaryPost } = createPostsWithDeepReplies();
         const thirdPost = createBasicPostEntry({
-            cid: "cid2",
+            cid: RANDOM_CID_V0,
             timestamp: oversizedPost.comment.timestamp - 5,
             subplebbitAddress,
             activeScore: oversizedPost.activeScore - 5
@@ -209,10 +215,12 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
     it("throws when generateSubplebbitPosts handles a depth-limited reply chain that still exceeds the page size", async () => {
         const subplebbitAddress = "test-subplebbit-depth-limited";
         const baseTimestamp = Math.floor(Date.now() / 1000);
+        const depthLimitedPostCid = RANDOM_CID_V0;
+        const secondaryDepthLimitedPostCid = RANDOM_CID_V0;
         const depthLimitedReply = buildDepthLimitedChainEntry({
-            parentCid: "cid-root-depth",
+            parentCid: depthLimitedPostCid,
             parentDepth: 0,
-            postCid: "cid-root-depth",
+            postCid: depthLimitedPostCid,
             subplebbitAddress,
             baseTimestamp,
             maxDepth: 10,
@@ -225,15 +233,13 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
         const oversizedPost = {
             comment: {
-                cid: "cid-root-depth",
                 depth: 0,
                 timestamp: baseTimestamp,
-                postCid: "cid-root-depth",
-                parentCid: null,
                 subplebbitAddress,
                 content: "root-depth-content"
             },
             commentUpdate: {
+                cid: depthLimitedPostCid,
                 upvoteCount: 5,
                 downvoteCount: 0,
                 replyCount: 1,
@@ -251,15 +257,13 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
         const secondaryPost = {
             comment: {
-                cid: "cid-root-depth-secondary",
                 depth: 0,
                 timestamp: baseTimestamp - 5,
-                postCid: "cid-root-depth-secondary",
-                parentCid: null,
                 subplebbitAddress,
                 content: "root-depth-secondary"
             },
             commentUpdate: {
+                cid: secondaryDepthLimitedPostCid,
                 upvoteCount: 1,
                 downvoteCount: 0,
                 replyCount: 0,
@@ -308,7 +312,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
     it("throws when generatePostPages processes deeply nested replies exceeding the page limit", async () => {
         const subplebbitAddress = "test-subplebbit-post";
-        const parentCid = "post-root";
+        const parentCid = RANDOM_CID_V0;
         const { hierarchical, flattened, oversizedReplySize, oversizedReplyChunkSize } = createRepliesDataForParent({
             parentCid,
             parentDepth: 0,
@@ -350,7 +354,7 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
     it("throws when generatePostPages handles depth-limited replies that exceed the page size", async () => {
         const subplebbitAddress = "test-subplebbit-post-depth-limited";
-        const parentCid = "post-depth-parent";
+        const parentCid = RANDOM_CID_V0;
         const { hierarchical, flattened, depthLimitedEntrySize, depthLimitedChunkSize } = createDepthLimitedRepliesDataForParent({
             parentCid,
             parentDepth: 0,
@@ -394,8 +398,8 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
     it("throws when generateReplyPages processes deeply nested replies exceeding the page limit", async () => {
         const subplebbitAddress = "test-subplebbit-reply";
-        const postCid = "post-root";
-        const parentComment = { cid: "reply-parent", depth: 1 };
+        const postCid = RANDOM_POST_CID_V0;
+        const parentComment = { cid: RANDOM_REPLY_CID_V0, depth: 1, parentCid: postCid, postCid };
         const { hierarchical, flattened, oversizedReplySize, oversizedReplyChunkSize } = createRepliesDataForParent({
             parentCid: parentComment.cid,
             parentDepth: parentComment.depth,
@@ -437,8 +441,8 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
     it("throws when generateReplyPages handles depth-limited replies that exceed the page size", async () => {
         const subplebbitAddress = "test-subplebbit-reply-depth-limited";
-        const postCid = "post-depth-root";
-        const parentComment = { cid: "reply-depth-parent", depth: 1 };
+        const postCid = RANDOM_POST_CID_V0;
+        const parentComment = { cid: RANDOM_REPLY_CID_V0, depth: 1, parentCid: postCid, postCid };
         const { hierarchical, flattened, depthLimitedEntrySize, depthLimitedChunkSize } = createDepthLimitedRepliesDataForParent({
             parentCid: parentComment.cid,
             parentDepth: parentComment.depth,
@@ -482,8 +486,8 @@ describeSkipIfRpc("page-generator enforces expected size limits", function () {
 
     it("still throws when reply depth is capped at 5 levels but the preview exceeds the page size", async () => {
         const subplebbitAddress = "test-subplebbit-reply-depth-5";
-        const postCid = "post-depth-five-root";
-        const parentComment = { cid: "reply-depth-five-parent", depth: 1 };
+        const postCid = RANDOM_POST_CID_V0;
+        const parentComment = { cid: RANDOM_REPLY_CID_V0, depth: 1, parentCid: postCid, postCid };
         const { hierarchical, flattened, depthLimitedEntrySize, depthLimitedChunkSize, maxDepthReached } =
             createDepthLimitedRepliesDataForParent({
                 parentCid: parentComment.cid,
@@ -536,15 +540,13 @@ function createBasicPostEntry({ cid, content, timestamp, subplebbitAddress, acti
     }
     return {
         comment: {
-            cid,
             depth: 0,
             timestamp,
-            postCid: cid,
-            parentCid: null,
             subplebbitAddress,
             content: safeContent
         },
         commentUpdate: {
+            cid,
             upvoteCount: 0,
             downvoteCount: 0,
             replyCount: 0,
@@ -562,7 +564,8 @@ function createFakeIpfsClient() {
         add: async (content) => {
             // are we sure this call is equivalent to what ipfs client does
             const size = Buffer.byteLength(content, "utf8");
-            return { cid: `cid-${size}`, path: `cid-${size}`, size };
+            const cid = RANDOM_CID_V0;
+            return { cid, path: cid, size };
         },
         routing: {
             async *provide() {
@@ -575,19 +578,21 @@ function createFakeIpfsClient() {
 function createPostsWithDeepReplies() {
     const subplebbitAddress = "test-subplebbit";
     const baseTimestamp = Math.floor(Date.now() / 1000);
+    const primaryPostCid = RANDOM_CID_V0;
+    const secondaryPostCid = RANDOM_CID_V0;
 
     const oversizedReply = buildReplyEntryMeetingSize({
-        parentCid: "cid-root-primary",
+        parentCid: primaryPostCid,
         parentDepth: 0,
-        postCid: "cid-root-primary",
+        postCid: primaryPostCid,
         subplebbitAddress,
         baseTimestamp
     });
 
     const secondaryReply = buildHeavyReplyEntry({
-        parentCid: "cid-root-secondary",
+        parentCid: secondaryPostCid,
         parentDepth: 0,
-        postCid: "cid-root-secondary",
+        postCid: secondaryPostCid,
         subplebbitAddress,
         baseTimestamp: baseTimestamp + 10,
         nestedCount: 5,
@@ -597,15 +602,13 @@ function createPostsWithDeepReplies() {
 
     const oversizedPost = {
         comment: {
-            cid: "cid-root-primary",
             depth: 0,
             timestamp: baseTimestamp,
-            postCid: "cid-root-primary",
-            parentCid: null,
             subplebbitAddress,
             content: "root-content-primary"
         },
         commentUpdate: {
+            cid: primaryPostCid,
             upvoteCount: 10,
             downvoteCount: 0,
             replyCount: 1,
@@ -623,15 +626,13 @@ function createPostsWithDeepReplies() {
 
     const secondaryPost = {
         comment: {
-            cid: "cid-root-secondary",
             depth: 0,
             timestamp: baseTimestamp + 10,
-            postCid: "cid-root-secondary",
-            parentCid: null,
             subplebbitAddress,
             content: "root-content-secondary"
         },
         commentUpdate: {
+            cid: secondaryPostCid,
             upvoteCount: 8,
             downvoteCount: 0,
             replyCount: 1,
@@ -776,18 +777,18 @@ function buildDepthLimitedChainEntry({
         let timestampCursor = baseTimestamp;
 
         function buildLevel(currentDepth) {
-            const cid = `${parentCid}-chain-depth-${currentDepth}`;
+            const cid = RANDOM_CID_V0;
             const comment = {
-                cid,
                 depth: parentDepth + currentDepth,
                 timestamp: timestampCursor,
-                parentCid: currentDepth === 1 ? parentCid : `${parentCid}-chain-depth-${currentDepth - 1}`,
+                parentCid: currentDepth === 1 ? parentCid : RANDOM_CID_V0,
                 postCid,
                 subplebbitAddress,
                 content: repeatWithinCommentLimit("chain-depth-content-", contentRepeat)
             };
 
             const commentUpdate = {
+                cid,
                 upvoteCount: 0,
                 downvoteCount: 0,
                 replyCount: leafCount,
@@ -800,10 +801,9 @@ function buildDepthLimitedChainEntry({
             timestampCursor += 1;
 
             const leafReplies = Array.from({ length: leafCount }, (_, leafIndex) => {
-                const leafCid = `${cid}-leaf-${leafIndex}`;
+                const leafCid = RANDOM_CID_V0;
                 return {
                     comment: {
-                        cid: leafCid,
                         depth: comment.depth + 1,
                         timestamp: timestampCursor + leafIndex + 1,
                         parentCid: cid,
@@ -812,6 +812,7 @@ function buildDepthLimitedChainEntry({
                         content: createCommentContent(`${leafCid}`)
                     },
                     commentUpdate: {
+                        cid: leafCid,
                         upvoteCount: 0,
                         downvoteCount: 0,
                         replyCount: 0,
@@ -871,12 +872,11 @@ function buildHeavyReplyEntry({
     nestedContentRepeat = 3000,
     replySuffix = "heavy"
 }) {
-    const topReplyCid = `${parentCid}-reply-${replySuffix}`;
+    const topReplyCid = RANDOM_CID_V0;
     const nestedComments = Array.from({ length: nestedCount }, (_, index) => {
-        const childCid = `${topReplyCid}-child-${index}`;
+        const childCid = RANDOM_CID_V0;
         return {
             comment: {
-                cid: childCid,
                 depth: parentDepth + 2,
                 timestamp: baseTimestamp + index + 1,
                 parentCid: topReplyCid,
@@ -885,6 +885,7 @@ function buildHeavyReplyEntry({
                 content: repeatWithinCommentLimit("nested-reply-", nestedContentRepeat)
             },
             commentUpdate: {
+                cid: childCid,
                 upvoteCount: 0,
                 downvoteCount: 0,
                 replyCount: 0,
@@ -898,7 +899,6 @@ function buildHeavyReplyEntry({
 
     const topLevelReply = {
         comment: {
-            cid: topReplyCid,
             depth: parentDepth + 1,
             timestamp: baseTimestamp,
             parentCid,
@@ -907,6 +907,7 @@ function buildHeavyReplyEntry({
             content: "heavy-reply"
         },
         commentUpdate: {
+            cid: topReplyCid,
             upvoteCount: 0,
             downvoteCount: 0,
             replyCount: nestedComments.length,
