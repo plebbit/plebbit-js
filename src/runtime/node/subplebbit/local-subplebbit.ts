@@ -1875,12 +1875,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const repliesAvailableSize =
             MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 1000;
+
+        const HARD_PRELOADED_PAGE_LIMIT_BYTES = 1024 * 1024;
+        const MIN_INLINE_REPLIES_PAGE_BYTES = 256 * 1024;
+        const BASE_DEPTH_BUFFER_BYTES = 1024;
+        const DEPTH_BUFFER_STEP_BYTES = 2 * 1024;
+
+        const depthBufferBytes = BASE_DEPTH_BUFFER_BYTES + comment.depth * DEPTH_BUFFER_STEP_BYTES;
+        const desiredPreloadedPageBudget = repliesAvailableSize - depthBufferBytes;
+        const clampedPreloadedPageBudget = Math.min(
+            Math.max(desiredPreloadedPageBudget, MIN_INLINE_REPLIES_PAGE_BYTES),
+            HARD_PRELOADED_PAGE_LIMIT_BYTES
+        );
+        const preloadedRepliesPageSizeBytes = Math.max(0, Math.min(clampedPreloadedPageBudget, repliesAvailableSize));
         const preloadedRepliesPages = "best";
 
         const generatedRepliesPages =
             comment.depth === 0
-                ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, repliesAvailableSize)
-                : await this._pageGenerator.generateReplyPages(comment, preloadedRepliesPages, repliesAvailableSize);
+                ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, preloadedRepliesPageSizeBytes)
+                : await this._pageGenerator.generateReplyPages(comment, preloadedRepliesPages, preloadedRepliesPageSizeBytes);
 
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
         if (generatedRepliesPages) {
