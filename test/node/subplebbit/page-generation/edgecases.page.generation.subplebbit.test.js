@@ -20,6 +20,8 @@ const DEFAULT_COMMENT_SIGNATURE = {
 };
 const DEFAULT_CHAIN_DEPTH = 20;
 
+// TODO we need to test loading pageCids and make sure they're all 1mib or under
+// TODO we need to optimize so that moving preloaded pages into pageCids happens at higher depths instead of lower depths like 0 and 1
 describeSkipIfRpc("page-generator disables oversized preloaded pages", function () {
     afterEach(() => {
         vi.restoreAllMocks();
@@ -29,8 +31,8 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         const context = await createInMemorySubplebbit();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
-                chainDepth: 25,
-                extraChildrenPerDepth: { 0: 400 }
+                chainDepth: 200,
+                extraChildrenPerDepth: { 0: 600 }
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
             expect(updates.length).to.be.greaterThan(0);
@@ -45,13 +47,17 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             expectCommentUpdateUnderLimit(rootUpdate.newCommentUpdate, "root update should stay under 1mib");
 
             const replies = rootUpdate.newCommentUpdate.replies;
-            console.log("root replies keys", Object.keys(replies || {}));
-            console.log("root pageCids", replies?.pageCids);
             expect(replies, "expected replies to exist on top-level post").to.exist;
-            expect(replies?.pageCids?.best).to.be.a("string");
-            expect(replies?.pages?.best?.nextCid).to.equal(replies?.pageCids?.best);
             expect(replies?.pages?.best?.comments.length).to.be.greaterThan(0);
-        } finally {
+            expect(replies?.pageCids?.best).to.be.undefined;
+
+            const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "subplebbit.posts");
+            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
+        } 
+        catch(e){
+            throw e;
+        }
+        finally {
             await context.cleanup();
         }
     });
@@ -80,7 +86,10 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             const replies = depthOneUpdate.newCommentUpdate.replies;
             expect(replies, "expected replies on depth 1 comment").to.exist;
             expect(replies?.pageCids?.best).to.be.a("string");
-            expect(replies?.pages?.best?.nextCid).to.equal(replies?.pageCids?.best);
+            expect(replies?.pages?.best).to.be.undefined;
+
+            const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "post.replies");
+            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
         } finally {
             await context.cleanup();
         }
@@ -111,7 +120,10 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             const replies = nestedReplyUpdate.newCommentUpdate.replies;
             expect(replies, "expected replies for depth 2 comment").to.exist;
             expect(replies?.pageCids?.best).to.be.a("string");
-            expect(replies?.pages?.best?.nextCid).to.equal(replies?.pageCids?.best);
+            expect(replies?.pages?.best).to.be.undefined;
+
+            const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "reply.replies");
+            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
         } finally {
             await context.cleanup();
         }
@@ -341,7 +353,7 @@ async function buildCommentRowsFromTrees({ subplebbitAddress, trees }) {
     return { rows, labelToCid };
 }
 
-function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES - 512) {
+function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES / 2 - 512) {
     const unit = `${prefix}-chunk-`;
     const unitBytes = Buffer.byteLength(unit, "utf8");
     const repeat = Math.max(1, Math.floor(targetBytes / unitBytes));
@@ -375,7 +387,11 @@ function assertParentAndPostCid(rows, labelToCid, label, parentLabel, rootLabel)
 
 function expectCommentUpdatesUnderLimit(updates, limitBytes = MB) {
     updates.forEach(({ newCommentUpdate }) => {
-        expectCommentUpdateUnderLimit(newCommentUpdate, `comment update ${newCommentUpdate?.cid ?? "unknown"} should stay under 1mib`, limitBytes);
+        expectCommentUpdateUnderLimit(
+            newCommentUpdate,
+            `comment update ${newCommentUpdate?.cid ?? "unknown"} should stay under 1mib`,
+            limitBytes
+        );
     });
 }
 
@@ -385,4 +401,21 @@ function expectCommentUpdateUnderLimit(commentUpdate, contextMessage, limitBytes
     const sizeBytes = Buffer.byteLength(serialized, "utf8");
     expect(sizeBytes, contextMessage).to.be.lessThan(limitBytes);
     return sizeBytes;
+}
+
+function logCommentsThatMovedBestPreloadToPageCids(updates, rows, contextLabel) {
+    const cidToDepth = new Map(rows.map((row) => [row.cid, row.depth]));
+    const movedComments = updates
+        .map(({ newCommentUpdate }) => newCommentUpdate)
+        .filter((update) => {
+            const replies = update.replies;
+            return Boolean(replies?.pageCids?.best) && !replies?.pages?.best;
+        });
+
+    const depths = movedComments
+        .map(({ cid }) => cidToDepth.get(cid))
+        .filter((depth) => typeof depth === "number");
+
+    console.log(`${contextLabel} comments that moved best preload into pageCids (depths):`, depths);
+    return depths;
 }

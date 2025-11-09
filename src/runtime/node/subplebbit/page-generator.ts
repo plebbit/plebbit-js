@@ -50,6 +50,11 @@ type PageGenerationRes =
     | AddedPageChunksToIpfsRes // when there are multiple pages
     | SinglePreloadedPageRes; // when there is only one preloaded page
 
+function getSerializedCommentsSize(comments: PageIpfs["comments"], hasNextCid: boolean): number {
+    const payload: PageIpfs = hasNextCid ? { comments, nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx" } : { comments };
+    return Buffer.byteLength(JSON.stringify(payload), "utf8");
+}
+
 export class PageGenerator {
     private _subplebbit: LocalSubplebbit;
 
@@ -346,12 +351,24 @@ export class PageGenerator {
         if (rawPosts.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, pageOptions);
-        if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
+        const firstChunkSize = getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
+        const disablePreload = firstChunkSize > preloadedPageSizeBytes;
+        if (!disablePreload && preloadedChunk.length === 1)
+            return { singlePreloadedPage: { [preloadedPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one preloaded page
 
         // we're gonna have pages for each sort type, they don't fit in a single preloaded chunk
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
-        sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedPageSortName));
+        if (disablePreload) {
+            sortResults.push(
+                await this.sortChunkAddIpfsNonPreloaded(rawPosts, preloadedPageSortName, {
+                    ...pageOptions,
+                    firstPageSizeBytes: 1024 * 1024
+                })
+            );
+        } else {
+            sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedPageSortName));
+        }
 
         const nonPreloadedSorts = remeda.keys.strict(POSTS_SORT_TYPES).filter((sortName) => sortName !== preloadedPageSortName);
         await Promise.all(
@@ -362,7 +379,10 @@ export class PageGenerator {
             })
         );
 
-        return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
+        const generatedPages = <PostsPagesTypeIpfs | undefined>this._generationResToPages(sortResults);
+        if (!generatedPages) return undefined;
+        if (disablePreload) return { pageCids: generatedPages.pageCids, pages: {} };
+        else return generatedPages;
     }
 
     async _bundleLatestCommentUpdateWithQueuedComments(queuedComment: CommentsTableRow): Promise<ModQueueCommentInPage> {
@@ -422,11 +442,23 @@ export class PageGenerator {
             ...pageOptions,
             firstPageSizeBytes: preloadedPageSizeBytes
         });
-        if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
+        const firstChunkSize = getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
+        const disablePreload = firstChunkSize > preloadedPageSizeBytes;
+        if (!disablePreload && preloadedChunk.length === 1)
+            return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
-        sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
+        if (disablePreload) {
+            sortResults.push(
+                await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, preloadedReplyPageSortName, {
+                    ...pageOptions,
+                    firstPageSizeBytes: 1024 * 1024
+                })
+            );
+        } else {
+            sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
+        }
 
         const nonPreloadedSorts = remeda.keys.strict(POST_REPLIES_SORT_TYPES).filter((sortName) => sortName !== preloadedReplyPageSortName);
 
@@ -444,7 +476,10 @@ export class PageGenerator {
             })
         );
 
-        return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
+        const generatedPages = <RepliesPagesTypeIpfs | undefined>this._generationResToPages(sortResults);
+        if (!generatedPages) return undefined;
+        if (disablePreload) return { pageCids: generatedPages.pageCids, pages: {} };
+        else return generatedPages;
     }
 
     async generateReplyPages(
@@ -470,7 +505,10 @@ export class PageGenerator {
             ...pageOptions,
             firstPageSizeBytes: preloadedPageSizeBytes
         });
-        if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
+        const firstChunkSize = getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
+        const disablePreload = firstChunkSize > preloadedPageSizeBytes;
+        if (!disablePreload && preloadedChunk.length === 1)
+            return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
         const nonPreloadedSorts = remeda.keys
             .strict(REPLY_REPLIES_SORT_TYPES)
@@ -478,7 +516,16 @@ export class PageGenerator {
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
-        sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
+        if (disablePreload) {
+            sortResults.push(
+                await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, preloadedReplyPageSortName, {
+                    ...pageOptions,
+                    firstPageSizeBytes: 1024 * 1024
+                })
+            );
+        } else {
+            sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
+        }
 
         await Promise.all(
             nonPreloadedSorts.map(async (hierarchalSortName) => {
@@ -491,7 +538,10 @@ export class PageGenerator {
             })
         );
 
-        return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
+        const generatedPages = <RepliesPagesTypeIpfs | undefined>this._generationResToPages(sortResults);
+        if (!generatedPages) return undefined;
+        if (disablePreload) return { pageCids: generatedPages.pageCids, pages: {} };
+        else return generatedPages;
     }
 
     toJSON() {
