@@ -1,8 +1,6 @@
 import { expect } from "chai";
 import { describeSkipIfRpc, mockPlebbit } from "../../../../dist/node/test/test-util.js";
 import { afterEach, it, vi } from "vitest";
-import { PageGenerator } from "../../../../dist/node/runtime/node/subplebbit/page-generator.js";
-import { DbHandler } from "../../../../dist/node/runtime/node/subplebbit/db-handler.js";
 import { Buffer } from "buffer";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { randomUUID } from "node:crypto";
@@ -27,7 +25,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
     });
 
     it("A subplebbit.posts preloaded page higher than 1mib should not be published a preload, instead it send preloaded sort into pageCids", async () => {
-        const context = await createInMemorySubplebbit();
+        const context = await createSubplebbitWithDefaultDb();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
                 chainDepth: 200,
@@ -61,11 +59,11 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
     });
 
     it("A post.replies preloaded page page higher than 1mib should not be published a preload, instead it send preloaded sort into pageCids", async () => {
-        const context = await createInMemorySubplebbit();
+        const context = await createSubplebbitWithDefaultDb();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
-                chainDepth: 200,
-                extraChildrenPerDepth: { 0: 600 }
+                chainDepth: 500,
+                extraChildrenPerDepth: { 0: 1 }
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
             expect(updates.length).to.be.greaterThan(0);
@@ -103,11 +101,11 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
     });
 
     it("A reply.replies preloaded page page higher than 1mib should not be published a preload, instead it send preloaded sort into pageCids", async () => {
-        const context = await createInMemorySubplebbit();
+        const context = await createSubplebbitWithDefaultDb();
         try {
             const { rows } = await seedHeavyDiscussion(context.subplebbit, {
-                chainDepth: 200,
-                extraChildrenPerDepth: { 0: 600 }
+                chainDepth: 500,
+                extraChildrenPerDepth: { 2: 1 }
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
             expect(updates.length).to.be.greaterThan(0);
@@ -234,10 +232,12 @@ function normalizeExtraChildrenPlan(extraChildrenPerDepth, chainDepth) {
     return normalized;
 }
 
-async function createInMemorySubplebbit() {
+async function createSubplebbitWithDefaultDb() {
+    // Keep the disk-backed database configuration to avoid storing large fixtures in memory.
     const plebbit = await mockPlebbit();
     const subplebbit = await plebbit.createSubplebbit();
-    await replaceDbHandlerWithInMemory(subplebbit);
+    await subplebbit._dbHandler.initDbIfNeeded();
+    await subplebbit._dbHandler.createOrMigrateTablesIfNeeded();
     const fakeIpfsClient = createFakeIpfsClient();
     vi.spyOn(subplebbit._clientsManager, "getDefaultKuboRpcClient").mockReturnValue({ _client: fakeIpfsClient });
     return {
@@ -274,15 +274,6 @@ function createFakeIpfsClient() {
             }
         }
     };
-}
-
-async function replaceDbHandlerWithInMemory(subplebbit) {
-    const dbHandler = new DbHandler(subplebbit);
-    await dbHandler.initDbIfNeeded({ filename: ":memory:", fileMustExist: false });
-    await dbHandler.createOrMigrateTablesIfNeeded();
-    if (subplebbit._dbHandler) await subplebbit._dbHandler.destoryConnection();
-    subplebbit._dbHandler = dbHandler;
-    subplebbit._pageGenerator = new PageGenerator(subplebbit);
 }
 
 async function seedSubplebbitComments(subplebbit, commentTrees) {
