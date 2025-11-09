@@ -154,7 +154,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const parentComment = await publishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
-                    await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => typeof parentComment.updatedAt === "number" });
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: parentComment,
+                        predicate: () => typeof parentComment.updatedAt === "number"
+                    });
                     await forceSubplebbitToGenerateAllRepliesPages(parentComment);
                     await parentComment.stop();
 
@@ -168,7 +171,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     await replyRecreated.update();
                     mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-                    await resolveWhenConditionIsTrue({ toUpdate: replyRecreated, predicate: () => typeof replyRecreated.updatedAt === "number" });
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: replyRecreated,
+                        predicate: () => typeof replyRecreated.updatedAt === "number"
+                    });
 
                     expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
                     expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
@@ -190,7 +196,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
-                    await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => typeof parentComment.updatedAt === "number" });
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: parentComment,
+                        predicate: () => typeof parentComment.updatedAt === "number"
+                    });
                     await forceSubplebbitToGenerateAllRepliesPages(parentComment);
                     // keep parent comment updating
 
@@ -203,7 +212,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     await replyRecreated.update();
                     mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-                    await resolveWhenConditionIsTrue({ toUpdate: replyRecreated, predicate: () => typeof replyRecreated.updatedAt === "number" });
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: replyRecreated,
+                        predicate: () => typeof replyRecreated.updatedAt === "number"
+                    });
 
                     expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
                     expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
