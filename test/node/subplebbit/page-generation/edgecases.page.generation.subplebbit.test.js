@@ -230,11 +230,21 @@ async function createInMemorySubplebbit() {
 }
 
 function createFakeIpfsClient() {
+    const noopAsync = async (..._args) => {};
     return {
         add: async (content) => {
             const size = Buffer.byteLength(content, "utf8");
             const cid = await calculateIpfsCidV0Lib(`${content.length}-${Math.random()}`);
             return { cid, path: cid, size };
+        },
+        pin: {
+            rm: noopAsync
+        },
+        files: {
+            rm: noopAsync
+        },
+        key: {
+            rm: noopAsync
         },
         routing: {
             async *provide() {
