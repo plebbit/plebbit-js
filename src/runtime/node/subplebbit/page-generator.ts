@@ -50,9 +50,10 @@ type PageGenerationRes =
     | AddedPageChunksToIpfsRes // when there are multiple pages
     | SinglePreloadedPageRes; // when there is only one preloaded page
 
-function getSerializedCommentsSize(comments: PageIpfs["comments"], hasNextCid: boolean): number {
+async function getSerializedCommentsSize(comments: PageIpfs["comments"], hasNextCid: boolean): Promise<number> {
     const payload: PageIpfs = hasNextCid ? { comments, nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx" } : { comments };
-    return Buffer.byteLength(JSON.stringify(payload), "utf8");
+    const serializedPayload = JSON.stringify(payload);
+    return await calculateStringSizeSameAsIpfsAddCidV0(serializedPayload);
 }
 
 export class PageGenerator {
@@ -192,36 +193,34 @@ export class PageGenerator {
         return { [sortName]: { pages: listOfPage } };
     }
 
-    _chunkComments<T extends PageIpfs["comments"] | ModQueuePageIpfs["comments"]>({
+    async _chunkComments<T extends PageIpfs["comments"] | ModQueuePageIpfs["comments"]>({
         comments,
         firstPageSizeBytes
     }: {
         comments: T;
         firstPageSizeBytes: number;
-    }): T[] {
+    }): Promise<T[]> {
         const FIRST_PAGE_SIZE = firstPageSizeBytes; // dynamic page size for preloaded sorts, 1MB for others
         const SAFETY_MARGIN = 1024; // Use 1KiB margin
 
         // Calculate overhead with and without nextCid
         const OBJECT_WRAPPER_WITH_CID =
-            Buffer.byteLength(
+            (await calculateStringSizeSameAsIpfsAddCidV0(
                 JSON.stringify(<PageIpfs>{
                     comments: [],
                     nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx" // random cid as a place holder
-                }),
-                "utf8"
-            ) - 2; // Subtract 2 for empty array "[]"
+                })
+            )) - 2; // Subtract 2 for empty array "[]"
 
         const OBJECT_WRAPPER_WITHOUT_CID =
-            Buffer.byteLength(
+            (await calculateStringSizeSameAsIpfsAddCidV0(
                 JSON.stringify(<PageIpfs>{
                     comments: []
-                }),
-                "utf8"
-            ) - 2; // Subtract 2 for empty array "[]"
+                })
+            )) - 2; // Subtract 2 for empty array "[]"
 
         // Quick check for small arrays - if everything fits in one page, no nextCid needed
-        const totalSizeWithoutCid = Buffer.byteLength(JSON.stringify(<PageIpfs>{ comments }), "utf8");
+        const totalSizeWithoutCid = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(<PageIpfs>{ comments }));
         if (totalSizeWithoutCid <= FIRST_PAGE_SIZE) {
             return [comments]; // Single page, no chunking needed
         }
@@ -235,9 +234,9 @@ export class PageGenerator {
         // Pre-calculate sizes to avoid repeated stringification
         const commentSizes = new Map<number, number>();
 
-        function getCommentSize(index: number): number {
+        async function getCommentSize(index: number): Promise<number> {
             if (!commentSizes.has(index)) {
-                const size = Buffer.byteLength(JSON.stringify(comments[index]), "utf8");
+                const size = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(comments[index]));
                 commentSizes.set(index, size);
             }
             return commentSizes.get(index)!;
@@ -255,7 +254,7 @@ export class PageGenerator {
         }
 
         for (let i = 0; i < comments.length; i++) {
-            const commentSize = getCommentSize(i);
+            const commentSize = await getCommentSize(i);
             const maxSize = getCurrentMaxSize(chunkIndex);
             const isLastItem = i === comments.length - 1;
 
@@ -330,7 +329,7 @@ export class PageGenerator {
 
         if (commentsSorted.length === 0) return [];
 
-        const commentsChunks = this._chunkComments({
+        const commentsChunks = await this._chunkComments({
             comments: commentsSorted,
             firstPageSizeBytes: options.firstPageSizeBytes
         });
@@ -386,7 +385,7 @@ export class PageGenerator {
         if (rawPosts.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, pageOptions);
-        const firstChunkSize = getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
+        const firstChunkSize = await getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
         const disablePreload = firstChunkSize > preloadedPageSizeBytes;
         if (!disablePreload && preloadedChunk.length === 1)
             return { singlePreloadedPage: { [preloadedPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one preloaded page
@@ -447,7 +446,7 @@ export class PageGenerator {
 
         const combinedHashOfCids = sha256(queuedComments.map((comment) => comment.commentUpdate.cid).join(""));
 
-        const chunkedQueuedComments = this._chunkComments({ comments: queuedComments, firstPageSizeBytes });
+        const chunkedQueuedComments = await this._chunkComments({ comments: queuedComments, firstPageSizeBytes });
 
         const pages = await this.addQueuedCommentChunksToIpfs(chunkedQueuedComments, "pendingApproval");
 
@@ -477,7 +476,7 @@ export class PageGenerator {
             ...pageOptions,
             firstPageSizeBytes: preloadedPageSizeBytes
         });
-        const firstChunkSize = getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
+        const firstChunkSize = await getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
         const disablePreload = firstChunkSize > preloadedPageSizeBytes;
         if (!disablePreload && preloadedChunk.length === 1)
             return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
@@ -540,7 +539,7 @@ export class PageGenerator {
             ...pageOptions,
             firstPageSizeBytes: preloadedPageSizeBytes
         });
-        const firstChunkSize = getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
+        const firstChunkSize = await getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
         const disablePreload = firstChunkSize > preloadedPageSizeBytes;
         if (!disablePreload && preloadedChunk.length === 1)
             return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
