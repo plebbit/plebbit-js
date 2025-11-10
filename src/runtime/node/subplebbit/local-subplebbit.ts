@@ -37,7 +37,8 @@ import {
     writeKuboFilesWithTimeout,
     retryKuboIpfsAddAndProvide,
     getIpnsRecordInLocalKuboNode,
-    calculateIpfsCidV0
+    calculateIpfsCidV0,
+    calculateStringSizeSameAsIpfsAddCidV0
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -704,6 +705,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             addOptions: { pin: true },
             provideOptions: { recursive: true }
         });
+        if (file.size > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
+            throw new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
+                calculatedSizeOfNewSubplebbitRecord: file.size,
+                maxSize: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
+                newSubplebbitRecord,
+                address: this.address
+            });
+        }
 
         if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
         if (this._firstUpdateAfterStart) await this._resolveIpnsAndLogIfPotentialProblematicSequence();
@@ -776,17 +785,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _validateSubSizeSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:local-subplebbit:_validateSubSchemaAndSignatureBeforePublishing");
 
+        const stringifiedNewSubplebbitRecord = deterministicStringify(recordToPublishRaw);
+        const calculatedSizeOfNewSubplebbitRecord = await calculateStringSizeSameAsIpfsAddCidV0(stringifiedNewSubplebbitRecord);
+
         // Check if the subplebbit record size is less than 1MB
-        const recordSize = Buffer.byteLength(JSON.stringify(recordToPublishRaw)); // size in bytes
-        if (recordSize > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
+        if (calculatedSizeOfNewSubplebbitRecord > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
             const error = new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
-                size: recordSize,
+                calculatedSizeOfNewSubplebbitRecord,
                 maxSize: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
                 recordToPublishRaw,
                 address: this.address
             });
             log.error(
-                `Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)} bytes). Maximum size is ${MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS} bytes.`,
+                `Local subplebbit (${this.address}) produced a record that is too large (${calculatedSizeOfNewSubplebbitRecord.toFixed(2)} bytes). Maximum size is ${MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS} bytes.`,
                 error
             );
             throw error;
@@ -824,7 +835,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw e;
         }
 
-        verificationOpts.subplebbit = JSON.parse(deterministicStringify(recordToPublishRaw)); // let's stringify and parse again to make sure we're not using any invalid data
+        verificationOpts.subplebbit = JSON.parse(stringifiedNewSubplebbitRecord); // let's stringify and parse again to make sure we're not using any invalid data
         try {
             const validation = await verifySubplebbit(verificationOpts);
             if (!validation.valid) {
