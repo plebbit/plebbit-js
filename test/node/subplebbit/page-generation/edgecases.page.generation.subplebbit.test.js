@@ -75,6 +75,18 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         }
     });
 
+    it("returns undefined when attempting to paginate an empty subplebbit", async () => {
+        const context = await createSubplebbitWithDefaultDb();
+        try {
+            const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
+            expect(availablePostsSize, "expected available posts budget to remain positive").to.be.greaterThan(0);
+            const generatedPosts = await context.subplebbit._pageGenerator.generateSubplebbitPosts("hot", availablePostsSize);
+            expect(generatedPosts, "expected no pagination output when there are no posts").to.be.undefined;
+        } finally {
+            await context.cleanup();
+        }
+    });
+
     it("collapses subplebbit.posts hot into pageCids when the production budget is exhausted", async () => {
         const context = await createSubplebbitWithDefaultDb();
         try {
@@ -101,6 +113,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
 
             const preloadedSortName = "hot";
             const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
+            expect(availablePostsSize, "expected production budget to drop below 700kb due to oversized metadata").to.be.lessThan(0.7 * MB);
             const originalSortAndChunk = context.subplebbit._pageGenerator.sortAndChunkComments.bind(context.subplebbit._pageGenerator);
             let capturedFirstChunk;
             let chunks;
