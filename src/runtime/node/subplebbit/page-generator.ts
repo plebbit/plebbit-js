@@ -1,4 +1,4 @@
-import { hideClassPrivateProps, retryKuboIpfsAddAndProvide, timestamp } from "../../../util.js";
+import { calculateStringSizeSameAsIpfsAddCidV0, hideClassPrivateProps, retryKuboIpfsAddAndProvide, timestamp } from "../../../util.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import type {
@@ -105,28 +105,41 @@ export class PageGenerator {
         const ipfsClient = this._subplebbit._clientsManager.getDefaultKuboRpcClient();
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: string[] = new Array(chunks.length);
-        let expectedSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
-        for (let i = chunks.length - 1; i >= 0; i--) {
-            const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
+        let curMaxPageSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
+        for (let pageNum = chunks.length - 1; pageNum >= 0; pageNum--) {
+            const pageIpfs: PageIpfs = { nextCid: cids[pageNum + 1], comments: chunks[pageNum] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
+
+            const stringifiedPageIpfs = deterministicStringify(pageIpfs);
+
+            const calculatedSizeOfStringifedPageIpfs = await calculateStringSizeSameAsIpfsAddCidV0(stringifiedPageIpfs);
+            if (calculatedSizeOfStringifedPageIpfs > curMaxPageSize)
+                throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
+                    calculatedSizeOfStringifedPageIpfs,
+                    pageIpfs,
+                    expectedSize: curMaxPageSize,
+                    sortName,
+                    pageNum
+                });
+
             const addRes = await retryKuboIpfsAddAndProvide({
                 ipfsClient: ipfsClient._client,
                 log: Logger("plebbit-js:page-generator:addCommentChunksToIpfs"),
-                content: deterministicStringify(pageIpfs),
+                content: stringifiedPageIpfs,
                 addOptions: { pin: true },
                 provideOptions: { recursive: true }
             });
-            if (addRes.size > expectedSize)
+            if (addRes.size > curMaxPageSize)
                 throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
                     addRes,
                     pageIpfs,
-                    expectedSize,
+                    expectedSize: curMaxPageSize,
                     sortName,
-                    pageNum: i
+                    pageNum
                 });
-            cids[i] = addRes.path;
-            listOfPage[i] = pageIpfs;
-            expectedSize = expectedSize / 2; // we're going backward now
+            cids[pageNum] = addRes.path;
+            listOfPage[pageNum] = pageIpfs;
+            curMaxPageSize = curMaxPageSize / 2; // we're going backward now
         }
         return { [sortName]: { pages: listOfPage, cids } };
     }
@@ -138,18 +151,40 @@ export class PageGenerator {
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: PageCidUndefinedIfPreloadedPage = [undefined]; // pageCids will never have the cid of preloaded page
         const ipfsClient = this._subplebbit._clientsManager.getDefaultKuboRpcClient();
-        for (let i = chunks.length - 1; i >= 1; i--) {
-            const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
+        for (let pageNum = chunks.length - 1; pageNum >= 1; pageNum--) {
+            const pageIpfs: PageIpfs = { nextCid: cids[pageNum + 1], comments: chunks[pageNum] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
+
+            const maximumPageSize = 1024 * 1024 * Math.pow(2, Math.max(pageNum - 1, 0));
+            const stringifiedPageIpfs = deterministicStringify(pageIpfs);
+
+            const calculatedSizeOfStringifedPageIpfs = await calculateStringSizeSameAsIpfsAddCidV0(stringifiedPageIpfs);
+            if (calculatedSizeOfStringifedPageIpfs > maximumPageSize)
+                throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
+                    calculatedSizeOfStringifedPageIpfs,
+                    pageIpfs,
+                    maximumPageSize,
+                    sortName,
+                    pageNum
+                });
+
             const addRes = await retryKuboIpfsAddAndProvide({
                 ipfsClient: ipfsClient._client,
                 log: Logger("plebbit-js:page-generator:addPreloadedCommentChunksToIpfs"),
-                content: deterministicStringify(pageIpfs),
+                content: stringifiedPageIpfs,
                 addOptions: { pin: true },
                 provideOptions: { recursive: true }
             });
-            cids[i] = addRes.path;
-            listOfPage[i] = pageIpfs;
+            if (addRes.size > maximumPageSize)
+                throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
+                    addRes,
+                    pageIpfs,
+                    maximumPageSize,
+                    sortName,
+                    pageNum
+                });
+            cids[pageNum] = addRes.path;
+            listOfPage[pageNum] = pageIpfs;
         }
         const firstPage = <PageIpfs>{ comments: chunks[0], nextCid: cids[1] };
         if (!firstPage.nextCid) throw Error("First page should have nextCid");
