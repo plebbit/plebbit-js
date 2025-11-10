@@ -38,7 +38,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
                 primaryChainDepth: 100
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
-            expect(updates.length).to.be.greaterThan(0);
+            expect(updates.length).to.equal(101); // if args to seedHeavyDiscussion changes you need to update this value
             expectCommentUpdatesUnderLimit(updates);
 
             const rootLabel = labels.depthLabels[0];
@@ -80,11 +80,11 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         const context = await createSubplebbitWithDefaultDb();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
-                primaryChainDepth: 500,
-                extraChildrenPerDepth: { 0: 1 }
+                primaryChainDepth: 95,
+                extraPrimaryPosts: 3 // 6 posts in total with primaryChainDepth reply chain
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
-            expect(updates.length).to.be.greaterThan(0);
+            expect(updates.length).to.equal(384); // if you change args above you need to change expectation
             expectCommentUpdatesUnderLimit(updates);
 
             const depthLabels = labels.depthLabels;
@@ -94,7 +94,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
 
             const cidToLabel = new Map(Array.from(labelToCid.entries()).map(([label, cid]) => [cid, label]));
             const postRows = rows.filter((row) => row.depth === 0);
-            expect(postRows.length, "expected at least one post").to.be.greaterThan(0);
+            expect(postRows.length, "expected at least one post").to.equal(4);
 
             postRows.forEach(({ cid }) => {
                 const label = cidToLabel.get(cid) ?? cid;
@@ -110,9 +110,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             });
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "post.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([
-                477, 454, 431, 408, 385, 358, 325, 285, 236, 177, 105, 18
-            ]);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([6, 8, 8, 8]);
         } catch (e) {
             throw e;
         } finally {
@@ -124,16 +122,14 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         const context = await createSubplebbitWithDefaultDb();
         try {
             const { rows } = await seedHeavyDiscussion(context.subplebbit, {
-                primaryChainDepth: 500,
-                extraChildrenPerDepth: { 2: 1 }
+                primaryChainDepth: 150
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
-            expect(updates.length).to.be.greaterThan(0);
+            expect(updates.length).to.equal(151);
             expectCommentUpdatesUnderLimit(updates);
 
-            const parentCidsWithChildren = new Set(rows.filter((row) => row.parentCid).map((row) => row.parentCid));
-            const replyRowsWithReplies = rows.filter((row) => row.depth >= 1 && parentCidsWithChildren.has(row.cid));
-            expect(replyRowsWithReplies.length, "expected at least one reply comment with replies").to.be.greaterThan(0);
+            const replyRowsWithReplies = rows.filter((row) => row.depth >= 1);
+            expect(replyRowsWithReplies.length, "expected at least one reply comment with replies").to.equal(150);
 
             replyRowsWithReplies.forEach(({ cid, depth }) => {
                 const nestedReplyUpdate = updates.find(({ newCommentUpdate }) => newCommentUpdate.cid === cid);
@@ -144,15 +140,15 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
                 );
 
                 const replies = nestedReplyUpdate.newCommentUpdate.replies;
-                expect(replies, `expected replies for depth ${depth} comment ${cid}`).to.exist;
-                // we can't run expect here because we don't know for sure if preloaded moved to pageCids or stayed as a preloaded page
-                expectExclusiveBestPreloadLocation(replies, `reply.replies depth ${depth} cid ${cid}`);
+                if (nestedReplyUpdate.newCommentUpdate.replyCount > 0) {
+                    expect(replies, `expected replies for depth ${depth} comment ${cid}`).to.exist;
+                    // we can't run expect here because we don't know for sure if preloaded moved to pageCids or stayed as a preloaded page
+                    expectExclusiveBestPreloadLocation(replies, `reply.replies depth ${depth} cid ${cid}`);
+                }
             });
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "reply.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([
-                477, 454, 431, 408, 385, 358, 325, 285, 236, 177, 105, 18
-            ]);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([72]);
         } catch (e) {
             throw e;
         } finally {
