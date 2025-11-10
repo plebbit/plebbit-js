@@ -4,11 +4,20 @@ import { afterEach, it, vi } from "vitest";
 import { Buffer } from "buffer";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { randomUUID } from "node:crypto";
+import Logger from "@plebbit/plebbit-logger";
+import * as remeda from "remeda";
+import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
+import { SubplebbitIpfsSchema } from "../../../../dist/node/subplebbit/schema.js";
+import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../../dist/node/subplebbit/subplebbit-client-manager.js";
+import { calculateExpectedSignatureSize } from "../../../../dist/node/runtime/node/util.js";
+import { retryKuboIpfsAddAndProvide, timestamp } from "../../../../dist/node/util.js";
+import env from "../../../../dist/node/version.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const MB = 1024 * 1024;
 const MAX_COMMENT_SIZE_BYTES = 40 * 1024;
 const HEAVY_COMMENT_BYTES = 10 * 1024;
-const PROTOCOL_VERSION = "1.0.0";
+const PROTOCOL_VERSION = env.PROTOCOL_VERSION;
 const AUTHOR_ADDRESS = "12D3KooWLjZGiL8t2FyNZc21EMKw1SLR7U6khv4RW9sEFKD4aFXJ";
 const DEFAULT_COMMENT_SIGNATURE = {
     type: "ed25519",
@@ -51,6 +60,18 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "subplebbit.posts");
             expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
+
+            const preloadedSortName = "hot";
+            const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
+            const generatedPosts = await context.subplebbit._pageGenerator.generateSubplebbitPosts(preloadedSortName, availablePostsSize);
+
+            expect(generatedPosts, "expected generateSubplebbitPosts to return posts data").to.exist;
+            expect(generatedPosts).to.not.have.property("singlePreloadedPage");
+
+            const postsPages = generatedPosts;
+            expect(postsPages.pageCids?.[preloadedSortName], "expected subplebbit.posts hot sort to move into pageCids").to.be.a("string");
+            expect(postsPages.pages?.[preloadedSortName], "expected preloaded hot page to be omitted when oversized").to.be.undefined;
+            expect(Object.keys(postsPages.pages || {}), "expected no preloaded posts pages to remain").to.have.length(0);
         } catch (e) {
             throw e;
         } finally {
@@ -230,6 +251,31 @@ function normalizeExtraChildrenPlan(extraChildrenPerDepth, chainDepth) {
     }
 
     return normalized;
+}
+
+async function calculateAvailablePostsSizeForSubplebbit(subplebbit) {
+    const latestPost = subplebbit._dbHandler.queryLatestPostCid();
+    const latestComment = subplebbit._dbHandler.queryLatestCommentCid();
+    const stats = subplebbit._dbHandler.querySubplebbitStats();
+    const statsCid = await calculateIpfsCidV0Lib(JSON.stringify(stats));
+
+    const postUpdates = { postUpdates: { 86400: "QmX4Yd14J12ckSfsBjBarbMndo37oDFPNF3apF1reUhcHK" } };
+
+    const updatedAt = timestamp();
+
+    const baseSubplebbit = cleanUpBeforePublishing({
+        ...remeda.omit(subplebbit._toJSONIpfsBaseNoPosts(), ["signature"]),
+        lastPostCid: latestPost?.cid,
+        lastCommentCid: latestComment?.cid,
+        statsCid,
+        updatedAt,
+        postUpdates,
+        protocolVersion: PROTOCOL_VERSION
+    });
+
+    const baseSize = Buffer.byteLength(JSON.stringify(baseSubplebbit), "utf8");
+    const expectedSignatureSize = calculateExpectedSignatureSize(baseSubplebbit);
+    return MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - baseSize - expectedSignatureSize - 1000;
 }
 
 async function createSubplebbitWithDefaultDb() {
