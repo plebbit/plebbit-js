@@ -114,7 +114,9 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             });
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "post.replies");
-            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([
+                477, 454, 431, 408, 385, 358, 325, 285, 236, 177, 105, 18
+            ]);
         } catch (e) {
             throw e;
         } finally {
@@ -152,7 +154,9 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             });
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "reply.replies");
-            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([
+                477, 454, 431, 408, 385, 358, 325, 285, 236, 177, 105, 18
+            ]);
         } catch (e) {
             throw e;
         } finally {
