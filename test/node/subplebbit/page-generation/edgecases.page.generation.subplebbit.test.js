@@ -34,10 +34,10 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         const context = await createSubplebbitWithDefaultDb();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
-                primaryChainDepth: 100
+                primaryChainDepth: 110
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
-            expect(updates.length).to.equal(101); // if args to seedHeavyDiscussion changes you need to update this value
+            expect(updates.length).to.equal(111); // if args to seedHeavyDiscussion changes you need to update this value
             await expectCommentUpdatesUnderLimit(updates);
 
             const rootLabel = labels.depthLabels[0];
@@ -55,7 +55,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             expectExclusiveBestPreloadLocation(replies, "subplebbit.posts root");
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "subplebbit.posts");
-            expect(movedDepths, "expected two comments to move best sort to pageCids").to.deep.equal([12]);
+            expect(movedDepths, "expected two comments to move best sort to pageCids").to.deep.equal([13]);
 
             const preloadedSortName = "hot";
             const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
@@ -83,12 +83,12 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
                 primaryChainDepth: 60,
                 extraChildrenPerDepth: { 0: 320 },
                 contentBytesPerDepth: Array.from({ length: 5 }, (_, depth) =>
-                    depth === 1 ? MAX_COMMENT_SIZE_BYTES - 1024 : HEAVY_COMMENT_BYTES
+                    depth === 1 ? MAX_COMMENT_SIZE_BYTES - 10 * 1024 : HEAVY_COMMENT_BYTES
                 )
             };
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, oversizedPostsConfig);
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
-            expect(updates.length).to.be.greaterThan(0);
+            expect(updates.length).to.equal(381);
             await expectCommentUpdatesUnderLimit(updates);
 
             const rootLabel = labels.depthLabels[0];
@@ -113,18 +113,21 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             const generatedPosts = await context.subplebbit._pageGenerator.generateSubplebbitPosts(preloadedSortName, availablePostsSize);
 
             expect(capturedFirstChunk, "expected to capture first chunk from sortAndChunkComments").to.exist;
-            const firstChunkSerializedSize = await calculateStringSizeSameAsIpfsAddCidV0(
-                JSON.stringify({ comments: capturedFirstChunk })
-            );
+            const firstChunkSerializedSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify({ comments: capturedFirstChunk }));
             expect(firstChunkSerializedSize, "first chunk should exceed production preloaded budget").to.be.greaterThan(availablePostsSize);
+
+            expect(capturedFirstChunk[0].commentUpdate.replyCount).to.equal(updates.length - 1);
+
+            expect(chunks.length).to.equal(1);
 
             expect(generatedPosts, "expected generateSubplebbitPosts to return posts data").to.exist;
             expect(generatedPosts).to.not.have.property("singlePreloadedPage");
 
-            const postsPages = generatedPosts;
-            expect(postsPages.pageCids?.[preloadedSortName], "expected subplebbit.posts hot sort to move into pageCids").to.be.a("string");
-            expect(postsPages.pages?.[preloadedSortName], "expected preloaded hot page to be omitted when oversized").to.be.undefined;
-            expect(Object.keys(postsPages.pages || {}), "expected no preloaded posts pages to remain").to.have.length(0);
+            expect(generatedPosts.pageCids?.[preloadedSortName], "expected subplebbit.posts hot sort to move into pageCids").to.be.a(
+                "string"
+            );
+            expect(generatedPosts.pages?.[preloadedSortName], "expected preloaded hot page to be omitted when oversized").to.be.undefined;
+            expect(Object.keys(generatedPosts.pages || {}), "expected no preloaded posts pages to remain").to.have.length(0);
         } catch (e) {
             throw e;
         } finally {
@@ -166,7 +169,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "post.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([6, 8, 8, 8]);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([5, 5, 5]);
         } catch (e) {
             throw e;
         } finally {
@@ -204,7 +207,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "reply.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([72]);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([62]);
         } catch (e) {
             throw e;
         } finally {
@@ -328,7 +331,7 @@ async function calculateAvailablePostsSizeForSubplebbit(subplebbit) {
 
     const baseSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(baseSubplebbit));
     const expectedSignatureSize = calculateExpectedSignatureSize(baseSubplebbit);
-    return MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - baseSize - expectedSignatureSize - 1000;
+    return 1024 * 1024 - baseSize - expectedSignatureSize - 1000;
 }
 
 async function createSubplebbitWithDefaultDb() {
@@ -397,8 +400,7 @@ async function buildCommentRowsFromTrees({ subplebbitAddress, trees }) {
         const postCid = depth === 0 ? cid : rootCid ?? parentCid ?? cid;
         const timestamp = node.timestamp ?? timestampCursor++;
         const authorSignerAddress = node.authorSignerAddress ?? `${AUTHOR_ADDRESS}-${cid}`;
-        const content =
-            node.content ?? (await createCommentContent(label, node.contentTargetBytes ?? HEAVY_COMMENT_BYTES));
+        const content = node.content ?? (await createCommentContent(label, node.contentTargetBytes ?? HEAVY_COMMENT_BYTES));
         const commentRow = {
             cid,
             authorSignerAddress,
