@@ -29,6 +29,7 @@ import type {
 import { DbHandler } from "./subplebbit/db-handler.js";
 import Database from "better-sqlite3";
 import { CommentIpfsSchema } from "../../publications/comment/schema.js";
+import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../publications/comment/comment-client-manager.js";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -416,4 +417,53 @@ export function deriveCommentIpfsFromCommentTableRow(commentTableRow: CommentsTa
     };
     if (commentTableRow.depth === 0) delete finalCommentIpfsJson.postCid;
     return finalCommentIpfsJson;
+}
+
+type InlineRepliesBudgetOptions = {
+    comment: CommentsTableRow;
+    commentUpdateWithoutReplies: Omit<CommentUpdateType, "signature">;
+    maxCommentUpdateBytes?: number;
+    maxPageBytes?: number;
+    minInlineRepliesBytes?: number;
+    hardInlineRepliesLimitBytes?: number;
+    depthBufferBaseBytes?: number;
+    depthBufferPerDepthBytes?: number;
+    commentUpdateHeadroomBytes?: number;
+    pageSafetyMarginBytes?: number;
+    inlineMetadataBytes?: number;
+};
+
+export function calculateInlineRepliesBudget({
+    comment,
+    commentUpdateWithoutReplies,
+    maxCommentUpdateBytes = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE,
+    maxPageBytes = 1024 * 1024,
+    minInlineRepliesBytes = 256 * 1024,
+    hardInlineRepliesLimitBytes = 1024 * 1024,
+    depthBufferBaseBytes = 1024,
+    depthBufferPerDepthBytes = 2 * 1024,
+    commentUpdateHeadroomBytes = 1000,
+    pageSafetyMarginBytes = 1024,
+    inlineMetadataBytes = 2 * 1024
+}: InlineRepliesBudgetOptions): number {
+    const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdateWithoutReplies), "utf8");
+    const repliesAvailableSize =
+        maxCommentUpdateBytes - commentUpdateSize - calculateExpectedSignatureSize(commentUpdateWithoutReplies) - commentUpdateHeadroomBytes;
+
+    const depthBufferBytes = depthBufferBaseBytes + comment.depth * depthBufferPerDepthBytes;
+    const desiredPreloadedPageBudget = repliesAvailableSize - depthBufferBytes;
+    const clampedPreloadedPageBudget = Math.min(
+        Math.max(desiredPreloadedPageBudget, minInlineRepliesBytes),
+        hardInlineRepliesLimitBytes
+    );
+    const inlineBudgetFromComment = Math.max(0, Math.min(clampedPreloadedPageBudget, repliesAvailableSize));
+
+    const commentEntryWithoutReplies = {
+        comment: deriveCommentIpfsFromCommentTableRow(comment),
+        commentUpdate: commentUpdateWithoutReplies
+    };
+    const entryWithoutRepliesSize = Buffer.byteLength(JSON.stringify({ comments: [commentEntryWithoutReplies] }), "utf8");
+    const inlineBudgetFromPage = Math.max(0, maxPageBytes - pageSafetyMarginBytes - inlineMetadataBytes - entryWithoutRepliesSize);
+
+    return Math.max(0, Math.min(inlineBudgetFromComment, inlineBudgetFromPage));
 }

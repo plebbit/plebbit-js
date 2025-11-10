@@ -78,6 +78,7 @@ import {
 } from "../../../signer/signatures.js";
 import {
     calculateExpectedSignatureSize,
+    calculateInlineRepliesBudget,
     deriveCommentIpfsFromCommentTableRow,
     getThumbnailPropsOfLink,
     importSignerIntoKuboNode,
@@ -156,7 +157,6 @@ import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publicat
 import type { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
-import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
@@ -1871,29 +1871,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             })
         };
 
-        const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdatePriorToSigning), "utf8");
-
-        const repliesAvailableSize =
-            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 1000;
-
-        const HARD_PRELOADED_PAGE_LIMIT_BYTES = 1024 * 1024;
-        const MIN_INLINE_REPLIES_PAGE_BYTES = 256 * 1024;
-        const BASE_DEPTH_BUFFER_BYTES = 1024;
-        const DEPTH_BUFFER_STEP_BYTES = 2 * 1024;
-
-        const depthBufferBytes = BASE_DEPTH_BUFFER_BYTES + comment.depth * DEPTH_BUFFER_STEP_BYTES;
-        const desiredPreloadedPageBudget = repliesAvailableSize - depthBufferBytes;
-        const clampedPreloadedPageBudget = Math.min(
-            Math.max(desiredPreloadedPageBudget, MIN_INLINE_REPLIES_PAGE_BYTES),
-            HARD_PRELOADED_PAGE_LIMIT_BYTES
-        );
-        const preloadedRepliesPageSizeBytes = Math.max(0, Math.min(clampedPreloadedPageBudget, repliesAvailableSize));
         const preloadedRepliesPages = "best";
+        const inlineRepliesBudget = calculateInlineRepliesBudget({
+            comment,
+            commentUpdateWithoutReplies: commentUpdatePriorToSigning
+        });
+        const adjustedPreloadedRepliesPageSizeBytes = Math.max(inlineRepliesBudget, 1);
 
         const generatedRepliesPages =
             comment.depth === 0
-                ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, preloadedRepliesPageSizeBytes)
-                : await this._pageGenerator.generateReplyPages(comment, preloadedRepliesPages, preloadedRepliesPageSizeBytes);
+                ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, adjustedPreloadedRepliesPageSizeBytes)
+                : await this._pageGenerator.generateReplyPages(comment, preloadedRepliesPages, adjustedPreloadedRepliesPageSizeBytes);
 
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
         if (generatedRepliesPages) {
