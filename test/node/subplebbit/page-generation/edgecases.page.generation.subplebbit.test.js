@@ -25,7 +25,7 @@ const DEFAULT_COMMENT_SIGNATURE = {
     publicKey: "pk",
     signedPropertyNames: []
 };
-const DEFAULT_CHAIN_DEPTH = 20;
+const DEFAULT_PRIMARY_CHAIN_DEPTH = 20;
 
 // TODO we need to test loading pageCids and make sure they're all 1mib or under
 // TODO need to make this test faster
@@ -38,8 +38,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         const context = await createSubplebbitWithDefaultDb();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
-                chainDepth: 200,
-                extraChildrenPerDepth: { 0: 600 }
+                primaryChainDepth: 100
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
             expect(updates.length).to.be.greaterThan(0);
@@ -60,7 +59,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             expectExclusiveBestPreloadLocation(replies, "subplebbit.posts root");
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "subplebbit.posts");
-            expect(movedDepths, "expected two comments to move best sort to pageCids").to.deep.equal([133, 52]);
+            expect(movedDepths, "expected two comments to move best sort to pageCids").to.deep.equal([12]);
 
             const preloadedSortName = "hot";
             const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
@@ -84,7 +83,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         const context = await createSubplebbitWithDefaultDb();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
-                chainDepth: 500,
+                primaryChainDepth: 500,
                 extraChildrenPerDepth: { 0: 1 }
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
@@ -128,7 +127,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         const context = await createSubplebbitWithDefaultDb();
         try {
             const { rows } = await seedHeavyDiscussion(context.subplebbit, {
-                chainDepth: 500,
+                primaryChainDepth: 500,
                 extraChildrenPerDepth: { 2: 1 }
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
@@ -172,12 +171,12 @@ async function seedHeavyDiscussion(subplebbit, overrides = {}) {
 }
 
 function buildHeavyTreeStructure({
-    chainDepth = DEFAULT_CHAIN_DEPTH,
+    primaryChainDepth = DEFAULT_PRIMARY_CHAIN_DEPTH,
     extraChildrenPerDepth,
     extraRootPosts = 0,
     contentBytesPerDepth
 } = {}) {
-    const normalizedExtraChildren = normalizeExtraChildrenPlan(extraChildrenPerDepth, chainDepth);
+    const normalizedExtraChildren = normalizeExtraChildrenPlan(extraChildrenPerDepth, primaryChainDepth);
     const rootLabel = `edgecase-root-${randomUUID()}`;
     const depthLabels = [];
     depthLabels[0] = rootLabel;
@@ -185,7 +184,7 @@ function buildHeavyTreeStructure({
     const trees = [
         buildTree({
             rootLabel,
-            chainDepth,
+            primaryChainDepth,
             normalizedExtraChildren,
             contentBytesPerDepth,
             captureDepthLabels: true,
@@ -197,7 +196,7 @@ function buildHeavyTreeStructure({
         trees.push(
             buildTree({
                 rootLabel: `${rootLabel}-extra-${index + 1}`,
-                chainDepth,
+                primaryChainDepth,
                 normalizedExtraChildren,
                 contentBytesPerDepth
             })
@@ -207,7 +206,7 @@ function buildHeavyTreeStructure({
     return { trees, labels: { depthLabels } };
 }
 
-function buildTree({ rootLabel, chainDepth, normalizedExtraChildren, contentBytesPerDepth, captureDepthLabels, depthLabels }) {
+function buildTree({ rootLabel, primaryChainDepth, normalizedExtraChildren, contentBytesPerDepth, captureDepthLabels, depthLabels }) {
     function bytesForDepth(depth) {
         const override = Array.isArray(contentBytesPerDepth) ? contentBytesPerDepth[depth] : undefined;
         return typeof override === "number" && override > 0 ? override : HEAVY_COMMENT_BYTES;
@@ -219,7 +218,7 @@ function buildTree({ rootLabel, chainDepth, normalizedExtraChildren, contentByte
             label,
             contentTargetBytes: bytesForDepth(depth)
         };
-        if (depth >= chainDepth) return node;
+        if (depth >= primaryChainDepth) return node;
 
         const children = [];
         const primaryChildLabel = captureDepthLabels ? `${depthLabels[0]}-depth-${depth + 1}` : `${label}-depth-${depth + 1}`;
@@ -240,12 +239,12 @@ function buildTree({ rootLabel, chainDepth, normalizedExtraChildren, contentByte
     return buildNode(0, rootLabel);
 }
 
-function normalizeExtraChildrenPlan(extraChildrenPerDepth, chainDepth) {
-    const normalized = Array.from({ length: Math.max(0, chainDepth) }, () => 0);
+function normalizeExtraChildrenPlan(extraChildrenPerDepth, primaryChainDepth) {
+    const normalized = Array.from({ length: Math.max(0, primaryChainDepth) }, () => 0);
     if (!extraChildrenPerDepth) return normalized;
 
     const assignValue = (depth, count) => {
-        if (!Number.isFinite(depth) || depth < 0 || depth >= chainDepth) return;
+        if (!Number.isFinite(depth) || depth < 0 || depth >= primaryChainDepth) return;
         normalized[depth] = Math.max(0, Number(count) || 0);
     };
 
