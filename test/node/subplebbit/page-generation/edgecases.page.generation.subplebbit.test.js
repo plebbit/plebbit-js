@@ -1,14 +1,13 @@
 import { expect } from "chai";
 import { describeSkipIfRpc, mockPlebbit } from "../../../../dist/node/test/test-util.js";
 import { afterEach, it, vi } from "vitest";
-import { Buffer } from "buffer";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { randomUUID } from "node:crypto";
 import * as remeda from "remeda";
 import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../../dist/node/subplebbit/subplebbit-client-manager.js";
 import { calculateExpectedSignatureSize } from "../../../../dist/node/runtime/node/util.js";
-import { timestamp } from "../../../../dist/node/util.js";
+import { calculateStringSizeSameAsIpfsAddCidV0, timestamp } from "../../../../dist/node/util.js";
 import env from "../../../../dist/node/version.js";
 
 const MB = 1024 * 1024;
@@ -39,7 +38,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
             expect(updates.length).to.equal(101); // if args to seedHeavyDiscussion changes you need to update this value
-            expectCommentUpdatesUnderLimit(updates);
+            await expectCommentUpdatesUnderLimit(updates);
 
             const rootLabel = labels.depthLabels[0];
             expect(rootLabel).to.be.a("string");
@@ -47,7 +46,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             const rootCid = labelToCid.get(rootLabel);
             const rootUpdate = updates.find(({ newCommentUpdate }) => newCommentUpdate.cid === rootCid);
             expect(rootUpdate, "post update missing from _updateCommentsThatNeedToBeUpdated result").to.exist;
-            expectCommentUpdateUnderLimit(rootUpdate.newCommentUpdate, "root update should stay under 1mib");
+            await expectCommentUpdateUnderLimit(rootUpdate.newCommentUpdate, "root update should stay under 1mib");
 
             const replies = rootUpdate.newCommentUpdate.replies;
             expect(replies, "expected replies to exist on top-level post").to.exist;
@@ -76,6 +75,63 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
         }
     });
 
+    it("collapses subplebbit.posts hot into pageCids when the production budget is exhausted", async () => {
+        const context = await createSubplebbitWithDefaultDb();
+        try {
+            context.subplebbit.description = "x".repeat(600 * 1024); // large metadata shrinks available posts budget
+            const oversizedPostsConfig = {
+                primaryChainDepth: 60,
+                extraChildrenPerDepth: { 0: 320 },
+                contentBytesPerDepth: Array.from({ length: 5 }, (_, depth) =>
+                    depth === 1 ? MAX_COMMENT_SIZE_BYTES - 1024 : HEAVY_COMMENT_BYTES
+                )
+            };
+            const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, oversizedPostsConfig);
+            const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
+            expect(updates.length).to.be.greaterThan(0);
+            await expectCommentUpdatesUnderLimit(updates);
+
+            const rootLabel = labels.depthLabels[0];
+            expect(rootLabel).to.be.a("string");
+            assertParentAndPostCid(rows, labelToCid, rootLabel, null, rootLabel);
+            const rootCid = labelToCid.get(rootLabel);
+            const rootUpdate = updates.find(({ newCommentUpdate }) => newCommentUpdate.cid === rootCid);
+            expect(rootUpdate, "post update missing from _updateCommentsThatNeedToBeUpdated result").to.exist;
+            await expectCommentUpdateUnderLimit(rootUpdate.newCommentUpdate, "root update should stay under 1mib");
+
+            const preloadedSortName = "hot";
+            const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
+            const originalSortAndChunk = context.subplebbit._pageGenerator.sortAndChunkComments.bind(context.subplebbit._pageGenerator);
+            let capturedFirstChunk;
+            let chunks;
+            vi.spyOn(context.subplebbit._pageGenerator, "sortAndChunkComments").mockImplementation(async (...args) => {
+                chunks = await originalSortAndChunk(...args);
+                if (!capturedFirstChunk) capturedFirstChunk = chunks[0];
+                return chunks;
+            });
+
+            const generatedPosts = await context.subplebbit._pageGenerator.generateSubplebbitPosts(preloadedSortName, availablePostsSize);
+
+            expect(capturedFirstChunk, "expected to capture first chunk from sortAndChunkComments").to.exist;
+            const firstChunkSerializedSize = await calculateStringSizeSameAsIpfsAddCidV0(
+                JSON.stringify({ comments: capturedFirstChunk })
+            );
+            expect(firstChunkSerializedSize, "first chunk should exceed production preloaded budget").to.be.greaterThan(availablePostsSize);
+
+            expect(generatedPosts, "expected generateSubplebbitPosts to return posts data").to.exist;
+            expect(generatedPosts).to.not.have.property("singlePreloadedPage");
+
+            const postsPages = generatedPosts;
+            expect(postsPages.pageCids?.[preloadedSortName], "expected subplebbit.posts hot sort to move into pageCids").to.be.a("string");
+            expect(postsPages.pages?.[preloadedSortName], "expected preloaded hot page to be omitted when oversized").to.be.undefined;
+            expect(Object.keys(postsPages.pages || {}), "expected no preloaded posts pages to remain").to.have.length(0);
+        } catch (e) {
+            throw e;
+        } finally {
+            await context.cleanup();
+        }
+    });
+
     it("A post.replies preloaded page page higher than 1mib should not be published a preload, instead it send preloaded sort into pageCids", async () => {
         const context = await createSubplebbitWithDefaultDb();
         try {
@@ -85,7 +141,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
             expect(updates.length).to.equal(384); // if you change args above you need to change expectation
-            expectCommentUpdatesUnderLimit(updates);
+            await expectCommentUpdatesUnderLimit(updates);
 
             const depthLabels = labels.depthLabels;
             const rootLabel = depthLabels[0];
@@ -96,7 +152,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             const postRows = rows.filter((row) => row.depth === 0);
             expect(postRows.length, "expected at least one post").to.equal(4);
 
-            postRows.forEach(({ cid }) => {
+            for (const { cid } of postRows) {
                 const label = cidToLabel.get(cid) ?? cid;
                 const postUpdate = updates.find(({ newCommentUpdate }) => newCommentUpdate.cid === cid);
                 expect(postUpdate, `expected post update for ${label}`).to.exist;
@@ -107,7 +163,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
                     0
                 );
                 expectExclusiveBestPreloadLocation(replies, `post.replies post ${label}`);
-            });
+            }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "post.replies");
             expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([6, 8, 8, 8]);
@@ -126,15 +182,15 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             });
             const updates = await context.subplebbit._updateCommentsThatNeedToBeUpdated();
             expect(updates.length).to.equal(151);
-            expectCommentUpdatesUnderLimit(updates);
+            await expectCommentUpdatesUnderLimit(updates);
 
             const replyRowsWithReplies = rows.filter((row) => row.depth >= 1);
             expect(replyRowsWithReplies.length, "expected at least one reply comment with replies").to.equal(150);
 
-            replyRowsWithReplies.forEach(({ cid, depth }) => {
+            for (const { cid, depth } of replyRowsWithReplies) {
                 const nestedReplyUpdate = updates.find(({ newCommentUpdate }) => newCommentUpdate.cid === cid);
                 expect(nestedReplyUpdate, `reply update missing for cid ${cid}`).to.exist;
-                expectCommentUpdateUnderLimit(
+                await expectCommentUpdateUnderLimit(
                     nestedReplyUpdate.newCommentUpdate,
                     `comment update ${cid} (depth ${depth}) should stay under 1mib`
                 );
@@ -145,7 +201,7 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
                     // we can't run expect here because we don't know for sure if preloaded moved to pageCids or stayed as a preloaded page
                     expectExclusiveBestPreloadLocation(replies, `reply.replies depth ${depth} cid ${cid}`);
                 }
-            });
+            }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "reply.replies");
             expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([72]);
@@ -270,7 +326,7 @@ async function calculateAvailablePostsSizeForSubplebbit(subplebbit) {
         protocolVersion: PROTOCOL_VERSION
     });
 
-    const baseSize = Buffer.byteLength(JSON.stringify(baseSubplebbit), "utf8");
+    const baseSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(baseSubplebbit));
     const expectedSignatureSize = calculateExpectedSignatureSize(baseSubplebbit);
     return MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - baseSize - expectedSignatureSize - 1000;
 }
@@ -298,7 +354,7 @@ function createFakeIpfsClient() {
     const noopAsync = async (..._args) => {};
     return {
         add: async (content) => {
-            const size = Buffer.byteLength(content, "utf8");
+            const size = await calculateStringSizeSameAsIpfsAddCidV0(content);
             const cid = await calculateIpfsCidV0Lib(`${content.length}-${Math.random()}`);
             return { cid, path: cid, size };
         },
@@ -341,6 +397,8 @@ async function buildCommentRowsFromTrees({ subplebbitAddress, trees }) {
         const postCid = depth === 0 ? cid : rootCid ?? parentCid ?? cid;
         const timestamp = node.timestamp ?? timestampCursor++;
         const authorSignerAddress = node.authorSignerAddress ?? `${AUTHOR_ADDRESS}-${cid}`;
+        const content =
+            node.content ?? (await createCommentContent(label, node.contentTargetBytes ?? HEAVY_COMMENT_BYTES));
         const commentRow = {
             cid,
             authorSignerAddress,
@@ -355,7 +413,7 @@ async function buildCommentRowsFromTrees({ subplebbitAddress, trees }) {
             postCid,
             previousCid: null,
             subplebbitAddress,
-            content: node.content ?? createCommentContent(label, node.contentTargetBytes ?? HEAVY_COMMENT_BYTES),
+            content,
             timestamp,
             signature: cloneDefaultSignature(),
             title: depth === 0 ? node.title ?? `title-${label}` : null,
@@ -383,9 +441,9 @@ async function buildCommentRowsFromTrees({ subplebbitAddress, trees }) {
     return { rows, labelToCid };
 }
 
-function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES / 2 - 512) {
+async function createCommentContent(prefix, targetBytes = MAX_COMMENT_SIZE_BYTES / 2 - 512) {
     const unit = `${prefix}-chunk-`;
-    const unitBytes = Buffer.byteLength(unit, "utf8");
+    const unitBytes = await calculateStringSizeSameAsIpfsAddCidV0(unit);
     const repeat = Math.max(1, Math.floor(targetBytes / unitBytes));
     return unit.repeat(repeat);
 }
@@ -415,20 +473,20 @@ function assertParentAndPostCid(rows, labelToCid, label, parentLabel, rootLabel)
     expect(row.postCid).to.equal(rootCid);
 }
 
-function expectCommentUpdatesUnderLimit(updates, limitBytes = MB) {
-    updates.forEach(({ newCommentUpdate }) => {
-        expectCommentUpdateUnderLimit(
+async function expectCommentUpdatesUnderLimit(updates, limitBytes = MB) {
+    for (const { newCommentUpdate } of updates) {
+        await expectCommentUpdateUnderLimit(
             newCommentUpdate,
             `comment update ${newCommentUpdate?.cid ?? "unknown"} should stay under 1mib`,
             limitBytes
         );
-    });
+    }
 }
 
-function expectCommentUpdateUnderLimit(commentUpdate, contextMessage, limitBytes = MB) {
+async function expectCommentUpdateUnderLimit(commentUpdate, contextMessage, limitBytes = MB) {
     expect(commentUpdate, `${contextMessage} (comment update missing)`).to.exist;
     const serialized = JSON.stringify(commentUpdate);
-    const sizeBytes = Buffer.byteLength(serialized, "utf8");
+    const sizeBytes = await calculateStringSizeSameAsIpfsAddCidV0(serialized);
     expect(sizeBytes, contextMessage).to.be.lessThan(limitBytes);
     return sizeBytes;
 }
