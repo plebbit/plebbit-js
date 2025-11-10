@@ -28,6 +28,7 @@ const DEFAULT_COMMENT_SIGNATURE = {
 const DEFAULT_CHAIN_DEPTH = 20;
 
 // TODO we need to test loading pageCids and make sure they're all 1mib or under
+// TODO need to make this test faster
 describeSkipIfRpc("page-generator disables oversized preloaded pages", function () {
     afterEach(() => {
         vi.restoreAllMocks();
@@ -59,19 +60,19 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
             expectExclusiveBestPreloadLocation(replies, "subplebbit.posts root");
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "subplebbit.posts");
-            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
+            expect(movedDepths, "expected two comments to move best sort to pageCids").to.deep.equal([133, 52]);
 
             const preloadedSortName = "hot";
             const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
             const generatedPosts = await context.subplebbit._pageGenerator.generateSubplebbitPosts(preloadedSortName, availablePostsSize);
 
             expect(generatedPosts, "expected generateSubplebbitPosts to return posts data").to.exist;
-            expect(generatedPosts).to.not.have.property("singlePreloadedPage");
+            expect(generatedPosts).to.have.property("singlePreloadedPage"); // deeper comments should've gotten folded
 
             const postsPages = generatedPosts;
-            expect(postsPages.pageCids?.[preloadedSortName], "expected subplebbit.posts hot sort to move into pageCids").to.be.a("string");
-            expect(postsPages.pages?.[preloadedSortName], "expected preloaded hot page to be omitted when oversized").to.be.undefined;
-            expect(Object.keys(postsPages.pages || {}), "expected no preloaded posts pages to remain").to.have.length(0);
+            expect(postsPages.pageCids?.[preloadedSortName], "expected subplebbit.posts to be only a single preloaded page").to.be
+                .undefined;
+            expect(postsPages.pages?.[preloadedSortName], "expected subplebbit.posts to be only a single preloaded page").to.be.undefined;
         } catch (e) {
             throw e;
         } finally {
