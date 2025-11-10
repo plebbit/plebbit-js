@@ -4,15 +4,12 @@ import { afterEach, it, vi } from "vitest";
 import { Buffer } from "buffer";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { randomUUID } from "node:crypto";
-import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
-import { SubplebbitIpfsSchema } from "../../../../dist/node/subplebbit/schema.js";
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../../dist/node/subplebbit/subplebbit-client-manager.js";
 import { calculateExpectedSignatureSize } from "../../../../dist/node/runtime/node/util.js";
-import { retryKuboIpfsAddAndProvide, timestamp } from "../../../../dist/node/util.js";
+import { timestamp } from "../../../../dist/node/util.js";
 import env from "../../../../dist/node/version.js";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const MB = 1024 * 1024;
 const MAX_COMMENT_SIZE_BYTES = 40 * 1024;
@@ -173,7 +170,7 @@ async function seedHeavyDiscussion(subplebbit, overrides = {}) {
 function buildHeavyTreeStructure({
     primaryChainDepth = DEFAULT_PRIMARY_CHAIN_DEPTH,
     extraChildrenPerDepth,
-    extraRootPosts = 0,
+    extraPrimaryPosts = 0,
     contentBytesPerDepth
 } = {}) {
     const normalizedExtraChildren = normalizeExtraChildrenPlan(extraChildrenPerDepth, primaryChainDepth);
@@ -192,7 +189,7 @@ function buildHeavyTreeStructure({
         })
     ];
 
-    for (let index = 0; index < extraRootPosts; index++) {
+    for (let index = 0; index < extraPrimaryPosts; index++) {
         trees.push(
             buildTree({
                 rootLabel: `${rootLabel}-extra-${index + 1}`,
