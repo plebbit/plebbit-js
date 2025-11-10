@@ -41,6 +41,8 @@ import Logger from "@plebbit/plebbit-logger";
 import retry from "retry";
 import PeerId from "peer-id";
 import { unmarshalIPNSRecord } from "ipns";
+import { importFile } from "ipfs-unixfs-importer";
+import { MemoryBlockstore } from "blockstore-core";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -677,4 +679,16 @@ export async function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient,
     } catch (e) {
         throw new PlebbitError("ERR_FAILED_TO_PARSE_LOCAL_RAW_IPNS_RECORD", { ipnsName, ipnsFetchUrl, parseError: e });
     }
+}
+
+const textEncoder = new TextEncoder();
+
+export async function calculateStringSizeSameAsIpfsAddCidV0(content: string): Promise<number> {
+    const blockstore = new MemoryBlockstore();
+    const entry = await importFile({ path: "content.json", content: textEncoder.encode(content) }, blockstore, {
+        cidVersion: 0,
+        rawLeaves: false,
+        wrapWithDirectory: false
+    });
+    return Number(entry.size);
 }
