@@ -6,7 +6,8 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-describe("Validate props of subplebbit Pubsub messages", async () => {
+import { describe } from "vitest";
+describe.sequential("Validate props of subplebbit Pubsub messages", async () => {
     let plebbit, subplebbit, commentSigner;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -21,6 +22,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
     });
 
     it(`Validate props of challengerequest`, async () => {
