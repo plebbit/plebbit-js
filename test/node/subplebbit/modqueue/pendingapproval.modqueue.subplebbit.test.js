@@ -19,12 +19,13 @@ import {
     createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
+import { describe, it } from "vitest";
 
-const depthsToTest = [0, 1, 2];
-const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
+const depthsToTest = [0, 1, 2, 10, 11];
+const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } }; // this should get comment to be successful with challenge, thus sending it to modqueue
 
 for (const commentInPendingApprovalDepth of depthsToTest) {
-    describe(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
+    describe.concurrent(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
         let plebbit;
         let remotePlebbit;
         let commentInPendingApproval;
@@ -55,7 +56,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             await remotePlebbit.destroy();
         });
 
-        it("Should put failed comment in pending approval queue when challenge has pendingApproval: true", async () => {
+        it.sequential("Should put failed comment in pending approval queue when challenge has pendingApproval: true", async () => {
             // TODO: Test that when a challenge with pendingApproval fails,
             // the publication goes to pending approval instead of being rejected
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
@@ -82,7 +83,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             ]);
         });
 
-        it("Should store pending approval comments in subplebbit.modQueue.pageCids.pendingApproval", async () => {
+        it.sequential("Should store pending approval comments in subplebbit.modQueue.pageCids.pendingApproval", async () => {
             // TODO: Test that pending comments are stored in correct location
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.modQueue.pageCids?.pendingApproval });
             const page = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
