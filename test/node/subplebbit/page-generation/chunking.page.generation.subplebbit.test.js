@@ -27,17 +27,17 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         resetCommentFactory();
     });
 
-    it("returns one chunk when comments already fit into the first page budget", () => {
+    it("returns one chunk when comments already fit into the first page budget", async () => {
         const comments = [createCommentEntry(50), createCommentEntry(50)];
         const totalSize = measurePageSize(comments, { includeNextCid: false });
-        const chunks = chunkComments(pageGenerator, comments, totalSize + 512);
+        const chunks = await chunkComments(pageGenerator, comments, totalSize + 512);
 
         expect(chunks).to.have.length(1);
         expect(chunks[0]).to.equal(comments);
         expect(chunks[0]).to.deep.equal(comments);
     });
 
-    it("splits when only the safety margin would be exceeded even if the first page size is not", () => {
+    it("splits when only the safety margin would be exceeded even if the first page size is not", async () => {
         const large = createCommentEntry(2500);
         const nearLimit = createCommentEntry(100);
         const remainingTail = [createCommentEntry(100), createCommentEntry(100), createCommentEntry(100)];
@@ -51,7 +51,7 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         expect(combinedSinglePage).to.be.lessThan(firstPageSizeBytes);
         expect(combinedSinglePage).to.be.greaterThan(threshold);
 
-        const chunks = chunkComments(pageGenerator, comments, firstPageSizeBytes);
+        const chunks = await chunkComments(pageGenerator, comments, firstPageSizeBytes);
 
         expect(chunks).to.have.length(2);
         expect(chunks[0]).to.deep.equal([large]);
@@ -64,7 +64,7 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         expect(firstChunkSize).to.be.lessThan(firstPageSizeBytes);
     });
 
-    it("treats the comma delimiter as part of the size budget", () => {
+    it("treats the comma delimiter as part of the size budget", async () => {
         const first = createCommentEntry(2498);
         const second = createCommentEntry(0);
         const rest = [createCommentEntry(500), createCommentEntry(500)];
@@ -82,19 +82,19 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         expect(current + secondSize).to.equal(threshold);
         expect(combinedSinglePage).to.equal(serializedWithoutComma + 1);
 
-        const chunks = chunkComments(pageGenerator, [first, second, ...rest], firstPageSizeBytes);
+        const chunks = await chunkComments(pageGenerator, [first, second, ...rest], firstPageSizeBytes);
 
         expect(chunks).to.have.length(2);
         expect(chunks[0]).to.deep.equal([first]);
         expect(chunks[1]).to.deep.equal([second, ...rest]);
     });
 
-    it("keeps single oversized comments instead of dropping them", () => {
+    it("keeps single oversized comments instead of dropping them", async () => {
         const oversized = createCommentEntry(6000);
         const followUp = createCommentEntry(50);
         const firstPageSizeBytes = 4096;
 
-        const chunks = chunkComments(pageGenerator, [oversized, followUp], firstPageSizeBytes);
+        const chunks = await chunkComments(pageGenerator, [oversized, followUp], firstPageSizeBytes);
 
         expect(chunks).to.have.length(2);
         expect(chunks[0]).to.deep.equal([oversized]);
@@ -104,9 +104,9 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         expect(firstChunkSize).to.be.greaterThan(firstPageSizeBytes);
     });
 
-    it("handles firstPageSizeBytes values smaller than the safety margin", () => {
+    it("handles firstPageSizeBytes values smaller than the safety margin", async () => {
         const comments = [createCommentEntry(10), createCommentEntry(10), createCommentEntry(10)];
-        const chunks = chunkComments(pageGenerator, comments, 512);
+        const chunks = await chunkComments(pageGenerator, comments, 512);
 
         expect(chunks).to.have.length(2);
         expect(chunks[0]).to.deep.equal([comments[0]]);
@@ -121,7 +121,7 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         expect(secondChunkSize).to.equal(expectedSecondChunkSize);
     });
 
-    it("allows later chunks to pack more comments as their budgets grow", () => {
+    it("allows later chunks to pack more comments as their budgets grow", async () => {
         const comments = Array.from({ length: 24 }, (_, index) =>
             createCommentEntry({
                 contentLength: 2048,
@@ -132,7 +132,7 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         );
         const firstPageSizeBytes =
             measurePageSize([comments[0], comments[1]], { includeNextCid: true }) - Math.floor(SAFETY_MARGIN_BYTES / 2);
-        const chunks = chunkComments(pageGenerator, comments, firstPageSizeBytes);
+        const chunks = await chunkComments(pageGenerator, comments, firstPageSizeBytes);
 
         expect(chunks).to.have.length(3);
         expect(chunks[0]).to.have.length(1);
@@ -151,9 +151,9 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
         expect(lastChunkSize).to.be.lessThan(2 * 1024 * 1024);
     });
 
-    it("returns a chunk for empty comment lists so callers can reuse the original array", () => {
+    it("returns a chunk for empty comment lists so callers can reuse the original array", async () => {
         const emptyComments = [];
-        const chunks = chunkComments(pageGenerator, emptyComments, 2048);
+        const chunks = await chunkComments(pageGenerator, emptyComments, 2048);
 
         expect(chunks).to.have.length(1);
         expect(chunks[0]).to.equal(emptyComments);
@@ -161,7 +161,7 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
     });
 });
 
-function chunkComments(pageGenerator, comments, firstPageSizeBytes) {
+async function  chunkComments(pageGenerator, comments, firstPageSizeBytes) {
     return pageGenerator._chunkComments({ comments, firstPageSizeBytes });
 }
 
