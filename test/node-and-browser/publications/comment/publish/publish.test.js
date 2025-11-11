@@ -309,7 +309,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         [2, 3].map((depth) =>
-            it(`Can publish comment with depth = ${depth}`, async () => {
+            it(`Can publish reply with depth = ${depth}`, async () => {
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 const reply = await publishCommentWithDepth({ depth, subplebbit });
                 expect(reply.depth).to.be.equal(depth);
