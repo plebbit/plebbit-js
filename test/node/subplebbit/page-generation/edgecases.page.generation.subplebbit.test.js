@@ -9,6 +9,7 @@ import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../../dist/node/s
 import { calculateExpectedSignatureSize } from "../../../../dist/node/runtime/node/util.js";
 import { calculateStringSizeSameAsIpfsAddCidV0, timestamp } from "../../../../dist/node/util.js";
 import env from "../../../../dist/node/version.js";
+import { sha256 } from "js-sha256";
 
 const MB = 1024 * 1024;
 const MAX_COMMENT_SIZE_BYTES = 40 * 1024;
@@ -28,6 +29,67 @@ const DEFAULT_PRIMARY_CHAIN_DEPTH = 20;
 describeSkipIfRpc("page-generator disables oversized preloaded pages", function () {
     afterEach(() => {
         vi.restoreAllMocks();
+    });
+
+    it("returns undefined when attempting to generate mod queue pages with no pending approvals", async () => {
+        const context = await createSubplebbitWithDefaultDb();
+        try {
+            const generatedModQueue = await context.subplebbit._pageGenerator.generateModQueuePages();
+            expect(generatedModQueue, "expected no mod queue payload when pending approvals are empty").to.be.undefined;
+        } finally {
+            await context.cleanup();
+        }
+    });
+
+    it("splits mod queue pending approvals into multiple CIDs when the serialized payload would exceed 1mib", async () => {
+        const context = await createSubplebbitWithDefaultDb();
+        const HEAVY_PENDING_COUNT = 120;
+        let addQueuedChunkSpy;
+        try {
+            await seedPendingApprovalComments(context.subplebbit, {
+                pendingCount: HEAVY_PENDING_COUNT,
+                contentBytes: MAX_COMMENT_SIZE_BYTES - 512
+            });
+            const pendingRows = context.subplebbit._dbHandler.queryCommentsPendingApproval();
+            expect(pendingRows.length, "all mod queue rows should be pending approval").to.equal(HEAVY_PENDING_COUNT);
+
+            const originalAddQueued = context.subplebbit._pageGenerator.addQueuedCommentChunksToIpfs;
+            let capturedChunks;
+            addQueuedChunkSpy = vi
+                .spyOn(context.subplebbit._pageGenerator, "addQueuedCommentChunksToIpfs")
+                .mockImplementation(async function (chunks, sortName) {
+                    capturedChunks = chunks;
+                    return originalAddQueued.call(this, chunks, sortName);
+                });
+
+            const generatedModQueue = await context.subplebbit._pageGenerator.generateModQueuePages();
+
+            expect(generatedModQueue, "expected mod queue data to be generated").to.exist;
+            expect(generatedModQueue?.pageCids?.pendingApproval, "expected pageCid for pendingApproval").to.be.a("string");
+            expect(generatedModQueue?.combinedHashOfCids, "expected combined hash of queued comment cids").to.be.a("string");
+
+            const expectedChunkCount = 4;
+            expect(capturedChunks, "expected chunked mod queue data").to.exist;
+            expect(capturedChunks?.length, "expected serialized mod queue data to require more than one chunk").to.equal(expectedChunkCount);
+
+            for (let chunkIndex = 0; chunkIndex < capturedChunks.length; chunkIndex++) {
+                const chunk = capturedChunks[chunkIndex];
+                const serializedChunkSize = await calculateModQueueChunkSize(chunk, chunkIndex < capturedChunks.length - 1);
+                const maxChunkSize = chunkIndex === 0 ? MB : MB * Math.pow(2, chunkIndex - 1);
+                expect(
+                    serializedChunkSize,
+                    `mod queue chunk ${chunkIndex} should stay under ${maxChunkSize} bytes`
+                ).to.be.at.most(maxChunkSize);
+            }
+
+            const expectedCombinedHash = sha256(pendingRows.map((row) => row.cid).join(""));
+            expect(generatedModQueue?.combinedHashOfCids).to.equal(expectedCombinedHash);
+        } catch (e) {
+            throw e;
+        } finally {
+            addQueuedChunkSpy?.mockRestore();
+            await context.cleanup();
+        }
     });
 
     it("A subplebbit.posts preloaded page higher than 1mib should not be published a preload, instead it send preloaded sort into pageCids", async () => {
@@ -401,6 +463,23 @@ async function seedSubplebbitComments(subplebbit, commentTrees) {
     return { rows, labelToCid };
 }
 
+async function seedPendingApprovalComments(subplebbit, { pendingCount, contentBytes = HEAVY_COMMENT_BYTES }) {
+    if (!Number.isFinite(pendingCount) || pendingCount <= 0) throw new Error("pendingCount must be a positive number");
+    const trees = Array.from({ length: pendingCount }, (_, index) => ({
+        label: `modqueue-root-${index}-${randomUUID()}`,
+        contentTargetBytes: contentBytes
+    }));
+    const { rows } = await buildCommentRowsFromTrees({
+        subplebbitAddress: subplebbit.address,
+        trees
+    });
+    for (const row of rows) {
+        row.pendingApproval = 1;
+    }
+    subplebbit._dbHandler.insertComments(rows);
+    return rows;
+}
+
 async function buildCommentRowsFromTrees({ subplebbitAddress, trees }) {
     const rows = [];
     const labelToCid = new Map();
@@ -470,6 +549,15 @@ async function generateRandomCid(label = "comment") {
 
 function cloneDefaultSignature() {
     return JSON.parse(JSON.stringify(DEFAULT_COMMENT_SIGNATURE));
+}
+
+async function calculateModQueueChunkSize(comments, hasNextCid) {
+    const payload = hasNextCid
+        ? { comments, nextCid: "QmModQueueNextChunkCid6kjQYbKs" }
+        : {
+              comments
+          };
+    return await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(payload));
 }
 
 function assertParentAndPostCid(rows, labelToCid, label, parentLabel, rootLabel) {

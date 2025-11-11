@@ -19,7 +19,7 @@ import env from "../../../version.js";
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, REPLY_REPLIES_SORT_TYPES } from "../../../pages/util.js";
 import { PlebbitError } from "../../../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import { SubplebbitIpfsType } from "../../../subplebbit/types.js";
+import type { SubplebbitIpfsType } from "../../../subplebbit/types.js";
 import { cleanUpBeforePublishing, signCommentUpdateForChallengeVerification } from "../../../signer/signatures.js";
 import { deriveCommentIpfsFromCommentTableRow } from "../util.js";
 import { sha256 } from "js-sha256";
