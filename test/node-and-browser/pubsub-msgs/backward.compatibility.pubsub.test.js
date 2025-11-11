@@ -21,7 +21,7 @@ const mathCliSubplebbitAddress = signers[1].address;
 
 // TODO make these tests work with RPC clients
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describe(`Publishing  and receiving pubsub messages with extra props - ${config.name}`, async () => {
+    describe.concurrent(`Publishing  and receiving pubsub messages with extra props - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {
@@ -32,7 +32,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await plebbit.destroy();
         });
 
-        describe(`ChallengeRequest with extra props`, async () => {
+        describe.concurrent(`ChallengeRequest with extra props`, async () => {
             it(`A challenge request with an extra prop not included in signature.signedPropertyNames will get ignored`, async () => {
                 const post = await generateMockPost(signers[0].address, plebbit);
                 const extraProps = { extraProp: 1234 };
@@ -78,7 +78,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             });
         });
 
-        describe(`ChallengeMessage with extra props`, async () => {
+        describe.concurrent(`ChallengeMessage with extra props`, async () => {
             it(`A challenge message with an extra prop not included in signature.signedPropertyNames will get emit cause the Publication class to emit an error`, async () => {
                 const pubsubSigner = await plebbit.createSigner();
                 const post = await generateMockPost(signers[0].address, plebbit);
@@ -135,7 +135,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             });
         });
 
-        describe(`ChallengeAnswerMessage with extra props`, async () => {
+        describe.concurrent(`ChallengeAnswerMessage with extra props`, async () => {
             it(`A challenge answer message with an extra prop not included in signature.signedPropertyNames will get ignored`, async () => {
                 const post = await generateMockPost(mathCliSubplebbitAddress, plebbit);
                 await post.publish();
@@ -174,7 +174,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             });
         });
 
-        describe(`ChallengeVerification with extra props`, async () => {
+        describe.concurrent(`ChallengeVerification with extra props`, async () => {
             it(`A challenge verification message with an extra prop not included in signature.signedPropertyNames will get emit cause the Publication class to emit an error`, async () => {
                 const pubsubSigner = await plebbit.createSigner();
                 const post = await generateMockPost(signers[0].address, plebbit);

@@ -39,7 +39,7 @@ const parsePubsubMsgFixture = (json) => {
 // Clients of RPC will trust the response of RPC and won't validate
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).forEach((config) => {
-    describe("challengerequest - " + config.name, async () => {
+    describe.concurrent("challengerequest - " + config.name, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -213,7 +213,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
     });
 
     // Clients of RPC will trust the response of RPC and won't validate
-    describe(`challengemessage - ` + config.name, async () => {
+    describe.concurrent(`challengemessage - ` + config.name, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -257,7 +257,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
     });
 
     // Clients of RPC will trust the response of RPC and won't validate
-    describe("challengeanswer - " + config.name, async () => {
+    describe.concurrent("challengeanswer - " + config.name, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -433,7 +433,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
     });
 
     // Clients of RPC will trust the response of RPC and won't validate
-    describe("challengeverification - " + config.name, async () => {
+    describe.concurrent("challengeverification - " + config.name, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();

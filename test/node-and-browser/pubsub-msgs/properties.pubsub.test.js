@@ -7,7 +7,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 const mathCliSubplebbitAddress = signers[1].address;
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describe(`Validate props of publication Pubsub messages - ${config.name}`, async () => {
+    describe.concurrent(`Validate props of publication Pubsub messages - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();

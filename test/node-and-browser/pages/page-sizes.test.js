@@ -69,7 +69,7 @@ async function createMockPageOfSize(baseSize, nextCid = null) {
 }
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describeSkipIfRpc(`Page size loading tests - ${config.name}`, async () => {
+    describeSkipIfRpc.concurrent(`Page size loading tests - ${config.name}`, async () => {
         let plebbit, mockSubplebbit;
 
         before(async () => {

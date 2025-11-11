@@ -7,7 +7,7 @@ import * as remeda from "remeda";
 import { timestamp } from "../../../dist/node/util.js";
 import validVoteFixture from "../../fixtures/valid_vote.json" with { type: "json" };
 
-describe("Sign Vote", async () => {
+describe.concurrent("Sign Vote", async () => {
     let plebbit, subplebbit, voteProps, voteSignature;
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
@@ -60,7 +60,7 @@ describe("Sign Vote", async () => {
 });
 
 // Clients of RPC will trust the response of RPC and won't validate
-describeSkipIfRpc("Verify vote", async () => {
+describeSkipIfRpc.concurrent("Verify vote", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();

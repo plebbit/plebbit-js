@@ -31,7 +31,7 @@ describe.skip(`Stress test challenge exchange`, async () => {
 });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describe(`math-cli - ${config.name}`, async () => {
+    describe.concurrent(`math-cli - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {
