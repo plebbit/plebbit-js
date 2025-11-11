@@ -8,6 +8,7 @@
         "build:node:watch": "tsc --project config/tsconfig.json --watch",
         "build:browser": "node config/build-browser",
         "build:browser:watch": "node config/build-browser --watch",
+        "build:watch": "npm-run-all build:node --parallel build:node:watch build:browser:watch",
         "test": "run-s test:node test:browser:chrome test:browser:firefox",
         "test:node": "node test/run-test-config.js --environment node test",
         "test:node:rpc": "cross-env USE_RPC=1 PLEBBIT_CONFIGS=remote-plebbit-rpc node test/run-test-config.js --environment node test/node test/node-and-browser",
