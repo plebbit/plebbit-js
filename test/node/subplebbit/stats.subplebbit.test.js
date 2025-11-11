@@ -151,6 +151,39 @@ describe(`subplebbit.statsCid`, function () {
         });
     });
 
+    describe(`subplebbit.stats filters ineligible comments`, () => {
+        it(`ignores comments stored under different subplebbit address`, () => {
+            const statsBefore = queryStats();
+            insertPost({
+                authorSignerAddress: "foreign-author",
+                overrides: { subplebbitAddress: "other-subplebbit" }
+            });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+            expectDelta(postCountKeys, statsBefore, statsAfter, 0);
+            expectDelta(replyCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ignores removed comments`, () => {
+            const post = insertPost({ authorSignerAddress: "active-post-author" });
+            const statsBefore = queryStats();
+            const reply = insertReply({ parent: post, authorSignerAddress: "removed-reply-author" });
+            insertCommentUpdate(reply, { removed: true });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+            expectDelta(replyCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ignores deleted comments`, () => {
+            const statsBefore = queryStats();
+            const post = insertPost({ authorSignerAddress: "deleted-author" });
+            insertCommentUpdate(post, { edit: { deleted: true } });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+            expectDelta(postCountKeys, statsBefore, statsAfter, 0);
+        });
+    });
+
     function queryStats() {
         assert(dbHandler, "DbHandler not initialised");
         return dbHandler.querySubplebbitStats();
@@ -197,7 +230,7 @@ describe(`subplebbit.statsCid`, function () {
                 parentCid: resolvedParentCid,
                 postCid: resolvedPostCid,
                 previousCid: null,
-                subplebbitAddress,
+                subplebbitAddress: overrides.subplebbitAddress ?? subplebbitAddress,
                 content: overrides.content ?? `content-${cid}`,
                 timestamp,
                 signature: overrides.signature ?? {
@@ -227,6 +260,56 @@ describe(`subplebbit.statsCid`, function () {
             timestamp,
             authorSignerAddress: resolvedAuthorSignerAddress
         };
+    }
+
+    function insertCommentUpdate(comment, options = {}) {
+        assert(comment, "comment is required for comment updates");
+        assert(dbHandler, "DbHandler not initialised");
+        const {
+            replyCount = 0,
+            childCount = 0,
+            upvoteCount = 0,
+            downvoteCount = 0,
+            removed = null,
+            approved = null,
+            edit = null,
+            lastChildCid = null,
+            lastReplyTimestamp = null,
+            postUpdatesBucket = 0,
+            publishedToPostUpdatesMFS = 0,
+            updatedAt = currentTimestamp(),
+            insertedAt
+        } = options;
+        const resolvedInsertedAt = insertedAt ?? updatedAt;
+        dbHandler.upsertCommentUpdates([
+            {
+                cid: comment.cid,
+                replyCount,
+                childCount,
+                upvoteCount,
+                downvoteCount,
+                removed,
+                approved,
+                edit,
+                lastChildCid,
+                lastReplyTimestamp,
+                postUpdatesBucket,
+                updatedAt,
+                protocolVersion: PROTOCOL_VERSION,
+                signature: "sig",
+                author: {
+                    subplebbit: {
+                        postScore: 0,
+                        replyScore: 0,
+                        lastCommentCid: comment.cid,
+                        firstCommentTimestamp: comment.timestamp
+                    }
+                },
+                replies: null,
+                publishedToPostUpdatesMFS,
+                insertedAt: resolvedInsertedAt
+            }
+        ]);
     }
 
     function insertVote(comment, { authorSignerAddress, timestamp = currentTimestamp(), vote = 1 } = {}) {

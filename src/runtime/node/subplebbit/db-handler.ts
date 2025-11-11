@@ -1263,6 +1263,11 @@ export class DbHandler {
 
     querySubplebbitStats(): SubplebbitStats {
         const now = timestamp(); // All timestamps are in seconds
+        const subplebbitAddress = this._subplebbit.address;
+        const removedCommentsClause = this._removedClause("cu_comments");
+        const deletedCommentsClause = this._deletedFromUpdatesClause("cu_comments");
+        const removedVotesClause = this._removedClause("cu_votes");
+        const deletedVotesClause = this._deletedFromUpdatesClause("cu_votes");
 
         const queryString = `
             SELECT 
@@ -1291,32 +1296,41 @@ export class DbHandler {
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 THEN 1 ELSE 0 END), 0) as allReplyCount
             FROM (
                 SELECT 
-                    authorSignerAddress, 
-                    timestamp,
-                    depth,
+                    comments.authorSignerAddress, 
+                    comments.timestamp,
+                    comments.depth,
                     1 as is_comment,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
-                FROM ${TABLES.COMMENTS}
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                FROM ${TABLES.COMMENTS} AS comments
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_comments ON cu_comments.cid = comments.cid
+                WHERE comments.subplebbitAddress = :subplebbitAddress
+                  AND ${removedCommentsClause}
+                  AND ${deletedCommentsClause}
                 UNION ALL
                 SELECT 
-                    authorSignerAddress, 
-                    timestamp,
+                    votes.authorSignerAddress, 
+                    votes.timestamp,
                     NULL as depth,
                     0 as is_comment,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
-                FROM ${TABLES.VOTES}
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                FROM ${TABLES.VOTES} AS votes
+                INNER JOIN ${TABLES.COMMENTS} AS comments_for_votes ON comments_for_votes.cid = votes.commentCid
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_votes ON cu_votes.cid = comments_for_votes.cid
+                WHERE comments_for_votes.subplebbitAddress = :subplebbitAddress
+                  AND ${removedVotesClause}
+                  AND ${deletedVotesClause}
             )
         `;
 
-        return this._db.prepare(queryString).get() as SubplebbitStats;
+        return this._db.prepare(queryString).get({ subplebbitAddress }) as SubplebbitStats;
     }
 
     queryCommentsUnderComment(parentCid: string | null): CommentsTableRow[] {
