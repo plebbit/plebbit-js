@@ -70,16 +70,17 @@ describeSkipIfRpc("page-generator disables oversized preloaded pages", function 
 
             const expectedChunkCount = 4;
             expect(capturedChunks, "expected chunked mod queue data").to.exist;
-            expect(capturedChunks?.length, "expected serialized mod queue data to require more than one chunk").to.equal(expectedChunkCount);
+            expect(capturedChunks?.length, "expected serialized mod queue data to require more than one chunk").to.equal(
+                expectedChunkCount
+            );
 
             for (let chunkIndex = 0; chunkIndex < capturedChunks.length; chunkIndex++) {
                 const chunk = capturedChunks[chunkIndex];
                 const serializedChunkSize = await calculateModQueueChunkSize(chunk, chunkIndex < capturedChunks.length - 1);
                 const maxChunkSize = chunkIndex === 0 ? MB : MB * Math.pow(2, chunkIndex - 1);
-                expect(
-                    serializedChunkSize,
-                    `mod queue chunk ${chunkIndex} should stay under ${maxChunkSize} bytes`
-                ).to.be.at.most(maxChunkSize);
+                expect(serializedChunkSize, `mod queue chunk ${chunkIndex} should stay under ${maxChunkSize} bytes`).to.be.at.most(
+                    maxChunkSize
+                );
             }
 
             const expectedCombinedHash = sha256(pendingRows.map((row) => row.cid).join(""));
