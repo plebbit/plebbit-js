@@ -11,9 +11,21 @@ import { PlebbitError } from "../../../dist/node/plebbit-error.js";
 import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { signCommentUpdate } from "../../../dist/node/signer/signatures.js";
+import { describe } from "vitest";
+
+const cloneCommentInstance = (source) => {
+    const clone = source.__proto__ ? Object.assign(Object.create(Object.getPrototypeOf(source)), source) : { ...source };
+    if (typeof clone.toJSON === "function") {
+        // shallow clone for nested refs; tests mutate only top-level props
+        clone.raw = remeda.clone(source.raw);
+    } else {
+        clone.raw = JSON.parse(JSON.stringify(source.raw));
+    }
+    return clone;
+};
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describeSkipIfRpc(`plebbit.validateComment - ${config.name}`, async () => {
+    describeSkipIfRpc.concurrent(`plebbit.validateComment - ${config.name}`, async () => {
         let plebbit, subplebbit, postCommentInstance, postPageComment, replyFromFlatPage, replyFromBestPage;
 
         before(async () => {
@@ -25,7 +37,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // Get a post instance
             postCommentInstance = await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
             await postCommentInstance.update();
-            await resolveWhenConditionIsTrue({ toUpdate: postCommentInstance, predicate: () => typeof postCommentInstance.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: postCommentInstance,
+                predicate: () => typeof postCommentInstance.updatedAt === "number"
+            });
 
             // Find a post page comment
             postPageComment = subplebbit.posts.pages.hot.comments.find((c) => c.cid === postCommentInstance.cid);
@@ -42,12 +57,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 console.log(`Post ${postWithRepliesInstance.cid} has no replies on 'best' page, creating one...`);
                 await publishRandomReply(postWithRepliesInstance, plebbit);
                 await postWithRepliesInstance.update(); // Update again to fetch the new reply
-                await resolveWhenConditionIsTrue(
-                    {
-                        toUpdate: postWithRepliesInstance,
-                        predicate: () => postWithRepliesInstance.replies.pages.best?.comments?.length > 0,
-                    }
-                );
+                await resolveWhenConditionIsTrue({
+                    toUpdate: postWithRepliesInstance,
+                    predicate: () => postWithRepliesInstance.replies.pages.best?.comments?.length > 0
+                });
                 console.log(`Reply created for post ${postWithRepliesInstance.cid}.`);
             }
             expect(
@@ -74,11 +87,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             if (plebbit) await plebbit.destroy();
         });
 
-        describe("Valid Comments", () => {
+        describe.concurrent("Valid Comments", () => {
             // --- Tests for Post Comment Instance ---
             it("should validate a valid Post Comment instance (validateReplies=undefined)", async () => {
                 try {
-                    await plebbit.validateComment(postCommentInstance);
+                    await plebbit.validateComment(cloneCommentInstance(postCommentInstance));
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -86,7 +99,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post Comment instance (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(postCommentInstance, { validateReplies: false });
+                    await plebbit.validateComment(cloneCommentInstance(postCommentInstance), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -94,7 +107,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post Comment instance (validateReplies=true)", async () => {
                 try {
-                    await plebbit.validateComment(postCommentInstance, { validateReplies: true });
+                    await plebbit.validateComment(cloneCommentInstance(postCommentInstance), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -111,7 +124,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post pageComment object (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(postPageComment, { validateReplies: false });
+                    await plebbit.validateComment(remeda.clone(postPageComment), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -119,7 +132,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post pageComment object (validateReplies=true)", async () => {
                 try {
-                    await plebbit.validateComment(postPageComment, { validateReplies: true });
+                    await plebbit.validateComment(remeda.clone(postPageComment), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -128,7 +141,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // --- Tests for Reply Page Comment (from Flat Page) ---
             it("should validate a valid Reply pageComment object from flat page (validateReplies=undefined)", async () => {
                 try {
-                    await plebbit.validateComment(replyFromFlatPage);
+                    await plebbit.validateComment(remeda.clone(replyFromFlatPage));
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromFlatPage, but it rejected with: ${e}`);
                 }
@@ -136,7 +149,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Reply pageComment object from flat page (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(replyFromFlatPage, { validateReplies: false });
+                    await plebbit.validateComment(remeda.clone(replyFromFlatPage), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromFlatPage, but it rejected with: ${e}`);
                 }
@@ -145,7 +158,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             it("should validate a valid Reply pageComment object from flat page (validateReplies=true)", async () => {
                 // Since this reply might itself have replies (even though fetched via flat page), validating them is valid
                 try {
-                    await plebbit.validateComment(replyFromFlatPage, { validateReplies: true });
+                    await plebbit.validateComment(remeda.clone(replyFromFlatPage), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromFlatPage, but it rejected with: ${e}`);
                 }
@@ -154,7 +167,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // --- Tests for Reply Page Comment (from Best Page) ---
             it("should validate a valid Reply pageComment object from best page (validateReplies=undefined)", async () => {
                 try {
-                    await plebbit.validateComment(replyFromBestPage);
+                    await plebbit.validateComment(remeda.clone(replyFromBestPage));
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromBestPage, but it rejected with: ${e}`);
                 }
@@ -162,7 +175,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Reply pageComment object from best page (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(replyFromBestPage, { validateReplies: false });
+                    await plebbit.validateComment(remeda.clone(replyFromBestPage), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromBestPage, but it rejected with: ${e}`);
                 }
@@ -171,28 +184,36 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             it("should validate a valid Reply pageComment object from best page (validateReplies=true)", async () => {
                 // Since this reply might itself have replies, validating them is valid
                 try {
-                    await plebbit.validateComment(replyFromBestPage, { validateReplies: true });
+                    await plebbit.validateComment(remeda.clone(replyFromBestPage), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromBestPage, but it rejected with: ${e}`);
                 }
             });
         });
 
-        describe("Invalid Comments", () => {
+        describe.sequential("Invalid Comments", () => {
             let plebbit; // Use a separate plebbit instance for invalid tests to reset caches if needed
             let sourcePostCommentInstance; // Need a valid instance for cloning/copying tests
             beforeEach(async () => {
                 plebbit = await mockRemotePlebbit();
-                // Get a valid instance to use as source for invalid data tests
                 const sub = await plebbit.getSubplebbit(signers[0].address);
                 await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.lastPostCid === "string" });
                 sourcePostCommentInstance = await plebbit.getComment(sub.lastPostCid);
                 await sourcePostCommentInstance.update();
-                await resolveWhenConditionIsTrue({ toUpdate: sourcePostCommentInstance, predicate: () => typeof sourcePostCommentInstance.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: sourcePostCommentInstance,
+                    predicate: () => typeof sourcePostCommentInstance.updatedAt === "number"
+                });
             });
             afterEach(async () => {
-                if (sourcePostCommentInstance) await sourcePostCommentInstance.stop();
-                if (plebbit) await plebbit.destroy();
+                if (sourcePostCommentInstance) {
+                    await sourcePostCommentInstance.stop?.();
+                    sourcePostCommentInstance = undefined;
+                }
+                if (plebbit) {
+                    await plebbit.destroy();
+                    plebbit = undefined;
+                }
             });
 
             // --- Invalid Post Comment Instance Tests ---
