@@ -95,34 +95,38 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         if (pendingCommentDepth === 0)
-            it(`Approved post is now reflected in subplebbit.lastPostCid`, async () => {
+            it.sequential(`Approved post is now reflected in subplebbit.lastPostCid`, async () => {
+                await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.lastPostCid === approvedComment.cid });
                 expect(subplebbit.lastPostCid).to.equal(approvedComment.cid);
             });
 
-        it(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
+        it.sequential(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.lastCommentCid === approvedComment.cid });
+
             expect(subplebbit.lastCommentCid).to.equal(approvedComment.cid);
         });
 
         if (pendingCommentDepth > 0) {
-            it(`Approved reply show up in parentComment.replyCount`, async () => {
+            it.sequential(`Approved reply show up in parentComment.replyCount`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).replyCount).to.equal(1);
             });
-            it(`Approved reply show up in parentComment.childCount`, async () => {
+            it.sequential(`Approved reply show up in parentComment.childCount`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).childCount).to.equal(1);
             });
-            it(`Approved reply show up in parentComment.lastChildCid`, async () => {
+            it.sequential(`Approved reply show up in parentComment.lastChildCid`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).lastChildCid).to.equal(
                     approvedComment.cid
                 );
             });
-            it(`Approved reply show up in parentComment.lastReplyTimestamp`, async () => {
+            it.sequential(`Approved reply show up in parentComment.lastReplyTimestamp`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).lastReplyTimestamp).to.equal(
                     approvedComment.timestamp
                 );
             });
         }
 
-        it(`Approved comment now appears in subplebbit.posts`, async () => {
+        it.sequential(`Approved comment now appears in subplebbit.posts`, async () => {
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.posts.pages.hot?.comments?.length > 0 });
             let foundInPosts = false;
             processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
                 if (comment.cid === approvedComment.cid) {
@@ -155,7 +159,7 @@ for (const pendingCommentDepth of depthsToTest) {
             it(`Approved reply now shows up in parentComment.replies`, async () => {
                 const parentComment = await plebbit.getComment(approvedComment.parentCid);
                 await parentComment.update();
-                await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => Boolean(parentComment.updatedAt) });
+                await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.replies.pages.best?.comments });
                 let foundInReplies = false;
                 processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
                     if (comment.cid === approvedComment.cid) {
