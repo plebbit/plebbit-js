@@ -1262,6 +1262,7 @@ export class DbHandler {
     }
 
     querySubplebbitStats(): SubplebbitStats {
+        // if you change this query, make sure to run stats.subplebbit.test.js
         const now = timestamp(); // All timestamps are in seconds
         const subplebbitAddress = this._subplebbit.address;
         const removedCommentsClause = this._removedClause("cu_comments");
