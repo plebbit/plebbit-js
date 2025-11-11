@@ -36,7 +36,8 @@ describeSkipIfRpc.concurrent("Modqueue depths", () => {
     for (const depth of depthsToTest) {
         it.concurrent(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
             const { plebbit, subplebbit, modSigner } = await setupSubplebbitWithModerator();
-            const numOfComments = 2;
+            expect(subplebbit.lastPostCid).to.be.undefined;
+            const numOfComments = 3;
             const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
             try {
@@ -51,6 +52,8 @@ describeSkipIfRpc.concurrent("Modqueue depths", () => {
                         })
                     )
                 );
+
+                await new Promise((resolve) => setTimeout(resolve, 9000)); // wait till subplebbit updates modqueue with all comments
 
                 await resolveWhenConditionIsTrue({
                     toUpdate: subplebbit,
