@@ -21,7 +21,7 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
 
-const depthsToTest = [0, 1, 2, 10, 11];
+const depthsToTest = [0, 1, 2, 3, 10, 11];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } }; // this should get comment to be successful with challenge, thus sending it to modqueue
 
 for (const commentInPendingApprovalDepth of depthsToTest) {
@@ -139,37 +139,37 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         });
 
         if (commentInPendingApprovalDepth > 0) {
-            it(`pending approval reply does not show up in parentComment.replyCount`, async () => {
+            it.sequential(`pending approval reply does not show up in parentComment.replyCount`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).replyCount).to.equal(
                     0
                 );
             });
 
-            it(`pending approval reply does not show up in parentComment.childCount`, async () => {
+            it.sequential(`pending approval reply does not show up in parentComment.childCount`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).childCount).to.equal(
                     0
                 );
             });
 
-            it(`pending approval reply does not show up in parentComment.lastChildCid`, async () => {
+            it.sequential(`pending approval reply does not show up in parentComment.lastChildCid`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).lastChildCid).to.be
                     .undefined;
             });
-            it(`pending approval reply does not show up in parentComment.lastReplyTimestamp`, async () => {
+            it.sequential(`pending approval reply does not show up in parentComment.lastReplyTimestamp`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).lastReplyTimestamp).to
                     .be.undefined;
             });
         }
         if (commentInPendingApprovalDepth === 0)
-            it(`pending approval post does not show up in subplebbit.lastPostCid`, async () => {
+            it.sequential(`pending approval post does not show up in subplebbit.lastPostCid`, async () => {
                 expect(subplebbit.lastPostCid).to.not.equal(commentInPendingApproval.cid);
             });
 
-        it(`pending approval comment does not show up in subplebbit.lastCommentCid`, async () => {
+        it.sequential(`pending approval comment does not show up in subplebbit.lastCommentCid`, async () => {
             expect(subplebbit.lastCommentCid).to.not.equal(commentInPendingApproval.cid);
         });
 
-        it(`A pending approval comment will not show up in subplebbit.posts`, async () => {
+        it.sequential(`A pending approval comment will not show up in subplebbit.posts`, async () => {
             let foundInPosts = false;
             processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
                 if (comment.cid === commentInPendingApproval.cid) {
@@ -198,7 +198,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         });
 
         if (commentInPendingApprovalDepth > 0)
-            it("A pending approval comment will not show up in parentComment.replies", async () => {
+            it.sequential("A pending approval comment will not show up in parentComment.replies", async () => {
                 const parentComment = await plebbit.getComment(commentInPendingApproval.parentCid);
                 await parentComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
@@ -230,7 +230,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 await parentComment.stop();
             });
         if (commentInPendingApprovalDepth > 0)
-            it(`A pending approval comment will not show up in flat pages of post`, async () => {
+            it.sequential(`A pending approval comment will not show up in flat pages of post`, async () => {
                 const postComment = await plebbit.getComment(commentInPendingApproval.postCid);
                 await postComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
