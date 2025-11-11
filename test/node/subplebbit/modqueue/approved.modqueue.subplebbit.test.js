@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { describe, it } from "vitest";
 import {
     mockPlebbit,
     publishWithExpectedResult,
@@ -15,18 +16,18 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
-const depthsToTest = [0, 1, 2];
+const depthsToTest = [0, 1, 2, 3, 11, 12, 15];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 for (const pendingCommentDepth of depthsToTest) {
-    describe(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
+    describe.concurrent(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
         let plebbit, subplebbit, approvedComment, modSigner, remotePlebbit;
 
         before(async () => {
             plebbit = await mockPlebbit();
             remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
             subplebbit = await plebbit.createSubplebbit();
-            subplebbit.setMaxListeners(100);
+            subplebbit.setMaxListeners(200);
             await subplebbit.start();
             modSigner = await plebbit.createSigner();
             await subplebbit.edit({
@@ -49,7 +50,10 @@ for (const pendingCommentDepth of depthsToTest) {
             });
             approvedComment = pending.comment;
 
-            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.modQueue.pageCids.pendingApproval) }); // wait until we publish a new mod queue with this new comment
+            await resolveWhenConditionIsTrue({
+                toUpdate: subplebbit,
+                predicate: () => Boolean(subplebbit.modQueue.pageCids.pendingApproval)
+            }); // wait until we publish a new mod queue with this new comment
             await approvedComment.update();
         });
 
@@ -60,7 +64,7 @@ for (const pendingCommentDepth of depthsToTest) {
             await remotePlebbit.destroy();
         });
 
-        it("Should approve comment using createCommentModeration with approved: true", async () => {
+        it.sequential("Should approve comment using createCommentModeration with approved: true", async () => {
             const commentModeration = await plebbit.createCommentModeration({
                 subplebbitAddress: subplebbit.address,
                 signer: modSigner,
@@ -71,7 +75,7 @@ for (const pendingCommentDepth of depthsToTest) {
             await publishWithExpectedResult(commentModeration, true);
         });
 
-        it(`pending comment after approval will receive updates now`, async () => {
+        it.sequential(`pending comment after approval will receive updates now`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: approvedComment, predicate: () => Boolean(approvedComment.updatedAt) });
             expect(approvedComment.updatedAt).to.be.a("number");
             expect(approvedComment.pendingApproval).to.be.false;
