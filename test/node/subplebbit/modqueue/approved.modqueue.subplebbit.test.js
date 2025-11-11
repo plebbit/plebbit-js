@@ -12,7 +12,8 @@ import {
     loadAllPages,
     itSkipIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    createPendingApprovalChallenge
+    createPendingApprovalChallenge,
+    loadAllUniquePostsUnderSubplebbit
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
@@ -28,14 +29,15 @@ for (const pendingCommentDepth of depthsToTest) {
             remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
             subplebbit = await plebbit.createSubplebbit();
             subplebbit.setMaxListeners(200);
-            await subplebbit.start();
             modSigner = await plebbit.createSigner();
+
             await subplebbit.edit({
                 roles: {
                     [modSigner.address]: { role: "moderator" }
                 },
                 settings: { challenges: [createPendingApprovalChallenge()] }
             });
+            await subplebbit.start();
 
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
 
@@ -126,15 +128,19 @@ for (const pendingCommentDepth of depthsToTest) {
         }
 
         it.sequential(`Approved comment now appears in subplebbit.posts`, async () => {
-            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.posts.pages.hot?.comments?.length > 0 });
+            // we can't assume that subplebbit.posts.pages.hot will be always defined anymore
+            const allCommentsUnderSub = await loadAllUniquePostsUnderSubplebbit(subplebbit);
+            expect(allCommentsUnderSub.length).to.be.greaterThan(0);
             let foundInPosts = false;
-            processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
+            processAllCommentsRecursively(allCommentsUnderSub, (comment) => {
                 if (comment.cid === approvedComment.cid) {
                     foundInPosts = true;
                     return;
                 }
             });
             expect(foundInPosts).to.be.true;
+
+            if (Object.keys(subplebbit.posts.pageCids).length > 0) return; // not needed anymore
 
             await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
