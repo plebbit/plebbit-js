@@ -141,6 +141,39 @@ function prepareWriteStream(filePath) {
     return fs.createWriteStream(filePath, { flags: "w" });
 }
 
+const toPosixPath = (value) => value.split(path.sep).join("/");
+
+function deriveIncludeGlobs(absoluteSpecPaths) {
+    const uniqueGlobs = new Set();
+    absoluteSpecPaths.forEach((absolutePath) => {
+        if (typeof absolutePath !== "string" || absolutePath.length === 0) {
+            return;
+        }
+
+        const stats = fs.statSync(absolutePath, { throwIfNoEntry: false });
+        if (!stats) {
+            return;
+        }
+
+        const relativePath = path.relative(projectRoot, absolutePath);
+        if (relativePath.startsWith("..")) {
+            return;
+        }
+
+        const posixRelative = toPosixPath(relativePath === "" ? "." : relativePath);
+        if (stats.isDirectory()) {
+            const trimmed = posixRelative.endsWith("/") ? posixRelative.slice(0, -1) : posixRelative;
+            const base = trimmed.length > 0 ? trimmed : ".";
+            uniqueGlobs.add(`${base}/**/*.test.{js,ts}`);
+            return;
+        }
+
+        uniqueGlobs.add(posixRelative);
+    });
+
+    return Array.from(uniqueGlobs);
+}
+
 const rawArgs = process.argv.slice(2);
 const { options, positionals } = parseArgs(rawArgs);
 
@@ -225,6 +258,17 @@ if (options.has("mocha-spec")) {
 const cliSpecArgs = positionals.length > 0 ? positionals : [];
 const mochaSpecPaths =
     cliSpecArgs.length > 0 ? cliSpecArgs.map((spec) => resolveMaybePath(spec)).filter(Boolean) : [path.join(__dirname, "node-and-browser")];
+
+if (cliSpecArgs.length > 0) {
+    const includeGlobs = deriveIncludeGlobs(mochaSpecPaths);
+    if (includeGlobs.length > 0) {
+        env.VITEST_INCLUDE_GLOBS = JSON.stringify(includeGlobs);
+    } else {
+        delete env.VITEST_INCLUDE_GLOBS;
+    }
+} else {
+    delete env.VITEST_INCLUDE_GLOBS;
+}
 
 const pickFirstDefined = (...values) => {
     for (const value of values) {

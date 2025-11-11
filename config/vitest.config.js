@@ -9,15 +9,32 @@ const isGithubActions = Boolean(process.env.GITHUB_ACTIONS);
 const vitestReportDir = ".vitest-reports";
 const vitestJsonReportPath = `${vitestReportDir}/browser-tests.json`;
 const vitestHtmlReportPath = `${vitestReportDir}/browser-tests/index.html`;
-const baseReporters = [
-    "default",
-    "verbose",
-    ["json", { outputFile: vitestJsonReportPath }],
-    ["html", { outputFile: vitestHtmlReportPath }]
-];
+const baseReporters = ["verbose", ["json", { outputFile: vitestJsonReportPath }], ["html", { outputFile: vitestHtmlReportPath }]];
 const sharedReporters = isGithubActions ? [...baseReporters, "github-actions"] : baseReporters;
 
 mkdirSync(vitestReportDir, { recursive: true });
+
+const parseIncludeOverride = () => {
+    const raw = process.env.VITEST_INCLUDE_GLOBS;
+    if (!raw) {
+        return undefined;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+            return undefined;
+        }
+        const filtered = parsed.map((value) => (typeof value === "string" ? value.trim() : "")).filter((value) => value.length > 0);
+        return filtered.length > 0 ? filtered : undefined;
+    } catch (error) {
+        console.warn("Failed to parse VITEST_INCLUDE_GLOBS:", error);
+        return undefined;
+    }
+};
+
+const includeOverride = parseIncludeOverride();
+const defaultNodeInclude = ["test/node/**/*.test.{js,ts}", "test/node-and-browser/**/*.test.{js,ts}", "test/challenges/**/*.test.{js,ts}"];
+const nodeTestInclude = includeOverride ?? defaultNodeInclude;
 
 const playwrightProvider = playwright(
     isFirefox
@@ -86,11 +103,7 @@ const nodeProject = defineProject({
         environment: "node",
         globals: true,
         setupFiles: ["./test/vitest-node-setup.js"],
-        include: [
-            "test/node/**/*.test.{js,ts}",
-            "test/node-and-browser/**/*.test.{js,ts}",
-            "test/challenges/**/*.test.{js,ts}"
-        ],
+        include: nodeTestInclude,
         allowOnly: false,
         passWithNoTests: false,
         dangerouslyIgnoreUnhandledErrors: false,
