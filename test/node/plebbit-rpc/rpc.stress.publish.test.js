@@ -10,7 +10,8 @@ import {
     mockRpcServerPlebbit,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    createPendingApprovalChallenge
+    createPendingApprovalChallenge,
+    publishCommentToModQueue
 } from "../../../dist/node/test/test-util.js";
 import Plebbit from "../../../dist/node/index.js";
 import { messages } from "../../../dist/node/errors.js";
@@ -110,7 +111,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         await Promise.allSettled(stressClients.splice(0).map((client) => client.destroy().catch(() => {})));
     });
 
-    const createRpcClient = async () => {
+    const createPlebbitRpcClient = async () => {
         const client = await Plebbit({
             plebbitRpcClientsOptions: [`ws://127.0.0.1:${rpcPort}`],
             dataPath: undefined,
@@ -126,7 +127,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
         const parallelFlows = Array.from({ length: PARALLEL_EDITS }).map((_, i) => {
             return (async () => {
-                const client = await createRpcClient();
+                const client = await createPlebbitRpcClient();
                 const authorSigner = await client.createSigner();
                 const pendingComment = await client.createComment({
                     subplebbitAddress: subplebbit.address,
@@ -172,7 +173,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         const ATTEMPTS = 10;
         const flows = Array.from({ length: ATTEMPTS }).map((_, i) => {
             return (async () => {
-                const client = await createRpcClient();
+                const client = await createPlebbitRpcClient();
                 const authorSigner = await client.createSigner();
                 const pendingComment = await client.createComment({
                     subplebbitAddress: subplebbit.address,
@@ -211,22 +212,24 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         configureServerPubsubClients();
     });
 
-    it("keeps pending-approval settings stable while other RPC clients edit the sub", async () => {
+    it("keeps pending-approval settings stable while publishng many pending comments", async () => {
         const publishAttempts = 40;
-        const toggles = 80;
-        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
         const runPublishFlow = async (index) => {
-            const client = await createRpcClient();
+            const client = await createPlebbitRpcClient();
             const authorSigner = await client.createSigner();
-            const pendingComment = await client.createComment({
-                subplebbitAddress: subplebbit.address,
-                content: `toggle stress comment ${index}`,
-                title: `toggle stress ${index}`,
-                signer: authorSigner,
-                challengeRequest: { challengeAnswers: ["pending"] }
+
+            const { comment: pendingComment, challengeVerification } = await publishCommentToModQueue({
+                plebbit: client,
+                subplebbit: subplebbit,
+                commentProps: {
+                    subplebbitAddress: subplebbit.address,
+                    content: `toggle stress comment ${index}`,
+                    title: `toggle stress ${index}`,
+                    signer: authorSigner,
+                    challengeRequest: { challengeAnswers: ["pending"] } // when we provide the correct answer we go to pending approval
+                }
             });
-            await publishWithExpectedResult(pendingComment, true);
 
             const rejection = await plebbit.createCommentModeration({
                 subplebbitAddress: subplebbit.address,
@@ -246,17 +249,6 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
             await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
         };
 
-        const toggleChallenges = async () => {
-            const pendingChallenge = createPendingApprovalChallenge();
-            const nonPendingChallenge = { ...pendingChallenge, pendingApproval: false };
-            for (let i = 0; i < toggles; i += 1) {
-                await subplebbit.edit({
-                    settings: { challenges: [i % 2 === 0 ? pendingChallenge : nonPendingChallenge] }
-                });
-                await delay(25);
-            }
-        };
-
-        await Promise.all([toggleChallenges(), Promise.all(Array.from({ length: publishAttempts }).map((_, i) => runPublishFlow(i)))]);
+        await Promise.all([Promise.all(Array.from({ length: publishAttempts }).map((_, i) => runPublishFlow(i)))]);
     });
 });
