@@ -1268,6 +1268,7 @@ export class DbHandler {
         const deletedCommentsClause = this._deletedFromUpdatesClause("cu_comments");
         const removedVotesClause = this._removedClause("cu_votes");
         const deletedVotesClause = this._deletedFromUpdatesClause("cu_votes");
+        const pendingCommentsClause = this._pendingApprovalClause("comments");
 
         const queryString = `
             SELECT 
@@ -1310,6 +1311,7 @@ export class DbHandler {
                 WHERE comments.subplebbitAddress = :subplebbitAddress
                   AND ${removedCommentsClause}
                   AND ${deletedCommentsClause}
+                  AND ${pendingCommentsClause}
                 UNION ALL
                 SELECT 
                     votes.authorSignerAddress, 

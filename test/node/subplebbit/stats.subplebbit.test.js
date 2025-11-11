@@ -1,8 +1,10 @@
 import { expect } from "chai";
 import assert from "assert";
 import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler.js";
+import { TIMEFRAMES_TO_SECONDS } from "../../../dist/node/pages/util.js";
 
 const PROTOCOL_VERSION = "1.0.0";
+const BUFFER_SECONDS = 60;
 
 const activeUserCountKeys = [
     "allActiveUserCount",
@@ -182,6 +184,75 @@ describe(`subplebbit.statsCid`, function () {
             expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
             expectDelta(postCountKeys, statsBefore, statsAfter, 0);
         });
+
+        it(`ignores comments pending approval`, () => {
+            const statsBefore = queryStats();
+            insertPost({ authorSignerAddress: "pending-post-author", overrides: { pendingApproval: 1 } });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+            expectDelta(postCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ignores replies pending approval`, () => {
+            const post = insertPost({ authorSignerAddress: "post-for-pending-reply" });
+            const statsBefore = queryStats();
+            insertReply({
+                parent: post,
+                authorSignerAddress: "pending-reply-author",
+                overrides: { pendingApproval: 1 }
+            });
+            const statsAfter = queryStats();
+            expectDelta(replyCountKeys, statsBefore, statsAfter, 0);
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ignores votes tied to comments under different subplebbit address`, () => {
+            const statsBefore = queryStats();
+            const foreignPost = insertPost({
+                authorSignerAddress: "foreign-post-vote",
+                overrides: { subplebbitAddress: "another-sub" }
+            });
+            insertVote(foreignPost, { authorSignerAddress: "vote-on-foreign" });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ignores votes on removed comments`, () => {
+            const post = insertPost({ authorSignerAddress: "removed-post-for-vote" });
+            insertCommentUpdate(post, { removed: true });
+            const statsBefore = queryStats();
+            insertVote(post, { authorSignerAddress: "vote-on-removed" });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`respects timeframe boundaries for post counts`, () => {
+            const statsBefore = queryStats();
+            const timestamp = currentTimestamp() - TIMEFRAMES_TO_SECONDS.HOUR - BUFFER_SECONDS;
+            insertPost({ authorSignerAddress: "older-post", timestamp });
+            const statsAfter = queryStats();
+            expect(statsAfter.hourPostCount).to.equal(statsBefore.hourPostCount);
+            expect(statsAfter.dayPostCount).to.equal(statsBefore.dayPostCount + 1);
+            expect(statsAfter.weekPostCount).to.equal(statsBefore.weekPostCount + 1);
+            expect(statsAfter.monthPostCount).to.equal(statsBefore.monthPostCount + 1);
+            expect(statsAfter.yearPostCount).to.equal(statsBefore.yearPostCount + 1);
+            expect(statsAfter.allPostCount).to.equal(statsBefore.allPostCount + 1);
+        });
+
+        it(`recounts comments when deleted flag is cleared`, () => {
+            const statsBefore = queryStats();
+            const post = insertPost({ authorSignerAddress: "toggle-deleted-author" });
+            const afterInsert = queryStats();
+            expectDelta(postCountKeys, statsBefore, afterInsert, 1);
+
+            insertCommentUpdate(post, { edit: { deleted: true } });
+            const afterDelete = queryStats();
+            expectDelta(postCountKeys, afterInsert, afterDelete, -1);
+
+            insertCommentUpdate(post, { edit: { deleted: false } });
+            const afterRestore = queryStats();
+            expectDelta(postCountKeys, afterDelete, afterRestore, 1);
+        });
     });
 
     function queryStats() {
@@ -328,6 +399,7 @@ describe(`subplebbit.statsCid`, function () {
             }
         ]);
     }
+
 
     function nextCid(prefix = "QmTest") {
         return `${prefix}${(cidCounter++).toString().padStart(4, "0")}`;
