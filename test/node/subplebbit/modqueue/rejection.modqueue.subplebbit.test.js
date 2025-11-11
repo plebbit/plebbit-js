@@ -4,6 +4,7 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     generateMockComment,
+    loadAllUniquePostsUnderSubplebbit,
     processAllCommentsRecursively,
     forceSubplebbitToGenerateAllRepliesPages,
     mockGatewayPlebbit,
@@ -16,8 +17,12 @@ import {
     createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
+import { describe, it } from "vitest";
 
-const depthsToTest = [0, 1, 2];
+const depthsToTest = [
+    0, 1, 2, 3, 10, 11, 12
+    // 15
+];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const commentModProps = [
@@ -34,10 +39,13 @@ const commentModProps = [
     { approved: false, reason: "Test removed and approved", removed: true }
 ];
 
+// sequential 619s
+// concurrent
+
 for (const commentMod of commentModProps) {
     for (const pendingCommentDepth of depthsToTest) {
         const shouldCommentBePurged = Object.keys(commentMod).length === 1; // only approved=false, no other props
-        describe(
+        describe.concurrent(
             `Comment moderation rejection of pending comment with depth ` +
                 pendingCommentDepth +
                 " and commentModeration=" +
@@ -88,7 +96,7 @@ for (const commentMod of commentModProps) {
                     await remotePlebbit.destroy();
                 });
 
-                it(`Can reject comment with commentModeration=${JSON.stringify(commentMod)}`, async () => {
+                it.sequential(`Can reject comment with commentModeration=${JSON.stringify(commentMod)}`, async () => {
                     const commentModeration = await plebbit.createCommentModeration({
                         subplebbitAddress: subplebbit.address,
                         signer: modSigner,
@@ -154,75 +162,84 @@ for (const commentMod of commentModProps) {
                     expect(subplebbit.lastCommentCid).to.not.equal(commentToBeRejected.cid);
                 });
 
-                it(`A rejected comment with only ${JSON.stringify(commentMod)} will never show up in subplebbit.posts`, async () => {
-                    let foundInPosts = false;
-                    // for posts
-                    // there never gonna in subplebbit.posts
+                it.sequential(
+                    `A rejected comment with only ${JSON.stringify(commentMod)} will never show up in subplebbit.posts`,
+                    async () => {
+                        let foundInPosts = false;
+                        // for posts
+                        // there never gonna in subplebbit.posts
 
-                    const expectedResult =
-                        pendingCommentDepth === 0 ? false : pendingCommentDepth > 0 && shouldCommentBePurged ? false : true; // if it's a reply then it will be nested within another commment and will appear in subplebbit.post
-                    processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
-                        if (comment.cid === commentToBeRejected.cid) {
-                            foundInPosts = true;
-                            return;
-                        }
-                    });
-                    expect(foundInPosts).to.equal(expectedResult);
+                        const shouldItBeInPosts =
+                            pendingCommentDepth === 0 ? false : pendingCommentDepth > 0 && shouldCommentBePurged ? false : true; // if it's a reply then it will be nested within another commment and will appear in subplebbit.post
+                        const allCommentsUnderSub = pendingCommentDepth > 0 ? await loadAllUniquePostsUnderSubplebbit(subplebbit) : [];
 
-                    await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
-
-                    expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
-
-                    for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                        const pageComments = await loadAllPages(pageCid, subplebbit.posts);
-                        expect(pageComments.length).to.be.greaterThan(0);
-
-                        processAllCommentsRecursively(pageComments, (comment) => {
+                        processAllCommentsRecursively(allCommentsUnderSub || [], (comment) => {
                             if (comment.cid === commentToBeRejected.cid) {
                                 foundInPosts = true;
                                 return;
                             }
                         });
-                        expect(foundInPosts).to.equal(expectedResult);
+                        expect(foundInPosts).to.equal(shouldItBeInPosts);
+
+                        if (Object.keys(subplebbit.posts.pageCids).length === 0)
+                            await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+                        expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
+
+                        for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+                            const pageComments = await loadAllPages(pageCid, subplebbit.posts);
+                            expect(pageComments.length).to.be.greaterThan(0);
+
+                            processAllCommentsRecursively(pageComments, (comment) => {
+                                if (comment.cid === commentToBeRejected.cid) {
+                                    foundInPosts = true;
+                                    return;
+                                }
+                            });
+                            expect(foundInPosts).to.equal(shouldItBeInPosts);
+                        }
                     }
-                });
+                );
 
                 if (pendingCommentDepth > 0)
-                    it(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`, async () => {
-                        const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
-                        await parentComment.update();
-                        await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
-                        const expectedResult = !shouldCommentBePurged;
-                        let foundInReplies = false;
-                        processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
-                            if (comment.cid === commentToBeRejected.cid) {
-                                foundInReplies = true;
-                                return;
-                            }
-                        });
-                        expect(foundInReplies).to.equal(expectedResult);
-
-                        await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
-
-                        expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
-
-                        for (const pageCid of Object.values(parentComment.replies.pageCids)) {
-                            foundInReplies = false;
-                            const pageComments = await loadAllPages(pageCid, parentComment.replies);
-
-                            expect(pageComments.length).to.be.greaterThan(0);
-                            processAllCommentsRecursively(pageComments, (comment) => {
+                    it.sequential(
+                        `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`,
+                        async () => {
+                            const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
+                            await parentComment.update();
+                            await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
+                            const expectedResult = !shouldCommentBePurged;
+                            let foundInReplies = false;
+                            processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
                                 if (comment.cid === commentToBeRejected.cid) {
                                     foundInReplies = true;
                                     return;
                                 }
                             });
                             expect(foundInReplies).to.equal(expectedResult);
+
+                            await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+                            expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
+
+                            for (const pageCid of Object.values(parentComment.replies.pageCids)) {
+                                foundInReplies = false;
+                                const pageComments = await loadAllPages(pageCid, parentComment.replies);
+
+                                expect(pageComments.length).to.be.greaterThan(0);
+                                processAllCommentsRecursively(pageComments, (comment) => {
+                                    if (comment.cid === commentToBeRejected.cid) {
+                                        foundInReplies = true;
+                                        return;
+                                    }
+                                });
+                                expect(foundInReplies).to.equal(expectedResult);
+                            }
+                            await parentComment.stop();
                         }
-                        await parentComment.stop();
-                    });
+                    );
                 if (pendingCommentDepth > 0)
-                    it(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`, async () => {
+                    it.sequential(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`, async () => {
                         const postComment = await plebbit.getComment(commentToBeRejected.postCid);
                         await postComment.update();
                         await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
@@ -296,7 +313,7 @@ for (const commentMod of commentModProps) {
                         newComment.on("error", (err) => errors.push(err));
                         await newComment.update();
 
-                        // Wait until an error arrives or 20s pass so the test can proceed
+                        // Wait until an error arrives or 10s pass so the test can proceed
                         await new Promise((resolve) => {
                             let settled = false;
                             let timeoutId;
@@ -312,7 +329,7 @@ for (const commentMod of commentModProps) {
                                 settled = true;
                                 newComment.removeListener("error", onError);
                                 resolve();
-                            }, 20_000);
+                            }, 10_000);
                             newComment.on("error", onError);
                         });
 
@@ -423,7 +440,7 @@ for (const commentMod of commentModProps) {
                     await publishWithExpectedResult(commentModerationDisapproval, false, expectedMessage);
                 });
 
-                itSkipIfRpc(`A rejected comment is not pinned to IPFS node after restarting the sub`, async () => {
+                itSkipIfRpc.sequential(`A rejected comment is not pinned to IPFS node after restarting the sub`, async () => {
                     await subplebbit.stop();
 
                     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
