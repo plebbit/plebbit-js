@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import Plebbit from "../../../dist/node/index.js";
+import { describe } from "vitest";
 import {
     createSubWithNoChallenge,
     itIfRpc,
@@ -36,7 +37,7 @@ describe("await plebbit()", () => {
     });
 });
 
-describe(`plebbit.subplebbits`, async () => {
+describe.concurrent(`plebbit.subplebbits`, async () => {
     it(`plebbit.subplebbits updates after creating a new sub`, async () => {
         const plebbit = await mockPlebbit();
         const newSubplebbit = await plebbit.createSubplebbit({
@@ -86,7 +87,7 @@ describe(`Plebbit.challenges`, async () => {
     });
 });
 
-describe(`plebbit.destroy()`, async () => {
+describe.concurrent(`plebbit.destroy()`, async () => {
     itSkipIfRpc(`plebbit.destroy() should stop running local sub`, async () => {
         const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);

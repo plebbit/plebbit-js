@@ -9,7 +9,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import path from "path";
 
-describeSkipIfRpc(`subplebbit.settings.challenges with path`, async () => {
+describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();

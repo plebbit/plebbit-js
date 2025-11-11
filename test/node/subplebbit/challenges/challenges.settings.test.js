@@ -9,8 +9,9 @@ import {
     itSkipIfRpc,
     waitTillPostInSubplebbitPages
 } from "../../../../dist/node/test/test-util.js";
+import { describe } from "vitest";
 
-describe(`subplebbit.settings.challenges`, async () => {
+describe.concurrent(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;
     const defaultMatches = JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth)$" }]);
     const defaultSettingsChallenges = [
