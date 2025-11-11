@@ -192,17 +192,13 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await sub.stop();
     });
 
-    itSkipIfRpc(`Can't create a subplebbit if it's running in another Plebbit instance`, async () => {
+    itSkipIfRpc(`Can create a subplebbit if it's running in another Plebbit instance`, async () => {
         const firstPlebbit = await mockPlebbit();
 
-        try {
-            await firstPlebbit.createSubplebbit({ address: signers[0].address }); // this sub is running in test-server process instance
-            expect.fail("should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS");
-        } finally {
-            await firstPlebbit.destroy();
-        }
+        const sub = await firstPlebbit.createSubplebbit({ address: signers[0].address }); // this sub is running in test-server process instance
+        expect(sub.updatedAt).to.be.greaterThan(0);
+
+        await firstPlebbit.destroy();
     });
 
     itSkipIfRpc(`Can create a subplebbit if it's running in the same plebbit instance`, async () => {
