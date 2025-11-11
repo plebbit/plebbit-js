@@ -87,9 +87,10 @@ const cleanupStateArray = (states) => {
     return filteredStates;
 };
 
+// for(let i =0;i<50;i++)
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describeSkipIfRpc(`reply.updatingState - ${config.name}`, async () => {
-        let plebbit, replyCid;
+    describeSkipIfRpc.concurrent(`reply.updatingState - ${config.name}`, async () => {
+        let replyCid;
         before(async () => {
             const tempPlebbit = await config.plebbitInstancePromise();
             const sub = await tempPlebbit.getSubplebbit(subplebbitAddress);
@@ -99,93 +100,94 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await tempPlebbit.destroy();
         });
 
-        beforeEach(async () => {
-            plebbit = await config.plebbitInstancePromise();
-        });
-
-        afterEach(async () => {
-            await plebbit.destroy();
-        });
-
         it(`Updating states is in correct upon updating a reply that's included in preloaded pages of its parent`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
-            // we don't want domain name in author addrses so its resolving doesn't get included in expected states
-            const postWithMostReplies = sub.posts.pages.hot.comments.reduce((current, post) => {
-                if (!post.replies) {
+            const plebbit = await config.plebbitInstancePromise();
+            try {
+                const sub = await plebbit.getSubplebbit(subplebbitAddress);
+                // we don't want domain name in author addrses so its resolving doesn't get included in expected states
+                const postWithMostReplies = sub.posts.pages.hot.comments.reduce((current, post) => {
+                    if (!post.replies) {
+                        return current;
+                    }
+                    if (!current || (post.replyCount ?? 0) > (current.replyCount ?? 0)) {
+                        return post;
+                    }
                     return current;
-                }
-                if (!current || (post.replyCount ?? 0) > (current.replyCount ?? 0)) {
-                    return post;
-                }
-                return current;
-            }, undefined);
-            const preloadedReplyCid = postWithMostReplies?.replies.pages.best.comments.find(
-                (reply) => !reply.author.address.includes(".")
-            )?.cid;
-            expect(preloadedReplyCid).to.be.a("string");
-            const mockReply = await plebbit.createComment({ cid: preloadedReplyCid });
-            const expectedStates = [
-                "fetching-ipfs", // fetching comment ipfs of reply
-                "succeeded", // succeeded loading comment ipfs of reply
-                "fetching-subplebbit-ipns",
-                "fetching-subplebbit-ipfs", // found CommentUpdate of reply here
-                "succeeded",
-                "stopped"
-            ];
-            const recordedStates = [];
-            mockReply.on("updatingstatechange", (newState) => recordedStates.push(newState));
+                }, undefined);
+                const preloadedReplyCid = postWithMostReplies?.replies.pages.best.comments.find(
+                    (reply) => !reply.author.address.includes(".")
+                )?.cid;
+                expect(preloadedReplyCid).to.be.a("string");
+                const mockReply = await plebbit.createComment({ cid: preloadedReplyCid });
+                const expectedStates = [
+                    "fetching-ipfs", // fetching comment ipfs of reply
+                    "succeeded", // succeeded loading comment ipfs of reply
+                    "fetching-subplebbit-ipns",
+                    "fetching-subplebbit-ipfs", // found CommentUpdate of reply here
+                    "succeeded",
+                    "stopped"
+                ];
+                const recordedStates = [];
+                mockReply.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-            await mockReply.update();
+                await mockReply.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: mockReply, predicate: () => typeof mockReply.updatedAt === "number" });
-            const updatingMockReply = plebbit._updatingComments[mockReply.cid];
-            expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.equal(0);
-            await mockReply.stop();
+                await resolveWhenConditionIsTrue({ toUpdate: mockReply, predicate: () => typeof mockReply.updatedAt === "number" });
+                const updatingMockReply = plebbit._updatingComments[mockReply.cid];
+                expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.equal(0);
+                await mockReply.stop();
 
-            expect(mockReply._commentUpdateIpfsPath).to.not.exist;
-            const filteredExpectedStates = cleanupStateArray(expectedStates);
-            const filteredRecordedStates = cleanupStateArray(recordedStates);
-            expect(filteredRecordedStates).to.deep.equal(
-                filteredExpectedStates,
-                "recorded states: " + recordedStates.join(", ") + "Author is " + JSON.stringify(mockReply.author)
-            );
+                expect(mockReply._commentUpdateIpfsPath).to.not.exist;
+                const filteredExpectedStates = cleanupStateArray(expectedStates);
+                const filteredRecordedStates = cleanupStateArray(recordedStates);
+                expect(filteredRecordedStates).to.deep.equal(
+                    filteredExpectedStates,
+                    "recorded states: " + recordedStates.join(", ") + "Author is " + JSON.stringify(mockReply.author)
+                );
+            } finally {
+                await plebbit.destroy();
+            }
         });
         it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
-            const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
+            const plebbit = await config.plebbitInstancePromise();
+            try {
+                const sub = await plebbit.getSubplebbit(subplebbitAddress);
+                const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
 
-            const mockReply = await plebbit.createComment({ cid: replyCid });
+                const mockReply = await plebbit.createComment({ cid: replyCid });
 
-            const recordedStates = [];
-            mockReply.on("updatingstatechange", () => recordedStates.push(mockReply.updatingState));
+                const recordedStates = [];
+                mockReply.on("updatingstatechange", () => recordedStates.push(mockReply.updatingState));
 
-            const createErrorPromise = () =>
-                new Promise((resolve) =>
-                    mockReply.once("error", (err) => {
-                        if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") resolve();
-                    })
-                );
-            await sub.update(); // need to update it so that we can mock it below
-            await mockPlebbitToReturnSpecificSubplebbit(mockReply._plebbit, subplebbitAddress, subInvalidRecord);
-            await mockReply.update();
+                const createErrorPromise = () =>
+                    new Promise((resolve) =>
+                        mockReply.once("error", (err) => {
+                            if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") resolve();
+                        })
+                    );
+                await sub.update(); // need to update it so that we can mock it below
+                await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbitAddress, subInvalidRecord);
+                await mockReply.update();
 
-            await createErrorPromise();
+                await createErrorPromise();
 
-            await mockReply.stop();
-            await sub.stop();
-            expect(mockReply.updatedAt).to.be.undefined;
+                await mockReply.stop();
+                await sub.stop();
 
-            const expectedUpdateStates = [
-                "fetching-ipfs", // fetching comment ipfs of reply
-                "succeeded", // succeeded loading comment ipfs of reply
-                "fetching-subplebbit-ipns", // fetching subplebbit ipns
-                "fetching-subplebbit-ipfs", // fetching subplebbit ipfs
-                "failed", // subplebbit ipfs record is invalid
-                "stopped" // called post.stop()
-            ];
-            const filteredExpectedStates = cleanupStateArray(expectedUpdateStates);
-            const filteredRecordedStates = cleanupStateArray(recordedStates);
-            expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+                const expectedUpdateStates = [
+                    "fetching-ipfs", // fetching comment ipfs of reply
+                    "succeeded", // succeeded loading comment ipfs of reply
+                    "fetching-subplebbit-ipns", // fetching subplebbit ipns
+                    "fetching-subplebbit-ipfs", // fetching subplebbit ipfs
+                    "failed", // subplebbit ipfs record is invalid
+                    "stopped" // called post.stop()
+                ];
+                const filteredExpectedStates = cleanupStateArray(expectedUpdateStates);
+                const filteredRecordedStates = cleanupStateArray(recordedStates);
+                expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+            } finally {
+                await plebbit.destroy();
+            }
         });
 
         // I disabled this test because the updating states are hard to predict
@@ -241,46 +243,38 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describe(`reply.updatingState - ${config.name}`, async () => {
-        let plebbit;
-        before(async () => {
-            plebbit = await config.plebbitInstancePromise();
-        });
-
-        afterEach(async () => {
-            if (plebbit) await plebbit.destroy();
-            plebbit = await config.plebbitInstancePromise();
-        });
-
-        after(async () => {
-            await plebbit.destroy();
-        });
-
+    describe.concurrent(`reply.updatingState - ${config.name}`, async () => {
         it(`updating state of reply is in correct order upon updating a reply that's included in preloaded pages of its parent`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
-            // we don't want domain name in author addrses so its resolving doesn't get included in expected states
-            const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies && !post.author.address.includes(".")).replies.pages
-                .best.comments[0].cid;
-            const mockReply = await plebbit.createComment({ cid: replyCid });
-            const expectedStates = [
-                "fetching-ipfs", // fetching comment ipfs of reply
-                "succeeded", // succeeded loading comment ipfs of reply
-                "fetching-subplebbit-ipns", // found CommentUpdate of reply here
-                "succeeded",
-                "stopped"
-            ];
-            const recordedStates = [];
-            mockReply.on("updatingstatechange", (newState) => recordedStates.push(newState));
+            const plebbit = await config.plebbitInstancePromise();
+            try {
+                const sub = await plebbit.getSubplebbit(subplebbitAddress);
+                // we don't want domain name in author addrses so its resolving doesn't get included in expected states
+                const replyCid = sub.posts.pages.hot.comments
+                    .find((post) => post.replies && !post.author.address.includes("."))
+                    .replies.pages.best.comments[0].cid;
+                const mockReply = await plebbit.createComment({ cid: replyCid });
+                const expectedStates = [
+                    "fetching-ipfs", // fetching comment ipfs of reply
+                    "succeeded", // succeeded loading comment ipfs of reply
+                    "fetching-subplebbit-ipns", // found CommentUpdate of reply here
+                    "succeeded",
+                    "stopped"
+                ];
+                const recordedStates = [];
+                mockReply.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-            await mockReply.update();
+                await mockReply.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: mockReply, predicate: () => typeof mockReply.updatedAt === "number" });
-            await mockReply.stop();
+                await resolveWhenConditionIsTrue({ toUpdate: mockReply, predicate: () => typeof mockReply.updatedAt === "number" });
+                await mockReply.stop();
 
-            expect(mockReply._commentUpdateIpfsPath).to.not.exist;
-            const filteredExpectedStates = cleanupStateArray(expectedStates);
-            const filteredRecordedStates = cleanupStateArray(recordedStates);
-            expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+                expect(mockReply._commentUpdateIpfsPath).to.not.exist;
+                const filteredExpectedStates = cleanupStateArray(expectedStates);
+                const filteredRecordedStates = cleanupStateArray(recordedStates);
+                expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+            } finally {
+                await plebbit.destroy();
+            }
         });
 
         // it's pretty difficult to test this because it's hard to predict the order of the states
@@ -332,47 +326,52 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
         });
         it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
-            const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
+            const plebbit = await config.plebbitInstancePromise();
+            try {
+                const sub = await plebbit.getSubplebbit(subplebbitAddress);
+                const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
 
-            const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
-            const mockReply = await plebbit.createComment({ cid: replyCid });
+                const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
+                const mockReply = await plebbit.createComment({ cid: replyCid });
 
-            const recordedStates = [];
-            mockReply.on("updatingstatechange", () => recordedStates.push(mockReply.updatingState));
+                const recordedStates = [];
+                mockReply.on("updatingstatechange", () => recordedStates.push(mockReply.updatingState));
 
-            const createErrorPromise = () =>
-                new Promise((resolve) =>
-                    mockReply.once("error", (err) => {
-                        if (err.details.gatewayToError["http://localhost:18080"].code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") resolve();
-                    })
-                );
-            await sub.update(); // need to update it so that we can mock it below
-            await mockPlebbitToReturnSpecificSubplebbit(mockReply._plebbit, subplebbitAddress, subInvalidRecord);
-            await mockReply.update();
+                const createErrorPromise = () =>
+                    new Promise((resolve) =>
+                        mockReply.once("error", (err) => {
+                            if (err.details.gatewayToError["http://localhost:18080"].code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") resolve();
+                        })
+                    );
+                await sub.update(); // need to update it so that we can mock it below
+                await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbitAddress, subInvalidRecord);
+                await mockReply.update();
 
-            await createErrorPromise();
+                await createErrorPromise();
 
-            await mockReply.stop();
-            await sub.stop();
-            expect(mockReply.updatedAt).to.be.undefined;
+                await mockReply.stop();
+                await sub.stop();
+                expect(mockReply.updatedAt).to.be.undefined;
 
-            const expectedUpdateStates = [
-                "fetching-ipfs", // fetching comment ipfs of reply
-                "succeeded", // succeeded loading comment ipfs of reply
-                "fetching-subplebbit-ipns", // fetching subplebbit ipns from gateway
-                "failed", // subplebbit ipfs record is invalid
-                "stopped" // called post.stop()
-            ];
-            const filteredExpectedStates = cleanupStateArray(expectedUpdateStates);
-            const filteredRecordedStates = cleanupStateArray(recordedStates);
-            expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+                const expectedUpdateStates = [
+                    "fetching-ipfs", // fetching comment ipfs of reply
+                    "succeeded", // succeeded loading comment ipfs of reply
+                    "fetching-subplebbit-ipns", // fetching subplebbit ipns from gateway
+                    "failed", // subplebbit ipfs record is invalid
+                    "stopped" // called post.stop()
+                ];
+                const filteredExpectedStates = cleanupStateArray(expectedUpdateStates);
+                const filteredRecordedStates = cleanupStateArray(recordedStates);
+                expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+            } finally {
+                await plebbit.destroy();
+            }
         });
     });
 });
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describeSkipIfRpc(`reply.updatingState - ${config.name}`, async () => {
+    describeSkipIfRpc.concurrent(`reply.updatingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
