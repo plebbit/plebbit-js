@@ -26,10 +26,10 @@ const DEFAULT_PRIMARY_CHAIN_DEPTH = 20;
 
 // TODO we need to test loading pageCids and make sure they're all 1mib or under
 // TODO need to make this test faster
-describeSkipIfRpc("page-generator disables oversized preloaded pages", function () {
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
+
+// 36s on describe.concurrent
+// 38s without concurrency
+describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages", function () {
 
     it("returns undefined when attempting to generate mod queue pages with no pending approvals", async () => {
         const context = await createSubplebbitWithDefaultDb();
