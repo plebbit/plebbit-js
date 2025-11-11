@@ -207,6 +207,6 @@ describeSkipIfRpc("DB Migration", () => {
 
             await subplebbit.delete();
             await plebbit.destroy();
-        }).timeout(400000)
+        })
     );
 });
