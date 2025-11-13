@@ -104,11 +104,13 @@ describeSkipIfRpc.concurrent("Modqueue depths", () => {
 
             // different depths should show up in mod queue
 
-            await new Promise((resolve) => setTimeout(resolve, 5000)); // wait till subplebbit updates modqueue with all comments
-
             await resolveWhenConditionIsTrue({
                 toUpdate: subplebbit,
-                predicate: () => subplebbit.modQueue.pageCids.pendingApproval
+                predicate: async () => {
+                    if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
+                    const modQueuePage = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+                    return modQueuePage.comments.length === pendingComments.length;
+                }
             });
 
             const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
