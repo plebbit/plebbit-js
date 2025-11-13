@@ -1,5 +1,5 @@
 import PlebbitIndex from "../index.js";
-import { removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import { calculateStringSizeSameAsIpfsAddCidV0, removeUndefinedValuesRecursively, timestamp } from "../util.js";
 import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 import Vote from "../publications/vote/vote.js";
@@ -1628,7 +1628,7 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment,
     if (!rawCommentUpdateRecord) throw Error("Comment should be updating before forcing to generate all pages");
 
     if (Object.keys(comment.replies.pageCids).length > 0) return;
-    const curRecordSize = Buffer.byteLength(JSON.stringify(rawCommentUpdateRecord));
+    const curRecordSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(rawCommentUpdateRecord));
 
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
@@ -1815,7 +1815,7 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
 
     subplebbit.setMaxListeners(100);
     if (Object.keys(subplebbit.posts.pageCids).length > 0) return;
-    const curRecordSize = Buffer.byteLength(JSON.stringify(rawSubplebbitRecord));
+    const curRecordSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(rawSubplebbitRecord));
 
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
