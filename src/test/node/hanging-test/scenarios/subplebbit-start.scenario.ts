@@ -1,4 +1,4 @@
-import { publishRandomPost, resolveWhenConditionIsTrue } from "../../../test-util.js";
+import { resolveWhenConditionIsTrue } from "../../../test-util.js";
 import { createScenarioContext, defineHangingScenario } from "./hanging-test-util.js";
 
 /**
@@ -11,6 +11,8 @@ export default defineHangingScenario({
     id: "subplebbit-start",
     description: "start a subplebbit and destroy plebbit",
     run: async ({ configCode }) => {
+        const allowedConfigCodes = ["local-kubo-rpc", "remote-plebbit-rpc"];
+        if (!allowedConfigCodes.includes(configCode)) return;
         const { plebbit, config } = await createScenarioContext(configCode);
 
         const subplebbit = await plebbit.createSubplebbit();

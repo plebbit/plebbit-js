@@ -1305,7 +1305,20 @@ export function setPlebbitConfigs(configs: PlebbitTestConfigCode[]) {
     }
 }
 
-export function getAvailablePlebbitConfigsToTestAgainst(opts?: { includeOnlyTheseTests?: PlebbitTestConfigCode[] }) {
+export function getAvailablePlebbitConfigsToTestAgainst(opts?: {
+    includeOnlyTheseTests?: PlebbitTestConfigCode[];
+    includeAllPossibleConfigOnEnv?: boolean;
+}): PlebbitConfigWithName[] {
+    if (opts?.includeAllPossibleConfigOnEnv) {
+        // if node, ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"], also 'remote-plebbit-rpc' if isRpcFlagOn()
+        // if browser, ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
+        const isNode = Boolean(globalThis["process"]);
+        const plebbitConfigCodes: PlebbitTestConfigCode[] = isNode
+            ? ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
+            : ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"];
+        if (isNode && isRpcFlagOn()) plebbitConfigCodes.push("remote-plebbit-rpc");
+        return Object.values(remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes));
+    }
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
     if (plebbitConfigsFromEnv) {
@@ -1336,7 +1349,8 @@ export function getAvailablePlebbitConfigsToTestAgainst(opts?: { includeOnlyThes
                     opts.includeOnlyTheseTests!.includes(config) &&
                     plebbitConfigs.find((c) => c.name === testConfigCodeToPlebbitInstanceWithHumanName[config].name)
             );
-        return filteredKeys.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
+        const configs = filteredKeys.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
+        return configs;
     }
     return plebbitConfigs;
 }

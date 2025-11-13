@@ -1,11 +1,13 @@
 import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import { resolveHangingScenarioModule } from "../../../dist/node/test/node/hanging-test/scenarios/hanging-test-util.js";
+import { describe } from "vitest";
 
+// TODO need to change this test file so it tests against all possible config, not just local-kubo-rpc
 const DESTROY_TIMEOUT_MS = 10_000;
 const SCENARIO_MANIFEST_FILENAME = "scenario-manifest.json";
 const SCENARIO_DIST_DIR_URL = new URL("../../../dist/node/test/node/hanging-test/scenarios/", import.meta.url);
 const SCENARIO_MANIFEST_URL = new URL(SCENARIO_MANIFEST_FILENAME, SCENARIO_DIST_DIR_URL);
-const configs = getAvailablePlebbitConfigsToTestAgainst();
+const configs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 const scenarioDefinitions = await loadScenarioDefinitions();
 
 if (!scenarioDefinitions.length) {
@@ -15,16 +17,14 @@ if (!scenarioDefinitions.length) {
 let runHangingScenarioInChildProcess;
 
 before(async () => {
-    ({ runHangingScenarioInChildProcess } = await import(
-        "../../../dist/node/runtime/node/test/helpers/run-hanging-node.js"
-    ));
+    ({ runHangingScenarioInChildProcess } = await import("../../../dist/node/runtime/node/test/helpers/run-hanging-node.js"));
 });
 
 for (const scenario of scenarioDefinitions) {
     describe(`[Scenario: ${scenario.description}]`, () => {
         for (const config of configs) {
-            describe(`[Config: ${config.name}]`, () => {
-                it("does not keep the Node process alive", async function () {
+            describe.concurrent(`[Config: ${config.name}]`, () => {
+                it(`Hanging sceneario: ${scenario.description}. It should not keep the Node process alive - ${config.name}`, async function () {
                     await runHangingScenarioInChildProcess({
                         configCode: config.testConfigCode,
                         timeoutMs: DESTROY_TIMEOUT_MS,
@@ -49,9 +49,7 @@ async function loadScenarioDefinitions() {
         .sort();
 
     if (!scenarioFiles.length) {
-        throw new Error(
-            `No compiled hanging-test scenarios found in ${scenarioDistDirPath}. Did you run "npm run build:node"?`
-        );
+        throw new Error(`No compiled hanging-test scenarios found in ${scenarioDistDirPath}. Did you run "npm run build:node"?`);
     }
 
     const scenarios = [];
