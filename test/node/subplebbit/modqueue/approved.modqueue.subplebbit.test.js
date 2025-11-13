@@ -140,9 +140,8 @@ for (const pendingCommentDepth of depthsToTest) {
             });
             expect(foundInPosts).to.be.true;
 
-            if (Object.keys(subplebbit.posts.pageCids).length > 0) return; // not needed anymore
-
-            await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+            if (Object.keys(subplebbit.posts.pageCids).length === 0)
+                await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
             expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
 

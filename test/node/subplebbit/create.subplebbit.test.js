@@ -13,11 +13,12 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../dist/node/util.js";
 import signers from "../../fixtures/signers.js";
+import { describe } from "vitest";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import * as remeda from "remeda";
-describe(`plebbit.createSubplebbit (local)`, async () => {
+describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit({});

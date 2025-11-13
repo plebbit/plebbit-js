@@ -5,6 +5,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
+import { describe } from "vitest";
 
 const getGatewayBaseUrl = (gatewayPlebbit) => {
     const [gatewayUrl] = gatewayPlebbit.ipfsGatewayUrls || [];
@@ -102,7 +103,7 @@ const fetchCidRecordDirectly = async (gatewayPlebbit, cid) => {
     return fetchGatewayJson(ipfsUrl, "Direct CID fetch");
 };
 
-describe("Gateway loading of local subplebbit IPNS", async () => {
+describe.concurrent("Gateway loading of local subplebbit IPNS", async () => {
     let plebbit, subplebbit;
     let gatewayPlebbit;
     let kuboPlebbit;

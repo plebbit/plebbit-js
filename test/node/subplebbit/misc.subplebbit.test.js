@@ -13,6 +13,7 @@ import {
     describeIfRpc,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
+import { describe } from "vitest";
 
 import signers from "../../fixtures/signers.js";
 
@@ -222,13 +223,17 @@ describe.skip(`comment.link`, async () => {
     });
 });
 
-describe(`subplebbit.clients (Local)`, async () => {
+describe.concurrent(`subplebbit.clients (Local)`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
     });
 
-    describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
+    after(async () => {
+        await plebbit.destroy();
+    });
+
+    describeSkipIfRpc.concurrent(`subplebbit.clients.kuboRpcClients`, async () => {
         it(`subplebbit.clients.kuboRpcClients[url] is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
             expect(Object.keys(mockSub.clients.kuboRpcClients).length).to.equal(1);
@@ -261,7 +266,7 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
     });
 
-    describeSkipIfRpc(`subplebbit.clients.pubsubKuboRpcClients`, async () => {
+    describeSkipIfRpc.concurrent(`subplebbit.clients.pubsubKuboRpcClients`, async () => {
         it(`subplebbit.clients.pubsubKuboRpcClients[url].state is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
             expect(Object.keys(mockSub.clients.pubsubKuboRpcClients).length).to.equal(3);
@@ -328,7 +333,7 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
     });
 
-    describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
+    describeSkipIfRpc.concurrent(`subplebbit.clients.chainProviders`, async () => {
         let mockSub;
         before(async () => {
             mockSub = await createSubWithNoChallenge({}, plebbit);

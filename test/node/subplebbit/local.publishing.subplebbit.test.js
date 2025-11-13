@@ -85,7 +85,9 @@ describeSkipIfRpc("Local publishing to subplebbit", async () => {
     it("Should be able to publish comment without needing to await for updatedAt to be defined", async () => {
         const subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
+        expect(subplebbit.updatedAt).to.be.undefined;
 
         await publishRandomPost(subplebbit.address, plebbit);
+        await subplebbit.delete();
     });
 });

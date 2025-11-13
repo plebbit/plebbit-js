@@ -10,7 +10,7 @@ import {
 import { describe, expect } from "vitest";
 import { testCommentFieldsInModQueuePageJson } from "../../../node-and-browser/pages/pages-test-util.js";
 
-const depthsToTest = [0, 1, 2, 3, 4, 5, 10, 15];
+const depthsToTest = [0, 1, 2, 3, 10, 15, 25, 35];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const setupSubplebbitWithModerator = async () => {
@@ -34,7 +34,7 @@ const setupSubplebbitWithModerator = async () => {
 describeSkipIfRpc.concurrent("Modqueue depths", () => {
     // should be a for loop that iterates over all depths
     for (const depth of depthsToTest) {
-        it.concurrent(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
+        it(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
             const { plebbit, subplebbit, modSigner } = await setupSubplebbitWithModerator();
             expect(subplebbit.lastPostCid).to.be.undefined;
             const numOfComments = 3;
@@ -53,11 +53,13 @@ describeSkipIfRpc.concurrent("Modqueue depths", () => {
                     )
                 );
 
-                await new Promise((resolve) => setTimeout(resolve, 9000)); // wait till subplebbit updates modqueue with all comments
-
                 await resolveWhenConditionIsTrue({
                     toUpdate: subplebbit,
-                    predicate: () => subplebbit.modQueue.pageCids.pendingApproval
+                    predicate: async () => {
+                        if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
+                        const modQueuePage = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+                        return modQueuePage.comments.length === numOfComments;
+                    }
                 });
 
                 const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);

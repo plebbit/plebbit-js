@@ -12,6 +12,7 @@ import {
     publishRandomReply
 } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
+import { describe, it } from "vitest";
 
 describe(`subplebbit.features.requirePostLink`, async () => {
     let plebbit, remotePlebbit, subplebbit;
@@ -29,7 +30,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
         await remotePlebbit.destroy();
     });
 
-    it(`Feature is updated correctly in props`, async () => {
+    it.sequential(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLink: true } });
         expect(subplebbit.features.requirePostLink).to.be.true;
@@ -57,7 +58,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
     });
 });
 
-describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
+describe.concurrent(`subplebbit.features.requirePostLinkIsMedia`, async () => {
     let plebbit, remotePlebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -73,7 +74,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         await remotePlebbit.destroy();
     });
 
-    it(`Feature is updated correctly in props`, async () => {
+    it.sequential(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLinkIsMedia: true } });
 
@@ -100,7 +101,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
     });
 });
 
-describe(`subplebbit.features.noUpvotes`, async () => {
+describe.concurrent(`subplebbit.features.noUpvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
     before(async () => {
@@ -120,7 +121,7 @@ describe(`subplebbit.features.noUpvotes`, async () => {
         await remotePlebbit.destroy();
     });
 
-    it(`Feature is updated correctly in subplebbit.features`, async () => {
+    it.sequential(`Feature is updated correctly in subplebbit.features`, async () => {
         expect(subplebbit.features).to.be.undefined;
 
         await subplebbit.edit({ features: { ...subplebbit.features, noUpvotes: true } });
@@ -145,7 +146,7 @@ describe(`subplebbit.features.noUpvotes`, async () => {
         await publishWithExpectedResult(downvote, true);
     });
 });
-describe(`subplebbit.features.noDownvotes`, async () => {
+describe.concurrent(`subplebbit.features.noDownvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
     before(async () => {
@@ -165,7 +166,7 @@ describe(`subplebbit.features.noDownvotes`, async () => {
         await remotePlebbit.destroy();
     });
 
-    it(`Feature is updated correctly in subplebbit.features`, async () => {
+    it.sequential(`Feature is updated correctly in subplebbit.features`, async () => {
         expect(subplebbit.features).to.be.undefined;
         await subplebbit.edit({ features: { ...subplebbit.features, noDownvotes: true } });
         expect(subplebbit.features.noDownvotes).to.be.true;
@@ -190,7 +191,7 @@ describe(`subplebbit.features.noDownvotes`, async () => {
     });
 });
 
-describe(`subplebbit.features.noPostDownvotes`, async () => {
+describe.concurrent(`subplebbit.features.noPostDownvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
     before(async () => {
@@ -233,7 +234,7 @@ describe(`subplebbit.features.noPostDownvotes`, async () => {
         await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
     });
 });
-describe(`subplebbit.features.noPostUpvotes`, async () => {
+describe.concurrent(`subplebbit.features.noPostUpvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
     before(async () => {
@@ -277,7 +278,7 @@ describe(`subplebbit.features.noPostUpvotes`, async () => {
     });
 });
 
-describe(`subplebbit.features.noReplyDownvotes`, async () => {
+describe.concurrent(`subplebbit.features.noReplyDownvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn, replyToVoteOn;
 
     before(async () => {
@@ -320,7 +321,7 @@ describe(`subplebbit.features.noReplyDownvotes`, async () => {
         await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
     });
 });
-describe(`subplebbit.features.noReplyUpvotes`, async () => {
+describe.concurrent(`subplebbit.features.noReplyUpvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn, replyToVoteOn;
 
     before(async () => {
