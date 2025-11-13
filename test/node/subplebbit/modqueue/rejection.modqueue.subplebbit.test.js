@@ -19,10 +19,7 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
 
-const depthsToTest = [
-    0, 1, 2, 3, 10, 11, 12
-    // 15
-];
+const depthsToTest = [0, 1, 2, 30];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const commentModProps = [
@@ -50,7 +47,7 @@ for (const commentMod of commentModProps) {
                 pendingCommentDepth +
                 " and commentModeration=" +
                 JSON.stringify(commentMod),
-            async () => {
+            () => {
                 let plebbit;
                 let remotePlebbit;
                 let commentToBeRejected;
@@ -131,34 +128,34 @@ for (const commentMod of commentModProps) {
                 }
 
                 if (pendingCommentDepth > 0) {
-                    it(`Rejected reply does not show up in parentComment.replyCount`, async () => {
+                    it.sequential(`Rejected reply does not show up in parentComment.replyCount`, async () => {
                         expect(
                             (await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).replyCount
                         ).to.equal(0);
                     });
 
-                    it(`Rejected reply does not show up in parentComment.childCount`, async () => {
+                    it.sequential(`Rejected reply does not show up in parentComment.childCount`, async () => {
                         expect(
                             (await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).childCount
                         ).to.equal(0);
                     });
 
-                    it(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
+                    it.sequential(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
                         expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastChildCid).to.be
                             .undefined;
                     });
-                    it(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
+                    it.sequential(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
                         expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastReplyTimestamp)
                             .to.be.undefined;
                     });
                 }
 
                 if (pendingCommentDepth === 0)
-                    it(`Rejected post does not show up in subplebbit.lastPostCid`, async () => {
+                    it.sequential(`Rejected post does not show up in subplebbit.lastPostCid`, async () => {
                         expect(subplebbit.lastPostCid).to.not.equal(commentToBeRejected.cid);
                     });
 
-                it(`Rejected comment does not show up in subplebbit.lastCommentCid`, async () => {
+                it.sequential(`Rejected comment does not show up in subplebbit.lastCommentCid`, async () => {
                     expect(subplebbit.lastCommentCid).to.not.equal(commentToBeRejected.cid);
                 });
 
