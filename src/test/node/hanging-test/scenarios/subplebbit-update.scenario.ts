@@ -1,4 +1,4 @@
-import { publishRandomPost, resolveWhenConditionIsTrue } from "../../../test-util.js";
+import { resolveWhenConditionIsTrue } from "../../../test-util.js";
 import { createScenarioContext, defineHangingScenario } from "./hanging-test-util.js";
 
 /**
