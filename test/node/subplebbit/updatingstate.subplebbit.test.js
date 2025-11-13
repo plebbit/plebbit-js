@@ -7,14 +7,14 @@ import {
     itIfRpc,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-
-describe(`subplebbit.updatingState from a local subplebbit`, async () => {
+import { describe } from "vitest";
+describe.concurrent(`subplebbit.updatingState from a local subplebbit`, async () => {
     let plebbit;
-    beforeEach(async () => {
+    before(async () => {
         plebbit = await mockPlebbit();
     });
 
-    afterEach(async () => {
+    after(async () => {
         await plebbit.destroy();
     });
 

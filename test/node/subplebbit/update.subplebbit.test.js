@@ -8,7 +8,8 @@ import {
     publishRandomPost,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-describe(`subplebbit.update - Local subs`, async () => {
+import { describe } from "vitest";
+describe.concurrent(`subplebbit.update - Local subs`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
