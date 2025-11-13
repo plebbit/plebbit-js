@@ -13,6 +13,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { Buffer } from "buffer";
 import { messages } from "../../../../dist/node/errors.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { describe, it } from "vitest";
 
 const subplebbitAddressOfFixture = validModQueuePage.comments[0].comment.subplebbitAddress;
 
@@ -42,7 +43,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 });
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("modQueue.getPage - " + config.name, () => {
+    describe.concurrent("modQueue.getPage - " + config.name, () => {
         itSkipIfRpc(`subplebbit.modQueue.getPage will throw if retrieved page has a comment with an signature `, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 

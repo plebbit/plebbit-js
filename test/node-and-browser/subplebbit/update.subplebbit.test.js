@@ -11,10 +11,12 @@ import {
 
 import * as remeda from "remeda";
 import { _signJson } from "../../../dist/node/signer/signatures.js";
+import { describe, it } from "vitest";
+
 const ensSubplebbitSigner = signers[3];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("subplebbit.update (remote) - " + config.name, async () => {
+    describe.concurrent("subplebbit.update (remote) - " + config.name, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -56,7 +58,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await loadedSubplebbit.stop();
         });
 
-        it(`subplebbit.update emits error if signature of subplebbit is invalid`, async () => {
+        it.sequential(`subplebbit.update emits error if signature of subplebbit is invalid`, async () => {
             // should emit an error and keep retrying
 
             const ipnsObj = await createNewIpns();

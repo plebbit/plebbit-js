@@ -10,6 +10,7 @@ import {
     createNewIpns,
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
+import { describe } from "vitest";
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 
@@ -103,7 +104,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
-    describe(`comment.publishingState - ${config.name}`, async () => {
+    describe.concurrent(`comment.publishingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -204,7 +205,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 });
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`comment.publishingState - ${config.name}`, async () => {
+    describe.concurrent(`comment.publishingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -287,13 +288,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await mockPost.publish();
             await errorPromise;
-            await resolveWhenConditionIsTrue(
-                {
-                    toUpdate: mockPost,
-                    predicate: () => recordedPublishingStates[recordedPublishingStates.length - 1] === "failed",
-                    eventName: "publishingstatechange",
-                }
-            );
+            await resolveWhenConditionIsTrue({
+                toUpdate: mockPost,
+                predicate: () => recordedPublishingStates[recordedPublishingStates.length - 1] === "failed",
+                eventName: "publishingstatechange"
+            });
 
             expect(mockPost.publishingState).to.equal("failed");
             const expectedPublishingState = ["fetching-subplebbit-ipns"].concat(

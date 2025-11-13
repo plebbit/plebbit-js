@@ -9,9 +9,10 @@ import {
 
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
+import { describe, it } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Backward compatibility for Vote - ${config.name}`, async () => {
+    describe.concurrent(`Backward compatibility for Vote - ${config.name}`, async () => {
         // A subplebbit should accept a vote with unknown props
         // However, it should not process the unknown props, it should strip them out after validation
 
@@ -62,7 +63,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(challengeRequest.vote.insertedAt).to.equal("1234");
         });
 
-        describe(`Publishing vote with extra props in author field - ${config.name}`, async () => {
+        describe.concurrent(`Publishing vote with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
                 await setExtraPropOnVoteAndSign(

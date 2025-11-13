@@ -7,10 +7,11 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("plebbit.createCommentEdit - " + config.name, async () => {
+    describe.concurrent("plebbit.createCommentEdit - " + config.name, async () => {
         let plebbit;
         let commentToEdit;
 
@@ -99,7 +100,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Changing multiple fields simultaneously in one CommentEdit - ` + config.name, async () => {
+    describe.concurrent(`Changing multiple fields simultaneously in one CommentEdit - ` + config.name, async () => {
         let plebbit;
 
         before(async () => {
@@ -150,7 +151,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Changing multiple edit fields in separate edits - ${config.name}`, async () => {
+    describe.concurrent(`Changing multiple edit fields in separate edits - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {
@@ -169,7 +170,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 reason: "Test as an author" + Date.now()
             };
 
-            const authorPost = await publishRandomPost(subplebbitAddress, plebbit, {}); // generate random signer
+            const authorPost = await publishRandomPost(subplebbitAddress, plebbit); // generate random signer
 
             const edit1 = await plebbit.createCommentEdit({
                 ...firstEditProps,

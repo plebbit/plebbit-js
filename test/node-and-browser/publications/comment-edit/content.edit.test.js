@@ -9,6 +9,8 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
+import { describe, it } from "vitest";
+
 const subplebbitAddress = signers[10].address;
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -17,7 +19,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("Editing comment.content - " + config.name, async () => {
+    describe.concurrent("Editing comment.content - " + config.name, async () => {
         let plebbit, commentToBeEdited, originalContent;
 
         before(async () => {
@@ -44,7 +46,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
         });
 
-        it("Original author can edit content", async function () {
+        it.sequential("Original author can edit content", async function () {
             const editedText = "edit test" + Date.now();
             const editReason = "To test editing content" + Date.now();
 
@@ -71,11 +73,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(commentToBeEdited.edit.challengeRequestId).to.be.undefined;
         });
 
-        it(`The new content is reflected correctly in JSON.parse(JSON.stringif(comment))`, async () => {
+        it.sequential(`The new content is reflected correctly in JSON.parse(JSON.stringif(comment))`, async () => {
             const recreatedComment = await plebbit.getComment(commentToBeEdited.cid);
             await recreatedComment.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: recreatedComment, predicate: () => typeof recreatedComment.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: recreatedComment,
+                predicate: () => typeof recreatedComment.updatedAt === "number"
+            });
             await recreatedComment.stop();
 
             for (const commentJson of [
@@ -141,7 +146,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             }
         });
 
-        it(`Author can modify content again, while preserving comment.originalContent`, async () => {
+        it.sequential(`Author can modify content again, while preserving comment.originalContent`, async () => {
             const editedText = "Double edit test";
             const editReason = "To test double editing a comment";
             const originalContent = commentToBeEdited.original.content;
@@ -164,7 +169,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         roles.map((roleTest) =>
-            it(`${roleTest.role} Can modify their own comment content`, async () => {
+            it(`${roleTest.role} role Can modify their own comment content`, async () => {
                 const commentToEdit = await publishRandomPost(subplebbitAddress, plebbit, { signer: roleTest.signer });
                 const originalContent = remeda.clone(commentToEdit.content);
                 await commentToEdit.update();
@@ -188,7 +193,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         );
 
         roles.map((roleTest) =>
-            it(`${roleTest.role} can't edit another author comment.content`, async () => {
+            it(`${roleTest.role} role can't edit another author comment.content`, async () => {
                 const editedText = `${roleTest.role} role testing CommentEdit`;
                 const editReason = `For ${roleTest.role} role to test editing a comment`;
                 const commentEdit = await plebbit.createCommentEdit({

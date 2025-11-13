@@ -7,11 +7,11 @@ import {
     mockGatewayPlebbit,
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
+import { describe } from "vitest";
 const fixtureSigner = signers[0];
 
-// TODO this has to be ran inside getAvailablePlebbitConfigsToTestAgainst
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`plebbit.fetchCid - ${config.name}`, async () => {
+    describe.concurrent(`plebbit.fetchCid - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -71,7 +71,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describe("plebbit.fetchCid - " + config.name, () => {
+    describe.concurrent("plebbit.fetchCid - " + config.name, () => {
         it(`Throws an error if malicious gateway modifies content of file`, async () => {
             // RPC exception
             const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];

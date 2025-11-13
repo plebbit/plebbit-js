@@ -13,6 +13,7 @@ import {
     iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[11].address;
 const roles = [
@@ -22,7 +23,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Locking posts - ${config.name}`, async () => {
+    describe.concurrent(`Locking posts - ${config.name}`, async () => {
         let plebbit, postToBeLocked, replyUnderPostToBeLocked, modPost, sub;
         before(async () => {
             plebbit = await mockRemotePlebbit();
@@ -68,7 +69,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(lockedEdit, false, messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY);
         });
 
-        it(`Mod can lock an author post`, async () => {
+        it.sequential(`Mod can lock an author post`, async () => {
             const lockedEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToBeLocked.subplebbitAddress,
                 commentCid: postToBeLocked.cid,
@@ -78,7 +79,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(lockedEdit, true);
         });
 
-        it(`A new CommentUpdate with locked=true is published`, async () => {
+        it.sequential(`A new CommentUpdate with locked=true is published`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: postToBeLocked, predicate: () => postToBeLocked.locked === true });
             expect(postToBeLocked.locked).to.be.true;
             expect(postToBeLocked.reason).to.equal("To lock an author post");
@@ -92,10 +93,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const lockedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
-                return lockedPostInPage?.locked === true;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const lockedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
+                    return lockedPostInPage?.locked === true;
+                }
+            });
 
             await sub.stop();
 
@@ -110,9 +114,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
             const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
             expect(postInSubplebbitPage.locked).to.be.true;
+            expect(postInSubplebbitPage.reason).to.equal("To lock an author post");
         });
 
-        it(`Mod can lock their own post`, async () => {
+        it.sequential(`Mod can lock their own post`, async () => {
             const lockedEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: modPost.subplebbitAddress,
                 commentCid: modPost.cid,
@@ -122,7 +127,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(lockedEdit, true);
         });
 
-        it(`A new CommentUpdate with locked=true is published`, async () => {
+        it.sequential(`A new CommentUpdate with locked=true is published`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.locked === true });
             expect(modPost.locked).to.be.true;
             expect(modPost.reason).to.equal("To lock a mod post");
@@ -157,7 +162,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
         });
 
-        it(`Mod can unlock a post`, async () => {
+        it.sequential(`Mod can unlock a post`, async () => {
             const unlockEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToBeLocked.subplebbitAddress,
                 commentCid: postToBeLocked.cid,
@@ -167,7 +172,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unlockEdit, true);
         });
 
-        it(`A new CommentUpdate with locked=false is published`, async () => {
+        it.sequential(`A new CommentUpdate with locked=false is published`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: postToBeLocked, predicate: () => postToBeLocked.locked === false });
             expect(postToBeLocked.locked).to.be.false;
             expect(postToBeLocked.reason).to.equal("To unlock an author post");

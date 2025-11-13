@@ -7,9 +7,10 @@ import {
     publishSubplebbitRecordWithExtraProp,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`plebbit.createSubplebbit - Backward Compatiblity - ${config.name}`, async () => {
+    describe.concurrent(`plebbit.createSubplebbit - Backward Compatiblity - ${config.name}`, async () => {
         it(`Can create a subplebbit instance with subplebbit record with extra props`, async () => {
             const opts = { includeExtraPropInSignedPropertyNames: true, extraProps: { extraProp: "1234" } };
             const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);
@@ -35,7 +36,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`subplebbit.update() and backward compatibility - ${config.name}`, async () => {
+    describe.concurrent(`subplebbit.update() and backward compatibility - ${config.name}`, async () => {
         it(`subplebbit.update() should have no problem with extra props, as long as they're in subplebbit.signature.signedPropertyNames`, async () => {
             const opts = { includeExtraPropInSignedPropertyNames: true, extraProps: { extraProp: "1234" } };
             const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);

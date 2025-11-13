@@ -8,6 +8,8 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 
+import { describe } from "vitest";
+
 const subplebbitWithNoChallenge = signers[0].address;
 const subplebbitWithMathCliChallenge = signers[1].address;
 
@@ -28,8 +30,8 @@ const validateKuboRpcNotListeningToPubsubTopic = async (testPlebbit, pubsubTopic
 
 // Test to reproduce pubsub bugs identified in issue #57
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
-    describe(`Pubsub timeout and subscription bugs - ${config.name}`, async () => {
-        describe("Bug #1: Incomplete Control Flow in _handleNotReceivingResponseToChallengeRequest", async () => {
+    describe.concurrent(`Pubsub timeout and subscription bugs - ${config.name}`, async () => {
+        describe.concurrent("Bug #1: Incomplete Control Flow in _handleNotReceivingResponseToChallengeRequest", async () => {
             it("should properly handle when publication state becomes 'stopped' during timeout", async () => {
                 const testPlebbit = await config.plebbitInstancePromise({
                     plebbitOptions: { pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl] },
@@ -107,7 +109,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             it("should not create infinite retry loop when pubsub subscription fails by emitting error in pubsub.subscribe");
         });
 
-        describe("Bug #3: Race Condition in Challenge Exchange Handling", async () => {
+        describe.concurrent("Bug #3: Race Condition in Challenge Exchange Handling", async () => {
             it(`It should emit a single Challenge per challenge request maximum`, async () => {
                 // this test should be for both kubo and helia
                 const testPlebbit = await config.plebbitInstancePromise({
@@ -184,7 +186,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             });
         });
 
-        describe("Bug #4: Provider Index Management Issue", async () => {
+        describe.concurrent("Bug #4: Provider Index Management Issue", async () => {
             it("should handle provider index correctly in finally blocks", async () => {
                 const testPlebbit = await config.plebbitInstancePromise({
                     plebbitOptions: {
@@ -248,7 +250,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             });
         });
 
-        describe("Pubsub Resource Leak Detection", async () => {
+        describe.concurrent("Pubsub Resource Leak Detection", async () => {
             it("should properly clean up pubsub subscriptions when it throws on publish((", async () => {
                 const testPlebbit = await config.plebbitInstancePromise({
                     plebbitOptions: { pubsubKuboRpcClientsOptions: [offlinePubsubUrl] }
@@ -294,7 +296,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             });
         });
 
-        describe("Pubsub edge cases", async () => {
+        describe.concurrent("Pubsub edge cases", async () => {
             it("should handle pubsub error callback without infinite recursion", async () => {
                 // this pubsub url would throw an error for the first subscribe
                 // but if user retries it sends messages normally

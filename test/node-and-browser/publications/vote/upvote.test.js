@@ -10,13 +10,14 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     const previousVotes = [];
 
-    describe(`Test upvote - ${config.name}`, async () => {
+    describe.concurrent(`Test upvote - ${config.name}`, async () => {
         let plebbit, postToVote, replyToVote, signer;
 
         before(async () => {
@@ -45,7 +46,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(voteJson).to.deep.equal(stringifiedVoteJson);
         });
 
-        it("Can upvote a post", async () => {
+        it.sequential("Can upvote a post", async () => {
             const originalUpvote = remeda.clone(postToVote.upvoteCount);
             const vote = await generateMockVote(postToVote, 1, plebbit);
             await publishWithExpectedResult(vote, true);
@@ -72,7 +73,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             previousVotes.push(vote);
         });
 
-        it("Can change post upvote to downvote", async () => {
+        it.sequential("Can change post upvote to downvote", async () => {
             const originalUpvote = remeda.clone(postToVote.upvoteCount);
             const originalDownvote = remeda.clone(postToVote.downvoteCount);
             const vote = await plebbit.createVote({
@@ -91,7 +92,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(postToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
         });
 
-        it("Can change reply upvote to downvote", async () => {
+        it.sequential("Can change reply upvote to downvote", async () => {
             const originalUpvote = remeda.clone(replyToVote.upvoteCount);
             const originalDownvote = remeda.clone(replyToVote.downvoteCount);
             const vote = await plebbit.createVote({
@@ -110,7 +111,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(replyToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
         });
 
-        it("Does not throw an error when vote is duplicated", async () => {
+        it.sequential("Does not throw an error when vote is duplicated", async () => {
             const vote = await plebbit.createVote({
                 commentCid: previousVotes[0].commentCid,
                 signer: previousVotes[0].signer,
@@ -134,7 +135,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A vote=0 is rejected if the author never published a vote on the comment before`, async () => {
-            const vote = await generateMockVote(postToVote, 0, plebbit);
+            const vote = await generateMockVote(postToVote, 0, plebbit); // will generate random signer
 
             await publishWithExpectedResult(vote, false, messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL);
         });

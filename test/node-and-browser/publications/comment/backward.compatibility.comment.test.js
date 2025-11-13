@@ -11,11 +11,12 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { _signJson } from "../../../../dist/node/signer/signatures.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Comments with extra props - ${config.name}`, async () => {
+    describe.concurrent(`Comments with extra props - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -36,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
         });
 
-        describe(`Publishing comments with extra props - ${config.name}`, async () => {
+        describe.concurrent(`Publishing comments with extra props - ${config.name}`, async () => {
             it(`A CommentPubsub with a field not included in signature.signedPropertyNames will be rejected`, async () => {
                 // Skip for rpc because it's gonna throw due to invalid signature
                 const post = await generateMockPost(subplebbitAddress, plebbit);
@@ -83,7 +84,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
         });
 
-        describe(`Loading comments with extra prop`, async () => {
+        describe.concurrent(`Loading comments with extra prop`, async () => {
             let commentWithExtraProps;
             let extraProps;
 
@@ -128,7 +129,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Comments with extra props in author`, async () => {
+    describe.concurrent(`Comments with extra props in author`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -136,7 +137,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         after(async () => {
             await plebbit.destroy();
         });
-        describe(`Publishing comment with extra props in author field - ${config.name}`, async () => {
+        describe.concurrent(`Publishing comment with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const post = await generateMockPost(subplebbitAddress, plebbit);
                 await setExtraPropOnCommentAndSign(
@@ -165,7 +166,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
         });
 
-        describe(`Loading a comment with author.extraProp - ${config.name}`, async () => {
+        describe.concurrent(`Loading a comment with author.extraProp - ${config.name}`, async () => {
             let postWithExtraAuthorProp;
             const extraProps = { extraProp: "1234" };
 
@@ -179,12 +180,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 await publishWithExpectedResult(postWithExtraAuthorProp, true);
             });
-            it(`Can load a CommentIpfs with author.extraProp`, async () => {
+            it.sequential(`Can load a CommentIpfs with author.extraProp`, async () => {
                 const loadedPost = await plebbit.getComment(postWithExtraAuthorProp.cid);
 
                 const loadedPostFromCreate = await plebbit.createComment({ cid: postWithExtraAuthorProp.cid });
                 await loadedPostFromCreate.update();
-                await resolveWhenConditionIsTrue({ toUpdate: loadedPostFromCreate, predicate: () => typeof loadedPostFromCreate.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: loadedPostFromCreate,
+                    predicate: () => typeof loadedPostFromCreate.updatedAt === "number"
+                });
                 await loadedPostFromCreate.stop();
 
                 const shapes = [

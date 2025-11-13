@@ -10,6 +10,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { timestamp } from "../../../../dist/node/util.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -19,7 +20,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Banning authors`, async () => {
+    describe.concurrent(`Banning authors`, async () => {
         let plebbit, commentToBeBanned, authorBanExpiresAt, reasonOfBan;
 
         before(async () => {
@@ -34,7 +35,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`Mod can ban an author for a comment`, async () => {
+        it.sequential(`Mod can ban an author for a comment`, async () => {
             const banCommentMod = await plebbit.createCommentModeration({
                 subplebbitAddress: commentToBeBanned.subplebbitAddress,
                 commentCid: commentToBeBanned.cid,
@@ -55,13 +56,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
         });
 
-        it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
-            await resolveWhenConditionIsTrue(
-                {
-                    toUpdate: commentToBeBanned,
-                    predicate: () => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number",
-                }
-            );
+        it.sequential(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
+            await resolveWhenConditionIsTrue({
+                toUpdate: commentToBeBanned,
+                predicate: () => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number"
+            });
             expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
             expect(commentToBeBanned.reason).to.equal(reasonOfBan);
         });
@@ -84,7 +83,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(banCommentEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
         });
 
-        it(`Banned author can publish after authorBanExpiresAt ends`, async () => {
+        it.sequential(`Banned author can publish after authorBanExpiresAt ends`, async () => {
             await new Promise((resolve) => setTimeout(resolve, (authorBanExpiresAt - timestamp()) * 1000.0 + 1000));
             expect(timestamp()).to.be.greaterThan(authorBanExpiresAt);
             const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, false, {

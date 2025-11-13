@@ -2,9 +2,11 @@ import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     publishRandomReply,
+    findCommentInSubplebbitInstancePagesPreloadedAndPageCids,
     generateMockComment,
     publishCommentWithDepth,
     generateMockVote,
+    findReplyInParentCommentPagesInstancePreloadedAndPageCids,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     getAvailablePlebbitConfigsToTestAgainst,
@@ -12,7 +14,8 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     mockPlebbitNoDataPathWithOnlyKuboClientNoAdd,
     describeSkipIfRpc,
-    mockGatewayPlebbit
+    mockGatewayPlebbit,
+    iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { CID } from "kubo-rpc-client";
@@ -20,6 +23,7 @@ import { CID } from "kubo-rpc-client";
 import * as remeda from "remeda";
 import { findCommentInPageInstanceRecursively } from "../../../../dist/node/pages/util.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[6].address;
 const roles = [
@@ -30,8 +34,8 @@ const roles = [
 
 // I suspect libp2p config is not emitting error
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    [0, 1, 2, 3].map((commentDepth) => {
-        describeSkipIfRpc(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
+    [0, 1, 2, 15, 30].map((commentDepth) => {
+        describe.concurrent(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
             let plebbit, commentToPurge, replyOfCommentToPurge, replyUnderReplyOfCommentToPurge;
             let replyCountOfParentOfPurgedComment; // undefined if commentDepth is 0
             let remotePlebbitIpfs;
@@ -105,7 +109,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await publishWithExpectedResult(purgeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
             });
 
-            it(`Mod can mark an author comment with depth ${commentDepth} as purged`, async () => {
+            it.sequential(`Mod can mark an author comment with depth ${commentDepth} as purged`, async () => {
                 const purgeEdit = await plebbit.createCommentModeration({
                     subplebbitAddress: commentToPurge.subplebbitAddress,
                     commentCid: commentToPurge.cid,
@@ -116,7 +120,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
 
             if (commentDepth > 0) {
-                it("the parent of purged comment replyCount should be reduced by 3", async () => {
+                it.sequential("the parent of purged comment replyCount should be reduced by 3", async () => {
+                    // 3 because we publish a reply under purged comment, and another reply under reply under purged comment
                     const parentOfPurgedComment = await plebbit.createComment({ cid: commentToPurge.parentCid });
                     await parentOfPurgedComment.update();
                     await resolveWhenConditionIsTrue({
@@ -131,49 +136,28 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 it("the purged comment should not appear in the parent's replies", async () => {
                     console.log("Parent of purged comment", commentToPurge.parentCid, "comment to purge cid", commentToPurge.cid);
                     const parentOfPurgedComment = await plebbit.createComment({ cid: commentToPurge.parentCid });
-                    const intervalId = setInterval(async () => {
-                        const remotePlebbitGateway = await mockGatewayPlebbit();
-                        const parentOfPurgedCommentGateway = await remotePlebbitGateway.createComment({
-                            cid: commentToPurge.parentCid
-                        });
-                        await parentOfPurgedCommentGateway.update();
-                        await resolveWhenConditionIsTrue({
-                            toUpdate: parentOfPurgedCommentGateway,
-                            predicate: () => typeof parentOfPurgedCommentGateway.updatedAt === "number"
-                        });
-                        const purgedCommentInParentGateway = findCommentInPageInstanceRecursively(
-                            parentOfPurgedCommentGateway.replies,
-                            commentToPurge.cid
-                        );
-                        console.log(
-                            "parent of purged comment with plebbit gateway",
-                            parentOfPurgedCommentGateway.cid,
-                            "does it have purgedComment?",
-                            !!purgedCommentInParentGateway
-                        );
-                        await remotePlebbitGateway.destroy();
-                    }, 20000);
 
                     await parentOfPurgedComment.update();
                     await resolveWhenConditionIsTrue({
                         toUpdate: parentOfPurgedComment,
                         predicate: () => typeof parentOfPurgedComment.updatedAt === "number"
                     });
-                    console.log("Loaded comment update");
                     await resolveWhenConditionIsTrue({
                         toUpdate: parentOfPurgedComment,
-                        predicate: () => {
-                            const purgedCommentInParent = findCommentInPageInstanceRecursively(
-                                parentOfPurgedComment.replies,
-                                commentToPurge.cid
-                            );
+                        predicate: async () => {
+                            const purgedCommentInParent = await findReplyInParentCommentPagesInstancePreloadedAndPageCids({
+                                reply: commentToPurge,
+                                parentComment: parentOfPurgedComment
+                            });
                             return purgedCommentInParent === undefined;
                         }
                     });
                     await parentOfPurgedComment.stop();
-                    const purgedCommentInParent = findCommentInPageInstanceRecursively(parentOfPurgedComment.replies, commentToPurge.cid);
+                    const purgedCommentInParent = await findReplyInParentCommentPagesInstancePreloadedAndPageCids({
+                        reply: commentToPurge,
+                        parentComment: parentOfPurgedComment
+                    });
                     expect(purgedCommentInParent).to.be.undefined;
-                    clearInterval(intervalId);
                 });
             }
 
@@ -231,44 +215,21 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
-                const intervalId = setInterval(async () => {
-                    const subplebbitLocalNode = await remotePlebbitIpfs.getSubplebbit(subplebbitAddress);
-                    const purgedPostInLocalNode = findCommentInPageInstanceRecursively(subplebbitLocalNode.posts, commentToPurge.cid);
-
-                    console.log(
-                        "subplebbitLocalNode",
-                        subplebbitLocalNode.updatedAt,
-                        "does it have purged post in page?",
-                        !!purgedPostInLocalNode
-                    );
-
-                    const ipnsRecordFromGateway = await fetch(`http://localhost:18080/ipns/${commentToPurge.subplebbitAddress}`, {
-                        cache: "no-cache",
-                        headers: {
-                            "Cache-Control": "no-cache, no-store, must-revalidate",
-                            Pragma: "no-cache",
-                            Expires: "0"
-                        }
-                    }).then((res) => res.json());
-                    const subFromGateway = await plebbit.createSubplebbit(ipnsRecordFromGateway);
-                    const purgedPostInIpns = findCommentInPageInstanceRecursively(subFromGateway.posts, commentToPurge.cid);
-
-                    console.log("subFromGateway", subFromGateway.updatedAt, "does it have purged post in page?", !!purgedPostInIpns);
-                }, 20000);
-
-                expect(sub.posts.pageCids).to.deep.equal({}); // let's assume sub has no page cids
-
                 await resolveWhenConditionIsTrue({
                     toUpdate: sub,
-                    predicate: () => {
-                        const purgedPostInPage = findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
+                    predicate: async () => {
+                        const purgedPostInPage = await findCommentInSubplebbitInstancePagesPreloadedAndPageCids({
+                            comment: commentToPurge,
+                            sub
+                        });
                         return purgedPostInPage === undefined; // if we can't find it then it's purged
                     }
                 });
 
-                clearInterval(intervalId);
-
-                const purgedCommentInRemoteSubplebbitPage = findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
+                const purgedCommentInRemoteSubplebbitPage = await findCommentInSubplebbitInstancePagesPreloadedAndPageCids({
+                    sub,
+                    comment: commentToPurge
+                });
                 expect(purgedCommentInRemoteSubplebbitPage).to.be.undefined;
 
                 await sub.stop();
@@ -317,53 +278,56 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(subplebbit.lastCommentCid).to.not.equal(commentToPurge.cid);
             });
 
-            it(`The whole reply tree including comment, replies and their pages should not be stored in the ipfs node of the subplebbit`, async () => {
-                await new Promise((resolve) => setTimeout(resolve, 3000));
-                const cidEntries = [
-                    { label: "updateCidOfSubplebbitWithPurgedComment", cid: updateCidOfSubplebbitWithPurgedComment },
-                    { label: "commentToPurge.cid", cid: commentToPurge.cid },
-                    { label: "replyOfCommentToPurge.cid", cid: replyOfCommentToPurge.cid },
-                    { label: "replyUnderReplyOfCommentToPurge.cid", cid: replyUnderReplyOfCommentToPurge.cid },
-                    {
-                        label: "commentToPurge.raw.commentUpdate",
-                        cid: await calculateIpfsHash(JSON.stringify(commentToPurge.raw.commentUpdate))
-                    },
-                    {
-                        label: "replyOfCommentToPurge.raw.commentUpdate",
-                        cid: await calculateIpfsHash(JSON.stringify(replyOfCommentToPurge.raw.commentUpdate))
-                    },
-                    {
-                        label: "replyUnderReplyOfCommentToPurge.raw.commentUpdate",
-                        cid: await calculateIpfsHash(JSON.stringify(replyUnderReplyOfCommentToPurge.raw.commentUpdate))
-                    },
-                    ...Object.entries(commentToPurge.replies.pageCids).map(([key, cid]) => ({
-                        label: `commentToPurge.replies.pageCids.${key}`,
-                        cid
-                    })),
-                    ...Object.entries(replyOfCommentToPurge.replies.pageCids).map(([key, cid]) => ({
-                        label: `replyOfCommentToPurge.replies.pageCids.${key}`,
-                        cid
-                    }))
-                ];
+            it.sequential(
+                `The whole reply tree including comment, replies and their pages should not be stored in the ipfs node of the subplebbit`,
+                async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 3000));
+                    const cidEntries = [
+                        { label: "updateCidOfSubplebbitWithPurgedComment", cid: updateCidOfSubplebbitWithPurgedComment },
+                        { label: "commentToPurge.cid", cid: commentToPurge.cid },
+                        { label: "replyOfCommentToPurge.cid", cid: replyOfCommentToPurge.cid },
+                        { label: "replyUnderReplyOfCommentToPurge.cid", cid: replyUnderReplyOfCommentToPurge.cid },
+                        {
+                            label: "commentToPurge.raw.commentUpdate",
+                            cid: await calculateIpfsHash(JSON.stringify(commentToPurge.raw.commentUpdate))
+                        },
+                        {
+                            label: "replyOfCommentToPurge.raw.commentUpdate",
+                            cid: await calculateIpfsHash(JSON.stringify(replyOfCommentToPurge.raw.commentUpdate))
+                        },
+                        {
+                            label: "replyUnderReplyOfCommentToPurge.raw.commentUpdate",
+                            cid: await calculateIpfsHash(JSON.stringify(replyUnderReplyOfCommentToPurge.raw.commentUpdate))
+                        },
+                        ...Object.entries(commentToPurge.replies.pageCids).map(([key, cid]) => ({
+                            label: `commentToPurge.replies.pageCids.${key}`,
+                            cid
+                        })),
+                        ...Object.entries(replyOfCommentToPurge.replies.pageCids).map(([key, cid]) => ({
+                            label: `replyOfCommentToPurge.replies.pageCids.${key}`,
+                            cid
+                        }))
+                    ];
 
-                const labeledCids = remeda.uniqueBy(cidEntries, (entry) => entry.cid);
-                const labeledCidsV1 = labeledCids.map((entry) => ({
-                    label: `${entry.label} (v1)`,
-                    cid: CID.parse(entry.cid).toV1().toString()
-                }));
-                const allLabeledCids = [...labeledCids, ...labeledCidsV1];
-                const cidLabelMap = new Map(allLabeledCids.map((entry) => [entry.cid, entry.label]));
-                const ipfsClientOfSub =
-                    remotePlebbitIpfs.clients.kuboRpcClients[Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]]._client;
-                // Collect all pinned CIDs
-                for await (const pin of ipfsClientOfSub.pin.ls()) {
-                    const pinCid = pin.cid.toString();
-                    const label = cidLabelMap.get(pinCid) ?? "unknown source";
-                    expect(cidLabelMap.has(pinCid), `IPFS node should not pin ${pinCid} (${label})`).to.be.false;
+                    const labeledCids = remeda.uniqueBy(cidEntries, (entry) => entry.cid);
+                    const labeledCidsV1 = labeledCids.map((entry) => ({
+                        label: `${entry.label} (v1)`,
+                        cid: CID.parse(entry.cid).toV1().toString()
+                    }));
+                    const allLabeledCids = [...labeledCids, ...labeledCidsV1];
+                    const cidLabelMap = new Map(allLabeledCids.map((entry) => [entry.cid, entry.label]));
+                    const ipfsClientOfSub =
+                        remotePlebbitIpfs.clients.kuboRpcClients[Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]]._client;
+                    // Collect all pinned CIDs
+                    for await (const pin of ipfsClientOfSub.pin.ls()) {
+                        const pinCid = pin.cid.toString();
+                        const label = cidLabelMap.get(pinCid) ?? "unknown source";
+                        expect(cidLabelMap.has(pinCid), `IPFS node should not pin ${pinCid} (${label})`).to.be.false;
+                    }
                 }
-            });
+            );
 
-            it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
+            it.sequential(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
                 const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
                 differentPlebbit._timeouts["comment-ipfs"] = 2000;
                 differentPlebbit._timeouts["comment-update-ipfs"] = 2000;

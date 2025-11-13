@@ -9,11 +9,12 @@ import {
     getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Test Downvote - ${config.name}`, async () => {
+    describe.concurrent(`Test Downvote - ${config.name}`, async () => {
         const previousVotes = [];
 
         let plebbit, postToVote, replyToVote, signer;
@@ -30,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it("Can downvote a post", async () => {
+        it.sequential("Can downvote a post", async () => {
             const originalDownvote = remeda.clone(postToVote.downvoteCount);
             const vote = await generateMockVote(postToVote, -1, plebbit);
             await publishWithExpectedResult(vote, true);
@@ -45,12 +46,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             previousVotes.push(vote);
         });
 
-        it(`Can downvote a reply`, async () => {
+        it.sequential(`Can downvote a reply`, async () => {
             const originalDownvote = remeda.clone(replyToVote.downvoteCount);
             const vote = await generateMockVote(replyToVote, -1, plebbit);
             await publishWithExpectedResult(vote, true);
 
-            await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: () => replyToVote.downvoteCount === originalDownvote + 1 });
+            await resolveWhenConditionIsTrue({
+                toUpdate: replyToVote,
+                predicate: () => replyToVote.downvoteCount === originalDownvote + 1
+            });
 
             expect(replyToVote.downvoteCount).to.equal(originalDownvote + 1);
             expect(replyToVote.upvoteCount).to.equal(0);
@@ -61,7 +65,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             previousVotes.push(vote);
         });
 
-        it("Can change post downvote to upvote", async () => {
+        it.sequential("Can change post downvote to upvote", async () => {
             const originalUpvote = remeda.clone(postToVote.upvoteCount);
             const originalDownvote = remeda.clone(postToVote.downvoteCount);
             const vote = await plebbit.createVote({
@@ -81,7 +85,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(postToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
         });
 
-        it("Can change reply downvote to upvote", async () => {
+        it.sequential("Can change reply downvote to upvote", async () => {
             const originalUpvote = remeda.clone(replyToVote.upvoteCount);
             const originalDownvote = remeda.clone(replyToVote.downvoteCount);
             const vote = await plebbit.createVote({

@@ -16,6 +16,7 @@ import { _signJson } from "../../../../dist/node/signer/signatures.js";
 import validCommentUpdateFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
@@ -210,7 +211,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Extra props in decryptedChallengeVerification.commentUpdate - ${config.name}`, async () => {
+    describe.concurrent(`Extra props in decryptedChallengeVerification.commentUpdate - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();

@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { generatePostToAnswerMathQuestion, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 

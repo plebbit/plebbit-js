@@ -81,11 +81,6 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             plebbit = await config.plebbitInstancePromise();
         });
 
-        // afterEach(async () => {
-        //     if (plebbit) await plebbit.destroy();
-        //     plebbit = await config.plebbitInstancePromise();
-        // });
-
         after(async () => {
             await plebbit.destroy();
         });

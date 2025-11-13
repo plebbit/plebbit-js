@@ -17,6 +17,7 @@ import signers from "../../../../fixtures/signers.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { messages } from "../../../../../dist/node/errors.js";
 import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../../pages/pages-test-util.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
@@ -109,30 +110,36 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         Object.keys(POST_REPLIES_SORT_TYPES).map((sortName) =>
-            it(`${sortName} pages under a post are sorted correctly`, async () => await testPostRepliesSort(post, sortName, subplebbit))
+            it.concurrent(
+                `${sortName} pages under a post are sorted correctly`,
+                async () => await testPostRepliesSort(post, sortName, subplebbit)
+            )
         );
 
         Object.keys(POST_REPLIES_SORT_TYPES)
             .filter((replySortName) => POST_REPLIES_SORT_TYPES[replySortName].flat)
             .map((flatSortName) =>
-                it(`flat sort (${flatSortName}) includes all nested fields, and has no replies field within its comments`, async () => {
-                    await post.update();
-                    await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
-                    await post.stop();
+                it.concurrent(
+                    `flat sort (${flatSortName}) includes all nested fields, and has no replies field within its comments`,
+                    async () => {
+                        await post.update();
+                        await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
+                        await post.stop();
 
-                    const flatReplies = await loadAllPages(post.replies.pageCids[flatSortName], post.replies);
-                    // Verify all published replies are present in flatReplies
-                    const flatRepliesCids = flatReplies.map((reply) => reply.cid);
-                    expect(flatRepliesCids).to.include(firstLevelReply.cid);
-                    expect(flatRepliesCids).to.include(secondLevelReply.cid);
-                    expect(flatRepliesCids).to.include(thirdLevelReply.cid);
+                        const flatReplies = await loadAllPages(post.replies.pageCids[flatSortName], post.replies);
+                        // Verify all published replies are present in flatReplies
+                        const flatRepliesCids = flatReplies.map((reply) => reply.cid);
+                        expect(flatRepliesCids).to.include(firstLevelReply.cid);
+                        expect(flatRepliesCids).to.include(secondLevelReply.cid);
+                        expect(flatRepliesCids).to.include(thirdLevelReply.cid);
 
-                    expect(flatReplies.length).to.be.greaterThan(3);
-                    flatReplies.forEach((reply) => expect(reply.replies).to.be.undefined);
-                })
+                        expect(flatReplies.length).to.be.greaterThan(3);
+                        flatReplies.forEach((reply) => expect(reply.replies).to.be.undefined);
+                    }
+                )
             );
 
-        it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
+        it.concurrent(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
             for (const postReplySortName of Object.keys(POST_REPLIES_SORT_TYPES)) {
                 const commentsFromEachPage = await loadAllPagesBySortName(postReplySortName, post.replies);
                 const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.raw);
@@ -207,10 +214,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         Object.keys(REPLY_REPLIES_SORT_TYPES).map((sortName) =>
-            it(`${sortName} pages under a reply are sorted correctly`, async () => await testReplyRepliesSort(reply, sortName, subplebbit))
+            it.concurrent(
+                `${sortName} pages under a reply are sorted correctly`,
+                async () => await testReplyRepliesSort(reply, sortName, subplebbit)
+            )
         );
 
-        it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
+        it.concurrent(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
             const replySortTypesWithoutFlat = Object.keys(REPLY_REPLIES_SORT_TYPES);
             for (const replySortName of replySortTypesWithoutFlat) {
                 const commentsFromEachPage = await loadAllPagesBySortName(replySortName, reply.replies);

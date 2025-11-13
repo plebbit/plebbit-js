@@ -11,9 +11,10 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describe(`Test fetching subplebbit record from multiple gateways`, async () => {
+    describe.concurrent(`Test fetching subplebbit record from multiple gateways`, async () => {
         // these test gateways will be set in test-server.js
         const stallingGateway = "http://localhost:14000"; // This gateaway will wait for 11s then respond
         const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record because it's the same node running the subs

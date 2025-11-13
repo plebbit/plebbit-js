@@ -9,6 +9,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { verifyCommentIpfs, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -18,7 +19,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Authors can mark their own comment as spoiler - ${config.name}`, async () => {
+    describe.concurrent(`Authors can mark their own comment as spoiler - ${config.name}`, async () => {
         let plebbit, authorPost;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -40,7 +41,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(spoilerEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
         });
 
-        it(`Author can mark their own comment as spoiler`, async () => {
+        it.sequential(`Author can mark their own comment as spoiler`, async () => {
             expect([false, undefined]).to.include(authorPost.spoiler);
 
             const spoilerEdit = await plebbit.createCommentEdit({
@@ -52,7 +53,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult(spoilerEdit, true);
         });
-        it(`A new CommentUpdate is published with spoiler=true`, async () => {
+        it.sequential(`A new CommentUpdate is published with spoiler=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.spoiler === true });
             expect(authorPost.edit.spoiler).to.be.true;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
@@ -102,7 +103,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(commentUpdateValidity).to.deep.equal({ valid: true });
         });
 
-        it(`Author can unspoiler their own comment`, async () => {
+        it.sequential(`Author can unspoiler their own comment`, async () => {
             const unspoilerEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: authorPost.subplebbitAddress,
                 commentCid: authorPost.cid,
@@ -112,7 +113,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult(unspoilerEdit, true);
         });
-        it(`A new CommentUpdate is published with spoiler=false`, async () => {
+        it.sequential(`A new CommentUpdate is published with spoiler=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost.spoiler === false });
             expect(authorPost.edit.spoiler).to.be.false;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
@@ -134,7 +135,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Mods marking their own comment as spoiler - ${config.name}`, async () => {
+    describe.concurrent(`Mods marking their own comment as spoiler - ${config.name}`, async () => {
         let plebbit, modPost;
 
         before(async () => {
@@ -148,7 +149,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`Mod can mark their own comment as spoiler`, async () => {
+        it.sequential(`Mod can mark their own comment as spoiler`, async () => {
             const spoilerEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: modPost.subplebbitAddress,
                 commentCid: modPost.cid,
@@ -159,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(spoilerEdit, true);
         });
 
-        it(`A new CommentUpdate is published with spoiler=true`, async () => {
+        it.sequential(`A new CommentUpdate is published with spoiler=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.spoiler === true });
             expect(modPost.edit.spoiler).to.be.true;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;
@@ -179,7 +180,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(commentInPage.spoiler).to.be.true;
         });
 
-        it(`Mod can unspoiler their own comment`, async () => {
+        it.sequential(`Mod can unspoiler their own comment`, async () => {
             const unspoilerEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: modPost.subplebbitAddress,
                 commentCid: modPost.cid,
@@ -190,7 +191,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unspoilerEdit, true);
         });
 
-        it(`A new CommentUpdate is published with spoiler=false`, async () => {
+        it.sequential(`A new CommentUpdate is published with spoiler=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.spoiler === false });
             expect(modPost.edit.spoiler).to.be.false;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;

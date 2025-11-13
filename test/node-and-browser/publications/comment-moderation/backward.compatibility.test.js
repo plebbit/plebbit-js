@@ -8,6 +8,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
+import { describe, it } from "vitest";
 
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -16,7 +17,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Backward compatibility for CommentModeration - ${config.name}`, async () => {
+    describe.concurrent(`Backward compatibility for CommentModeration - ${config.name}`, async () => {
         // A subplebbit should accept a CommentModeration with unknown props
         // However, it should not process the unknown props, it should strip them out after validation
 
@@ -53,7 +54,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(challengeRequest.commentModeration.extraProp).to.equal("1234");
         });
 
-        it(`publishing commentModeration.extraProp should succeed if it's included in commentModeration.signature.signedPropertyNames`, async () => {
+        it(`publishing commentModerationPublication.extraProp should succeed with {removed:true}  if it's included in commentModeration.signature.signedPropertyNames, but it shouldn't include it in CommentUpdate`, async () => {
             const commentModeration = await plebbit.createCommentModeration({
                 commentCid: commentToMod.cid,
                 subplebbitAddress: commentToMod.subplebbitAddress,
@@ -72,9 +73,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.commentModeration.extraProp).to.equal("1234");
             await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
+
+            await resolveWhenConditionIsTrue({ toUpdate: commentToMod, predicate: () => commentToMod.removed });
+            expect(commentToMod.removed).to.be.true; // should process only locked since it's the known field to the sub
+            expect(commentToMod.extraProp).to.be.undefined;
         });
 
-        it(`publishing commentModerationPublication.commentModeration.extraProp should succeed`, async () => {
+        it(`publishing commentModerationPublication.commentModeration.extraProp should succeed, but it shouldn't include it in CommentUpdate`, async () => {
             const commentModeration = await plebbit.createCommentModeration({
                 commentCid: commentToMod.cid,
                 subplebbitAddress: commentToMod.subplebbitAddress,
@@ -114,55 +119,64 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(challengerequest.commentModeration.insertedAt).to.equal("1234");
         });
 
-        describe(`Publishing CommentModeration with extra props in commentModerationPublication.author field - ${config.name}`, async () => {
-            it(`Publishing commentModeration.author.extraProp should succeed`, async () => {
-                const commentModeration = await plebbit.createCommentModeration({
-                    commentCid: commentToMod.cid,
-                    subplebbitAddress: commentToMod.subplebbitAddress,
-                    commentModeration: { removed: true },
+        describe.concurrent(
+            `Publishing CommentModeration with extra props in commentModerationPublication.author field - ${config.name}`,
+            async () => {
+                it(`Publishing commentModeration.author.extraProp should succeed`, async () => {
+                    const commentModeration = await plebbit.createCommentModeration({
+                        commentCid: commentToMod.cid,
+                        subplebbitAddress: commentToMod.subplebbitAddress,
+                        commentModeration: { removed: true },
 
-                    signer: signers[3]
+                        signer: signers[3]
+                    });
+                    const extraProps = { extraProp: "1234" };
+                    await setExtraPropOnCommentModerationAndSign(commentModeration, { author: extraProps }, true);
+
+                    await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
+
+                    const challengeRequestPromise = new Promise((resolve) => commentModeration.once("challengerequest", resolve));
+                    await publishWithExpectedResult(commentModeration, true);
+                    const challengeRequest = await challengeRequestPromise;
+                    expect(challengeRequest.commentModeration.author.extraProp).to.equal(extraProps.extraProp);
                 });
-                const extraProps = { extraProp: "1234" };
-                await setExtraPropOnCommentModerationAndSign(commentModeration, { author: extraProps }, true);
+            }
+        );
 
-                await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
+        describe.concurrent(
+            `Publishing CommentModeration with extra props in commentModerationPublication.commentModeration.author field - ${config.name}`,
+            async () => {
+                it(`Publishing commentModerationPublication.commentModeration.author.extraProp`, async () => {
+                    const commentToModWithAuthor = await publishRandomPost(commentToMod.subplebbitAddress, plebbit);
+                    const commentModeration = await plebbit.createCommentModeration({
+                        commentCid: commentToModWithAuthor.cid,
+                        subplebbitAddress: commentToModWithAuthor.subplebbitAddress,
+                        commentModeration: { removed: true },
+                        signer: signers[3]
+                    });
+                    const extraProps = { extraProp: "1234" };
+                    await setExtraPropOnCommentModerationAndSign(commentModeration, { author: extraProps }, true);
 
-                const challengeRequestPromise = new Promise((resolve) => commentModeration.once("challengerequest", resolve));
-                await publishWithExpectedResult(commentModeration, true);
-                const challengeRequest = await challengeRequestPromise;
-                expect(challengeRequest.commentModeration.author.extraProp).to.equal(extraProps.extraProp);
-            });
-        });
+                    await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
 
-        describe(`Publishing CommentModeration with extra props in commentModerationPublication.commentModeration.author field - ${config.name}`, async () => {
-            it(`Publishing commentModerationPublication.commentModeration.author.extraProp`, async () => {
-                const commentToModWithAuthor = await publishRandomPost(commentToMod.subplebbitAddress, plebbit);
-                const commentModeration = await plebbit.createCommentModeration({
-                    commentCid: commentToModWithAuthor.cid,
-                    subplebbitAddress: commentToModWithAuthor.subplebbitAddress,
-                    commentModeration: { removed: true },
-                    signer: signers[3]
+                    const challengeRequestPromise = new Promise((resolve) => commentModeration.once("challengerequest", resolve));
+
+                    await publishWithExpectedResult(commentModeration, true);
+                    const challengeRequest = await challengeRequestPromise;
+                    expect(challengeRequest.commentModeration.author.extraProp).to.equal(extraProps.extraProp);
+
+                    await commentToModWithAuthor.update();
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: commentToModWithAuthor,
+                        predicate: () => commentToModWithAuthor.removed === true
+                    });
+                    expect(commentToModWithAuthor.author.subplebbit.extraProp).to.be.undefined;
+                    expect(commentToModWithAuthor.raw.commentUpdate.author.subplebbit.extraProp).to.be.undefined;
+                    expect(commentToModWithAuthor.raw.commentUpdate.author.extraProp).to.be.undefined;
+
+                    await commentToModWithAuthor.stop();
                 });
-                const extraProps = { extraProp: "1234" };
-                await setExtraPropOnCommentModerationAndSign(commentModeration, { author: extraProps }, true);
-
-                await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
-
-                const challengeRequestPromise = new Promise((resolve) => commentModeration.once("challengerequest", resolve));
-
-                await publishWithExpectedResult(commentModeration, true);
-                const challengeRequest = await challengeRequestPromise;
-                expect(challengeRequest.commentModeration.author.extraProp).to.equal(extraProps.extraProp);
-
-                await commentToModWithAuthor.update();
-                await resolveWhenConditionIsTrue({ toUpdate: commentToModWithAuthor, predicate: () => commentToModWithAuthor.removed === true });
-                expect(commentToModWithAuthor.author.subplebbit.extraProp).to.be.undefined;
-                expect(commentToModWithAuthor.raw.commentUpdate.author.subplebbit.extraProp).to.be.undefined;
-                expect(commentToModWithAuthor.raw.commentUpdate.author.extraProp).to.be.undefined;
-
-                await commentToModWithAuthor.stop();
-            });
-        });
+            }
+        );
     });
 });

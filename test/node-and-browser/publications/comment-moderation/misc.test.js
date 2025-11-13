@@ -7,6 +7,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 const roles = [
@@ -16,7 +17,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("plebbit.createCommentModeration misc - " + config.name, async () => {
+    describe.concurrent("plebbit.createCommentModeration misc - " + config.name, async () => {
         let plebbit;
         let commentToMod;
 
@@ -80,7 +81,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(deterministicStringify(localMod)).to.equal(deterministicStringify(recreatedLocalMod));
         });
 
-        it(`Can publish a CommentModeration that was created from jsonfied CommentModeration instance`, async () => {
+        it.sequential(`Can publish a CommentModeration that was created from jsonfied CommentModeration instance`, async () => {
             const modProps = {
                 subplebbitAddress: subplebbitAddress,
                 commentCid: commentToMod.cid,
@@ -102,7 +103,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Changing multiple fields simultaneously in one CommentModeration - ${config.name}`, async () => {
+    describe.concurrent(`Changing multiple fields simultaneously in one CommentModeration - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {
@@ -155,7 +156,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Changing multiple fields in separate comment moderations`, async () => {
+    describe.concurrent(`Changing multiple fields in separate comment moderations`, async () => {
         let plebbit;
 
         before(async () => {
@@ -230,7 +231,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 reason: "Test as an author" + Date.now()
             };
 
-            const authorPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // generate random signer
+            const authorPost = await publishRandomPost(subplebbitAddress, plebbit); // generate random signer
 
             const authorEdit = await plebbit.createCommentEdit({
                 ...authorFieldsToChange,
@@ -294,7 +295,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Correct value of CommentUpdate after mod edit, then author edit`, async () => {
-            const authorPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // generate random signer
+            const authorPost = await publishRandomPost(subplebbitAddress, plebbit); // generate random signer
 
             const modFieldsToChange = {
                 reason: "Test setting spoiler as mod",
@@ -327,7 +328,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await authorPost.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: () => authorPost?.edit?.spoiler === authorFieldsToChange.spoiler });
+            await resolveWhenConditionIsTrue({
+                toUpdate: authorPost,
+                predicate: () => authorPost?.edit?.spoiler === authorFieldsToChange.spoiler
+            });
 
             await authorPost.stop();
 

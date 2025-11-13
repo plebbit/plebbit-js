@@ -16,7 +16,7 @@ import * as remeda from "remeda";
 import { messages } from "../../../../../dist/node/errors.js";
 const subplebbitAddress = signers[0].address;
 
-describe(`Client side verification`, async () => {
+describe.concurrent(`Client side verification`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
@@ -47,7 +47,7 @@ describe(`Client side verification`, async () => {
 
         const updatingSub = await customPlebbit.getSubplebbit(subplebbitAddress);
         await updatingSub.update();
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, subplebbitAddress, invalidSubRecord);
         const mockPost = await generateMockPost(subplebbitAddress, customPlebbit);
         mockPost._getSubplebbitCache = () => undefined;
@@ -63,7 +63,7 @@ describe(`Client side verification`, async () => {
     });
 });
 
-describe("Subplebbit rejection of incorrect values of fields", async () => {
+describe.concurrent("Subplebbit rejection of incorrect values of fields", async () => {
     let plebbit, post;
     before(async () => {
         plebbit = await mockRemotePlebbit();
@@ -174,7 +174,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     });
 });
 
-describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
+describe.concurrent(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();

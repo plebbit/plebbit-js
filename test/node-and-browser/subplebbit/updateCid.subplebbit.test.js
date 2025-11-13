@@ -1,5 +1,11 @@
 import { expect } from "chai";
-import { getAvailablePlebbitConfigsToTestAgainst, resolveWhenConditionIsTrue, createMockedSubplebbitIpns } from "../../../dist/node/test/test-util.js";
+import {
+    getAvailablePlebbitConfigsToTestAgainst,
+    resolveWhenConditionIsTrue,
+    createMockedSubplebbitIpns
+} from "../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
+
 getAvailablePlebbitConfigsToTestAgainst().map((config) =>
     describe(`subplebbit.updateCid (Remote) - ${config.name}`, async () => {
         let plebbit;

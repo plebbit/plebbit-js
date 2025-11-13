@@ -9,6 +9,7 @@ import {
     mockPlebbitV2,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[9].address;
 

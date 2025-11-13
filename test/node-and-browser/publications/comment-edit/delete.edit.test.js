@@ -13,6 +13,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[8].address;
 const roles = [
@@ -22,7 +23,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("Deleting a post - " + config.name, async () => {
+    describe.concurrent("Deleting a post - " + config.name, async () => {
         let plebbit, postToDelete, modPostToDelete, postReply;
 
         before(async () => {
@@ -60,7 +61,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(deleteEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
         });
 
-        it(`Author of post can delete their own post`, async () => {
+        it.sequential(`Author of post can delete their own post`, async () => {
             const deleteEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: postToDelete.subplebbitAddress,
                 commentCid: postToDelete.cid,
@@ -71,7 +72,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(deleteEdit, true);
         });
 
-        it(`A new CommentUpdate is published with deleted=true for author deleted post`, async () => {
+        it.sequential(`A new CommentUpdate is published with deleted=true for author deleted post`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: postToDelete, predicate: () => postToDelete.deleted === true });
             expect(postToDelete.deleted).to.be.true;
             expect(postToDelete.raw.commentUpdate.deleted).to.be.undefined;
@@ -86,10 +87,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: postToDelete.subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToDelete.cid, sub.posts);
-                return postInPage === undefined;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToDelete.cid, sub.posts);
+                    return postInPage === undefined;
+                }
+            });
 
             await sub.stop();
 
@@ -120,7 +124,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const vote = await generateMockVote(postReply, 1, plebbit, remeda.sample(signers, 1)[0]);
             await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
         });
-        it(`Mod can delete their own post`, async () => {
+        it.sequential(`Mod can delete their own post`, async () => {
             const deleteEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: modPostToDelete.subplebbitAddress,
                 commentCid: modPostToDelete.cid,
@@ -131,7 +135,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(deleteEdit, true);
         });
 
-        it(`A new CommentUpdate is published with deleted=true for mod deleted post`, async () => {
+        it.sequential(`A new CommentUpdate is published with deleted=true for mod deleted post`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPostToDelete, predicate: () => modPostToDelete.deleted === true });
             expect(modPostToDelete.deleted).to.be.true;
             expect(modPostToDelete.raw.commentUpdate.deleted).to.be.undefined;
@@ -165,7 +169,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe("Deleting a reply - " + config.name, async () => {
+    describe.concurrent("Deleting a reply - " + config.name, async () => {
         let plebbit, replyToDelete, post, replyUnderDeletedReply;
 
         before(async () => {
@@ -181,7 +185,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`Author can delete their own reply`, async () => {
+        it.sequential(`Author can delete their own reply`, async () => {
             const deleteEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: replyToDelete.subplebbitAddress,
                 commentCid: replyToDelete.cid,
@@ -190,7 +194,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult(deleteEdit, true);
         });
-        it(`A new CommentUpdate is pushed for removing a reply`, async () => {
+        it.sequential(`A new CommentUpdate is pushed for removing a reply`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: replyToDelete, predicate: () => replyToDelete.deleted === true });
             expect(replyToDelete.deleted).to.be.true;
             expect(replyToDelete.reason).to.be.undefined;
@@ -199,13 +203,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const parentComment = await plebbit.createComment({ cid: replyToDelete.parentCid });
             await parentComment.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: async () => {
-                const deletedReplyUnderPost = await iterateThroughPagesToFindCommentInParentPagesInstance(
-                    replyToDelete.cid,
-                    parentComment.replies
-                );
-                return deletedReplyUnderPost?.deleted === true;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: parentComment,
+                predicate: async () => {
+                    const deletedReplyUnderPost = await iterateThroughPagesToFindCommentInParentPagesInstance(
+                        replyToDelete.cid,
+                        parentComment.replies
+                    );
+                    return deletedReplyUnderPost?.deleted === true;
+                }
+            });
 
             // Need to test for all pages here
 

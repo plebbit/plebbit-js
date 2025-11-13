@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
+import { describe, it } from "vitest";
 import {
     publishRandomPost,
     publishRandomReply,
@@ -24,7 +25,7 @@ import { cleanUpBeforePublishing } from "../../../../../dist/node/signer/signatu
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`comment.update - ${config.name}`, async () => {
+    describe.concurrent(`comment.update - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -151,7 +152,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 async () => {
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-                    const parentComment = await publishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
+                    const parentComment = await findOrPublishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
                     await resolveWhenConditionIsTrue({
@@ -190,6 +191,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             itSkipIfRpc(
                 `Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is updating`,
                 async () => {
+                    // flaky
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
                     const parentComment = await findOrPublishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
@@ -266,7 +268,7 @@ const addInvalidJsonToIpfs = async () => {
 };
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`comment.update() emits errors for issues with CommentIpfs or CommentUpdate record - ${config.name}`, async () => {
+    describe.sequential(`comment.update() emits errors for issues with CommentIpfs or CommentUpdate record - ${config.name}`, async () => {
         let invalidCommentIpfsCid;
         let cidOfInvalidJson;
         let cidOfCommentIpfsWithInvalidSchema;

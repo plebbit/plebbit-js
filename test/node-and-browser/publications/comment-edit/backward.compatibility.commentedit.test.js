@@ -8,6 +8,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
+import { describe, it } from "vitest";
 
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -16,7 +17,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Backward compatibility for CommentEdit - ${config.name}`, async () => {
+    describe.concurrent(`Backward compatibility for CommentEdit - ${config.name}`, async () => {
         // A subplebbit should accept a CommentEdit with unknown props
         // However, it should not process the unknown props, it should strip them out after validation
 
@@ -53,27 +54,30 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(challengeRequest.commentEdit.extraProp).to.equal("1234");
         });
 
-        it(`publishing commentEdit.extraProp should succeed as an author edit if it's included in commentEdit.signature.signedPropertyNames`, async () => {
-            const commentEdit = await plebbit.createCommentEdit({
-                commentCid: commentToEdit.cid,
-                subplebbitAddress: commentToEdit.subplebbitAddress,
-                content: "Radn" + Math.random(),
-                signer: commentToEdit.signer
-            });
-            await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, true);
+        it.sequential(
+            `publishing commentEdit.extraProp should succeed as an author edit if it's included in commentEdit.signature.signedPropertyNames`,
+            async () => {
+                const commentEdit = await plebbit.createCommentEdit({
+                    commentCid: commentToEdit.cid,
+                    subplebbitAddress: commentToEdit.subplebbitAddress,
+                    content: "Radn" + Math.random(),
+                    signer: commentToEdit.signer
+                });
+                await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, true);
 
-            const challengeRequestPromise = new Promise((resolve) => commentEdit.once("challengerequest", resolve));
+                const challengeRequestPromise = new Promise((resolve) => commentEdit.once("challengerequest", resolve));
 
-            await publishWithExpectedResult(commentEdit, true);
+                await publishWithExpectedResult(commentEdit, true);
 
-            await new Promise((resolve) => commentToEdit.once("update", resolve));
-            // if commentToEdit emits update that means the signature of update.edit is correct
-            expect(commentToEdit.content).to.equal(commentEdit.content); // should process only content since it's the known field
-            expect(commentToEdit.extraProp).to.be.undefined;
-            const challengeRequest = await challengeRequestPromise;
-            expect(challengeRequest.commentEdit.extraProp).to.equal("1234");
-            await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
-        });
+                await new Promise((resolve) => commentToEdit.once("update", resolve));
+                // if commentToEdit emits update that means the signature of update.edit is correct
+                expect(commentToEdit.content).to.equal(commentEdit.content); // should process only content since it's the known field
+                expect(commentToEdit.extraProp).to.be.undefined;
+                const challengeRequest = await challengeRequestPromise;
+                expect(challengeRequest.commentEdit.extraProp).to.equal("1234");
+                await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
+            }
+        );
 
         it(`Publishing commentEdit.reservedField should be rejected`, async () => {
             const commentEdit = await plebbit.createCommentEdit({
@@ -90,7 +94,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(challengeRequest.commentEdit.insertedAt).to.equal("1234");
         });
 
-        describe(`Publishing CommentEdit with extra props in author field - ${config.name}`, async () => {
+        describe.concurrent(`Publishing CommentEdit with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const commentEdit = await plebbit.createCommentEdit({
                     commentCid: commentToEdit.cid,
@@ -111,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const challengerequest = await challengeRequestPromise;
                 expect(challengerequest.commentEdit.author.subplebbit).to.equal("random");
             });
-            it(`Publishing with extra prop for author should succeed`, async () => {
+            it.sequential(`Publishing with extra prop for author should succeed`, async () => {
                 const commentEdit = await plebbit.createCommentEdit({
                     commentCid: commentToEdit.cid,
                     subplebbitAddress: commentToEdit.subplebbitAddress,

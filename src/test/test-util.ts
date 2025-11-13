@@ -760,23 +760,61 @@ export async function iterateThroughPageCidToFindComment(commentCid: string, pag
     return undefined;
 }
 
+export async function findCommentInSubplebbitInstancePagesPreloadedAndPageCids(opts: {
+    comment: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>;
+    sub: RemoteSubplebbit;
+}): Promise<CommentWithinRepliesPostsPageJson | undefined> {
+    // TODO need to handle, what if the comment is nested deep down the subplebbit.posts tree and doesn't appear in preloaded page
+    // code below doesn't handle it
+    const { sub, comment } = opts;
+    if (!sub) throw Error("Failed to provide opts.sub");
+    if (!comment) throw Error("Failed to provde opts.comment");
+    if (Object.keys(sub.posts.pageCids).length === 0 && Object.keys(sub.posts.pages).length > 0) {
+        // it's a single preloaded page
+        const postInPage = findCommentInPageInstanceRecursively(sub.posts, comment.cid);
+        if (postInPage) return mapPageIpfsCommentToPageJsonComment(postInPage);
+        else return undefined;
+    } else if (Object.keys(sub.posts?.pageCids).length > 0) {
+        const postsNewPageCid = sub.posts.pageCids.new;
+        const postInPageCid = await iterateThroughPageCidToFindComment(comment.cid, postsNewPageCid, sub.posts);
+        return postInPageCid;
+    } else return undefined;
+}
+
+export async function findReplyInParentCommentPagesInstancePreloadedAndPageCids(opts: {
+    reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>;
+    parentComment: Comment;
+}): Promise<CommentWithinRepliesPostsPageJson | undefined> {
+    const { parentComment, reply } = opts;
+    const log = Logger("plebbit-js:test-util:waitTillReplyInParentPagesInstance");
+    if (reply?.parentCid !== parentComment?.cid) throw Error("You need to provide a reply that's direct child of parentComment");
+    log("waiting for reply", reply.cid, "in parent comment", parentComment.cid, "replyCount of parent comment", parentComment.replyCount);
+    if (Object.keys(parentComment.replies.pageCids).length === 0) {
+        // it's a single preloaded page
+        const replyInParentPages = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
+        if (replyInParentPages) return mapPageIpfsCommentToPageJsonComment(replyInParentPages);
+        else return undefined;
+    } else {
+        if (!("new" in parentComment.replies.pageCids)) {
+            console.error("no new page", "parentComment.replies.pageCids", parentComment.replies.pageCids);
+            return undefined;
+        }
+
+        const commentNewPageCid = parentComment.replies.pageCids.new;
+        const replyInPage = await iterateThroughPageCidToFindComment(reply.cid, commentNewPageCid, parentComment.replies);
+        return replyInPage;
+    }
+}
+
 export async function waitTillPostInSubplebbitInstancePages(
     post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>,
     sub: RemoteSubplebbit
 ) {
-    const isPostInSubPages = async () => {
-        if (Object.keys(sub.posts.pageCids).length === 0 && Object.keys(sub.posts.pages).length > 0) {
-            // it's a single preloaded page
-            const postInPage = findCommentInPageInstanceRecursively(sub.posts, post.cid);
-            return Boolean(postInPage);
-        } else if (Object.keys(sub.posts.pageCids).length > 0) {
-            const postsNewPageCid = sub.posts.pageCids.new;
-            const postInPage = await iterateThroughPageCidToFindComment(post.cid, postsNewPageCid, sub.posts);
-            return Boolean(postInPage);
-        } else return false;
-    };
     if (sub.state === "stopped") await sub.update();
-    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: isPostInSubPages });
+    await resolveWhenConditionIsTrue({
+        toUpdate: sub,
+        predicate: async () => Boolean(await findCommentInSubplebbitInstancePagesPreloadedAndPageCids({ comment: post, sub }))
+    });
 }
 
 export async function waitTillPostInSubplebbitPages(
@@ -799,44 +837,21 @@ export async function iterateThroughPagesToFindCommentInParentPagesInstance(
     const commentInPage = findCommentInPageInstance(pages, commentCid);
     if (commentInPage) return mapPageIpfsCommentToPageJsonComment(commentInPage);
 
-    if (pages.pages[preloadedPage]?.nextCid) {
+    if (pages.pages[preloadedPage]?.nextCid || pages.pageCids.new) {
         // means we have multiple pages
         return iterateThroughPageCidToFindComment(commentCid, pages.pageCids.new, pages);
-    }
-    return undefined;
+    } else return undefined;
 }
 
 export async function waitTillReplyInParentPagesInstance(
     reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>,
     parentComment: Comment
 ) {
-    const isReplyInParentPages = async () => {
-        const log = Logger("plebbit-js:test-util:waitTillReplyInParentPagesInstance");
-        log(
-            "waiting for reply",
-            reply.cid,
-            "in parent comment",
-            parentComment.cid,
-            "replyCount of parent comment",
-            parentComment.replyCount
-        );
-        if (Object.keys(parentComment.replies.pageCids).length === 0) {
-            // it's a single preloaded page
-            const replyInParentPages = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
-            return Boolean(replyInParentPages);
-        } else {
-            if (!("new" in parentComment.replies.pageCids)) {
-                console.error("no new page", "parentComment.replies.pageCids", parentComment.replies.pageCids);
-                return false;
-            }
-
-            const commentNewPageCid = parentComment.replies.pageCids.new;
-            const replyInPage = await iterateThroughPageCidToFindComment(reply.cid, commentNewPageCid, parentComment.replies);
-            return Boolean(replyInPage);
-        }
-    };
     if (parentComment.state === "stopped") throw Error("Parent comment is stopped, can't wait for reply in parent pages");
-    await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: isReplyInParentPages });
+    await resolveWhenConditionIsTrue({
+        toUpdate: parentComment,
+        predicate: async () => Boolean(await findReplyInParentCommentPagesInstancePreloadedAndPageCids({ reply, parentComment }))
+    });
 }
 
 export async function waitTillReplyInParentPages(

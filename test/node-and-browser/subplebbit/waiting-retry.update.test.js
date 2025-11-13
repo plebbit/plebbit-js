@@ -5,11 +5,12 @@ import {
     mockPlebbitToTimeoutFetchingCid,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 
 import { _signJson } from "../../../dist/node/signer/signatures.js";
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describe(`Subplebbit and waiting-retry - ${config.name}`, async () => {
+    describe.concurrent(`Subplebbit and waiting-retry - ${config.name}`, async () => {
         it(`subplebbit.update() emits error if loading subplebbit record times out`, async () => {
             const stallingGateway = "http://127.0.0.1:14000"; // this gateway will wait for 11s before responding
             const plebbit = await config.plebbitInstancePromise({
@@ -39,7 +40,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describe(`Subplebbit waiting-retry - ${config.name}`, () => {
+    describe.concurrent(`Subplebbit waiting-retry - ${config.name}`, () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();

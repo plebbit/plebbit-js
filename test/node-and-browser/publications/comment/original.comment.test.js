@@ -1,9 +1,14 @@
 import { expect } from "chai";
-import { getAvailablePlebbitConfigsToTestAgainst, publishRandomPost, resolveWhenConditionIsTrue } from "../../../../dist/node/test/test-util.js";
+import {
+    getAvailablePlebbitConfigsToTestAgainst,
+    publishRandomPost,
+    resolveWhenConditionIsTrue
+} from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
+import { describe } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`comment.original - ${config.name}`, async () => {
+    describe.concurrent(`comment.original - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {

@@ -7,10 +7,11 @@ import {
     isPlebbitFetchingUsingGateways
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { describe, it } from "vitest";
 const subplebbitSigner = signers[0];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`plebbit.getComment - ${config.name}`, async () => {
+    describe.concurrent(`plebbit.getComment - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();

@@ -5,16 +5,16 @@ import {
     publishRandomPost,
     publishRandomReply,
     jsonifyCommentAndRemoveInstanceProps,
-    loadAllPages,
     resolveWhenConditionIsTrue,
     getAvailablePlebbitConfigsToTestAgainst,
     publishWithExpectedResult,
     addStringToIpfs
 } from "../../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`plebbit.createComment - Remote (${config.name})`, async () => {
+    describe.concurrent(`plebbit.createComment - Remote (${config.name})`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -121,7 +121,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(postJson).to.deep.equal(postFromStringifiedPostJson);
         });
 
-        it("comment instance created with {subplebbitAddress, cid, depth, postCid} prop can call getPage", async () => {
+        it.sequential("comment instance created with {subplebbitAddress, cid, depth, postCid} prop can call getPage", async () => {
             const post = await publishRandomPost(subplebbitAddress, plebbit);
             expect(post.replies).to.be.a("object");
             await publishRandomReply(post, plebbit);

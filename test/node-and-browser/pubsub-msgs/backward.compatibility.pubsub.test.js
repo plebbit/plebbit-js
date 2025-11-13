@@ -3,17 +3,16 @@ import signers from "../../fixtures/signers.js";
 import {
     generateMockPost,
     setExtraPropOnChallengeRequestAndSign,
-    describeSkipIfRpc,
     publishChallengeVerificationMessageWithEncryption,
     publishChallengeMessageWithExtraProps,
     publishChallengeAnswerMessageWithExtraProps,
     publishChallengeVerificationMessageWithExtraProps,
-    getAvailablePlebbitConfigsToTestAgainst,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    getAvailablePlebbitConfigsToTestAgainst
 } from "../../../dist/node/test/test-util.js";
 import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import * as remeda from "remeda";
+import { describe, it } from "vitest";
 
 import { _signJson, _signPubsubMsg } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";

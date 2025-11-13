@@ -14,11 +14,11 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import * as remeda from "remeda";
 import validSubplebbitJsonfiedFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_jsonfied.json" with { type: "json" };
-
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) =>
-    describe(`plebbit.createSubplebbit - Remote (${config.name})`, async () => {
+    describe.concurrent(`plebbit.createSubplebbit - Remote (${config.name})`, async () => {
         let plebbit;
 
         before(async () => {
@@ -108,7 +108,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
     })
 );
 
-describe(`plebbit.createSubplebbit - (remote) - errors`, async () => {
+describe.concurrent(`plebbit.createSubplebbit - (remote) - errors`, async () => {
     let plebbit;
 
     before(async () => {

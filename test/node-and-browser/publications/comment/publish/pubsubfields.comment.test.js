@@ -1,8 +1,13 @@
 import { expect } from "chai";
-import { generateMockPost, getAvailablePlebbitConfigsToTestAgainst, publishWithExpectedResult } from "../../../../../dist/node/test/test-util.js";
+import {
+    generateMockPost,
+    getAvailablePlebbitConfigsToTestAgainst,
+    publishWithExpectedResult
+} from "../../../../../dist/node/test/test-util.js";
 import signers from "../../../../fixtures/signers.js";
+import { describe } from "vitest";
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Pubsub request fields in plebbit.createComment - ${config.name}`, async () => {
+    describe.concurrent(`Pubsub request fields in plebbit.createComment - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {

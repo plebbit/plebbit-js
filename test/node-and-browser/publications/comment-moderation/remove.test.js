@@ -13,6 +13,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[7].address;
 const roles = [
@@ -22,7 +23,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Removing post - ${config.name}`, async () => {
+    describe.concurrent(`Removing post - ${config.name}`, async () => {
         let plebbit, postToRemove, postReply;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -34,7 +35,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`Mod can mark an author post as removed`, async () => {
+        it.sequential(`Mod can mark an author post as removed`, async () => {
             const removeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToRemove.subplebbitAddress,
                 commentCid: postToRemove.cid,
@@ -44,7 +45,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(removeEdit, true);
         });
 
-        it(`A new CommentUpdate is published with removed=true`, async () => {
+        it.sequential(`A new CommentUpdate is published with removed=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: postToRemove, predicate: () => postToRemove.removed === true });
             expect(postToRemove.removed).to.be.true;
             expect(postToRemove.reason).to.equal("To remove a post");
@@ -56,10 +57,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const removedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToRemove.cid, sub.posts);
-                return removedPostInPage === undefined;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const removedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToRemove.cid, sub.posts);
+                    return removedPostInPage === undefined;
+                }
+            });
 
             await sub.stop();
 
@@ -101,7 +105,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(removeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
         });
 
-        it(`Mod can unremove a post`, async () => {
+        it.sequential(`Mod can unremove a post`, async () => {
             const unremoveEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToRemove.subplebbitAddress,
                 commentCid: postToRemove.cid,
@@ -111,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unremoveEdit, true);
         });
 
-        it(`A new CommentUpdate is published for unremoving a post`, async () => {
+        it.sequential(`A new CommentUpdate is published for unremoving a post`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: postToRemove, predicate: () => postToRemove.removed === false });
             expect(postToRemove.removed).to.be.false;
             expect(postToRemove.reason).to.equal("To unremove a post");
@@ -124,10 +128,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const unremovedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToRemove.cid, sub.posts);
-                return Boolean(unremovedPostInPage);
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const unremovedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToRemove.cid, sub.posts);
+                    return Boolean(unremovedPostInPage);
+                }
+            });
 
             await sub.stop();
 
@@ -140,7 +147,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Mods removing their own posts - ${config.name}`, async () => {
+    describe.concurrent(`Mods removing their own posts - ${config.name}`, async () => {
         let plebbit, modPost;
 
         before(async () => {
@@ -153,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`Mods can remove their own posts`, async () => {
+        it.sequential(`Mods can remove their own posts`, async () => {
             const removeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: modPost.subplebbitAddress,
                 commentCid: modPost.cid,
@@ -163,7 +170,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(removeEdit, true);
         });
 
-        it(`A new CommentUpdate is published with removed=true`, async () => {
+        it.sequential(`A new CommentUpdate is published with removed=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: () => modPost.removed === true });
             expect(modPost.removed).to.be.true;
             expect(modPost.raw.commentUpdate.removed).to.be.true;
@@ -173,7 +180,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe(`Removing reply`, async () => {
+    describe.concurrent(`Removing reply`, async () => {
         let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -187,7 +194,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`Mod can remove a reply`, async () => {
+        it.sequential(`Mod can remove a reply`, async () => {
             const removeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: replyToBeRemoved.subplebbitAddress,
                 commentCid: replyToBeRemoved.cid,
@@ -197,7 +204,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(removeEdit, true);
         });
 
-        it(`A new CommentUpdate is published for removing a reply`, async () => {
+        it.sequential(`A new CommentUpdate is published for removing a reply`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: replyToBeRemoved, predicate: () => replyToBeRemoved.removed === true });
             expect(replyToBeRemoved.removed).to.be.true;
             expect(replyToBeRemoved.reason).to.equal("To remove a reply");
@@ -210,13 +217,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await recreatedPost.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: recreatedPost, predicate: async () => {
-                const removedReply = await iterateThroughPagesToFindCommentInParentPagesInstance(
-                    replyToBeRemoved.cid,
-                    recreatedPost.replies
-                );
-                return removedReply?.removed === true;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: recreatedPost,
+                predicate: async () => {
+                    const removedReply = await iterateThroughPagesToFindCommentInParentPagesInstance(
+                        replyToBeRemoved.cid,
+                        recreatedPost.replies
+                    );
+                    return removedReply?.removed === true;
+                }
+            });
 
             await recreatedPost.stop();
             for (const pageCid of Object.values(recreatedPost.replies.pageCids)) {
@@ -248,7 +258,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult(unremoveEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
         });
-        it("Mod can unremove a reply", async () => {
+        it.sequential("Mod can unremove a reply", async () => {
             const unremoveEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: replyToBeRemoved.subplebbitAddress,
                 commentCid: replyToBeRemoved.cid,
@@ -258,7 +268,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unremoveEdit, true);
         });
 
-        it(`A new CommentUpdate is published for unremoving a reply`, async () => {
+        it.sequential(`A new CommentUpdate is published for unremoving a reply`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: replyToBeRemoved, predicate: () => replyToBeRemoved.removed === false });
             expect(replyToBeRemoved.removed).to.be.false;
             expect(replyToBeRemoved.reason).to.equal("To unremove a reply");

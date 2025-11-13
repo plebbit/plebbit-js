@@ -23,23 +23,22 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { Buffer } from "buffer";
 import { messages } from "../../../../dist/node/errors.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
-const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
-
-// TODO add a test where you load all posts using lastPostCid and compare them with pages
-
-const testPostsSort = async (sortName, subplebbit) => {
-    const posts = await loadAllPagesBySortName(sortName, subplebbit.posts);
-
-    subPostsBySortName[sortName] = posts;
-
-    await testPageCommentsIfSortedCorrectly(posts, sortName, subplebbit);
-    return posts;
-};
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`subplebbit.posts - ${config.name}`, async () => {
+    describe.concurrent(`subplebbit.posts - ${config.name}`, async () => {
+        const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
+
+        const testPostsSort = async (sortName, subplebbit) => {
+            const posts = await loadAllPagesBySortName(sortName, subplebbit.posts);
+
+            subPostsBySortName[sortName] = posts;
+
+            await testPageCommentsIfSortedCorrectly(posts, sortName, subplebbit);
+            return posts;
+        };
+
         let plebbit, newPost, subplebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -198,7 +197,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             }
         });
 
-        describe(`subplebbit.posts.validatePage - ${config.name}`, async () => {
+        describe.concurrent(`subplebbit.posts.validatePage - ${config.name}`, async () => {
             let plebbit, subplebbit, validPageJson, newPost;
 
             before(async () => {
@@ -359,7 +358,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describe(`getPage - ${config.name}`, async () => {
+    describe.concurrent(`getPage - ${config.name}`, async () => {
         it(`.getPage will throw if retrieved page has an invalid signature `, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
@@ -387,7 +386,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describe(`getPage - ${config.name}`, async () => {
+    describe.concurrent(`getPage - ${config.name}`, async () => {
         it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
             const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
             const plebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [gatewayUrl], validatePages: true } });

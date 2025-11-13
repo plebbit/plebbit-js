@@ -14,6 +14,7 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
+import { describe, it } from "vitest";
 
 const subplebbitAddress = "plebbit.eth";
 const roles = [
@@ -75,11 +76,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const posts = firstPage.comments;
             await removeAllPins(posts, plebbit);
             // wait until all posts are unpinned
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage(sub.posts.pageCids.new) : sub.posts.pages.hot;
-                const posts = firstPage.comments;
-                return posts.every((comment) => !comment.pinned);
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage(sub.posts.pageCids.new) : sub.posts.pages.hot;
+                    const posts = firstPage.comments;
+                    return posts.every((comment) => !comment.pinned);
+                }
+            });
         });
 
         after(async () => {
@@ -132,10 +136,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
-                return postInPage?.pinned;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
+                    return postInPage?.pinned;
+                }
+            });
 
             expect(Object.keys(sub.posts.pageCids).every((key) => Object.keys(POSTS_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
             await sub.stop();
@@ -165,10 +172,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
-                return postInPage?.pinned;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
+                    return postInPage?.pinned;
+                }
+            });
 
             await sub.stop();
             for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
@@ -222,10 +232,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => {
-                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
-                return !postInPage?.pinned;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
+                    return !postInPage?.pinned;
+                }
+            });
 
             await sub.stop();
 
@@ -307,10 +320,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await postToRecreate.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: postToRecreate, predicate: async () => {
-                const replyInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(replyToPin.cid, postToRecreate.replies);
-                return replyInPage?.pinned;
-            } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: postToRecreate,
+                predicate: async () => {
+                    const replyInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(replyToPin.cid, postToRecreate.replies);
+                    return replyInPage?.pinned;
+                }
+            });
 
             await postToRecreate.stop();
 
