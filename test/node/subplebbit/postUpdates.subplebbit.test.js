@@ -16,6 +16,9 @@ import {
     publishCommentWithDepth
 } from "../../../dist/node/test/test-util.js";
 import Logger from "@plebbit/plebbit-logger";
+import { describe, it } from "vitest";
+
+const depthsToTest = [1, 2, 3, 5, 15, 30];
 
 describeSkipIfRpc("subplebbit.postUpdates", async () => {
     let plebbit, subplebbit, remotePlebbit;
@@ -23,7 +26,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
-        subplebbit.setMaxListeners(100);
+        subplebbit.setMaxListeners(200);
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
@@ -64,7 +67,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await postRecreated.stop();
     });
 
-    [1, 2, 3].map((depth) => {
+    depthsToTest.map((depth) => {
         it(`Can publish a reply with depth = ${depth} to a post and fetch updates from its post's pages`, async () => {
             const log = Logger("plebbit-js:test:subplebbit:postUpdates:publishReplyWithDepth");
             // This test is flaky
@@ -73,7 +76,10 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             const parentCommentInstance = await publishCommentWithDepth({ depth: depth - 1, subplebbit });
 
             await parentCommentInstance.update();
-            await resolveWhenConditionIsTrue({ toUpdate: parentCommentInstance, predicate: () => typeof parentCommentInstance.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: parentCommentInstance,
+                predicate: () => typeof parentCommentInstance.updatedAt === "number"
+            });
 
             await forceSubplebbitToGenerateAllRepliesPages(parentCommentInstance);
             log("Forced subplebbit to generate all replies pages of comment", parentCommentInstance.cid);
@@ -94,7 +100,10 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             const intervalId = setInterval(async () => {
                 const replyFromLocalPlebbit = await plebbit.createComment({ cid: reply.cid });
                 await replyFromLocalPlebbit.update();
-                await resolveWhenConditionIsTrue({ toUpdate: replyFromLocalPlebbit, predicate: () => typeof replyFromLocalPlebbit.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: replyFromLocalPlebbit,
+                    predicate: () => typeof replyFromLocalPlebbit.updatedAt === "number"
+                });
                 console.log("reply from local plebbit", replyFromLocalPlebbit.cid, "updatedAt", replyFromLocalPlebbit.updatedAt);
                 console.log("reply from remote plebbit", replyRecreated.cid, "updatedAt", replyRecreated.updatedAt);
                 await replyFromLocalPlebbit.stop();
@@ -124,12 +133,10 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         // For example, we have a bucket 86400 which is for the last 24 hours,
         // But if we have a new bucket, 43200 for the last 12 hours, the post from previous tests should be moved to it
         subplebbit._postUpdatesBuckets = [43200, ...subplebbit._postUpdatesBuckets];
-        await resolveWhenConditionIsTrue(
-            {
-                toUpdate: subplebbit,
-                predicate: () => Object.keys(subplebbit.postUpdates).length === 1 && Object.keys(subplebbit.postUpdates)[0] === "43200",
-            }
-        );
+        await resolveWhenConditionIsTrue({
+            toUpdate: subplebbit,
+            predicate: () => Object.keys(subplebbit.postUpdates).length === 1 && Object.keys(subplebbit.postUpdates)[0] === "43200"
+        });
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["43200"]);
     });
 
@@ -149,7 +156,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await post.stop();
     });
 
-    [1, 2].map((depth) => {
+    depthsToTest.map((depth) => {
         it(`Can fetch updates from reply with depth = ${depth} with new bucket`, async () => {
             const replyCid = replyCidByDepth[depth];
 
