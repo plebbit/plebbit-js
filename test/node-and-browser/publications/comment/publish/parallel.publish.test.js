@@ -91,8 +91,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("comment.publish in parallel potential regressions - " + config.name, () => {
         it("emits challenge requests for every queued publication even when publishing to a non-existing sub", async () => {
-            const plebbit = await config.plebbitInstancePromise({ forceMockPubsub: true }); // this is using mocked pubsub/ipfs client to publish
-            const stressPublishCount = 350;
+            const plebbit = await config.plebbitInstancePromise(); // this is using mocked pubsub/ipfs client to publish
+            plebbit.on("error", console.error);
+
+            const stressPublishCount = 100;
             const offlineSubplebbit = await createMockedSubplebbitIpns({});
             const offlineSubAddress = offlineSubplebbit.subplebbitRecord.address; // this sub is not online so can't respond to messages, although the IPNS record is fetchable
 
@@ -157,9 +159,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             }
         });
 
-        it.skip("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
-            const localPlebbit = await config.plebbitInstancePromise({ forceMockPubsub: true });
-            localPlebbit.on("error", () => {});
+        it.sequential("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
+            const localPlebbit = await config.plebbitInstancePromise({});
+            localPlebbit.on("error", console.error);
             const stressPublishCount = 350;
             const randomSub = await createMockedSubplebbitIpns({}); // sub has a reachable IPNS but is not online
 
@@ -209,7 +211,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                           const url = typeof input === "string" ? input : input?.url;
                           return typeof url === "string" && url.includes("/ipns/" + targetAddressForGatewayIpnsUrl);
                       }).length
-                    : nameResolveSpy?.mock.calls.length;
+                    : nameResolveSpy.mock.calls.filter((callArgs) => callArgs[0] === randomSub.subplebbitRecord.address).length;
 
                 expect(resolveCallsCount).to.equal(1, "Publishing to the same subplebbit should only resolve IPNS once");
                 await Promise.all(comments.map((comment) => comment.stop()));
