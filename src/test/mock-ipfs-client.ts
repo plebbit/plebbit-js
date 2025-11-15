@@ -1,6 +1,7 @@
 import io, { Socket } from "socket.io-client";
 import type { PubsubClient, PubsubSubscriptionHandler } from "../types.js";
 import { v4 as uuidV4 } from "uuid";
+import { Buffer } from "buffer";
 
 const port = 25963;
 
@@ -59,29 +60,36 @@ class MockPubsubHttpClient {
         subscriptionId: string;
         topic: string;
         rawCallback: PubsubSubscriptionHandler;
-        callback: (...args: any[]) => any;
     }[];
+    private topicListeners: Map<
+        string,
+        {
+            callback: (msg: Buffer) => void;
+        }
+    >;
+    private recentlyPublishedMessages: Set<string>;
 
     constructor(dropRate?: number) {
         // dropRate should be between 0 and 1
         this.subscriptions = [];
+        this.recentlyPublishedMessages = new Set();
+        this.topicListeners = new Map();
 
         this.pubsub = {
             publish: async (topic: string, message: Uint8Array) => {
                 await ensurePubsubActive();
+                const messageKey = Buffer.from(message).toString("base64");
+                this.recentlyPublishedMessages.add(messageKey);
+                setTimeout(() => this.recentlyPublishedMessages.delete(messageKey), 30 * 1000);
                 if (typeof dropRate === "number") {
                     if (Math.random() > dropRate) ioClient.emit(topic, message);
                 } else ioClient.emit(topic, message);
             },
             subscribe: async (topic: string, rawCallback: PubsubSubscriptionHandler) => {
                 await ensurePubsubActive();
-                const callback = (msg: Buffer) => {
-                    //@ts-expect-error
-                    rawCallback({ from: undefined, seqno: undefined, topicIDs: undefined, data: new Uint8Array(msg) });
-                };
-                ioClient.on(topic, callback);
+                this._ensureTopicListener(topic);
                 const uniqueSubId = uuidV4();
-                this.subscriptions.push({ topic, rawCallback, callback, subscriptionId: uniqueSubId });
+                this.subscriptions.push({ topic, rawCallback, subscriptionId: uniqueSubId });
             },
             unsubscribe: async (topic: string, rawCallback?: PubsubSubscriptionHandler) => {
                 await ensurePubsubActive();
@@ -90,21 +98,15 @@ class MockPubsubHttpClient {
 
                     if (subscriptionsWithTopic.length === 0) return;
 
-                    subscriptionsWithTopic.forEach((sub) => {
-                        ioClient.off(topic, sub.callback);
-                        ioClient.off(topic, sub.rawCallback); // probably not needed but just to be on the safe side
-                    });
-
                     this.subscriptions = this.subscriptions.filter(
                         (sub) => !subscriptionsWithTopic.map((sub) => sub.subscriptionId).includes(sub.subscriptionId)
                     );
                 } else {
                     const toUnsubscribe = this.subscriptions.find((sub) => sub.topic === topic && sub.rawCallback === rawCallback);
                     if (!toUnsubscribe) return;
-                    ioClient.off(topic, toUnsubscribe.callback);
-                    ioClient.off(topic, toUnsubscribe.rawCallback);
                     this.subscriptions = this.subscriptions.filter((sub) => sub.subscriptionId !== toUnsubscribe.subscriptionId);
                 }
+                this._cleanupTopicListenerIfUnused(topic);
             },
             ls: async () => {
                 await ensurePubsubActive();
@@ -115,6 +117,32 @@ class MockPubsubHttpClient {
                 return [];
             }
         };
+    }
+
+    private _ensureTopicListener(topic: string) {
+        if (this.topicListeners.has(topic)) return;
+        const callback = (msg: Buffer) => {
+            const messageKey = msg.toString("base64");
+            if (this.recentlyPublishedMessages.has(messageKey)) {
+                this.recentlyPublishedMessages.delete(messageKey);
+                return;
+            }
+            const subscriptionsWithTopic = this.subscriptions.filter((sub) => sub.topic === topic);
+            if (subscriptionsWithTopic.length === 0) return;
+            const data = new Uint8Array(msg);
+            //@ts-expect-error
+            subscriptionsWithTopic.forEach((sub) => sub.rawCallback({ from: undefined!, seqno: undefined, topicIDs: undefined, data }));
+        };
+        this.topicListeners.set(topic, { callback });
+        ioClient.on(topic, callback);
+    }
+
+    private _cleanupTopicListenerIfUnused(topic: string) {
+        if (this.subscriptions.some((sub) => sub.topic === topic)) return;
+        const listener = this.topicListeners.get(topic);
+        if (!listener) return;
+        ioClient.off(topic, listener.callback);
+        this.topicListeners.delete(topic);
     }
 
     async destroy() {
