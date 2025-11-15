@@ -3,7 +3,7 @@ import { CachedTextRecordResolve, OptionsToLoadFromGateway } from "../clients/ba
 import { GenericChainProviderClient } from "../clients/chain-provider-client.js";
 import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
-import { ChainTicker } from "../types.js";
+import { ChainTicker, ResultOfFetchingSubplebbit } from "../types.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import * as remeda from "remeda";
 import type { SubplebbitIpfsType, SubplebbitJson } from "./types.js";
@@ -34,10 +34,6 @@ type SubplebbitGatewayFetch = {
         ttl?: number; // ttl in seconds of IPNS record
     };
 };
-
-type ResultOfFetchingSubplebbit =
-    | { subplebbit: SubplebbitIpfsType; cid: string } // when we fetch a new subplebbit only
-    | undefined; // undefined is when we resolve an IPNS and it's equal to subplebbit.updateCid. So no need to fetch IPFS
 
 export const MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS = 1024 * 1024; // 1mb
 
@@ -270,46 +266,48 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     // fetching subplebbit ipns here
 
     async fetchNewUpdateForSubplebbit(subAddress: SubplebbitIpfsType["address"]): Promise<ResultOfFetchingSubplebbit> {
-        const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
-        // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
+        return this._withInflightSubplebbitFetch(subAddress, async () => {
+            const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
+            // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
 
-        if (!ipnsName) throw Error("Failed to resolve subplebbit address to an IPNS name");
-        if (this._subplebbit.updateCid) this._updateCidsAlreadyLoaded.add(this._subplebbit.updateCid);
+            if (!ipnsName) throw Error("Failed to resolve subplebbit address to an IPNS name");
+            if (this._subplebbit.updateCid) this._updateCidsAlreadyLoaded.add(this._subplebbit.updateCid);
 
-        // This function should fetch SubplebbitIpfs, parse it and verify its signature
-        // Then return SubplebbitIpfs
+            // This function should fetch SubplebbitIpfs, parse it and verify its signature
+            // Then return SubplebbitIpfs
 
-        // only exception is if the ipnsRecord.value (ipfs path) has already been loaded and stored in this._updateCidsAlreadyLoaded
-        // in that case no need to fetch the subplebbitIpfs, we will return undefined
-        this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipns");
-        let subRes: ResultOfFetchingSubplebbit;
-        const areWeConnectedToKuboOrHelia =
-            Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0;
-        if (areWeConnectedToKuboOrHelia) {
-            const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
-            // we're connected to kubo or helia
-            try {
-                subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
-            } catch (e) {
-                //@ts-expect-error
-                e.details = { ...e.details, ipnsName, subAddress };
-                throw e;
-            } finally {
-                if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState("stopped", kuboRpcOrHelia._libp2pJsClientsOptions.key);
-                else this.updateKuboRpcState("stopped", kuboRpcOrHelia.url);
+            // only exception is if the ipnsRecord.value (ipfs path) has already been loaded and stored in this._updateCidsAlreadyLoaded
+            // in that case no need to fetch the subplebbitIpfs, we will return undefined
+            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipns");
+            let subRes: ResultOfFetchingSubplebbit;
+            const areWeConnectedToKuboOrHelia =
+                Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0;
+            if (areWeConnectedToKuboOrHelia) {
+                const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
+                // we're connected to kubo or helia
+                try {
+                    subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
+                } catch (e) {
+                    //@ts-expect-error
+                    e.details = { ...e.details, ipnsName, subAddress };
+                    throw e;
+                } finally {
+                    if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState("stopped", kuboRpcOrHelia._libp2pJsClientsOptions.key);
+                    else this.updateKuboRpcState("stopped", kuboRpcOrHelia.url);
+                }
+            } else subRes = await this._fetchSubplebbitFromGateways(ipnsName); // let's use gateways to fetch because we're not connected to kubo or helia
+            // States of gateways should be updated by fetchFromMultipleGateways
+            // Subplebbit records are verified within _fetchSubplebbitFromGateways
+
+            if (subRes?.subplebbit) {
+                // we found a new record that is verified
+                this._plebbit._memCaches.subplebbitForPublishing.set(
+                    subRes.subplebbit.address,
+                    remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"])
+                );
             }
-        } else subRes = await this._fetchSubplebbitFromGateways(ipnsName); // let's use gateways to fetch because we're not connected to kubo or helia
-        // States of gateways should be updated by fetchFromMultipleGateways
-        // Subplebbit records are verified within _fetchSubplebbitFromGateways
-
-        if (subRes?.subplebbit) {
-            // we found a new record that is verified
-            this._plebbit._memCaches.subplebbitForPublishing.set(
-                subRes.subplebbit.address,
-                remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"])
-            );
-        }
-        return subRes;
+            return subRes;
+        });
     }
 
     private async _fetchSubplebbitIpnsP2PAndVerify(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {

@@ -13,7 +13,7 @@ import {
 } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import type { PubsubMessage } from "../pubsub-messages/types";
-import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
+import type { ChainTicker, PubsubSubscriptionHandler, ResultOfFetchingSubplebbit } from "../types.js";
 import * as cborg from "cborg";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
@@ -25,6 +25,7 @@ import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
 import pTimeout from "p-timeout";
+import { InflightResourceTypes } from "../util/inflight-fetch-manager.js";
 
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 
@@ -858,5 +859,16 @@ export class BaseClientsManager {
 
     calculateIpfsCid(content: string) {
         return calculateIpfsCidV0(content);
+    }
+
+    protected async _withInflightSubplebbitFetch(
+        subAddress: string,
+        fetcher: () => Promise<ResultOfFetchingSubplebbit>
+    ): Promise<ResultOfFetchingSubplebbit> {
+        return this._plebbit._inflightFetchManager.withResource(
+            InflightResourceTypes.SUBPLEBBIT_IPNS,
+            subAddress,
+            fetcher
+        );
     }
 }

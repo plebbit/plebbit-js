@@ -327,19 +327,7 @@ export class PublicationClientsManager extends PlebbitClientsManager {
     }
 
     async fetchSubplebbitForPublishingWithCacheGuard(): Promise<NonNullable<Publication["_subplebbit"]>> {
-        const subAddress = this._publication.subplebbitAddress;
-        let inflight = this._plebbit._inflightSubplebbitForPublishingFetches.get(subAddress);
-        if (!inflight) {
-            inflight = this._loadSubplebbitForPublishingFromNetwork();
-            this._plebbit._inflightSubplebbitForPublishingFetches.set(subAddress, inflight);
-        }
-
-        try {
-            return await inflight;
-        } finally {
-            const currentInflight = this._plebbit._inflightSubplebbitForPublishingFetches.get(subAddress);
-            if (currentInflight === inflight) this._plebbit._inflightSubplebbitForPublishingFetches.delete(subAddress);
-        }
+        return this._loadSubplebbitForPublishingFromNetwork();
     }
 
     private async _loadSubplebbitForPublishingFromNetwork(): Promise<NonNullable<Publication["_subplebbit"]>> {

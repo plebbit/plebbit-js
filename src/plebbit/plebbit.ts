@@ -51,6 +51,7 @@ import Storage from "../runtime/node/storage.js";
 import { PlebbitClientsManager } from "./plebbit-client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../plebbit-error.js";
+import { InflightFetchManager } from "../util/inflight-fetch-manager.js";
 import type {
     CreateInstanceOfLocalOrRemoteSubplebbitOptions,
     CreateNewLocalSubplebbitParsedOptions,
@@ -134,8 +135,6 @@ import type { PageTypeJson } from "../pages/types.js";
 import { createLibp2pJsClientOrUseExistingOne } from "../helia/helia-for-plebbit.js";
 import { Libp2pJsClient } from "../helia/libp2pjsClient.js";
 
-type SubplebbitPublishingMetadata = Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
-
 export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
@@ -187,7 +186,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
     _domainResolver: DomainResolver;
-    _inflightSubplebbitForPublishingFetches: Map<SubplebbitIpfsType["address"], Promise<SubplebbitPublishingMetadata>>;
+    _inflightFetchManager: InflightFetchManager;
 
     _timeouts = {
         "subplebbit-ipns": 5 * 60 * 1000, // 5min, for resolving subplebbit IPNS, or fetching subplebbit from gateways
@@ -255,7 +254,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         this._initIpfsGatewaysIfNeeded();
         this._initChainProviders();
         this._initMemCaches();
-        this._inflightSubplebbitForPublishingFetches = new Map();
+        this._inflightFetchManager = new InflightFetchManager();
 
         if (!this.noData && !this.plebbitRpcClientsOptions)
             this.dataPath = this.parsedPlebbitOptions.dataPath =
@@ -268,6 +267,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             pageVerificationCache: new LRUCache<string, boolean>({ max: 1000 }),
             commentVerificationCache: new LRUCache<string, boolean>({ max: 5000 }),
             commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 100_000 }),
+            commentIpfs: new LRUCache<string, CommentIpfsType>({ max: 10 }),
             subplebbitForPublishing: new LRUCache({
                 max: 100,
                 ttl: 600000

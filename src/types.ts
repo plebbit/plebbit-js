@@ -18,6 +18,7 @@ import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
 import { LRUCache } from "lru-cache";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import type { PageIpfs } from "./pages/types.js";
+import type { CommentIpfsType } from "./publications/comment/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -175,11 +176,14 @@ type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: 
 
 export type JsonOfClass<T> = ExcludeMethods<OmitUnderscoreProps<T>>;
 
+export type ResultOfFetchingSubplebbit = { subplebbit: SubplebbitIpfsType; cid: string } | undefined;
+
 export type PlebbitMemCaches = {
     subplebbitVerificationCache: LRUCache<string, boolean>;
     pageVerificationCache: LRUCache<string, boolean>;
     commentVerificationCache: LRUCache<string, boolean>;
     commentUpdateVerificationCache: LRUCache<string, boolean>;
+    commentIpfs: LRUCache<string, CommentIpfsType>;
     subplebbitForPublishing: LRUCache<SubplebbitIpfsType["address"], NonNullable<Publication["_subplebbit"]>>;
     pageCidToSortTypes: LRUCache<NonNullable<PageIpfs["nextCid"]>, string[]>; // page cid => sort types
     pagesMaxSize: LRUCache<NonNullable<PageIpfs["nextCid"]>, number>; // page cid => max file size (number of bytes )

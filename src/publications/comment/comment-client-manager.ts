@@ -27,6 +27,9 @@ import {
 } from "./comment-clients.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import type { PublicationEvents } from "../types.js";
+import { InflightResourceTypes } from "../../util/inflight-fetch-manager.js";
+
+const fetchCommentLogger = Logger("plebbit-js:comment:client-manager:fetchAndVerifyCommentCid");
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
@@ -453,14 +456,33 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     // We're gonna fetch Comment Ipfs, and verify its signature and schema
     async fetchAndVerifyCommentCid(cid: string): Promise<CommentIpfsType> {
-        let commentRawString: string;
-        if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0) {
-            commentRawString = await this._fetchRawCommentCidIpfsP2P(cid);
-        } else commentRawString = await this._fetchCommentIpfsFromGateways(cid);
+        const cachedComment = this._plebbit._memCaches.commentIpfs.get(cid);
+        if (cachedComment) {
+            fetchCommentLogger.trace("Serving comment CID from cache", cid);
+            return remeda.clone(cachedComment);
+        }
 
-        const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(commentRawString)); // could throw if schema is invalid
-        await this._throwIfCommentIpfsIsInvalid(commentIpfs, cid);
-        return commentIpfs;
+        const verifiedComment = await this._plebbit._inflightFetchManager.withResource(
+            InflightResourceTypes.COMMENT_IPFS,
+            cid,
+            async () => {
+                fetchCommentLogger.trace("Fetching comment CID", cid);
+                let commentRawString: string;
+                if (
+                    Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
+                    Object.keys(this._plebbit.clients.libp2pJsClients).length > 0
+                ) {
+                    commentRawString = await this._fetchRawCommentCidIpfsP2P(cid);
+                } else commentRawString = await this._fetchCommentIpfsFromGateways(cid);
+
+                const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(commentRawString)); // could throw if schema is invalid
+                await this._throwIfCommentIpfsIsInvalid(commentIpfs, cid);
+                return commentIpfs;
+            }
+        );
+
+        this._plebbit._memCaches.commentIpfs.set(cid, verifiedComment);
+        return verifiedComment;
     }
 
     protected _isPublishing() {
