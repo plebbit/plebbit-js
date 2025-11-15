@@ -39,7 +39,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
                 const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
 
-                const targetAddress = convertBase58IpnsNameToBase36Cid(randomSub.subplebbitRecord.address);
+                const targetAddressForGatewayIpnsUrl = convertBase58IpnsNameToBase36Cid(randomSub.subplebbitRecord.address);
                 const stressCount = 100;
 
                 if (!usesGateways) {
@@ -76,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const resolveCallsCount = fetchSpy
                     ? fetchSpy.mock.calls.filter(([input]) => {
                           const url = typeof input === "string" ? input : input?.url;
-                          return typeof url === "string" && url.includes("/ipns/" + targetAddress);
+                          return typeof url === "string" && url.includes("/ipns/" + targetAddressForGatewayIpnsUrl);
                       }).length
                     : nameResolveSpy?.mock.calls.length;
 
