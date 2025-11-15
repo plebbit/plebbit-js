@@ -7,12 +7,14 @@ import {
     isPlebbitFetchingUsingGateways,
     createNewIpns,
     resolveWhenConditionIsTrue,
-    itSkipIfRpc
+    itSkipIfRpc,
+    createMockedSubplebbitIpns
 } from "../../../dist/node/test/test-util.js";
+import { convertBase58IpnsNameToBase36Cid } from "../../../dist/node/signer/util.js";
 
 import * as remeda from "remeda";
 import { _signJson } from "../../../dist/node/signer/signatures.js";
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
 
 const ensSubplebbitSigner = signers[3];
 
@@ -29,21 +31,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         itSkipIfRpc("calling update() on many instances of the same subplebbit resolves IPNS only once", async () => {
             const localPlebbit = await config.plebbitInstancePromise();
+            const randomSub = await createMockedSubplebbitIpns({});
+            let fetchSpy;
+            let nameResolveSpy;
             try {
                 const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
-                const targetAddress = signers[0].address;
+                const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
+                const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
+
+                const targetAddress = convertBase58IpnsNameToBase36Cid(randomSub.subplebbitRecord.address);
                 const stressCount = 100;
-
-                let nameResolveCalls = 0;
-
-                const wrapGatewayFetch = (clientsManager) => {
-                    const originalFetchWithLimit = clientsManager._fetchWithLimit.bind(clientsManager);
-                    clientsManager._fetchWithLimit = async (...args) => {
-                        const [url] = args;
-                        if (typeof url === "string" && url.includes("/ipns/")) nameResolveCalls += 1;
-                        return originalFetchWithLimit(...args);
-                    };
-                };
 
                 if (!usesGateways) {
                     const p2pClient =
@@ -55,21 +52,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     if (!p2pClient?.name?.resolve) {
                         throw new Error("Expected p2p client like kubo or helia RPC client with name.resolve for this test");
                     }
-                    const originalResolve = p2pClient.name.resolve.bind(p2pClient.name);
-                    p2pClient.name.resolve = (...args) => {
-                        nameResolveCalls += 1;
-                        return originalResolve(...args);
-                    };
-                } else {
-                    wrapGatewayFetch(localPlebbit._clientsManager);
+                    nameResolveSpy = vi.spyOn(p2pClient.name, "resolve");
+                } else if (shouldMockFetchForIpns) {
+                    fetchSpy = vi.spyOn(globalThis, "fetch");
                 }
 
                 const subInstances = await Promise.all(
                     new Array(stressCount).fill(null).map(async () => {
-                        const subInstance = await localPlebbit.createSubplebbit({ address: targetAddress });
-                        if (usesGateways) {
-                            wrapGatewayFetch(subInstance._clientsManager);
-                        }
+                        const subInstance = await localPlebbit.createSubplebbit({ address: randomSub.subplebbitRecord.address });
                         return subInstance;
                     })
                 );
@@ -83,11 +73,20 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     )
                 );
 
-                expect(nameResolveCalls).to.equal(
+                const resolveCallsCount = fetchSpy
+                    ? fetchSpy.mock.calls.filter(([input]) => {
+                          const url = typeof input === "string" ? input : input?.url;
+                          return typeof url === "string" && url.includes("/ipns/" + targetAddress);
+                      }).length
+                    : nameResolveSpy?.mock.calls.length;
+
+                expect(resolveCallsCount).to.equal(
                     1,
                     "Updating many subplebbit instances with the same address should only resolve IPNS once"
                 );
             } finally {
+                if (nameResolveSpy) nameResolveSpy.mockRestore();
+                if (fetchSpy) fetchSpy.mockRestore();
                 await localPlebbit.destroy();
             }
         });
