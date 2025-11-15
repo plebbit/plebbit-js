@@ -8,6 +8,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { describe, it } from "vitest";
+import { CID } from "kubo-rpc-client";
 const subplebbitSigner = signers[0];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
@@ -20,6 +21,64 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         after(async () => {
             await plebbit.destroy();
         });
+
+        // sequential because we're spying on global fetch here which may affect other tests
+        itSkipIfRpc.sequential("calling plebbit.getSubplebbit() in parallel of the same subplebbit resolves IPNS only once", async () => {
+            const localPlebbit = await config.plebbitInstancePromise();
+            const randomCid = (await plebbit.getSubplebbit(subplebbitSigner.address)).lastPostCid;
+            expect(randomCid).to.be.a("string");
+            const randomCidInGatewayUrl = CID.parse(randomCid).toV1().toString();
+            let fetchSpy;
+            let catSpy;
+            try {
+                const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
+                const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
+                const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
+
+                const stressCount = 100;
+
+                if (!usesGateways) {
+                    const p2pClient =
+                        Object.keys(localPlebbit.clients.kuboRpcClients).length > 0
+                            ? Object.values(localPlebbit.clients.kuboRpcClients)[0]._client
+                            : Object.keys(localPlebbit.clients.libp2pJsClients).length > 0
+                              ? Object.values(localPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions
+                              : undefined;
+                    if (!p2pClient?.cat) {
+                        throw new Error("Expected p2p client like kubo or helia RPC client with cat for this test");
+                    }
+                    catSpy = vi.spyOn(p2pClient, "cat");
+                } else if (shouldMockFetchForIpns) {
+                    fetchSpy = vi.spyOn(globalThis, "fetch");
+                }
+                expect(localPlebbit._updatingComments).to.deep.equal({});
+
+                const commentInstances = await Promise.all(
+                    new Array(stressCount).fill(null).map(async () => {
+                        return localPlebbit.getComment(randomCid);
+                    })
+                );
+
+                expect(localPlebbit._updatingComments).to.deep.equal({});
+
+                const catOrFetchCallsCount = fetchSpy
+                    ? fetchSpy.mock.calls.filter(([input]) => {
+                          const url = typeof input === "string" ? input : input?.url;
+                          return typeof url === "string" && url.includes("/ipfs/" + randomCidInGatewayUrl);
+                      }).length
+                    : catSpy?.mock.calls.length;
+
+                expect(catOrFetchCallsCount).to.equal(
+                    1,
+                    "calling getComment() on many comment instances with the same cid in parallel should only fetch CID once"
+                );
+            } finally {
+                if (catSpy) catSpy.mockRestore();
+                if (fetchSpy) fetchSpy.mockRestore();
+                await localPlebbit.destroy();
+            }
+        });
+
         it("post props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
