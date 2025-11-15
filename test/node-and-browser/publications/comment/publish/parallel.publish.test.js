@@ -87,13 +87,27 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 });
 
+// TODO I think we need to create a test where we publish 350 publications and test if name.resolve is called 350 times or just once
+
 describe("comment.publish parallel regression - challenge requests", () => {
     it("emits challenge requests for every queued publication even when publishing to a non-existing sub", async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient(); // this is using mocked pubsub/ipfs client to publish
         const stressPublishCount = 350;
-        const offlineSubAddress = (await createMockedSubplebbitIpns({})).subplebbitRecord.address; // this sub is not online so can't respond to messages, although the IPNS record is fetchable
+        const offlineSubplebbit = await createMockedSubplebbitIpns({});
+        const offlineSubAddress = offlineSubplebbit.subplebbitRecord.address; // this sub is not online so can't respond to messages, although the IPNS record is fetchable
+
         const challengeRequestIds = new Set();
         const externalPeerChallengeRequests = new Set();
+        const defaultKuboRpcClient = Object.values(plebbit.clients.kuboRpcClients)[0]?._client;
+        let nameResolveCalls = 0;
+        const originalNameResolve =
+            defaultKuboRpcClient?.name?.resolve && defaultKuboRpcClient.name.resolve.bind(defaultKuboRpcClient.name);
+        if (defaultKuboRpcClient && originalNameResolve) {
+            defaultKuboRpcClient.name.resolve = (...args) => {
+                nameResolveCalls += 1;
+                return originalNameResolve(...args);
+            };
+        }
 
         const externalPeer = createSocketClient("ws://localhost:25963", { reconnectionAttempts: 3, reconnectionDelay: 500 });
         await new Promise((resolve, reject) => {
@@ -138,8 +152,51 @@ describe("comment.publish parallel regression - challenge requests", () => {
                 [...externalPeerChallengeRequests].sort(),
                 "Challenge request IDs differ between local emitter and external peer"
             );
+            expect(nameResolveCalls).to.equal(1, "Subplebbit metadata for publishing should already be cached; no IPNS resolves expected");
         } finally {
+            if (defaultKuboRpcClient && originalNameResolve) defaultKuboRpcClient.name.resolve = originalNameResolve;
             externalPeer.disconnect();
+            await plebbit.destroy();
+        }
+    });
+});
+
+describe("comment.publish subplebbit cache regression", () => {
+    it("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const stressPublishCount = 350;
+        const offlineSubplebbit = await createMockedSubplebbitIpns({});
+        const offlineSubAddress = offlineSubplebbit.subplebbitRecord.address;
+        const defaultKuboRpcClient = Object.values(plebbit.clients.kuboRpcClients)[0]?._client;
+        let nameResolveCalls = 0;
+        const originalNameResolve =
+            defaultKuboRpcClient?.name?.resolve && defaultKuboRpcClient.name.resolve.bind(defaultKuboRpcClient.name);
+        if (defaultKuboRpcClient && originalNameResolve) {
+            defaultKuboRpcClient.name.resolve = (...args) => {
+                nameResolveCalls += 1;
+                return originalNameResolve(...args);
+            };
+        }
+
+        try {
+            const comments = await Promise.all(
+                new Array(stressPublishCount).fill(null).map(async (_, index) =>
+                    plebbit.createComment({
+                        subplebbitAddress: offlineSubAddress,
+                        title: `parallel publish cache regression ${index}`,
+                        content: `parallel publish cache regression content ${index}`,
+                        signer: await plebbit.createSigner()
+                    })
+                )
+            );
+
+            await Promise.all(comments.map((comment) => comment.publish()));
+
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+
+            expect(nameResolveCalls).to.equal(1, "Publishing to the same subplebbit should only resolve IPNS once");
+        } finally {
+            if (defaultKuboRpcClient && originalNameResolve) defaultKuboRpcClient.name.resolve = originalNameResolve;
             await plebbit.destroy();
         }
     });
