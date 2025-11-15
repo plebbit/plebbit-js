@@ -29,6 +29,7 @@ const publishScenarios = [
     }
 ];
 
+// TODO need to un-skip this
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.skip(`comment.publish.parallel force replies pages - ${config.name}`, () => {
         let plebbit;
@@ -159,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             }
         });
 
-        it.sequential("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
+        it("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
             const localPlebbit = await config.plebbitInstancePromise({});
             localPlebbit.on("error", console.error);
             const stressPublishCount = 350;
