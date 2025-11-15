@@ -5,8 +5,11 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import {
     createNewIpns,
     getAvailablePlebbitConfigsToTestAgainst,
+    createMockedSubplebbitIpns,
+    itSkipIfRpc,
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
+import { convertBase58IpnsNameToBase36Cid } from "../../../dist/node/signer/util.js";
 import { describe, it } from "vitest";
 
 const ensSubplebbitAddress = "plebbit.eth";
@@ -21,6 +24,61 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         after(async () => {
             await plebbit.destroy();
+        });
+
+        itSkipIfRpc("calling plebbit.getSubplebbit() in parallel of the same subplebbit resolves IPNS only once", async () => {
+            const localPlebbit = await config.plebbitInstancePromise();
+            const randomSub = await createMockedSubplebbitIpns({});
+            let fetchSpy;
+            let nameResolveSpy;
+            try {
+                const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
+                const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
+                const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
+
+                const targetAddress = convertBase58IpnsNameToBase36Cid(randomSub.subplebbitRecord.address);
+                const stressCount = 100;
+
+                if (!usesGateways) {
+                    const p2pClient =
+                        Object.keys(localPlebbit.clients.kuboRpcClients).length > 0
+                            ? Object.values(localPlebbit.clients.kuboRpcClients)[0]._client
+                            : Object.keys(localPlebbit.clients.libp2pJsClients).length > 0
+                              ? Object.values(localPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions
+                              : undefined;
+                    if (!p2pClient?.name?.resolve) {
+                        throw new Error("Expected p2p client like kubo or helia RPC client with name.resolve for this test");
+                    }
+                    nameResolveSpy = vi.spyOn(p2pClient.name, "resolve");
+                } else if (shouldMockFetchForIpns) {
+                    fetchSpy = vi.spyOn(globalThis, "fetch");
+                }
+                expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
+
+                const subInstances = await Promise.all(
+                    new Array(stressCount).fill(null).map(async () => {
+                        return localPlebbit.getSubplebbit(randomSub.subplebbitRecord.address);
+                    })
+                );
+
+                expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
+
+                const resolveCallsCount = fetchSpy
+                    ? fetchSpy.mock.calls.filter(([input]) => {
+                          const url = typeof input === "string" ? input : input?.url;
+                          return typeof url === "string" && url.includes("/ipns/" + targetAddress);
+                      }).length
+                    : nameResolveSpy?.mock.calls.length;
+
+                expect(resolveCallsCount).to.equal(
+                    1,
+                    "calling getSubplebbit() on many subplebbit instances with the same address should only resolve IPNS once"
+                );
+            } finally {
+                if (nameResolveSpy) nameResolveSpy.mockRestore();
+                if (fetchSpy) fetchSpy.mockRestore();
+                await localPlebbit.destroy();
+            }
         });
 
         it("Can load subplebbit via IPNS address", async () => {
