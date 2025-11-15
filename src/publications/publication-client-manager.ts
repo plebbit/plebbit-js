@@ -13,7 +13,8 @@ import {
     PublicationPlebbitRpcStateClient
 } from "./publication-clients.js";
 import { CommentIpfsGatewayClient, CommentKuboRpcClient } from "./comment/comment-clients.js";
-import type { SubplebbitEvents } from "../subplebbit/types.js";
+import type { SubplebbitEvents, SubplebbitIpfsType } from "../subplebbit/types.js";
+import { waitForUpdateInSubInstanceWithErrorAndTimeout } from "../util.js";
 
 export class PublicationClientsManager extends PlebbitClientsManager {
     override clients!: {
@@ -323,5 +324,43 @@ export class PublicationClientsManager extends PlebbitClientsManager {
             await this._subplebbitForUpdating.subplebbit.stop();
 
         this._subplebbitForUpdating = undefined;
+    }
+
+    async fetchSubplebbitForPublishingWithCacheGuard(): Promise<NonNullable<Publication["_subplebbit"]>> {
+        const subAddress = this._publication.subplebbitAddress;
+        let inflight = this._plebbit._inflightSubplebbitForPublishingFetches.get(subAddress);
+        if (!inflight) {
+            inflight = this._loadSubplebbitForPublishingFromNetwork();
+            this._plebbit._inflightSubplebbitForPublishingFetches.set(subAddress, inflight);
+        }
+
+        try {
+            return await inflight;
+        } finally {
+            const currentInflight = this._plebbit._inflightSubplebbitForPublishingFetches.get(subAddress);
+            if (currentInflight === inflight) this._plebbit._inflightSubplebbitForPublishingFetches.delete(subAddress);
+        }
+    }
+
+    private async _loadSubplebbitForPublishingFromNetwork(): Promise<NonNullable<Publication["_subplebbit"]>> {
+        const updatingSubInstance = await this._createSubInstanceWithStateTranslation();
+        let subIpfs: SubplebbitIpfsType;
+        if (!updatingSubInstance.subplebbit.raw.subplebbitIpfs) {
+            const timeoutMs = this._plebbit._timeouts["subplebbit-ipns"];
+            try {
+                await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
+                subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+            } catch (e) {
+                await this.cleanUpUpdatingSubInstance();
+                throw e;
+            }
+            await this.cleanUpUpdatingSubInstance();
+        } else {
+            subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+            await this.cleanUpUpdatingSubInstance();
+        }
+
+        if (!subIpfs) throw Error("Should fail properly here");
+        return subIpfs;
     }
 }

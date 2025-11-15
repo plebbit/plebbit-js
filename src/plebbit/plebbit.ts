@@ -134,6 +134,8 @@ import type { PageTypeJson } from "../pages/types.js";
 import { createLibp2pJsClientOrUseExistingOne } from "../helia/helia-for-plebbit.js";
 import { Libp2pJsClient } from "../helia/libp2pjsClient.js";
 
+type SubplebbitPublishingMetadata = Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
+
 export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
@@ -185,6 +187,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
     _domainResolver: DomainResolver;
+    _inflightSubplebbitForPublishingFetches: Map<SubplebbitIpfsType["address"], Promise<SubplebbitPublishingMetadata>>;
 
     _timeouts = {
         "subplebbit-ipns": 5 * 60 * 1000, // 5min, for resolving subplebbit IPNS, or fetching subplebbit from gateways
@@ -252,6 +255,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         this._initIpfsGatewaysIfNeeded();
         this._initChainProviders();
         this._initMemCaches();
+        this._inflightSubplebbitForPublishingFetches = new Map();
 
         if (!this.noData && !this.plebbitRpcClientsOptions)
             this.dataPath = this.parsedPlebbitOptions.dataPath =
