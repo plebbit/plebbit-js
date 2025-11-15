@@ -185,6 +185,7 @@ describe("mock pubsub client with socket.io server", () => {
 
     it("cleans up socket listeners when subscribing/unsubscribing repeatedly", async () => {
         const client = createMockPubsubClient();
+        const publisher = createMockPubsubClient();
         await waitForMockPubsubConnection();
         const topic = `churn-${randomUUID()}`;
         const payload = Buffer.from("ping");
@@ -195,15 +196,16 @@ describe("mock pubsub client with socket.io server", () => {
                 calls += 1;
             };
             await client.pubsub.subscribe(topic, handler);
-            await client.pubsub.publish(topic, payload);
+            await publisher.pubsub.publish(topic, payload);
             await waitForCondition(() => calls === 1);
             await client.pubsub.unsubscribe(topic, handler);
-            await client.pubsub.publish(topic, payload);
+            await publisher.pubsub.publish(topic, payload);
             await sleep(50);
             expect(calls).to.equal(1, `subscription iteration ${i} should not receive messages after unsubscribe`);
         }
 
         await client.destroy();
+        await publisher.destroy();
     });
 
     it("allows other clients to continue after one client destroys itself mid-stream", async () => {
@@ -225,6 +227,7 @@ describe("mock pubsub client with socket.io server", () => {
         await publisher.pubsub.publish(topic, Buffer.from("first"));
         await waitForCondition(() => survivorCount === 1 && doomedCount === 1);
 
+        await doomed.pubsub.unsubscribe(topic);
         await doomed.destroy();
 
         await publisher.pubsub.publish(topic, Buffer.from("second"));
