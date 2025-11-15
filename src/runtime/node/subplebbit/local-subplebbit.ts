@@ -161,6 +161,7 @@ import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/sub
 import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
+import { iterateOverPageCidsToFindAllCids } from "../../../pages/util.js";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
@@ -595,6 +596,39 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
+    private async _addOldPageCidsToCidsToUnpin(
+        curPages: CommentUpdateType["replies"] | SubplebbitIpfsType["posts"] | SubplebbitIpfsType["modQueue"],
+        newPages: CommentUpdateType["replies"] | SubplebbitIpfsType["posts"] | SubplebbitIpfsType["modQueue"]
+    ) {
+        if (!curPages && !newPages) return;
+        else if (curPages && !newPages) {
+            // we had to reset our sub pages, maybe because we purged all comments or changed subplebbit address
+            const allPageCidsUnderCurPages = await iterateOverPageCidsToFindAllCids({
+                pages: curPages,
+                clientManager: this._clientsManager
+            });
+            allPageCidsUnderCurPages.forEach((cid) => {
+                this._cidsToUnPin.add(cid);
+                // this._blocksToRm.push(cid);
+            });
+        } else if (curPages && newPages) {
+            // need to find cids for both, and compare them and only keep ones in newPages
+            const allPageCidsUnderCurPages = await iterateOverPageCidsToFindAllCids({
+                pages: curPages,
+                clientManager: this._clientsManager
+            });
+            const allPageCidsUnderNewPages = await iterateOverPageCidsToFindAllCids({
+                pages: newPages,
+                clientManager: this._clientsManager
+            });
+            const cidsToUnpin = remeda.difference(allPageCidsUnderCurPages, allPageCidsUnderNewPages);
+            cidsToUnpin.forEach((cid) => {
+                this._cidsToUnPin.add(cid);
+                // this._blocksToRm.push(cid);
+            });
+        }
+    }
+
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
         const log = Logger("plebbit-js:local-subplebbit:sync:updateSubplebbitIpnsIfNeeded");
 
@@ -671,27 +705,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     pageCids: generatedPosts.pageCids,
                     pages: remeda.pick(generatedPosts.pages, [preloadedPostsPages])
                 };
-                const newPageCids = remeda.unique(Object.values(generatedPosts.pageCids));
-                const pageCidsToUnPin = remeda.unique(
-                    Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
-                );
-
-                pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
             }
-        } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
+        } else {
+            await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
+            // TODO make sure to capture this.posts cids to unpin
+        }
+
+        this._addOldPageCidsToCidsToUnpin(this.raw.subplebbitIpfs?.posts, newIpns.posts).catch((err) =>
+            log.error("Failed to add old page cids of subplebbit.posts to _cidsToUnpin", err)
+        );
 
         if (newModQueue) {
             newIpns.modQueue = { pageCids: newModQueue.pageCids };
-            const newModQueuePageCids = remeda.unique(Object.values(newModQueue.pageCids));
-            const modQueuePageCidsToUnPin = remeda.unique(
-                Object.values(this.modQueue.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
-            );
-
-            modQueuePageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         } else {
             await this._updateDbInternalState({ modQueue: undefined });
             this.modQueue.resetPages();
         }
+
+        this._addOldPageCidsToCidsToUnpin(this.raw.subplebbitIpfs?.modQueue, newIpns.modQueue).catch((err) =>
+            log.error("Failed to add old page cids of subplebbit.modQueue to _cidsToUnpin", err)
+        );
 
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
@@ -1903,13 +1936,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     pageCids: generatedRepliesPages.pageCids,
                     pages: remeda.pick(generatedRepliesPages.pages, [preloadedRepliesPages])
                 };
-                const newPageCids = remeda.unique(Object.values(generatedRepliesPages.pageCids));
-                const pageCidsToUnPin = remeda.unique(
-                    Object.values(storedCommentUpdate?.replies?.pageCids || {}).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
-                );
-                pageCidsToUnPin.forEach((pageCid) => this._cidsToUnPin.add(pageCid));
             }
+        } else {
+            commentUpdatePriorToSigning.replies = undefined;
         }
+
+        this._addOldPageCidsToCidsToUnpin(storedCommentUpdate?.replies, commentUpdatePriorToSigning.replies).catch((err) =>
+            log.error("Failed to add old page cids of comment.replies to _cidsToUnpin", err)
+        );
 
         const newCommentUpdate: CommentUpdateType = {
             ...commentUpdatePriorToSigning,

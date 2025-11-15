@@ -15,10 +15,13 @@ import assert from "assert";
 import { BasePages, PostsPages, RepliesPages } from "./pages.js";
 
 import * as remeda from "remeda";
-import type { CommentWithinModQueuePageJson, CommentWithinRepliesPostsPageJson } from "../publications/comment/types.js";
+import type { CommentWithinModQueuePageJson, CommentWithinRepliesPostsPageJson, CommentUpdateType } from "../publications/comment/types.js";
 import { shortifyAddress, shortifyCid } from "../util.js";
 import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "../publications/comment/schema.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
+import { BaseClientsManager } from "../clients/base-client-manager.js";
+import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 3600, // 60 * 60
@@ -321,4 +324,99 @@ export function findCommentInPageInstanceRecursively(
     }
 
     return undefined;
+}
+
+const FIRST_PAGE_MAX_FILE_SIZE_BYTES = 1024 * 1024;
+
+type PendingPageCid = { cid: string; maxSize: number };
+type PagesSource =
+    | NonNullable<SubplebbitIpfsType["posts"]>
+    | NonNullable<CommentUpdateType["replies"] | NonNullable<SubplebbitIpfsType["modQueue"]>>;
+
+export async function iterateOverPageCidsToFindAllCids(opts: { pages: PagesSource; clientManager: BaseClientsManager }): Promise<string[]> {
+    if (!opts?.pages) throw Error("expected pages to be defined when iterating over page cids");
+    const { pages, clientManager } = opts;
+
+    const timeoutMs = clientManager._plebbit._timeouts["page-ipfs"];
+    const visited = new Set<string>();
+    const queued = new Map<string, PendingPageCid>();
+    const queue: PendingPageCid[] = [];
+    const collectedCids: string[] = [];
+    const collectedSet = new Set<string>();
+
+    const addCidToResult = (cid: string) => {
+        if (collectedSet.has(cid)) return;
+        collectedSet.add(cid);
+        collectedCids.push(cid);
+    };
+
+    const enqueue = (cid: string | undefined, maxSize: number, addToResultFlag = true) => {
+        if (typeof cid !== "string" || cid.length === 0 || visited.has(cid)) return;
+        if (addToResultFlag) addCidToResult(cid);
+        const existingEntry = queued.get(cid);
+        if (existingEntry) {
+            if (existingEntry.maxSize >= maxSize) return;
+            existingEntry.maxSize = maxSize;
+            return;
+        }
+        const entry: PendingPageCid = { cid, maxSize };
+        queued.set(cid, entry);
+        queue.push(entry);
+    };
+
+    const initialPageCids = Array.from(
+        new Set(Object.values(pages.pageCids ?? {}).filter((cid): cid is string => typeof cid === "string" && cid.length > 0))
+    );
+    initialPageCids.forEach((cid) => enqueue(cid, FIRST_PAGE_MAX_FILE_SIZE_BYTES));
+
+    const preloadedPages = "pages" in pages ? Object.values(pages.pages ?? {}) : [];
+    for (const preloadedPage of preloadedPages)
+        if (typeof preloadedPage?.nextCid === "string" && preloadedPage.nextCid.length > 0)
+            enqueue(preloadedPage.nextCid, FIRST_PAGE_MAX_FILE_SIZE_BYTES * 2);
+
+    const fetchPage = async (cid: string, maxSizeBytes: number): Promise<PageIpfs> => {
+        const rawPage = await clientManager._fetchCidP2P(cid, { maxFileSizeBytes: maxSizeBytes, timeoutMs });
+        const parsedPage = parseJsonWithPlebbitErrorIfFails(rawPage);
+        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parsedPage);
+        return pageIpfs;
+    };
+
+    while (queue.length) {
+        const batch = queue.splice(0);
+
+        // Fetch the current batch concurrently to reduce latency across sorts.
+        const batchResults = await Promise.all(
+            batch.map(async ({ cid, maxSize }) => {
+                if (visited.has(cid)) return { status: "skipped" as const };
+                try {
+                    const page = await fetchPage(cid, maxSize);
+                    return { status: "success" as const, cid, page, maxSize };
+                } catch (error) {
+                    return { status: "error" as const, cid, error };
+                }
+            })
+        );
+
+        for (const result of batchResults) {
+            if (result.status === "skipped") continue;
+            if (result.status === "error") {
+                visited.add(result.cid);
+                queued.delete(result.cid);
+                continue;
+            }
+
+            const { cid, page, maxSize } = result;
+            if (visited.has(cid)) continue;
+
+            visited.add(cid);
+            queued.delete(cid);
+
+            if (!page.nextCid || visited.has(page.nextCid)) continue;
+
+            const expectedNextPageSize = Math.max(maxSize * 2, FIRST_PAGE_MAX_FILE_SIZE_BYTES);
+            enqueue(page.nextCid, expectedNextPageSize);
+        }
+    }
+
+    return collectedCids;
 }
