@@ -6,7 +6,8 @@ import {
     getAvailablePlebbitConfigsToTestAgainst,
     isPlebbitFetchingUsingGateways,
     createNewIpns,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    itSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
@@ -24,6 +25,71 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         after(async () => {
             await plebbit.destroy();
+        });
+
+        itSkipIfRpc("calling update() on many instances of the same subplebbit resolves IPNS only once", async () => {
+            const localPlebbit = await config.plebbitInstancePromise();
+            try {
+                const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
+                const targetAddress = signers[0].address;
+                const stressCount = 100;
+
+                let nameResolveCalls = 0;
+
+                const wrapGatewayFetch = (clientsManager) => {
+                    const originalFetchWithLimit = clientsManager._fetchWithLimit.bind(clientsManager);
+                    clientsManager._fetchWithLimit = async (...args) => {
+                        const [url] = args;
+                        if (typeof url === "string" && url.includes("/ipns/")) nameResolveCalls += 1;
+                        return originalFetchWithLimit(...args);
+                    };
+                };
+
+                if (!usesGateways) {
+                    const p2pClient =
+                        Object.keys(localPlebbit.clients.kuboRpcClients).length > 0
+                            ? Object.values(localPlebbit.clients.kuboRpcClients)[0]._client
+                            : Object.keys(localPlebbit.clients.libp2pJsClients).length > 0
+                              ? Object.values(localPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions
+                              : undefined;
+                    if (!p2pClient?.name?.resolve) {
+                        throw new Error("Expected p2p client like kubo or helia RPC client with name.resolve for this test");
+                    }
+                    const originalResolve = p2pClient.name.resolve.bind(p2pClient.name);
+                    p2pClient.name.resolve = (...args) => {
+                        nameResolveCalls += 1;
+                        return originalResolve(...args);
+                    };
+                } else {
+                    wrapGatewayFetch(localPlebbit._clientsManager);
+                }
+
+                const subInstances = await Promise.all(
+                    new Array(stressCount).fill(null).map(async () => {
+                        const subInstance = await localPlebbit.createSubplebbit({ address: targetAddress });
+                        if (usesGateways) {
+                            wrapGatewayFetch(subInstance._clientsManager);
+                        }
+                        return subInstance;
+                    })
+                );
+
+                expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
+
+                await Promise.all(subInstances.map((sub) => sub.update()));
+                await Promise.all(
+                    subInstances.map((sub) =>
+                        resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" })
+                    )
+                );
+
+                expect(nameResolveCalls).to.equal(
+                    1,
+                    "Updating many subplebbit instances with the same address should only resolve IPNS once"
+                );
+            } finally {
+                await localPlebbit.destroy();
+            }
         });
 
         it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
