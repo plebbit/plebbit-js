@@ -201,6 +201,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
             throw Error("Helia 'add' is not supported");
         },
         async stop(options) {
+            if (!libp2pJsClients[plebbitOptions.key]) return; // already been stopped
             libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance--;
             if (libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance === 0) {
                 for (const topic of helia.libp2p.services.pubsub.getTopics()) helia.libp2p.services.pubsub.unsubscribe(topic);
