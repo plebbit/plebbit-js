@@ -1960,9 +1960,23 @@ export function mockReplyToUseParentPagesForUpdates(reply: Comment) {
         // this should stop plebbit-js from assuming the post replies is a single preloaded page
         const updatingSubInstance = reply._plebbit._updatingSubplebbits[postInstance.subplebbitAddress];
         const updatingParentInstance = reply._plebbit._updatingComments[reply.parentCid!];
-        if (postInstance.replies.pages.best) postInstance.replies.pages.best.comments = [];
-        if (updatingSubInstance?.posts.pages.hot) updatingSubInstance.posts.pages.hot.comments = [];
-        if (updatingParentInstance?.replies?.pages?.best) updatingParentInstance.replies.pages.best.comments = [];
+
+        if (postInstance.replies.pages)
+            Object.keys(postInstance.replies.pages).forEach((preloadedPageKey) => {
+                if (postInstance.replies.pages[preloadedPageKey]?.comments) postInstance.replies.pages[preloadedPageKey]!.comments = [];
+            });
+
+        if (updatingSubInstance?.posts.pages)
+            Object.keys(updatingSubInstance.posts.pages).forEach((preloadedPageKey) => {
+                if (updatingSubInstance.posts.pages[preloadedPageKey]?.comments)
+                    updatingSubInstance.posts.pages[preloadedPageKey].comments = [];
+            });
+
+        if (updatingParentInstance?.replies?.pages)
+            Object.keys(updatingParentInstance.replies.pages).forEach((preloadedPageKey) => {
+                if (updatingParentInstance.replies.pages[preloadedPageKey]?.comments)
+                    updatingParentInstance.replies.pages[preloadedPageKey].comments = [];
+            });
         return originalFunc(postInstance);
     };
 }
