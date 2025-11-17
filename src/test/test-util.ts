@@ -42,6 +42,7 @@ import {
 } from "../signer/signatures.js";
 import { BasePages, PostsPages, RepliesPages } from "../pages/pages.js";
 import {
+    findCommentInHierarchicalPageIpfsRecursively,
     findCommentInPageInstance,
     findCommentInPageInstanceRecursively,
     mapPageIpfsCommentToPageJsonComment,
@@ -57,6 +58,8 @@ import type {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
+    DecryptedChallengeRequest,
+    DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerificationMessageType,
     PubsubMessage
 } from "../pubsub-messages/types.js";
@@ -65,9 +68,10 @@ import env from "../version.js";
 import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
-import type { PageTypeJson } from "../pages/types.js";
+import type { PageIpfs, PageTypeJson } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { messages } from "../errors.js";
+import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../publications/comment/comment-client-manager.js";
 
 interface MockPlebbitOptions {
     plebbitOptions?: InputPlebbitOptions;
@@ -237,8 +241,8 @@ async function _mockSubplebbitPlebbit(signer: SignerType[], plebbitOptions: Inpu
     return plebbit;
 }
 
-async function _startMathCliSubplebbit(signer: SignerType, plebbit: Plebbit) {
-    const subplebbit = <LocalSubplebbit | RpcLocalSubplebbit>await plebbit.createSubplebbit({ signer });
+async function _startMathCliSubplebbit(signer: SignerType, plebbit: Plebbit): Promise<LocalSubplebbit> {
+    const subplebbit = <LocalSubplebbit>await plebbit.createSubplebbit({ signer });
 
     await subplebbit.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
 
@@ -246,9 +250,9 @@ async function _startMathCliSubplebbit(signer: SignerType, plebbit: Plebbit) {
     return subplebbit;
 }
 
-async function _startEnsSubplebbit(signers: SignerType[], plebbit: Plebbit) {
+async function _startEnsSubplebbit(signers: SignerType[], plebbit: Plebbit): Promise<LocalSubplebbit> {
     const signer = await plebbit.createSigner(signers[3]);
-    const subplebbit = await createSubWithNoChallenge({ signer }, plebbit);
+    const subplebbit = (await createSubWithNoChallenge({ signer }, plebbit)) as LocalSubplebbit;
     await subplebbit.edit({
         roles: {
             [signers[1].address]: { role: "owner" },
@@ -332,24 +336,24 @@ async function _populateSubplebbit(
 // Sub label -> address
 type TestServerSubs = {
     // string will be the address
-    onlineSub?: string;
-    ensSub: string;
-    mainSub: string;
-    mathSub: string;
-    NoPubsubResponseSub: string;
-    mathCliSubWithNoMockedPubsub: string;
-    subForPurge: string;
-    subForRemove: string;
-    subForDelete: string;
-    subForChainProviders: string;
-    subForEditContent: string;
-    subForLocked: string;
+    onlineSub?: LocalSubplebbit;
+    ensSub: LocalSubplebbit;
+    mainSub: LocalSubplebbit;
+    mathSub: LocalSubplebbit;
+    NoPubsubResponseSub: LocalSubplebbit;
+    mathCliSubWithNoMockedPubsub: LocalSubplebbit;
+    subForPurge: LocalSubplebbit;
+    subForRemove: LocalSubplebbit;
+    subForDelete: LocalSubplebbit;
+    subForChainProviders: LocalSubplebbit;
+    subForEditContent: LocalSubplebbit;
+    subForLocked: LocalSubplebbit;
 };
 
 export async function startOnlineSubplebbit() {
     const onlinePlebbit = await createOnlinePlebbit();
 
-    const onlineSub = <LocalSubplebbit | RpcLocalSubplebbit>await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
+    const onlineSub = <LocalSubplebbit>await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
 
     await onlineSub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
 
@@ -375,7 +379,7 @@ export async function startSubplebbits(props: {
         publishInterval: 1000,
         updateInterval: 1000
     });
-    const mainSub = await createSubWithNoChallenge({ signer: props.signers[0] }, plebbit); // most publications will be on this sub
+    const mainSub = (await createSubWithNoChallenge({ signer: props.signers[0] }, plebbit)) as LocalSubplebbit; // most publications will be on this sub
 
     await mainSub.start();
 
@@ -390,7 +394,7 @@ export async function startSubplebbits(props: {
     if (props.startOnlineSub) onlineSub = await startOnlineSubplebbit();
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 
-    const subWithNoResponse = await createSubWithNoChallenge({ signer: props.signers[4] }, plebbit);
+    const subWithNoResponse = (await createSubWithNoChallenge({ signer: props.signers[4] }, plebbit)) as LocalSubplebbit;
     await subWithNoResponse.start();
 
     await new Promise((resolve) => subWithNoResponse.once("update", resolve));
@@ -405,7 +409,7 @@ export async function startSubplebbits(props: {
     const mathCliSubWithNoMockedPubsub = await _startMathCliSubplebbit(props.signers[5], plebbitNoMockedSub);
     await new Promise((resolve) => mathCliSubWithNoMockedPubsub.once("update", resolve));
 
-    const subForPurge = await createSubWithNoChallenge({ signer: props.signers[6] }, plebbit);
+    const subForPurge = (await createSubWithNoChallenge({ signer: props.signers[6] }, plebbit)) as LocalSubplebbit;
     await subForPurge.edit({
         roles: {
             [props.signers[1].address]: { role: "owner" },
@@ -416,7 +420,7 @@ export async function startSubplebbits(props: {
     await subForPurge.start();
     await new Promise((resolve) => subForPurge.once("update", resolve));
 
-    const subForRemove = await createSubWithNoChallenge({ signer: props.signers[7] }, plebbit);
+    const subForRemove = (await createSubWithNoChallenge({ signer: props.signers[7] }, plebbit)) as LocalSubplebbit;
     await subForRemove.edit({
         roles: {
             [props.signers[1].address]: { role: "owner" },
@@ -427,7 +431,7 @@ export async function startSubplebbits(props: {
     await subForRemove.start();
     await new Promise((resolve) => subForRemove.once("update", resolve));
 
-    const subForDelete = await createSubWithNoChallenge({ signer: props.signers[8] }, plebbit);
+    const subForDelete = (await createSubWithNoChallenge({ signer: props.signers[8] }, plebbit)) as LocalSubplebbit;
     await subForDelete.edit({
         roles: {
             [props.signers[1].address]: { role: "owner" },
@@ -438,11 +442,11 @@ export async function startSubplebbits(props: {
     await subForDelete.start();
     await new Promise((resolve) => subForDelete.once("update", resolve));
 
-    const subForChainProviders = await createSubWithNoChallenge({ signer: props.signers[9] }, plebbit);
+    const subForChainProviders = (await createSubWithNoChallenge({ signer: props.signers[9] }, plebbit)) as LocalSubplebbit;
     await subForChainProviders.start();
     await new Promise((resolve) => subForChainProviders.once("update", resolve));
 
-    const subForEditContent = await createSubWithNoChallenge({ signer: props.signers[10] }, plebbit);
+    const subForEditContent = (await createSubWithNoChallenge({ signer: props.signers[10] }, plebbit)) as LocalSubplebbit;
     await subForEditContent.edit({
         roles: {
             [props.signers[1].address]: { role: "owner" },
@@ -453,7 +457,7 @@ export async function startSubplebbits(props: {
     await subForEditContent.start();
     await new Promise((resolve) => subForEditContent.once("update", resolve));
 
-    const subForLocked = await createSubWithNoChallenge({ signer: props.signers[11] }, plebbit);
+    const subForLocked = (await createSubWithNoChallenge({ signer: props.signers[11] }, plebbit)) as LocalSubplebbit;
     await subForLocked.edit({
         roles: {
             [props.signers[1].address]: { role: "owner" },
@@ -465,18 +469,18 @@ export async function startSubplebbits(props: {
     await new Promise((resolve) => subForLocked.once("update", resolve));
 
     return {
-        onlineSub: onlineSub?.address,
-        mathSub: mathSub.address,
-        ensSub: ensSub.address,
-        mainSub: mainSub.address,
-        NoPubsubResponseSub: subWithNoResponse.address,
-        mathCliSubWithNoMockedPubsub: mathCliSubWithNoMockedPubsub.address,
-        subForPurge: subForPurge.address,
-        subForRemove: subForRemove.address,
-        subForDelete: subForDelete.address,
-        subForChainProviders: subForChainProviders.address,
-        subForEditContent: subForEditContent.address,
-        subForLocked: subForLocked.address
+        onlineSub: onlineSub,
+        mathSub: mathSub,
+        ensSub: ensSub,
+        mainSub: mainSub,
+        NoPubsubResponseSub: subWithNoResponse,
+        mathCliSubWithNoMockedPubsub: mathCliSubWithNoMockedPubsub,
+        subForPurge: subForPurge,
+        subForRemove: subForRemove,
+        subForDelete: subForDelete,
+        subForChainProviders: subForChainProviders,
+        subForEditContent: subForEditContent,
+        subForLocked: subForLocked
     };
 }
 
