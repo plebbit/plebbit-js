@@ -1344,6 +1344,34 @@ export class DbHandler {
         return results.map((r) => this._parseCommentsTableRow(r));
     }
 
+    queryFirstCommentWithDepth(commentDepth: number): CommentsTableRow | undefined {
+        if (!Number.isInteger(commentDepth) || commentDepth < 0) throw new Error("commentDepth must be a non-negative integer");
+        const exactDepthRow = this._db
+            .prepare(
+                `SELECT c.* FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.subplebbitAddress = @subplebbitAddress
+                   AND c.depth = @commentDepth
+                 ORDER BY COALESCE(cu.replyCount, 0) DESC
+                 LIMIT 1`
+            )
+            .get({ subplebbitAddress: this._subplebbit.address, commentDepth }) as CommentsTableRow | undefined;
+        if (exactDepthRow) return this._parseCommentsTableRow(exactDepthRow);
+
+        const lowerDepthRow = this._db
+            .prepare(
+                `SELECT c.* FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.subplebbitAddress = @subplebbitAddress
+                   AND c.depth < @commentDepth
+                 ORDER BY c.depth DESC, COALESCE(cu.replyCount, 0) DESC
+                 LIMIT 1`
+            )
+            .get({ subplebbitAddress: this._subplebbit.address, commentDepth }) as CommentsTableRow | undefined;
+        if (!lowerDepthRow) return undefined;
+        return this._parseCommentsTableRow(lowerDepthRow);
+    }
+
     queryCombinedHashOfPendingComments(): string {
         const rows = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC`).all() as {
             cid: string;

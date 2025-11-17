@@ -735,8 +735,63 @@ const setUpMockPubsubServer = async () => {
         });
 
         http.createServer(async (req, res) => {
+            const sendJson = (statusCode, payload) => {
+                res.writeHead(statusCode, { "Content-Type": "application/json" });
+                res.end(JSON.stringify(payload));
+            };
+
             res.setHeader("Access-Control-Allow-Origin", "*");
-            res.end(JSON.stringify(subs));
+            if (!req.url) throw new Error("Request URL is required");
+
+            if (req.method === "OPTIONS") {
+                res.writeHead(204);
+                res.end();
+                return;
+            }
+
+            const parsedUrl = url.parse(req.url);
+            const pathname = parsedUrl.pathname || "/";
+
+            if (pathname === "/running-subs") {
+                if (req.method !== "GET") throw new Error("Method not allowed for /running-subs");
+                const runningSubs = Object.entries(subs).reduce((acc, [key, subInstance]) => {
+                    if (subInstance?.address) acc[key] = subInstance.address;
+                    return acc;
+                }, {});
+                return sendJson(200, runningSubs);
+            }
+
+            if (pathname === "/find-comment-with-depth") {
+                if (req.method !== "GET") throw new Error("Method not allowed for /find-comment-with-depth");
+                const query = querystring.parse(parsedUrl.query ?? "");
+                const subAddressParam = Array.isArray(query.subAddress) ? query.subAddress[0] : query.subAddress;
+                const depthParam = Array.isArray(query.commentDepth) ? query.commentDepth[0] : query.commentDepth;
+
+                if (typeof subAddressParam !== "string" || subAddressParam.trim().length === 0)
+                    throw new Error("subAddress query parameter is required");
+                if (typeof depthParam !== "string" || depthParam.trim().length === 0)
+                    throw new Error("commentDepth query parameter is required");
+
+                const commentDepth = Number(depthParam);
+                if (!Number.isInteger(commentDepth) || commentDepth < 0)
+                    throw new Error("commentDepth must be a non-negative integer");
+
+                const normalizedAddress = subAddressParam.trim();
+                const [, subInstance] =
+                    Object.entries(subs).find(([, sub]) => sub?.address === normalizedAddress) || [];
+                if (!subInstance) throw new Error(`Subplebbit ${normalizedAddress} not found`);
+
+                const dbHandler = subInstance._dbHandler;
+                if (!dbHandler) throw new Error(`dbHandler is not ready for ${normalizedAddress}`);
+
+                const comment = dbHandler.queryFirstCommentWithDepth(commentDepth);
+                if (!comment)
+                    throw new Error(`No comment found with depth ${commentDepth} or lower for ${normalizedAddress}`);
+
+                return sendJson(200, comment);
+            }
+
+            return sendJson(404, { error: "Route not found" });
         }).listen(14953, hostName);
     }
 

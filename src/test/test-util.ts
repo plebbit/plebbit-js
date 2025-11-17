@@ -26,6 +26,7 @@ import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type {
     CommentIpfsWithCidDefined,
     CommentIpfsWithCidPostCidDefined,
+    CommentsTableRow,
     CommentWithinRepliesPostsPageJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
@@ -1720,9 +1721,55 @@ export async function findOrPublishCommentWithDepth({
 
     if (commentFromPreloadedPages) return plebbitWithDefault.createComment(commentFromPreloadedPages);
 
-    let curComment = await publishRandomPost(subplebbit.address, plebbitWithDefault);
+    let curComment: Comment;
+    let closestCommentFromHot: PageTypeJson["comments"][0] | undefined;
+
+    if (subplebbit.posts.pages.hot) {
+        let maxDepthFound = -1;
+        processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
+            const commentDepth = comment.depth ?? 0;
+            if (commentDepth <= depth && commentDepth > maxDepthFound) {
+                maxDepthFound = commentDepth;
+                closestCommentFromHot = comment as PageTypeJson["comments"][0];
+            }
+        });
+    }
+
+    if (closestCommentFromHot) {
+        curComment = await plebbitWithDefault.createComment(closestCommentFromHot);
+    } else {
+        curComment = await publishRandomPost(subplebbit.address, plebbitWithDefault);
+    }
+
     if (curComment.depth === depth) return curComment;
 
+    while (curComment.depth! < depth) {
+        curComment = await publishRandomReply(curComment as CommentIpfsWithCidDefined, plebbitWithDefault, {});
+        if (curComment.depth === depth) return curComment;
+    }
+    throw Error("Failed to find or publish comment with depth");
+}
+
+export async function findOrPublishCommentWithDepthWithHttpServerShortcut({
+    depth,
+    subplebbit,
+    plebbit
+}: {
+    depth: number;
+    subplebbit: RemoteSubplebbit;
+    plebbit?: Plebbit;
+}): Promise<Comment> {
+    const plebbitWithDefault = plebbit || subplebbit._plebbit;
+
+    const queryUrl = `http://localhost:14953/find-comment-with-depth?subAddress=${subplebbit.address}&commentDepth=${depth}`;
+
+    const commentWithSameDepthOrClosest: CommentsTableRow = <any>await (await fetch(queryUrl)).json();
+
+    if (commentWithSameDepthOrClosest.depth === depth) {
+        return plebbitWithDefault.createComment(commentWithSameDepthOrClosest);
+    }
+
+    let curComment = await publishRandomReply(commentWithSameDepthOrClosest, plebbitWithDefault);
     while (curComment.depth! < depth) {
         curComment = await publishRandomReply(curComment as CommentIpfsWithCidDefined, plebbitWithDefault, {});
         if (curComment.depth === depth) return curComment;
