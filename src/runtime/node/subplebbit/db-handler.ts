@@ -30,7 +30,6 @@ import type {
     CommentIpfsType,
     CommentsTableRow,
     CommentsTableRowInsert,
-    CommentUpdateForDisapprovedPendingComment,
     CommentUpdatesRow,
     CommentUpdatesTableRowInsert,
     CommentUpdateType,
@@ -38,7 +37,6 @@ import type {
 } from "../../../publications/comment/types.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentEdit, verifyCommentIpfs } from "../../../signer/signatures.js";
-import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs, RepliesPagesTypeIpfs } from "../../../pages/types.js";
 import type { CommentModerationsTableRowInsert, CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
@@ -66,6 +64,11 @@ const TABLES = Object.freeze({
     COMMENT_MODERATIONS: "commentModerations",
     COMMENT_EDITS: "commentEdits"
 });
+
+export interface PurgedCommentTableRows {
+    commentTableRow: CommentsTableRow;
+    commentUpdateTableRow?: CommentUpdatesRow;
+}
 
 export class DbHandler {
     private _db!: BetterSqlite3Database;
@@ -1496,7 +1499,7 @@ export class DbHandler {
 
     purgeDisapprovedCommentsOlderThan(
         retentionSeconds: number
-    ): { cid: string; parentCid?: string | null; postUpdatesBucket?: number; purgedCids: string[] }[] | undefined {
+    ): { cid: string; parentCid?: string | null; postUpdatesBucket?: number; purgedTableRows: PurgedCommentTableRows[] }[] | undefined {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeDisapprovedCommentsOlderThan");
         if (!Number.isFinite(retentionSeconds) || retentionSeconds <= 0) return;
 
@@ -1530,14 +1533,19 @@ export class DbHandler {
 
         log(`Purging ${rows.length} disapproved comments older than ${retentionSeconds} seconds (cutoff ${cutoffTimestamp}).`);
 
-        const purgedDetails: { cid: string; parentCid?: string | null; postUpdatesBucket?: number; purgedCids: string[] }[] = [];
+        const purgedDetails: {
+            cid: string;
+            parentCid?: string | null;
+            postUpdatesBucket?: number;
+            purgedTableRows: PurgedCommentTableRows[];
+        }[] = [];
         for (const row of rows) {
-            const purgedCids = this.purgeComment(row.cid);
+            const purgedTableRows = this.purgeComment(row.cid);
             purgedDetails.push({
                 cid: row.cid,
                 parentCid: row.parentCid,
                 postUpdatesBucket: row.postUpdatesBucket || undefined,
-                purgedCids
+                purgedTableRows
             });
         }
         return purgedDetails;
@@ -1778,9 +1786,10 @@ export class DbHandler {
         return allCids;
     }
 
-    purgeComment(cid: string, isNestedCall: boolean = false): string[] {
+    purgeComment(cid: string, isNestedCall: boolean = false): PurgedCommentTableRows[] {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeComment");
-        const purgedCids: string[] = [];
+        const purgedRecords: PurgedCommentTableRows[] = [];
+        const detachedPageCids: string[] = [];
         if (!isNestedCall) this.createTransaction();
 
         try {
@@ -1822,22 +1831,24 @@ export class DbHandler {
             }
 
             const directChildren = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(cid) as { cid: string }[];
-            for (const child of directChildren) purgedCids.push(...this.purgeComment(child.cid, true));
+            for (const child of directChildren) purgedRecords.push(...this.purgeComment(child.cid, true));
 
+            const commentTableRow = this.queryComment(cid);
             this._db.prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ?`).run(cid);
             this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE commentCid = ?`).run(cid);
 
             const commentUpdate = this.queryStoredCommentUpdate({ cid });
             if (commentUpdate) {
-                if (commentUpdate.replies?.pageCids) {
-                    Object.values(commentUpdate.replies.pageCids).forEach((pageCid) => {
-                        if (typeof pageCid === "string") purgedCids.push(pageCid);
-                    });
-                }
                 this._db.prepare(`DELETE FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).run(cid);
             }
             const deleteResult = this._db.prepare(`DELETE FROM ${TABLES.COMMENTS} WHERE cid = ?`).run(cid);
-            if (deleteResult.changes > 0) purgedCids.push(cid);
+            if (deleteResult.changes > 0) {
+                if (!commentTableRow) throw new Error(`Comment with cid ${cid} not found when attempting to purge`);
+                purgedRecords.push({
+                    commentTableRow,
+                    commentUpdateTableRow: commentUpdate
+                });
+            }
 
             // Force update on all comments by all affected authors since their statistics have changed
             if (!isNestedCall && (allAffectedAuthors.size > 0 || commentsToForceUpdate.size > 0)) {
@@ -1873,12 +1884,8 @@ export class DbHandler {
             }
 
             if (!isNestedCall) this.commitTransaction();
-            const uniquePurgedCids = remeda.unique(purgedCids);
-            uniquePurgedCids.forEach((cid) => {
-                this._subplebbit._cidsToUnPin.add(cid);
-                this._subplebbit._blocksToRm.push(cid);
-            });
-            return uniquePurgedCids;
+            const uniquePurgedRecords = remeda.uniqueBy(purgedRecords, (record) => record.commentTableRow.cid);
+            return uniquePurgedRecords;
         } catch (error) {
             log.error(`Error during comment purge for ${cid}: ${error}`);
             if (!isNestedCall) this.rollbackTransaction();

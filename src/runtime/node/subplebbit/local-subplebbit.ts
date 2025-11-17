@@ -19,6 +19,7 @@ import type {
 import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
+import type { PurgedCommentTableRows } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
     derivePublicationFromChallengeRequest,
@@ -598,7 +599,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _addOldPageCidsToCidsToUnpin(
         curPages: CommentUpdateType["replies"] | SubplebbitIpfsType["posts"] | SubplebbitIpfsType["modQueue"],
-        newPages: CommentUpdateType["replies"] | SubplebbitIpfsType["posts"] | SubplebbitIpfsType["modQueue"]
+        newPages: CommentUpdateType["replies"] | SubplebbitIpfsType["posts"] | SubplebbitIpfsType["modQueue"],
+        addToBlockRm?: boolean
     ) {
         if (!curPages && !newPages) return;
         else if (curPages && !newPages) {
@@ -609,7 +611,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             });
             allPageCidsUnderCurPages.forEach((cid) => {
                 this._cidsToUnPin.add(cid);
-                // this._blocksToRm.push(cid);
+                if (addToBlockRm) this._blocksToRm.push(cid);
             });
         } else if (curPages && newPages) {
             // need to find cids for both, and compare them and only keep ones in newPages
@@ -624,7 +626,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const cidsToUnpin = remeda.difference(allPageCidsUnderCurPages, allPageCidsUnderNewPages);
             cidsToUnpin.forEach((cid) => {
                 this._cidsToUnPin.add(cid);
-                // this._blocksToRm.push(cid);
+                if (addToBlockRm) this._blocksToRm.push(cid);
             });
         }
     }
@@ -722,10 +724,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this.modQueue.resetPages();
         }
 
-        this._addOldPageCidsToCidsToUnpin(this.raw.subplebbitIpfs?.modQueue, newIpns.modQueue).catch((err) =>
-            log.error("Failed to add old page cids of subplebbit.modQueue to _cidsToUnpin", err)
-        );
-
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
 
@@ -767,6 +765,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
 
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
+        this._addOldPageCidsToCidsToUnpin(this.raw.subplebbitIpfs?.modQueue, newIpns.modQueue).catch((err) =>
+            log.error("Failed to add old page cids of subplebbit.modQueue to _cidsToUnpin", err)
+        );
         await this._unpinStaleCids();
         if (this._blocksToRm.length > 0) {
             const removedBlocks = await removeBlocksFromKuboNode({
@@ -970,38 +971,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 modTableRow.commentCid
             );
 
-            const commentUpdateToPurge = this._dbHandler.queryStoredCommentUpdate({ cid: modTableRow.commentCid });
             const commentToPurge = this._dbHandler.queryComment(modTableRow.commentCid);
             if (!commentToPurge) throw Error("Comment to purge not found");
-            const cidsToPurgeOffIpfsNode = this._dbHandler.purgeComment(modTableRow.commentCid);
+            const purgedTableRows = this._dbHandler.purgeComment(modTableRow.commentCid);
 
-            cidsToPurgeOffIpfsNode.forEach((cid) => this._cidsToUnPin.add(cid));
-            cidsToPurgeOffIpfsNode.forEach((cid) => this._blocksToRm.push(cid));
+            purgedTableRows.forEach((purgedTableRow) => this._addAllCidsUnderPurgedCommentToBeRemoved(purgedTableRow));
+
+            log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", "out of DB and IPFS");
+
+            await this._rmUnneededMfsPaths(); // not sure if needed here
             if (this.updateCid) {
-                this._blocksToRm.push(this.updateCid); // remove old cid from kubo node so we new users don't load it from our node
+                // need to remove any update cids with reference to purged comment
+                this._blocksToRm.push(this.updateCid);
                 this._cidsToUnPin.add(this.updateCid);
-            }
-
-            log(
-                "Purged comment",
-                modTableRow.commentCid,
-                "and its comment and comment update children",
-                cidsToPurgeOffIpfsNode.length,
-                "out of DB and IPFS"
-            );
-
-            log(`Set _subplebbitUpdateTrigger to true after purging comment ${modTableRow.commentCid}.`);
-            if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
-                const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
-                    commentToPurge,
-                    commentUpdateToPurge.postUpdatesBucket
-                ).replace("/update", "");
-                this._mfsPathsToRemove.add(localCommentUpdatePath);
-                try {
-                    await this._rmUnneededMfsPaths();
-                } catch (e) {
-                    log.error("while purging we failed to remove mfs path", localCommentUpdatePath, "due to error", e);
-                }
             }
         } else if ("approved" in modTableRow.commentModeration) {
             if (modTableRow.commentModeration.approved) {
@@ -1937,8 +1919,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     pages: remeda.pick(generatedRepliesPages.pages, [preloadedRepliesPages])
                 };
             }
-        } else {
-            commentUpdatePriorToSigning.replies = undefined;
         }
 
         this._addOldPageCidsToCidsToUnpin(storedCommentUpdate?.replies, commentUpdatePriorToSigning.replies).catch((err) =>
@@ -1973,8 +1953,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...newCommentUpdate,
             postUpdatesBucket: newPostUpdateBucket,
             publishedToPostUpdatesMFS: false,
+
             insertedAt: timestamp()
         };
+        if (!generatedRepliesPages) newCommentUpdateDbRecord.replies = undefined;
         return {
             newCommentUpdate,
             newCommentUpdateToWriteToDb: newCommentUpdateDbRecord,
@@ -2328,6 +2310,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
+    private _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: PurgedCommentTableRows) {
+        const log = Logger("plebbit-js:_addAllCidsUnderPurgedCommentToBeRemoved");
+        this._cidsToUnPin.add(purgedCommentAndCommentUpdate.commentTableRow.cid);
+        this._blocksToRm.push(purgedCommentAndCommentUpdate.commentTableRow.cid);
+        if (typeof purgedCommentAndCommentUpdate.commentUpdateTableRow?.postUpdatesBucket === "number") {
+            const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
+                purgedCommentAndCommentUpdate.commentTableRow,
+                purgedCommentAndCommentUpdate.commentUpdateTableRow?.postUpdatesBucket
+            );
+            this._mfsPathsToRemove.add(localCommentUpdatePath);
+        }
+        if (purgedCommentAndCommentUpdate?.commentUpdateTableRow?.replies)
+            this._addOldPageCidsToCidsToUnpin(purgedCommentAndCommentUpdate?.commentUpdateTableRow?.replies, undefined, true).catch((err) =>
+                log.error("Failed to add purged page cids to be unpinned and removed", err)
+            );
+    }
+
     private async _purgeDisapprovedCommentsOlderThan() {
         if (typeof this.settings.purgeDisapprovedCommentsOlderThan !== "number") return;
 
@@ -2342,21 +2341,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             "because retention time has passed and it's time to purge them from DB and pages"
         );
 
-        for (const purgedComment of purgedComments) {
-            const purgedCids = purgedComment.purgedCids ?? [];
-            purgedCids
-                .filter((cid) => !cid.startsWith("/"))
-                .forEach((cid) => {
-                    this._cidsToUnPin.add(cid);
-                    this._blocksToRm.push(cid);
-                });
+        // need to clear out any commentUpdate.postUpdatesBucket
+        // need to clear out any comment.cid
+        // need to clear out any commentUpdate.replies
 
-            if (typeof purgedComment.postUpdatesBucket !== "number") continue;
+        for (const purgedComment of purgedComments)
+            for (const purgedCommentAndCommentUpdate of purgedComment.purgedTableRows)
+                this._addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate);
 
-            const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(purgedComment, purgedComment.postUpdatesBucket);
-            this._mfsPathsToRemove.add(localCommentUpdatePath);
-        }
         if (this._mfsPathsToRemove.size > 0) await this._rmUnneededMfsPaths();
+        if (this.updateCid) {
+            this._blocksToRm.push(this.updateCid); // we need to remove current updateCid which references purged comments
+            this._cidsToUnPin.add(this.updateCid);
+        }
     }
 
     private async syncIpnsWithDb() {
