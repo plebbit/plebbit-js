@@ -53,7 +53,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     wrapper._client.destroy();
                 } catch {}
             }
-            const mockClient = createMockPubsubClient(dropRate);
+            const mockClient = createMockPubsubClient({ dropRate });
             if (throwOnPublish) {
                 const originalPublish = mockClient.pubsub.publish;
                 mockClient.pubsub.publish = async (...publishArgs) => {
