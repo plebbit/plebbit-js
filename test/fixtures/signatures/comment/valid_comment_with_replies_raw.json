@@ -1,0 +1,402 @@
+{
+    "raw": {
+        "comment": {
+            "author": {
+                "address": "12D3KooWGNqMXKhKTzR1tDC9JgkLaoaBvLEBjY8m1jyRJUYuSWoA",
+                "displayName": "Mock Author - 1763381297.5741477"
+            },
+            "content": "Random post Content f817ccc3-790a-490b-b9ba-aaf27f53834d",
+            "depth": 0,
+            "previousCid": "Qme8rKfiXS8ausmPMCoDDtnypK1yDF6Mo9pj626eywVp1B",
+            "protocolVersion": "1.0.0",
+            "signature": {
+                "publicKey": "YXdyU1yCCGnuXwCZtHWYC+en23zEHawPfICFQ5iHhlE",
+                "signature": "XmEUri0uzQBn4rkycZMGj4qy52FElNnu80x+D5+W5JVYqqGXn8gvjbNhnmDcufCoOvfFKJKVtwsCK1h3IlD1Bg",
+                "signedPropertyNames": ["content", "title", "author", "subplebbitAddress", "protocolVersion", "timestamp"],
+                "type": "ed25519"
+            },
+            "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+            "timestamp": 1763381297,
+            "title": "Random post Title 162321d2-d61f-4366-bdb7-b873e5b30ce9"
+        },
+        "commentUpdate": {
+            "author": {
+                "subplebbit": {
+                    "firstCommentTimestamp": 1763381297,
+                    "lastCommentCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                    "postScore": 0,
+                    "replyScore": 0
+                }
+            },
+            "childCount": 4,
+            "cid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+            "downvoteCount": 0,
+            "lastChildCid": "QmTEW6BMVnVEMNyQfk99ZT9VTFL4ZU1EwoE9ayQMnMezB9",
+            "lastReplyTimestamp": 1763381790,
+            "protocolVersion": "1.0.0",
+            "replies": {
+                "pages": {
+                    "best": {
+                        "comments": [
+                            {
+                                "comment": {
+                                    "author": {
+                                        "address": "12D3KooWQ9gXxdUQqdrBn2qoH8uzjLC1fYPyRUE5zw9SecaH2wor",
+                                        "displayName": "Mock Author - 1763381297.3705065"
+                                    },
+                                    "content": "Content a9b87a62-22cc-495d-82c7-9a3fd84e1024",
+                                    "depth": 1,
+                                    "parentCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "postCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "protocolVersion": "1.0.0",
+                                    "signature": {
+                                        "publicKey": "1PZrKVr/4FhTWfNj71THrC7rgBwAW1Q50afjtmLGjT0",
+                                        "signature": "vfeBJ3oKpFFRS9cLGZM26r55CTqBVoLzIHEs4p3yCPWlmgcCapN7zthlYRPv2CpnuDh/EbbnpnCD1dOCCVCWDg",
+                                        "signedPropertyNames": [
+                                            "content",
+                                            "parentCid",
+                                            "postCid",
+                                            "author",
+                                            "subplebbitAddress",
+                                            "protocolVersion",
+                                            "timestamp"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+                                    "timestamp": 1763381297
+                                },
+                                "commentUpdate": {
+                                    "author": {
+                                        "subplebbit": {
+                                            "firstCommentTimestamp": 1763381297,
+                                            "lastCommentCid": "QmVhjP2RKBx2Rkkib5MfbWFcwGGBS6gxQvEER5ySA4vmFC",
+                                            "postScore": 0,
+                                            "replyScore": 0
+                                        }
+                                    },
+                                    "childCount": 1,
+                                    "cid": "QmVhjP2RKBx2Rkkib5MfbWFcwGGBS6gxQvEER5ySA4vmFC",
+                                    "downvoteCount": 0,
+                                    "lastChildCid": "QmVnqn45XTFjmncbfmhfstjvURvV2tWmMnzgsaSFe1WKBg",
+                                    "lastReplyTimestamp": 1763381790,
+                                    "protocolVersion": "1.0.0",
+                                    "replies": {
+                                        "pages": {
+                                            "best": {
+                                                "comments": [
+                                                    {
+                                                        "comment": {
+                                                            "author": {
+                                                                "address": "12D3KooWGMFGC39QPSHon6uw2BqW9Tg1M5fzv7az9MpKSjGB9jY8",
+                                                                "displayName": "Mock Author - 1763381308.7356668"
+                                                            },
+                                                            "content": "Content 0a6e7a73-9c48-4cad-8088-c23ccc5ffade",
+                                                            "depth": 2,
+                                                            "parentCid": "QmVhjP2RKBx2Rkkib5MfbWFcwGGBS6gxQvEER5ySA4vmFC",
+                                                            "postCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                                            "protocolVersion": "1.0.0",
+                                                            "signature": {
+                                                                "publicKey": "YQ9RYaXjHUXr2wLCOmVhJibVQ7ol5uhBLzxlYZUKzDU",
+                                                                "signature": "bjsI+afQaFtKsI2MUMdGS/JmD4el6zsJdIXZWWYn61lAOnZ+DxIn0KVpbrRdinl/+UdkhNrH+UMuhikgaIIRDA",
+                                                                "signedPropertyNames": [
+                                                                    "content",
+                                                                    "parentCid",
+                                                                    "postCid",
+                                                                    "author",
+                                                                    "subplebbitAddress",
+                                                                    "protocolVersion",
+                                                                    "timestamp"
+                                                                ],
+                                                                "type": "ed25519"
+                                                            },
+                                                            "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+                                                            "timestamp": 1763381308
+                                                        },
+                                                        "commentUpdate": {
+                                                            "author": {
+                                                                "subplebbit": {
+                                                                    "firstCommentTimestamp": 1763381308,
+                                                                    "lastCommentCid": "QmVnqn45XTFjmncbfmhfstjvURvV2tWmMnzgsaSFe1WKBg",
+                                                                    "postScore": 0,
+                                                                    "replyScore": 0
+                                                                }
+                                                            },
+                                                            "childCount": 47,
+                                                            "cid": "QmVnqn45XTFjmncbfmhfstjvURvV2tWmMnzgsaSFe1WKBg",
+                                                            "downvoteCount": 0,
+                                                            "lastChildCid": "QmUSEr9RkCXNBhn5hefhSWvc3MG37xtZM2w12iawMsNbQo",
+                                                            "lastReplyTimestamp": 1763381790,
+                                                            "protocolVersion": "1.0.0",
+                                                            "replies": {
+                                                                "pageCids": {
+                                                                    "best": "Qme1ExZHS9VH7jpDAFDT8SaX5hzpEnNaBKN5MNEWquG47Z",
+                                                                    "new": "QmS1sUEuixRgAx1iRHvrq592rJMfmqu5CEFCWuNeSud24D",
+                                                                    "old": "QmXfA4AotUQru3XtdDjeYQddbT1xz94mt9z54gjQECTniZ"
+                                                                },
+                                                                "pages": {}
+                                                            },
+                                                            "replyCount": 95,
+                                                            "signature": {
+                                                                "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+                                                                "signature": "D7CPXXEMYkfCLdZn2IwyvRoMwmSxpJJlUi2R0L+6pzASTuAgP1r2PqztmZ+DOzXL2w5IF1UetceJWMp9k5oICA",
+                                                                "signedPropertyNames": [
+                                                                    "cid",
+                                                                    "upvoteCount",
+                                                                    "downvoteCount",
+                                                                    "replyCount",
+                                                                    "childCount",
+                                                                    "updatedAt",
+                                                                    "author",
+                                                                    "lastChildCid",
+                                                                    "lastReplyTimestamp",
+                                                                    "protocolVersion",
+                                                                    "replies"
+                                                                ],
+                                                                "type": "ed25519"
+                                                            },
+                                                            "updatedAt": 1763381794,
+                                                            "upvoteCount": 0
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "replyCount": 96,
+                                    "signature": {
+                                        "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+                                        "signature": "lOdCwSVbqogvx2f1IIadYAXnhgILOn771RKXJAVsKPnRcoV4DC3drxPbQRlVXvQJ11CDULNwDXxOXWoKLimPBw",
+                                        "signedPropertyNames": [
+                                            "cid",
+                                            "upvoteCount",
+                                            "downvoteCount",
+                                            "replyCount",
+                                            "childCount",
+                                            "updatedAt",
+                                            "author",
+                                            "lastChildCid",
+                                            "lastReplyTimestamp",
+                                            "protocolVersion",
+                                            "replies"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "updatedAt": 1763381794,
+                                    "upvoteCount": 0
+                                }
+                            },
+                            {
+                                "comment": {
+                                    "author": {
+                                        "address": "12D3KooWDMeL2i9XwssGEp6q8FPvWg2d4ZuZXXYWhuVApkVSh8Y5",
+                                        "displayName": "Mock Author - 1763381352.4732485"
+                                    },
+                                    "content": "Content 7b786746-74f1-49ab-a2ad-de2e98363442",
+                                    "depth": 1,
+                                    "parentCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "postCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "previousCid": "QmVhjP2RKBx2Rkkib5MfbWFcwGGBS6gxQvEER5ySA4vmFC",
+                                    "protocolVersion": "1.0.0",
+                                    "signature": {
+                                        "publicKey": "NJZWkKMZf3+whB7p8s+RC39V+jqns/wX0xsgpiFoOJY",
+                                        "signature": "ggAOQ1nv7RAAjmRHtqRyjpsYiYqXebJkrUfPa7O6hN3SlsMrKqFOJKpmcaXxkIFyoKDUAMVPhK3mEDmXxDwbCQ",
+                                        "signedPropertyNames": [
+                                            "content",
+                                            "parentCid",
+                                            "postCid",
+                                            "author",
+                                            "subplebbitAddress",
+                                            "protocolVersion",
+                                            "timestamp"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+                                    "timestamp": 1763381352
+                                },
+                                "commentUpdate": {
+                                    "author": {
+                                        "subplebbit": {
+                                            "firstCommentTimestamp": 1763381352,
+                                            "lastCommentCid": "QmdtsGYAjFSiPxnkEByp7VY5nVqP7duvdjBkG3oPTUGFmX",
+                                            "postScore": 0,
+                                            "replyScore": 0
+                                        }
+                                    },
+                                    "childCount": 0,
+                                    "cid": "QmdtsGYAjFSiPxnkEByp7VY5nVqP7duvdjBkG3oPTUGFmX",
+                                    "downvoteCount": 0,
+                                    "protocolVersion": "1.0.0",
+                                    "replyCount": 0,
+                                    "signature": {
+                                        "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+                                        "signature": "eWoxp9MzUbpoao0Ve0JIaWph23CovQfV3y8fWhHK/yjSJ3p0XFil6Z4haeaBFAKmpDHTXiqTm7AiDzIVTuuKCA",
+                                        "signedPropertyNames": [
+                                            "cid",
+                                            "upvoteCount",
+                                            "downvoteCount",
+                                            "replyCount",
+                                            "childCount",
+                                            "updatedAt",
+                                            "author",
+                                            "protocolVersion"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "updatedAt": 1763381353,
+                                    "upvoteCount": 0
+                                }
+                            },
+                            {
+                                "comment": {
+                                    "author": {
+                                        "address": "12D3KooWJqFZXgzWmrqAPyntxcVcdicgcNaTJ1RfktcU7qv9Fv4U",
+                                        "displayName": "Mock Author - 1763381353.26424"
+                                    },
+                                    "content": "Content 98e957b9-1662-4b90-85bd-892432bdfe4f",
+                                    "depth": 1,
+                                    "parentCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "postCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "previousCid": "QmVhjP2RKBx2Rkkib5MfbWFcwGGBS6gxQvEER5ySA4vmFC",
+                                    "protocolVersion": "1.0.0",
+                                    "signature": {
+                                        "publicKey": "hfNK3Cb3HgCx8wmn7EfyrsJYfC86eWcHP4gLYxZGAg0",
+                                        "signature": "ZExeaDmDg1O611HNS+cwqkHgibdp2DnKAetUBm9HKKYXVnb1DDfED6UIoMQ7bbTDWgdI4kBI5K+h3TK4LmaeCw",
+                                        "signedPropertyNames": [
+                                            "content",
+                                            "parentCid",
+                                            "postCid",
+                                            "author",
+                                            "subplebbitAddress",
+                                            "protocolVersion",
+                                            "timestamp"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+                                    "timestamp": 1763381353
+                                },
+                                "commentUpdate": {
+                                    "author": {
+                                        "subplebbit": {
+                                            "firstCommentTimestamp": 1763381353,
+                                            "lastCommentCid": "QmREMoLmPochZZyQ83ridehFakVQUepWXxUDeLn4yp9pBY",
+                                            "postScore": 0,
+                                            "replyScore": 0
+                                        }
+                                    },
+                                    "childCount": 0,
+                                    "cid": "QmREMoLmPochZZyQ83ridehFakVQUepWXxUDeLn4yp9pBY",
+                                    "downvoteCount": 0,
+                                    "protocolVersion": "1.0.0",
+                                    "replyCount": 0,
+                                    "signature": {
+                                        "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+                                        "signature": "3/wU9MGLFU5wlXnspr8T5vIVnxr5xoa4mEn0fxgdf6Rlg9WDSe1/m3TM1gNb+OXm2xNba7g5CageicR0BGxpCQ",
+                                        "signedPropertyNames": [
+                                            "cid",
+                                            "upvoteCount",
+                                            "downvoteCount",
+                                            "replyCount",
+                                            "childCount",
+                                            "updatedAt",
+                                            "author",
+                                            "protocolVersion"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "updatedAt": 1763381354,
+                                    "upvoteCount": 0
+                                }
+                            },
+                            {
+                                "comment": {
+                                    "author": {
+                                        "address": "12D3KooWQvpcRipU6QtKrMkzjoZSZ4y1jkBubAe4my9yYJ61FYDx",
+                                        "displayName": "Mock Author - 1763381353.4328995"
+                                    },
+                                    "content": "Content 10ec95f9-e642-4ffc-b930-01fed6f846df",
+                                    "depth": 1,
+                                    "parentCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "postCid": "QmX5358hjGps9Dr9N8qo24rqjkEMWPGzEAwDfzw4mH4ZMD",
+                                    "previousCid": "QmVhjP2RKBx2Rkkib5MfbWFcwGGBS6gxQvEER5ySA4vmFC",
+                                    "protocolVersion": "1.0.0",
+                                    "signature": {
+                                        "publicKey": "4IawDpkKvIxh4XQZarhboReaStBAXeqSnlYDplKU3Fs",
+                                        "signature": "m2OjOOv4p1haM2F2PwUlpzlZUwlfBmm36ZL6AppW0GbaNigCinvwJO7uBJrH0ypFzVOnsV5ws0lbuSPRsojiBQ",
+                                        "signedPropertyNames": [
+                                            "content",
+                                            "parentCid",
+                                            "postCid",
+                                            "author",
+                                            "subplebbitAddress",
+                                            "protocolVersion",
+                                            "timestamp"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+                                    "timestamp": 1763381353
+                                },
+                                "commentUpdate": {
+                                    "author": {
+                                        "subplebbit": {
+                                            "firstCommentTimestamp": 1763381353,
+                                            "lastCommentCid": "QmTEW6BMVnVEMNyQfk99ZT9VTFL4ZU1EwoE9ayQMnMezB9",
+                                            "postScore": 0,
+                                            "replyScore": 0
+                                        }
+                                    },
+                                    "childCount": 0,
+                                    "cid": "QmTEW6BMVnVEMNyQfk99ZT9VTFL4ZU1EwoE9ayQMnMezB9",
+                                    "downvoteCount": 0,
+                                    "protocolVersion": "1.0.0",
+                                    "replyCount": 0,
+                                    "signature": {
+                                        "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+                                        "signature": "EFxn/LFH7xFepdP4J7TDjz9MpQDyfHrDbY9D2DHG7IH9kkFv0HmcFrqnNU/lEaZ+pBLzR0HbdMDib3E2Fb9NAA",
+                                        "signedPropertyNames": [
+                                            "cid",
+                                            "upvoteCount",
+                                            "downvoteCount",
+                                            "replyCount",
+                                            "childCount",
+                                            "updatedAt",
+                                            "author",
+                                            "protocolVersion"
+                                        ],
+                                        "type": "ed25519"
+                                    },
+                                    "updatedAt": 1763381354,
+                                    "upvoteCount": 0
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "replyCount": 100,
+            "signature": {
+                "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+                "signature": "Ui2o1k+nc8fz/c97bmScbckZElxPtac4uoXK3xO3WmSVHt8P+hXWw/pGDnyMSXg1kktwSjD7XyiUL4KpKnDVDw",
+                "signedPropertyNames": [
+                    "cid",
+                    "upvoteCount",
+                    "downvoteCount",
+                    "replyCount",
+                    "childCount",
+                    "updatedAt",
+                    "author",
+                    "lastChildCid",
+                    "lastReplyTimestamp",
+                    "protocolVersion",
+                    "replies"
+                ],
+                "type": "ed25519"
+            },
+            "updatedAt": 1763381794,
+            "upvoteCount": 0
+        }
+    }
+}

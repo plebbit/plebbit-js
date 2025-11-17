@@ -10,6 +10,7 @@ import {
     publishWithExpectedResult,
     addStringToIpfs
 } from "../../../../dist/node/test/test-util.js";
+import validCommentWithRepliesFixture from "../../../fixtures/signatures/comment/valid_comment_with_replies_raw.json" with { type: "json" };
 import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
@@ -178,6 +179,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const comment = await plebbit.createComment({ cid, subplebbitAddress });
             expect(comment.cid).to.equal(cid);
             expect(comment.subplebbitAddress).to.equal(subplebbitAddress);
+        });
+
+        it(`Can create a comment with replies.pages`, async () => {
+            const comment = await plebbit.createComment(validCommentWithRepliesFixture);
+            expect(comment.cid).to.equal(validCommentWithRepliesFixture.raw.commentUpdate.cid);
+            expect(comment.replies.pages.best.comments.length).to.equal(
+                validCommentWithRepliesFixture.raw.commentUpdate.replies.pages.best.comments.length
+            );
         });
 
         it(`Can create a comment with eth and sol wallets`, async () => {
