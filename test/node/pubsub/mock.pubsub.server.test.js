@@ -3,10 +3,7 @@ import { describe, it, beforeAll, afterAll } from "vitest";
 import { Server } from "socket.io";
 import { io as createSocketClient } from "socket.io-client";
 import { randomUUID } from "crypto";
-import {
-    createMockPubsubClient,
-    waitForMockPubsubConnection
-} from "../../../dist/node/test/mock-ipfs-client.js";
+import { Buffer } from "buffer";
 
 const PORT = 25963;
 let ioServer;
@@ -58,6 +55,99 @@ const ensureServerStarted = async () => {
     startedLocalServer = true;
 };
 
+const createIsolatedMockPubsubClient = () => {
+    const socket = createSocketClient(`ws://localhost:${PORT}`, { forceNew: true, transports: ["websocket"] });
+    const topicListeners = new Map();
+    const recentlyPublished = new Set();
+
+    const ensureConnected = async () => {
+        if (socket.connected) return;
+        await new Promise((resolve, reject) => {
+            const onConnect = () => {
+                socket.off("connect_error", onError);
+                resolve(undefined);
+            };
+            const onError = (err) => {
+                socket.off("connect", onConnect);
+                reject(err ?? new Error("Failed to connect to mock pubsub server"));
+            };
+            socket.once("connect", onConnect);
+            socket.once("connect_error", onError);
+        });
+    };
+
+    const publish = async (topic, message) => {
+        await ensureConnected();
+        const buffer = Buffer.isBuffer(message) ? message : Buffer.from(message);
+        const key = `${topic}:${buffer.toString("base64")}`;
+        recentlyPublished.add(key);
+        setTimeout(() => recentlyPublished.delete(key), 30_000);
+        socket.emit(topic, buffer);
+    };
+
+    const subscribe = async (topic, handler) => {
+        await ensureConnected();
+        if (!topicListeners.has(topic)) {
+            const callbacks = new Set();
+            const listener = (message) => {
+                const buffer = Buffer.isBuffer(message) ? message : Buffer.from(message);
+                const key = `${topic}:${buffer.toString("base64")}`;
+                if (recentlyPublished.has(key)) {
+                    recentlyPublished.delete(key);
+                    return;
+                }
+                const data = new Uint8Array(buffer);
+                callbacks.forEach((cb) => cb({ data }));
+            };
+            topicListeners.set(topic, { callbacks, listener });
+            socket.on(topic, listener);
+        }
+        topicListeners.get(topic).callbacks.add(handler);
+    };
+
+    const unsubscribe = async (topic, handler) => {
+        await ensureConnected();
+        const entry = topicListeners.get(topic);
+        if (!entry) return;
+        if (handler) entry.callbacks.delete(handler);
+        else entry.callbacks.clear();
+        if (entry.callbacks.size === 0) {
+            socket.off(topic, entry.listener);
+            topicListeners.delete(topic);
+        }
+    };
+
+    const destroy = async () => {
+        topicListeners.forEach((entry, topic) => socket.off(topic, entry.listener));
+        topicListeners.clear();
+        if (!socket.connected) {
+            socket.disconnect();
+            return;
+        }
+        await new Promise((resolve) => {
+            socket.once("disconnect", () => resolve(undefined));
+            socket.disconnect();
+        });
+    };
+
+    return {
+        pubsub: {
+            publish,
+            subscribe,
+            unsubscribe,
+            ls: async () => {
+                await ensureConnected();
+                return Array.from(topicListeners.keys());
+            },
+            peers: async () => {
+                await ensureConnected();
+                return [];
+            }
+        },
+        destroy
+    };
+};
+
 describe("mock pubsub client with socket.io server", () => {
     beforeAll(async () => {
         await ensureServerStarted();
@@ -71,8 +161,7 @@ describe("mock pubsub client with socket.io server", () => {
     });
 
     it("does not emit messages back to the publishing subscription", async () => {
-        const client = createMockPubsubClient();
-        await waitForMockPubsubConnection();
+        const client = createIsolatedMockPubsubClient();
         const topic = `self-publish-${randomUUID()}`;
         let invocationCount = 0;
 
@@ -89,9 +178,8 @@ describe("mock pubsub client with socket.io server", () => {
     });
 
     it("delivers every message exactly once to each subscriber", async () => {
-        const publisher = createMockPubsubClient();
-        const subscriberClient = createMockPubsubClient();
-        await waitForMockPubsubConnection();
+        const publisher = createIsolatedMockPubsubClient();
+        const subscriberClient = createIsolatedMockPubsubClient();
         const topic = `fanout-${randomUUID()}`;
         const messageCount = 200;
         const firstSubscriberCalls = new Set();
@@ -126,9 +214,8 @@ describe("mock pubsub client with socket.io server", () => {
     });
 
     it("maintains throughput under stress while delivering to external peers", async () => {
-        const publisher = createMockPubsubClient();
-        const externalSubscriber = createMockPubsubClient();
-        await waitForMockPubsubConnection();
+        const publisher = createIsolatedMockPubsubClient();
+        const externalSubscriber = createIsolatedMockPubsubClient();
         const topic = `stress-${randomUUID()}`;
         const totalMessages = 350;
         let receivedCount = 0;
@@ -158,11 +245,51 @@ describe("mock pubsub client with socket.io server", () => {
         await publisher.destroy();
     });
 
+    it("delivers sequential ~30kb publications within the challenge verification deadline", async () => {
+        const publisher = createIsolatedMockPubsubClient();
+        const subscriber = createIsolatedMockPubsubClient();
+        const topic = `deadline-${randomUUID()}`;
+        const totalPublications = 400;
+        const payloadSize = 30 * 1024;
+        const sendTimes = new Map();
+        const observedLatencies = [];
+
+        await subscriber.pubsub.subscribe(topic, (msg) => {
+            const buffer = Buffer.from(msg.data);
+            if (buffer.length !== payloadSize) return;
+            const index = buffer.readUInt32BE(0);
+            if (sendTimes.has(index)) {
+                observedLatencies.push(Date.now() - sendTimes.get(index));
+            }
+        });
+
+        const publishPromises = [];
+        for (let i = 0; i < totalPublications; i += 1) {
+            const payloadBuffer = Buffer.alloc(payloadSize, 0x78);
+            payloadBuffer.writeUInt32BE(i, 0);
+            sendTimes.set(i, Date.now());
+            publishPromises.push(publisher.pubsub.publish(topic, payloadBuffer));
+        }
+
+        await Promise.all(publishPromises);
+
+        await waitForCondition(() => observedLatencies.length === totalPublications, 5000);
+        expect(observedLatencies.length).to.equal(totalPublications);
+        const maxLatency = Math.max(...observedLatencies);
+        const avgLatency = observedLatencies.reduce((acc, cur) => acc + cur, 0) / observedLatencies.length;
+
+        expect(maxLatency).to.be.lessThan(2000, "mock pubsub server exceeded 10s challenge deadline");
+        expect(avgLatency).to.be.lessThan(500);
+
+        await subscriber.pubsub.unsubscribe(topic);
+        await subscriber.destroy();
+        await publisher.destroy();
+    });
+
     it("delivers identical payloads from different publishers without deduplicating them", async () => {
-        const publisherA = createMockPubsubClient();
-        const publisherB = createMockPubsubClient();
-        const subscriber = createMockPubsubClient();
-        await waitForMockPubsubConnection();
+        const publisherA = createIsolatedMockPubsubClient();
+        const publisherB = createIsolatedMockPubsubClient();
+        const subscriber = createIsolatedMockPubsubClient();
         const topic = `identical-${randomUUID()}`;
         const received = [];
 
@@ -184,9 +311,8 @@ describe("mock pubsub client with socket.io server", () => {
     });
 
     it("cleans up socket listeners when subscribing/unsubscribing repeatedly", async () => {
-        const client = createMockPubsubClient();
-        const publisher = createMockPubsubClient();
-        await waitForMockPubsubConnection();
+        const client = createIsolatedMockPubsubClient();
+        const publisher = createIsolatedMockPubsubClient();
         const topic = `churn-${randomUUID()}`;
         const payload = Buffer.from("ping");
 
@@ -209,10 +335,9 @@ describe("mock pubsub client with socket.io server", () => {
     });
 
     it("allows other clients to continue after one client destroys itself mid-stream", async () => {
-        const survivor = createMockPubsubClient();
-        const doomed = createMockPubsubClient();
-        const publisher = createMockPubsubClient();
-        await waitForMockPubsubConnection();
+        const survivor = createIsolatedMockPubsubClient();
+        const doomed = createIsolatedMockPubsubClient();
+        const publisher = createIsolatedMockPubsubClient();
         const topic = `destroy-${randomUUID()}`;
         let survivorCount = 0;
         let doomedCount = 0;
@@ -234,7 +359,7 @@ describe("mock pubsub client with socket.io server", () => {
         await waitForCondition(() => survivorCount === 2);
         expect(doomedCount).to.equal(1);
 
-        const newcomer = createMockPubsubClient();
+        const newcomer = createIsolatedMockPubsubClient();
         let newcomerCount = 0;
         await newcomer.pubsub.subscribe(topic, () => {
             newcomerCount += 1;
