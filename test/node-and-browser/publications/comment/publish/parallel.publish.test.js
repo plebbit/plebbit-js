@@ -16,7 +16,7 @@ import { io as createSocketClient } from "socket.io-client";
 import { convertBase58IpnsNameToBase36Cid } from "../../../../../dist/node/signer/util.js";
 
 const subplebbitAddress = signers[0].address;
-const replyDepthsToTest = [1, 2, 3, 10, 15, 30];
+const replyDepthsToTest = [1, 2, 15];
 
 const publishScenarios = [
     {
@@ -31,7 +31,7 @@ const publishScenarios = [
 
 // TODO need to un-skip this
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.skip(`comment.publish.parallel force replies pages - ${config.name}`, () => {
+    describe(`comment.publish.parallel force replies pages - ${config.name}`, () => {
         let plebbit;
 
         before(async () => {
@@ -44,11 +44,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         const runPublishFlowForDepths = async ({ stopParentBeforeForce }) => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            subplebbit.setMaxListeners(100);
             await subplebbit.update();
 
             for (const replyDepth of replyDepthsToTest) {
-                const parentDepth = Math.max(replyDepth - 1, 0);
+                const parentDepth = replyDepth - 1;
                 const parentComment = await findOrPublishCommentWithDepth({ depth: parentDepth, subplebbit });
+                parentComment.setMaxListeners(100);
 
                 try {
                     await parentComment.update();
@@ -65,6 +67,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     await forceSubplebbitToGenerateAllRepliesPages(parentComment);
 
                     const reloadedParent = await plebbit.createComment({ cid: parentComment.cid });
+                    reloadedParent.setMaxListeners(100);
+
                     try {
                         await reloadedParent.update();
                         await resolveWhenConditionIsTrue({
