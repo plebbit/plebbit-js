@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { io as createSocketClient } from "socket.io-client";
 import { randomUUID } from "crypto";
 import { Buffer } from "buffer";
+import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client.js";
 
 const PORT = 25963;
 let ioServer;
@@ -55,98 +56,7 @@ const ensureServerStarted = async () => {
     startedLocalServer = true;
 };
 
-const createIsolatedMockPubsubClient = () => {
-    const socket = createSocketClient(`ws://localhost:${PORT}`, { forceNew: true, transports: ["websocket"] });
-    const topicListeners = new Map();
-    const recentlyPublished = new Set();
-
-    const ensureConnected = async () => {
-        if (socket.connected) return;
-        await new Promise((resolve, reject) => {
-            const onConnect = () => {
-                socket.off("connect_error", onError);
-                resolve(undefined);
-            };
-            const onError = (err) => {
-                socket.off("connect", onConnect);
-                reject(err ?? new Error("Failed to connect to mock pubsub server"));
-            };
-            socket.once("connect", onConnect);
-            socket.once("connect_error", onError);
-        });
-    };
-
-    const publish = async (topic, message) => {
-        await ensureConnected();
-        const buffer = Buffer.isBuffer(message) ? message : Buffer.from(message);
-        const key = `${topic}:${buffer.toString("base64")}`;
-        recentlyPublished.add(key);
-        setTimeout(() => recentlyPublished.delete(key), 30_000);
-        socket.emit(topic, buffer);
-    };
-
-    const subscribe = async (topic, handler) => {
-        await ensureConnected();
-        if (!topicListeners.has(topic)) {
-            const callbacks = new Set();
-            const listener = (message) => {
-                const buffer = Buffer.isBuffer(message) ? message : Buffer.from(message);
-                const key = `${topic}:${buffer.toString("base64")}`;
-                if (recentlyPublished.has(key)) {
-                    recentlyPublished.delete(key);
-                    return;
-                }
-                const data = new Uint8Array(buffer);
-                callbacks.forEach((cb) => cb({ data }));
-            };
-            topicListeners.set(topic, { callbacks, listener });
-            socket.on(topic, listener);
-        }
-        topicListeners.get(topic).callbacks.add(handler);
-    };
-
-    const unsubscribe = async (topic, handler) => {
-        await ensureConnected();
-        const entry = topicListeners.get(topic);
-        if (!entry) return;
-        if (handler) entry.callbacks.delete(handler);
-        else entry.callbacks.clear();
-        if (entry.callbacks.size === 0) {
-            socket.off(topic, entry.listener);
-            topicListeners.delete(topic);
-        }
-    };
-
-    const destroy = async () => {
-        topicListeners.forEach((entry, topic) => socket.off(topic, entry.listener));
-        topicListeners.clear();
-        if (!socket.connected) {
-            socket.disconnect();
-            return;
-        }
-        await new Promise((resolve) => {
-            socket.once("disconnect", () => resolve(undefined));
-            socket.disconnect();
-        });
-    };
-
-    return {
-        pubsub: {
-            publish,
-            subscribe,
-            unsubscribe,
-            ls: async () => {
-                await ensureConnected();
-                return Array.from(topicListeners.keys());
-            },
-            peers: async () => {
-                await ensureConnected();
-                return [];
-            }
-        },
-        destroy
-    };
-};
+const createIsolatedMockPubsubClient = () => createMockPubsubClient({ forceNewIoClient: true });
 
 describe("mock pubsub client with socket.io server", () => {
     beforeAll(async () => {

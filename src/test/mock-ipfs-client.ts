@@ -5,53 +5,61 @@ import { Buffer } from "buffer";
 
 const port = 25963;
 
-let usersOfMock = 0;
-let ioClient: Socket;
-let pendingConnectionWait: Promise<void> | undefined;
-let pendingConnectionHandlers:
-    | {
-          onConnect: () => void;
-          onError: (error: Error) => void;
-      }
-    | undefined;
-
-const cleanupPendingConnectionWait = () => {
-    if (pendingConnectionHandlers && ioClient) {
-        ioClient.off("connect", pendingConnectionHandlers.onConnect);
-        ioClient.off("connect_error", pendingConnectionHandlers.onError);
-    }
-    pendingConnectionHandlers = undefined;
-    pendingConnectionWait = undefined;
+type PendingConnectionHandlers = {
+    onConnect: () => void;
+    onError: (error: Error) => void;
 };
 
-const waitForSocketConnection = async () => {
-    if (!ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
-    if (ioClient.connected) return;
+type ConnectionState = {
+    ioClient?: Socket;
+    pendingConnectionWait?: Promise<void>;
+    pendingConnectionHandlers?: PendingConnectionHandlers;
+    users: number;
+    shouldCleanupWindowIo: boolean;
+};
 
-    if (!pendingConnectionWait) {
-        pendingConnectionWait = new Promise<void>((resolve, reject) => {
+const sharedConnectionState: ConnectionState = {
+    users: 0,
+    shouldCleanupWindowIo: false
+};
+
+const cleanupPendingConnectionWait = (state: ConnectionState) => {
+    if (state.pendingConnectionHandlers && state.ioClient) {
+        state.ioClient.off("connect", state.pendingConnectionHandlers.onConnect);
+        state.ioClient.off("connect_error", state.pendingConnectionHandlers.onError);
+    }
+    state.pendingConnectionHandlers = undefined;
+    state.pendingConnectionWait = undefined;
+};
+
+const waitForSocketConnection = async (state: ConnectionState) => {
+    if (!state.ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
+    if (state.ioClient.connected) return;
+
+    if (!state.pendingConnectionWait) {
+        state.pendingConnectionWait = new Promise<void>((resolve, reject) => {
             const onConnect = () => {
-                cleanupPendingConnectionWait();
+                cleanupPendingConnectionWait(state);
                 resolve();
             };
             const onError = (error: Error) => {
-                cleanupPendingConnectionWait();
+                cleanupPendingConnectionWait(state);
                 reject(error ?? new Error("Failed to connect to mock pubsub server"));
             };
 
-            pendingConnectionHandlers = { onConnect, onError };
-            ioClient.once("connect", onConnect);
-            ioClient.once("connect_error", onError);
+            state.pendingConnectionHandlers = { onConnect, onError };
+            state.ioClient!.once("connect", onConnect);
+            state.ioClient!.once("connect_error", onError);
         });
     }
 
-    await pendingConnectionWait;
+    await state.pendingConnectionWait;
 };
 
-const ensurePubsubActive = async () => {
-    if (!ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
-    if (!ioClient.active) throw new Error("IOClient in MockPubsubHttpClient is not active");
-    if (!ioClient.connected) await waitForSocketConnection();
+const ensurePubsubActive = async (state: ConnectionState) => {
+    if (!state.ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
+    if (!state.ioClient.active) throw new Error("IOClient in MockPubsubHttpClient is not active");
+    if (!state.ioClient.connected) await waitForSocketConnection(state);
 };
 
 class MockPubsubHttpClient {
@@ -68,31 +76,36 @@ class MockPubsubHttpClient {
         }
     >;
     private recentlyPublishedMessages: Set<string>;
+    private readonly connectionState: ConnectionState;
+    private readonly dropRate?: number;
 
-    constructor(dropRate?: number) {
+    constructor(connectionState: ConnectionState, dropRate?: number) {
         // dropRate should be between 0 and 1
+        this.connectionState = connectionState;
+        this.dropRate = dropRate;
         this.subscriptions = [];
         this.recentlyPublishedMessages = new Set();
         this.topicListeners = new Map();
 
         this.pubsub = {
             publish: async (topic: string, message: Uint8Array) => {
-                await ensurePubsubActive();
+                await ensurePubsubActive(this.connectionState);
+                const ioClient = this.getIoClient();
                 const messageKey = Buffer.from(message).toString("base64");
                 this.recentlyPublishedMessages.add(messageKey);
                 setTimeout(() => this.recentlyPublishedMessages.delete(messageKey), 30 * 1000);
-                if (typeof dropRate === "number") {
-                    if (Math.random() > dropRate) ioClient.emit(topic, message);
+                if (typeof this.dropRate === "number") {
+                    if (Math.random() > this.dropRate) ioClient.emit(topic, message);
                 } else ioClient.emit(topic, message);
             },
             subscribe: async (topic: string, rawCallback: PubsubSubscriptionHandler) => {
-                await ensurePubsubActive();
+                await ensurePubsubActive(this.connectionState);
                 this._ensureTopicListener(topic);
                 const uniqueSubId = uuidV4();
                 this.subscriptions.push({ topic, rawCallback, subscriptionId: uniqueSubId });
             },
             unsubscribe: async (topic: string, rawCallback?: PubsubSubscriptionHandler) => {
-                await ensurePubsubActive();
+                await ensurePubsubActive(this.connectionState);
                 if (!rawCallback) {
                     const subscriptionsWithTopic = this.subscriptions.filter((sub) => sub.topic === topic);
 
@@ -109,11 +122,11 @@ class MockPubsubHttpClient {
                 this._cleanupTopicListenerIfUnused(topic);
             },
             ls: async () => {
-                await ensurePubsubActive();
+                await ensurePubsubActive(this.connectionState);
                 return this.subscriptions.map((sub) => sub.topic);
             },
             peers: async () => {
-                await ensurePubsubActive();
+                await ensurePubsubActive(this.connectionState);
                 return [];
             }
         };
@@ -134,47 +147,79 @@ class MockPubsubHttpClient {
             subscriptionsWithTopic.forEach((sub) => sub.rawCallback({ from: undefined!, seqno: undefined, topicIDs: undefined, data }));
         };
         this.topicListeners.set(topic, { callback });
-        ioClient.on(topic, callback);
+        this.getIoClient().on(topic, callback);
     }
 
     private _cleanupTopicListenerIfUnused(topic: string) {
         if (this.subscriptions.some((sub) => sub.topic === topic)) return;
         const listener = this.topicListeners.get(topic);
         if (!listener) return;
-        ioClient.off(topic, listener.callback);
+        this.connectionState.ioClient?.off(topic, listener.callback);
         this.topicListeners.delete(topic);
     }
 
     async destroy() {
-        usersOfMock--;
-        if (usersOfMock === 0) {
-            if (pendingConnectionHandlers) {
-                pendingConnectionHandlers.onError(new Error("MockPubsubHttpClient destroyed before the socket connected"));
+        if (this.connectionState.users > 0) this.connectionState.users--;
+        if (this.connectionState.users === 0) {
+            if (this.connectionState.pendingConnectionHandlers) {
+                this.connectionState.pendingConnectionHandlers.onError(new Error("MockPubsubHttpClient destroyed before the socket connected"));
             } else {
-                cleanupPendingConnectionWait();
+                cleanupPendingConnectionWait(this.connectionState);
             }
-            await ioClient?.disconnect();
+            await this.connectionState.ioClient?.disconnect();
+            this.connectionState.ioClient = undefined;
             //@ts-expect-error
-            ioClient = undefined;
-            //@ts-expect-error
-            if (globalThis["window"] && globalThis["window"]["io"]) {
+            if (this.connectionState.shouldCleanupWindowIo && globalThis["window"] && globalThis["window"]["io"]) {
                 //@ts-expect-error
                 delete globalThis["window"]["io"];
             }
+            this.connectionState.shouldCleanupWindowIo = false;
         }
+    }
+
+    private getIoClient(): Socket {
+        const ioClient = this.connectionState.ioClient;
+        if (!ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
+        return ioClient;
     }
 }
 
 export const waitForMockPubsubConnection = async () => {
-    if (!ioClient) throw new Error("MockPubsubHttpClient has not been instantiated");
-    await waitForSocketConnection();
+    if (!sharedConnectionState.ioClient) throw new Error("MockPubsubHttpClient has not been instantiated");
+    await waitForSocketConnection(sharedConnectionState);
 };
 
-export const createMockPubsubClient = (dropRate?: number): MockPubsubHttpClient => {
-    //@ts-expect-error
-    if (globalThis["window"] && !globalThis["window"]["io"]) globalThis["window"]["io"] = io(`ws://localhost:${port}`);
-    //@ts-expect-error
-    if (!ioClient) ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
-    usersOfMock++;
-    return new MockPubsubHttpClient(dropRate);
+type CreateMockPubsubClientOptions = {
+    dropRate?: number;
+    forceNewIoClient?: boolean;
+};
+
+export const createMockPubsubClient = ({ dropRate, forceNewIoClient }: CreateMockPubsubClientOptions = {}): MockPubsubHttpClient => {
+    if (forceNewIoClient) {
+        const dedicatedConnectionState: ConnectionState = {
+            ioClient: io(`ws://localhost:${port}`),
+            pendingConnectionWait: undefined,
+            pendingConnectionHandlers: undefined,
+            users: 0,
+            shouldCleanupWindowIo: false
+        };
+        dedicatedConnectionState.users++;
+        return new MockPubsubHttpClient(dedicatedConnectionState, dropRate);
+    }
+
+    if (!sharedConnectionState.ioClient) {
+        let createdWindowIo = false;
+        //@ts-expect-error
+        if (globalThis["window"] && !globalThis["window"]["io"]) {
+            //@ts-expect-error
+            globalThis["window"]["io"] = io(`ws://localhost:${port}`);
+            createdWindowIo = true;
+        }
+        //@ts-expect-error
+        sharedConnectionState.ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
+        sharedConnectionState.shouldCleanupWindowIo = createdWindowIo;
+    }
+    sharedConnectionState.users++;
+
+    return new MockPubsubHttpClient(sharedConnectionState, dropRate);
 };
