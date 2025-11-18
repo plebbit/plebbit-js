@@ -150,6 +150,13 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
         return comment;
     };
 
+    const getCommentRowid = (cid) => {
+        assert(dbHandler, "DbHandler not initialised");
+        const row = dbHandler._db.prepare(`SELECT rowid as rowid FROM comments WHERE cid = ?`).get(cid);
+        assert(row, `Missing comment row for cid ${cid}`);
+        return row.rowid;
+    };
+
     beforeEach(async () => {
         dbHandler = await createTestDbHandler();
         assert(dbHandler, "Failed to initialise DbHandler");
@@ -244,6 +251,68 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
 
             calculated = queryCalculated(post);
             expect(calculated.lastChildCid).to.equal(directReply.cid);
+        });
+    });
+
+    describe("number and postNumber", () => {
+        it("derives number from the sqlite rowid", () => {
+            const post = createCommentWithUpdate({ depth: 0 });
+            const reply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid });
+
+            const postCalculated = queryCalculated(post);
+            const replyCalculated = queryCalculated(reply);
+
+            expect(postCalculated.number).to.equal(getCommentRowid(post.cid));
+            expect(replyCalculated.number).to.equal(getCommentRowid(reply.cid));
+            expect(postCalculated.postNumber).to.equal(1);
+            expect(replyCalculated.postNumber).to.be.undefined;
+        });
+
+        it("assigns sequential postNumber values only to posts", () => {
+            const firstPost = createCommentWithUpdate({ depth: 0 });
+            createCommentWithUpdate({ depth: 1, parentCid: firstPost.cid, postCid: firstPost.cid });
+            const secondPost = createCommentWithUpdate({ depth: 0 });
+
+            const firstPostCalculated = queryCalculated(firstPost);
+            const secondPostCalculated = queryCalculated(secondPost);
+
+            expect(firstPostCalculated.postNumber).to.equal(1);
+            expect(secondPostCalculated.postNumber).to.equal(2);
+        });
+
+        it("never assigns postNumber to replies even if more posts are added later", () => {
+            const firstPost = createCommentWithUpdate({ depth: 0 });
+            const reply = createCommentWithUpdate({ depth: 1, parentCid: firstPost.cid, postCid: firstPost.cid });
+            createCommentWithUpdate({ depth: 0 });
+
+            const replyCalculated = queryCalculated(reply);
+            expect(replyCalculated.postNumber).to.be.undefined;
+            expect(replyCalculated.number).to.equal(getCommentRowid(reply.cid));
+        });
+
+        it("computes postNumber ignoring replies interleaved between posts", () => {
+            const postA = createCommentWithUpdate({ depth: 0 });
+            createCommentWithUpdate({ depth: 1, parentCid: postA.cid, postCid: postA.cid });
+            const postB = createCommentWithUpdate({ depth: 0 });
+            createCommentWithUpdate({ depth: 1, parentCid: postB.cid, postCid: postB.cid });
+            const postC = createCommentWithUpdate({ depth: 0 });
+
+            const postACalc = queryCalculated(postA);
+            const postBCalc = queryCalculated(postB);
+            const postCCalc = queryCalculated(postC);
+
+            expect(postACalc.postNumber).to.equal(1);
+            expect(postBCalc.postNumber).to.equal(2);
+            expect(postCCalc.postNumber).to.equal(3);
+        });
+
+        it("reuses stored number and postNumber values from commentUpdates", () => {
+            const post = createCommentWithUpdate({ depth: 0 });
+            dbHandler._db.prepare(`UPDATE commentUpdates SET number = ?, postNumber = ? WHERE cid = ?`).run(42, 7, post.cid);
+
+            const calculated = queryCalculated(post);
+            expect(calculated.number).to.equal(42);
+            expect(calculated.postNumber).to.equal(7);
         });
     });
 

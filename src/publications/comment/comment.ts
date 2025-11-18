@@ -92,6 +92,8 @@ export class Comment
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
     pendingApproval?: CommentUpdateForChallengeVerification["pendingApproval"];
     approved?: CommentUpdateType["approved"];
+    number?: CommentUpdateType["number"];
+    postNumber?: CommentUpdateType["postNumber"];
 
     override signature!: CommentPubsubMessagePublication["signature"];
     // updating states
@@ -256,6 +258,8 @@ export class Comment
         if (typeof this.pendingApproval === "boolean" || "pendingApproval" in props)
             this.pendingApproval = Boolean("pendingApproval" in props && props.pendingApproval); // revert pendingApproval if we just received a CommentUpdate
         this.approved = props.approved;
+        this.number = props.number;
+        this.postNumber = props.postNumber;
     }
 
     _updateRepliesPostsInstance(

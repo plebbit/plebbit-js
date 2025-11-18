@@ -313,6 +313,8 @@ export class DbHandler {
                 downvoteCount INTEGER NOT NULL,
                 replyCount INTEGER NOT NULL,
                 childCount INTEGER NOT NULL,
+                number INTEGER NULLABLE,
+                postNumber INTEGER NULLABLE,
                 flair TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
@@ -833,10 +835,12 @@ export class DbHandler {
 
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_UPDATES} 
-            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, flair, spoiler, nsfw, pinned, locked, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt) 
-            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
+            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, number, postNumber, flair, spoiler, nsfw, pinned, locked, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt) 
+            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @number, @postNumber, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
             ON CONFLICT(cid) DO UPDATE SET
                 edit = excluded.edit, upvoteCount = excluded.upvoteCount, downvoteCount = excluded.downvoteCount, replyCount = excluded.replyCount, childCount = excluded.childCount,
+                number = COALESCE(excluded.number, ${TABLES.COMMENT_UPDATES}.number),
+                postNumber = COALESCE(excluded.postNumber, ${TABLES.COMMENT_UPDATES}.postNumber),
                 flair = excluded.flair, spoiler = excluded.spoiler, nsfw = excluded.nsfw, pinned = excluded.pinned, locked = excluded.locked,
                 removed = excluded.removed, approved = excluded.approved, reason = excluded.reason, updatedAt = excluded.updatedAt, protocolVersion = excluded.protocolVersion,
                 signature = excluded.signature, author = excluded.author, replies = excluded.replies, lastChildCid = excluded.lastChildCid,
@@ -1685,6 +1689,32 @@ export class DbHandler {
         return { approved: Boolean(result.approved) };
     }
 
+    private _calculateCommentNumbers(cid: string): { number: number; postNumber?: number } {
+        const commentRowMeta = this._db
+            .prepare(`SELECT rowid as rowid, depth FROM ${TABLES.COMMENTS} WHERE cid = ?`)
+            .get(cid) as { rowid: number; depth: number } | undefined;
+        if (!commentRowMeta) throw Error(`Failed to query row metadata for comment ${cid}`);
+
+        const existingNumbers = this._db
+            .prepare(`SELECT number, postNumber FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ? LIMIT 1`)
+            .get(cid) as { number: number | null; postNumber: number | null } | undefined;
+
+        const commentNumber =
+            typeof existingNumbers?.number === "number" && existingNumbers.number > 0 ? existingNumbers.number : commentRowMeta.rowid;
+        let postNumber =
+            typeof existingNumbers?.postNumber === "number" && existingNumbers.postNumber > 0 ? existingNumbers.postNumber : undefined;
+
+        if (postNumber === undefined && commentRowMeta.depth === 0) {
+            const postNumberRow = this._db
+                .prepare(`SELECT COUNT(1) AS postCount FROM ${TABLES.COMMENTS} WHERE depth = 0 AND rowid <= ?`)
+                .get(commentRowMeta.rowid) as { postCount: number } | undefined;
+            if (postNumberRow && typeof postNumberRow.postCount === "number" && postNumberRow.postCount > 0)
+                postNumber = postNumberRow.postCount;
+        }
+
+        return { number: commentNumber, ...(postNumber !== undefined ? { postNumber } : undefined) };
+    }
+
     queryCalculatedCommentUpdate(
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">
     ): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion"> {
@@ -1698,10 +1728,14 @@ export class DbHandler {
         const isThisCommentApproved = this._queryIsCommentApproved(comment);
         const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // automatically add removed:true if approved=false. Will be overridden if there's commentFlags.removed
 
+        const { number: commentNumber, postNumber } = this._calculateCommentNumbers(comment.cid);
+
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             ...(removedFromApproved ? removedFromApproved : undefined),
             cid: comment.cid,
+            number: commentNumber,
+            ...(postNumber !== undefined ? { postNumber } : undefined),
             ...commentUpdateCounts,
             flair: commentModFlair?.flair || authorEdit?.flair,
             ...commentFlags,
