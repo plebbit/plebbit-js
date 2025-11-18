@@ -2,6 +2,7 @@ import io, { Socket } from "socket.io-client";
 import type { PubsubClient, PubsubSubscriptionHandler } from "../types.js";
 import { v4 as uuidV4 } from "uuid";
 import { Buffer } from "buffer";
+import { hideClassPrivateProps } from "../util.js";
 
 const port = 25963;
 
@@ -64,121 +65,124 @@ const ensurePubsubActive = async (state: ConnectionState) => {
 
 class MockPubsubHttpClient {
     public pubsub: PubsubClient["_client"]["pubsub"];
-    private subscriptions: {
+    private _subscriptions: {
         subscriptionId: string;
         topic: string;
         rawCallback: PubsubSubscriptionHandler;
     }[];
-    private topicListeners: Map<
+    private _topicListeners: Map<
         string,
         {
             callback: (msg: Buffer) => void;
         }
     >;
-    private recentlyPublishedMessages: Set<string>;
-    private readonly connectionState: ConnectionState;
+    private _recentlyPublishedMessages: Set<string>;
+    private readonly _connectionState: ConnectionState;
     private readonly dropRate?: number;
 
     constructor(connectionState: ConnectionState, dropRate?: number) {
         // dropRate should be between 0 and 1
-        this.connectionState = connectionState;
+        this._connectionState = connectionState;
         this.dropRate = dropRate;
-        this.subscriptions = [];
-        this.recentlyPublishedMessages = new Set();
-        this.topicListeners = new Map();
+        this._subscriptions = [];
+        this._recentlyPublishedMessages = new Set();
+        this._topicListeners = new Map();
 
         this.pubsub = {
             publish: async (topic: string, message: Uint8Array) => {
-                await ensurePubsubActive(this.connectionState);
+                await ensurePubsubActive(this._connectionState);
                 const ioClient = this.getIoClient();
                 const messageKey = Buffer.from(message).toString("base64");
-                this.recentlyPublishedMessages.add(messageKey);
-                setTimeout(() => this.recentlyPublishedMessages.delete(messageKey), 30 * 1000);
+                this._recentlyPublishedMessages.add(messageKey);
+                setTimeout(() => this._recentlyPublishedMessages.delete(messageKey), 30 * 1000);
                 if (typeof this.dropRate === "number") {
                     if (Math.random() > this.dropRate) ioClient.emit(topic, message);
                 } else ioClient.emit(topic, message);
             },
             subscribe: async (topic: string, rawCallback: PubsubSubscriptionHandler) => {
-                await ensurePubsubActive(this.connectionState);
+                await ensurePubsubActive(this._connectionState);
                 this._ensureTopicListener(topic);
                 const uniqueSubId = uuidV4();
-                this.subscriptions.push({ topic, rawCallback, subscriptionId: uniqueSubId });
+                this._subscriptions.push({ topic, rawCallback, subscriptionId: uniqueSubId });
             },
             unsubscribe: async (topic: string, rawCallback?: PubsubSubscriptionHandler) => {
-                await ensurePubsubActive(this.connectionState);
+                await ensurePubsubActive(this._connectionState);
                 if (!rawCallback) {
-                    const subscriptionsWithTopic = this.subscriptions.filter((sub) => sub.topic === topic);
+                    const subscriptionsWithTopic = this._subscriptions.filter((sub) => sub.topic === topic);
 
                     if (subscriptionsWithTopic.length === 0) return;
 
-                    this.subscriptions = this.subscriptions.filter(
+                    this._subscriptions = this._subscriptions.filter(
                         (sub) => !subscriptionsWithTopic.map((sub) => sub.subscriptionId).includes(sub.subscriptionId)
                     );
                 } else {
-                    const toUnsubscribe = this.subscriptions.find((sub) => sub.topic === topic && sub.rawCallback === rawCallback);
+                    const toUnsubscribe = this._subscriptions.find((sub) => sub.topic === topic && sub.rawCallback === rawCallback);
                     if (!toUnsubscribe) return;
-                    this.subscriptions = this.subscriptions.filter((sub) => sub.subscriptionId !== toUnsubscribe.subscriptionId);
+                    this._subscriptions = this._subscriptions.filter((sub) => sub.subscriptionId !== toUnsubscribe.subscriptionId);
                 }
                 this._cleanupTopicListenerIfUnused(topic);
             },
             ls: async () => {
-                await ensurePubsubActive(this.connectionState);
-                return this.subscriptions.map((sub) => sub.topic);
+                await ensurePubsubActive(this._connectionState);
+                return this._subscriptions.map((sub) => sub.topic);
             },
             peers: async () => {
-                await ensurePubsubActive(this.connectionState);
+                await ensurePubsubActive(this._connectionState);
                 return [];
             }
         };
+        hideClassPrivateProps(this);
     }
 
     private _ensureTopicListener(topic: string) {
-        if (this.topicListeners.has(topic)) return;
+        if (this._topicListeners.has(topic)) return;
         const callback = (msg: Buffer) => {
             const messageKey = msg.toString("base64");
-            if (this.recentlyPublishedMessages.has(messageKey)) {
-                this.recentlyPublishedMessages.delete(messageKey);
+            if (this._recentlyPublishedMessages.has(messageKey)) {
+                this._recentlyPublishedMessages.delete(messageKey);
                 return;
             }
-            const subscriptionsWithTopic = this.subscriptions.filter((sub) => sub.topic === topic);
+            const subscriptionsWithTopic = this._subscriptions.filter((sub) => sub.topic === topic);
             if (subscriptionsWithTopic.length === 0) return;
             const data = new Uint8Array(msg);
             //@ts-expect-error
             subscriptionsWithTopic.forEach((sub) => sub.rawCallback({ from: undefined!, seqno: undefined, topicIDs: undefined, data }));
         };
-        this.topicListeners.set(topic, { callback });
+        this._topicListeners.set(topic, { callback });
         this.getIoClient().on(topic, callback);
     }
 
     private _cleanupTopicListenerIfUnused(topic: string) {
-        if (this.subscriptions.some((sub) => sub.topic === topic)) return;
-        const listener = this.topicListeners.get(topic);
+        if (this._subscriptions.some((sub) => sub.topic === topic)) return;
+        const listener = this._topicListeners.get(topic);
         if (!listener) return;
-        this.connectionState.ioClient?.off(topic, listener.callback);
-        this.topicListeners.delete(topic);
+        this._connectionState.ioClient?.off(topic, listener.callback);
+        this._topicListeners.delete(topic);
     }
 
     async destroy() {
-        if (this.connectionState.users > 0) this.connectionState.users--;
-        if (this.connectionState.users === 0) {
-            if (this.connectionState.pendingConnectionHandlers) {
-                this.connectionState.pendingConnectionHandlers.onError(new Error("MockPubsubHttpClient destroyed before the socket connected"));
+        if (this._connectionState.users > 0) this._connectionState.users--;
+        if (this._connectionState.users === 0) {
+            if (this._connectionState.pendingConnectionHandlers) {
+                this._connectionState.pendingConnectionHandlers.onError(
+                    new Error("MockPubsubHttpClient destroyed before the socket connected")
+                );
             } else {
-                cleanupPendingConnectionWait(this.connectionState);
+                cleanupPendingConnectionWait(this._connectionState);
             }
-            await this.connectionState.ioClient?.disconnect();
-            this.connectionState.ioClient = undefined;
+            await this._connectionState.ioClient?.disconnect();
+            this._connectionState.ioClient = undefined;
             //@ts-expect-error
-            if (this.connectionState.shouldCleanupWindowIo && globalThis["window"] && globalThis["window"]["io"]) {
+            if (this._connectionState.shouldCleanupWindowIo && globalThis["window"] && globalThis["window"]["io"]) {
                 //@ts-expect-error
                 delete globalThis["window"]["io"];
             }
-            this.connectionState.shouldCleanupWindowIo = false;
+            this._connectionState.shouldCleanupWindowIo = false;
         }
     }
 
     private getIoClient(): Socket {
-        const ioClient = this.connectionState.ioClient;
+        const ioClient = this._connectionState.ioClient;
         if (!ioClient) throw new Error("MockPubsubHttpClient has been destroyed");
         return ioClient;
     }
