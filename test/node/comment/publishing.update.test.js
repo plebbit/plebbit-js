@@ -78,6 +78,7 @@ async function createPublishingTestContext({ targetDepth }) {
 
     fakeSub._calculateLocalMfsPathForCommentUpdate = LocalSubplebbit.prototype._calculateLocalMfsPathForCommentUpdate.bind(fakeSub);
     fakeSub._validateCommentUpdateSignature = async () => {};
+    fakeSub._addOldPageCidsToCidsToUnpin = async () => {};
 
     return {
         rowsByDepth,
