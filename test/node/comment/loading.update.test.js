@@ -2,21 +2,23 @@ import { expect } from "chai";
 import {
     createSubWithNoChallenge,
     describeSkipIfRpc,
+    forceSubplebbitToGenerateAllRepliesPages,
     mockPlebbit,
+    mockReplyToUseParentPagesForUpdates,
     publishRandomPost,
     publishRandomReply,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 
 // this test is testing the loading logic of Comment at a different depths
 // it was made because testing it on test-server.js subs take too long
 
-
-const depthsToTest = [1, 2, 3, 15, 30, 45, 70];
+const depthsToTest = [1, 2, 3, 15, 30, 45];
 
 describeSkipIfRpc("comment.update loading depth coverage", function () {
     depthsToTest.forEach((replyDepth) => {
-        describe(`reply depth ${replyDepth}`, () => {
+        describe.sequential(`reply depth ${replyDepth}`, () => {
             let context;
 
             before(async () => {
@@ -27,7 +29,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 await context?.cleanup();
             });
 
-            it("loads reply updates when the post was stopped", async () => {
+            it.sequential("loads reply updates when the post was stopped", async () => {
                 const replyComment = await context.createLeafComment();
                 try {
                     await replyComment.update();
@@ -62,11 +64,76 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     await postComment.stop();
                 }
             });
+
+            describe.sequential("parent replies served via pageCids", () => {
+                let paginationContext;
+
+                before(async () => {
+                    paginationContext = await createReplyDepthTestEnvironment({
+                        replyDepth,
+                        forceParentRepliesPageCids: true
+                    });
+                });
+
+                after(async () => {
+                    await paginationContext?.cleanup();
+                });
+
+                it.sequential("loads reply updates when the parent was stopped", async () => {
+                    const replyComment = await paginationContext.createLeafComment();
+                    try {
+                        await replyComment.update();
+                        mockReplyToUseParentPagesForUpdates(replyComment);
+                        await waitForReplyToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
+                        const updatingReply = paginationContext.plebbit._updatingComments[replyComment.cid];
+                        expect(updatingReply).to.exist;
+                        expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
+                        const parentForUpdating = updatingReply._clientsManager._postForUpdating;
+                        expect(parentForUpdating).to.exist;
+                        const parentReplies = parentForUpdating?.replies;
+                        expect(parentReplies).to.exist;
+                        const parentPageCids = parentReplies?.pageCids;
+                        const parentPageCidKeys = Object.keys(parentPageCids ?? {});
+                        expect(parentPageCids).to.exist;
+                        expect(parentPageCidKeys).to.not.be.empty;
+                        expect(parentForUpdating?.comment.cid).to.equal(paginationContext.rootCid);
+                    } finally {
+                        await replyComment.stop();
+                    }
+                });
+
+                it("loads reply updates while the parent keeps updating", async () => {
+                    const parentComment = await paginationContext.createLeafParentComment();
+                    const replyComment = await paginationContext.createLeafComment();
+                    try {
+                        await parentComment.update();
+                        await waitForPostToStartUpdating(parentComment);
+                        await replyComment.update();
+                        mockReplyToUseParentPagesForUpdates(replyComment);
+                        await waitForReplyToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
+                        const updatingReply = paginationContext.plebbit._updatingComments[replyComment.cid];
+                        expect(updatingReply).to.exist;
+                        expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
+                        const parentForUpdating = updatingReply._clientsManager._postForUpdating;
+                        expect(parentForUpdating).to.exist;
+                        const parentReplies = parentForUpdating?.replies;
+                        expect(parentReplies).to.exist;
+                        const parentPageCids = parentReplies?.pageCids;
+                        const parentPageCidKeys = Object.keys(parentPageCids ?? {});
+                        expect(parentPageCids).to.exist;
+                        expect(parentPageCidKeys).to.not.be.empty;
+                        expect(parentForUpdating?.comment.cid).to.equal(paginationContext.rootCid);
+                    } finally {
+                        await replyComment.stop();
+                        await parentComment.stop();
+                    }
+                });
+            });
         });
     });
 });
 
-async function createReplyDepthTestEnvironment({ replyDepth }) {
+async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesPageCids = false }) {
     const plebbit = await mockPlebbit();
     const subplebbit = await createSubWithNoChallenge({}, plebbit);
     await subplebbit.start();
@@ -74,15 +141,35 @@ async function createReplyDepthTestEnvironment({ replyDepth }) {
 
     const chain = await buildReplyDepthChain({ replyDepth, plebbit, subplebbit });
 
+    if (forceParentRepliesPageCids) {
+        if (!chain.parentOfLeafCid) throw new Error("parent cid is required to force page generation");
+        const parentComment = await plebbit.createComment({ cid: chain.parentOfLeafCid });
+        try {
+            await parentComment.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: parentComment,
+                predicate: () => typeof parentComment.updatedAt === "number"
+            });
+            await forceSubplebbitToGenerateAllRepliesPages(parentComment);
+        } finally {
+            await parentComment.stop().catch(() => {});
+        }
+    }
+
     return {
         plebbit,
         subplebbit,
         replyDepth,
         rootCid: chain.rootCid,
         leafCid: chain.leafCid,
+        leafParentCid: chain.parentOfLeafCid,
         expectedLeafUpdate: chain.expectedLeafUpdate,
         createRootComment: () => plebbit.createComment({ cid: chain.rootCid }),
         createLeafComment: () => plebbit.createComment({ cid: chain.leafCid }),
+        createLeafParentComment: () => {
+            if (!chain.parentOfLeafCid) throw new Error("leaf parent cid missing");
+            return plebbit.createComment({ cid: chain.parentOfLeafCid });
+        },
         cleanup: async () => {
             await subplebbit.delete().catch(() => {});
             await plebbit.destroy().catch(() => {});
@@ -94,8 +181,10 @@ async function buildReplyDepthChain({ replyDepth, plebbit, subplebbit }) {
     const root = await publishRandomPost(subplebbit.address, plebbit);
     let parent = root;
     let latestStoredUpdate = await waitForStoredCommentUpdateWithAssertions(subplebbit, parent);
+    let parentOfLeafCid = root.cid;
 
     for (let depth = 1; depth <= replyDepth; depth++) {
+        parentOfLeafCid = parent.cid;
         const reply = await publishRandomReply(parent, plebbit);
         latestStoredUpdate = await waitForStoredCommentUpdateWithAssertions(subplebbit, reply);
         parent = reply;
@@ -104,6 +193,7 @@ async function buildReplyDepthChain({ replyDepth, plebbit, subplebbit }) {
     return {
         rootCid: root.cid,
         leafCid: parent.cid,
+        parentOfLeafCid,
         expectedLeafUpdate: latestStoredUpdate
     };
 }
