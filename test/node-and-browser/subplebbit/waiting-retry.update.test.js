@@ -75,7 +75,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             }
         });
 
-        it(`subplebbit.update() emits waiting-retry if fetching subplebbit CID record times out`, async () => {
+        it.sequential(`subplebbit.update() emits waiting-retry if fetching subplebbit CID record times out`, async () => {
             const validIpns = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR"; // this IPNS exists
 
             // plebbit._timeouts["subplebbit-ipns"] = 100;
@@ -83,16 +83,20 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             plebbit._timeouts["subplebbit-ipfs"] = 100;
             const tempSubplebbit = await plebbit.createSubplebbit({ address: validIpns });
-            await mockPlebbitToTimeoutFetchingCid(plebbit);
+            const { cleanUp } = mockPlebbitToTimeoutFetchingCid(plebbit);
             const waitingRetryErrs = [];
             tempSubplebbit.on("error", (err) => waitingRetryErrs.push(err));
-            await tempSubplebbit.update();
+            try {
+                await tempSubplebbit.update();
 
-            await resolveWhenConditionIsTrue({
-                toUpdate: tempSubplebbit,
-                predicate: () => waitingRetryErrs.length === 3,
-                eventName: "error"
-            });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: tempSubplebbit,
+                    predicate: () => waitingRetryErrs.length === 3,
+                    eventName: "error"
+                });
+            } finally {
+                cleanUp();
+            }
 
             await tempSubplebbit.stop();
             plebbit._timeouts["subplebbit-ipfs"] = originalTimeOutIpfs;

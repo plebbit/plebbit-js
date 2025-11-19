@@ -1652,19 +1652,28 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
 }
 
 export function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit) {
-    const originalFetch = plebbit._clientsManager._fetchCidP2P.bind(plebbit._clientsManager);
+    const originalFetch = plebbit._clientsManager._fetchCidP2P;
+    const restoreFns: Array<() => void> = [];
     for (const ipfsClient of Object.values(plebbit.clients.kuboRpcClients)) {
+        const originalCat = ipfsClient._client.cat;
         ipfsClient._client.cat = async function* (ipfsPath, options) {
             await new Promise((resolve) => setTimeout(resolve, plebbit._timeouts["subplebbit-ipfs"] * 2));
             return undefined;
         };
+        restoreFns.push(() => {
+            ipfsClient._client.cat = originalCat;
+        });
     }
 
     for (const libp2pJsClient of Object.values(plebbit.clients.libp2pJsClients)) {
+        const originalCat = libp2pJsClient.heliaWithKuboRpcClientFunctions.cat;
         libp2pJsClient.heliaWithKuboRpcClientFunctions.cat = async function* (ipfsPath, options) {
             await new Promise((resolve) => setTimeout(resolve, plebbit._timeouts["subplebbit-ipfs"] * 2));
             return undefined;
         };
+        restoreFns.push(() => {
+            libp2pJsClient.heliaWithKuboRpcClientFunctions.cat = originalCat;
+        });
     }
 
     // TODO mock for gateway
@@ -1672,6 +1681,13 @@ export function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit) {
     //     await new Promise((resolve) => setTimeout(resolve, plebbit._timeouts["subplebbit-ipfs"] * 2));
     //     return undefined;
     // };
+
+    return {
+        cleanUp: () => {
+            plebbit._clientsManager._fetchCidP2P = originalFetch;
+            for (const restore of restoreFns) restore();
+        }
+    };
 }
 
 export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
