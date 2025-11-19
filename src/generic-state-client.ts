@@ -8,6 +8,7 @@ export class GenericStateClient<T extends string> extends PlebbitTypedEmitter<Ge
     constructor(state: T) {
         super();
         this.state = state;
+        this.setMaxListeners(100);
         hideClassPrivateProps(this);
     }
 }
