@@ -70,7 +70,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
         });
 
         plebbitLoadingConfigs.forEach((plebbitConfig) => {
-            describe.sequential(`post loading with ${plebbitConfig.name}`, () => {
+            describe.concurrent(`post loading with ${plebbitConfig.name}`, () => {
                 it("loads post updates while the sub keeps updating", async () => {
                     const subInstance = context.subplebbit;
                     const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
@@ -89,7 +89,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 });
             });
 
-            describe.sequential("subplebbit posts served via postUpdates", () => {
+            describe.concurrent("subplebbit posts served via postUpdates", () => {
                 let paginationContext;
 
                 before(async () => {
@@ -141,8 +141,8 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             });
 
             plebbitLoadingConfigs.forEach((plebbitConfig) => {
-                describe.sequential(`reply loading with ${plebbitConfig.name}`, () => {
-                    it.sequential("loads reply updates when the post was stopped", async () => {
+                describe.concurrent(`reply loading with ${plebbitConfig.name}`, () => {
+                    it("loads reply updates when the post was stopped", async () => {
                         const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
                         const replyComment = await remotePlebbit.getComment(context.leafCid);
                         try {
@@ -187,7 +187,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             });
         });
 
-        describe.sequential("parent replies served via pageCids", () => {
+        describe.concurrent("parent replies served via pageCids", () => {
             let paginationContext;
 
             before(async () => {
@@ -202,7 +202,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             });
 
             plebbitLoadingConfigs.forEach((plebbitConfig) => {
-                it.sequential("loads reply updates when the parent was stopped", async () => {
+                it("loads reply updates when the parent was stopped", async () => {
                     const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
                     const replyComment = await remotePlebbit.getComment(paginationContext.leafCid);
                     try {
