@@ -96,13 +96,15 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 await postComment.update();
                 await waitForReplyToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
                 expect(postComment.updatedAt).to.equal(paginationContext.expectedPostUpdate.updatedAt);
-                expect(replyRecreated._commentUpdateIpfsPath).to.be.a("string"); // should be undefined for replies since we're not including them in post updates
+
+                const updatingPost = paginationContext.plebbit._updatingComments[postComment.cid];
+                expect(updatingPost._commentUpdateIpfsPath).to.be.a("string"); // post shouldn't find itself in pages, rather it needs to use postUpdates
             });
         });
     });
 
     replyDepthsToTest.forEach((replyDepth) => {
-        describe.sequential(`reply depth ${replyDepth}`, () => {
+        describe.concurrent(`reply depth ${replyDepth}`, () => {
             let context;
 
             before(async () => {
@@ -246,6 +248,7 @@ async function createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids = f
             toUpdate: subplebbit,
             predicate: () => typeof subplebbit.updatedAt === "number"
         });
+        clearSubplebbitPreloadedPages(subplebbit);
         forcedSubplebbitStoredUpdate = await waitForStoredSubplebbitPageCids(subplebbit);
     }
 
@@ -391,18 +394,33 @@ async function waitForStoredParentPageCids(subplebbit, parentCid) {
     throw new Error(`Timed out waiting for parent comment ${parentCid} to have replies.pageCids in stored update`);
 }
 
+function clearSubplebbitPreloadedPages(subplebbit) {
+    const postsPages = subplebbit.posts?.pages;
+    if (!postsPages) return;
+    Object.keys(postsPages).forEach((sortName) => {
+        if (postsPages[sortName]?.comments) postsPages[sortName].comments = [];
+    });
+}
+
 async function waitForStoredSubplebbitPageCids(subplebbit) {
     const timeoutMs = 60000;
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
         const pageCids = subplebbit.posts?.pageCids;
         if (pageCids && Object.keys(pageCids).length > 0) {
-            return JSON.parse(
-                JSON.stringify({
-                    pageCids,
-                    pages: subplebbit.posts?.pages || {}
-                })
+            const clonedPageCids = JSON.parse(JSON.stringify(pageCids));
+            const sanitizedPages = Object.fromEntries(
+                Object.entries(subplebbit.posts?.pages || {}).map(([sortName, page]) => [
+                    sortName,
+                    page
+                        ? {
+                              nextCid: page.nextCid,
+                              comments: []
+                          }
+                        : page
+                ])
             );
+            return { pageCids: clonedPageCids, pages: sanitizedPages };
         }
         await new Promise((resolve) => setTimeout(resolve, 50));
     }
