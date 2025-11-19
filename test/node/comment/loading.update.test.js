@@ -5,6 +5,7 @@ import {
     forceParentRepliesToAlwaysGenerateMultipleChunks,
     forceSubplebbitToGenerateAllPostsPages,
     forceSubplebbitToGenerateAllRepliesPages,
+    getAvailablePlebbitConfigsToTestAgainst,
     mockPlebbit,
     mockReplyToUseParentPagesForUpdates,
     publishRandomPost,
@@ -16,7 +17,7 @@ import { describe, it } from "vitest";
 // this test is testing the loading logic of Comment at a different depths
 // it was made because testing it on test-server.js subs take too long
 
-// TODO for loading, we need to have a remote plebbit config with getAvailablePlebbitConfigs
+const plebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 const replyDepthsToTest = [1, 2, 3, 15, 30, 45];
 
 describeSkipIfRpc("comment.update loading depth coverage", function () {
@@ -24,7 +25,9 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
         let context;
 
         before(async () => {
-            context = await createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids: false });
+            context = await createPostDepthTestEnvironment({
+                forceSubplebbitPostsPageCids: false
+            });
         });
 
         after(async () => {
@@ -32,7 +35,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
         });
 
         it.sequential("loads post updates when the sub was stopped", async () => {
-            const postComment = await context.createPostComment();
+            const postComment = await context.plebbit.createComment({ cid: context.rootCid });
             const subInstance = context.subplebbit;
             await subInstance.stop();
 
@@ -42,7 +45,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 await postComment.update();
                 await waitForReplyToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
                 expect(postComment.updatedAt).to.equal(context.expectedPostUpdate.updatedAt);
-                const updatingPost = context.plebbit._updatingComments[postComment.cid];
+                const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
                 expect(updatingPost).to.exist;
                 expect(updatingPost.depth).to.equal(0);
             } finally {
@@ -50,17 +53,17 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             }
         });
 
-        // TODO needs another test for when subplebbit is updating via remote plebbit instance
-        it("loads post updates while the sub keeps running", async () => {
+        it("loads post updates while the sub keeps running on the same plebbit instance", async () => {
+            const postComment = await context.plebbit.createComment({ cid: context.rootCid });
+
             const subInstance = context.subplebbit;
-            await subInstance.start();
-            const postComment = await context.createPostComment();
+            if (subInstance.state !== "started") await subInstance.start();
             try {
                 expect(subInstance.state).to.equal("started");
                 await postComment.update();
                 await waitForReplyToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
                 expect(postComment.updatedAt).to.equal(context.expectedPostUpdate.updatedAt);
-                const updatingPost = context.plebbit._updatingComments[postComment.cid];
+                const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
                 expect(updatingPost).to.exist;
                 expect(updatingPost.depth).to.equal(0);
             } finally {
@@ -68,37 +71,61 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             }
         });
 
-        describe.sequential("subplebbit posts served via postUpdates", () => {
-            let paginationContext;
-
-            before(async () => {
-                paginationContext = await createPostDepthTestEnvironment({
-                    forceSubplebbitPostsPageCids: true
+        plebbitLoadingConfigs.forEach((plebbitConfig) => {
+            describe.sequential(`post loading with ${plebbitConfig.name}`, () => {
+                it("loads post updates while the sub keeps updating", async () => {
+                    const subInstance = context.subplebbit;
+                    const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
+                    try {
+                        const postComment = await remotePlebbit.createComment({ cid: context.rootCid });
+                        expect(subInstance.state).to.equal("started");
+                        await postComment.update();
+                        await waitForReplyToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
+                        expect(postComment.updatedAt).to.equal(context.expectedPostUpdate.updatedAt);
+                        const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
+                        expect(updatingPost).to.exist;
+                        expect(updatingPost.depth).to.equal(0);
+                    } finally {
+                        await remotePlebbit.destroy();
+                    }
                 });
             });
 
-            after(async () => {
-                await paginationContext?.cleanup();
-            });
+            describe.sequential("subplebbit posts served via postUpdates", () => {
+                let paginationContext;
 
-            it.sequential("loads post updates when from subplebbit.postUpdates", async () => {
-                const storedSubplebbitUpdate = paginationContext.forcedSubplebbitStoredUpdate;
-                expect(storedSubplebbitUpdate).to.exist;
-                expect(storedSubplebbitUpdate?.pageCids).to.exist;
-                expect(Object.keys(storedSubplebbitUpdate?.pageCids ?? {})).to.not.be.empty;
-                const storedSubplebbitPages = storedSubplebbitUpdate?.pages || {};
-                Object.values(storedSubplebbitPages).forEach((page) => {
-                    if (page?.comments) expect(page.comments).to.deep.equal([]);
+                before(async () => {
+                    paginationContext = await createPostDepthTestEnvironment({
+                        forceSubplebbitPostsPageCids: true
+                    });
                 });
 
-                const postComment = await paginationContext.createPostComment();
+                after(async () => {
+                    await paginationContext?.cleanup();
+                });
 
-                await postComment.update();
-                await waitForReplyToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
-                expect(postComment.updatedAt).to.equal(paginationContext.expectedPostUpdate.updatedAt);
+                it.sequential("loads post updates when from subplebbit.postUpdates", async () => {
+                    const storedSubplebbitUpdate = paginationContext.forcedSubplebbitStoredUpdate;
+                    expect(storedSubplebbitUpdate).to.exist;
+                    expect(storedSubplebbitUpdate?.pageCids).to.exist;
+                    expect(Object.keys(storedSubplebbitUpdate?.pageCids ?? {})).to.not.be.empty;
+                    const storedSubplebbitPages = storedSubplebbitUpdate?.pages || {};
+                    Object.values(storedSubplebbitPages).forEach((page) => {
+                        if (page?.comments) expect(page.comments).to.deep.equal([]);
+                    });
 
-                const updatingPost = paginationContext.plebbit._updatingComments[postComment.cid];
-                expect(updatingPost._commentUpdateIpfsPath).to.be.a("string"); // post shouldn't find itself in pages, rather it needs to use postUpdates
+                    const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
+
+                    const postComment = await remotePlebbit.createComment({ cid: paginationContext.rootCid });
+
+                    await postComment.update();
+                    await waitForReplyToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
+                    expect(postComment.updatedAt).to.equal(paginationContext.expectedPostUpdate.updatedAt);
+
+                    const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
+                    expect(updatingPost._commentUpdateIpfsPath).to.be.a("string"); // post shouldn't find itself in pages, rather it needs to use postUpdates
+                    await remotePlebbit.destroy();
+                });
             });
         });
     });
@@ -121,7 +148,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     await replyComment.update();
                     await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
                     expect(replyComment.updatedAt).to.equal(context.expectedLeafUpdate.updatedAt);
-                    const updatingReply = context.plebbit._updatingComments[replyComment.cid];
+                    const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
                     expect(updatingReply).to.exist;
                     const parentForUpdating = updatingReply._clientsManager._postForUpdating;
                     expect(parentForUpdating).to.exist;
@@ -141,7 +168,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     await replyComment.update();
                     await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
                     expect(replyComment.updatedAt).to.equal(context.expectedLeafUpdate.updatedAt);
-                    const updatingReply = context.plebbit._updatingComments[replyComment.cid];
+                    const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
                     expect(updatingReply).to.exist;
                     const parentForUpdating = updatingReply._clientsManager._postForUpdating;
                     expect(parentForUpdating).to.exist;
@@ -174,7 +201,6 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         expect(storedParentUpdate).to.exist;
                         expect(storedParentUpdate?.replies?.pageCids).to.exist;
                         expect(Object.keys(storedParentUpdate?.replies?.pageCids ?? {})).to.not.be.empty;
-                        // TODO look for updatingReply in storedParentUpdate?.replies.pages, it should not be there
                         const storedParentPreloadedPages = storedParentUpdate?.replies?.pages || {};
                         Object.values(storedParentPreloadedPages).forEach((page) => {
                             if (page?.comments) expect(page.comments).to.deep.equal([]);
@@ -186,7 +212,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         expect(replyComment.parentCid).to.equal(paginationContext.leafParentCid);
                         // await waitForParentPageCidsToLoad(replyComment, paginationContext.plebbit);
 
-                        const updatingReply = paginationContext.plebbit._updatingComments[replyComment.cid];
+                        const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
                         expect(updatingReply).to.exist;
                         expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
                         expect(updatingReply.depth).to.equal(replyDepth);
@@ -214,7 +240,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         Object.values(storedParentPreloadedPages).forEach((page) => {
                             if (page?.comments) expect(page.comments).to.deep.equal([]);
                         });
-                        const updatingReply = paginationContext.plebbit._updatingComments[replyComment.cid];
+                        const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
                         expect(updatingReply).to.exist;
                         expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
                         expect(updatingReply.depth).to.equal(replyDepth);
@@ -229,12 +255,12 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 });
 
 async function createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids = false }) {
-    const plebbit = await mockPlebbit();
-    const subplebbit = await createSubWithNoChallenge({}, plebbit);
+    const publisherPlebbit = await mockPlebbit();
+    const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit);
     await subplebbit.start();
     await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
-    const post = await publishRandomPost(subplebbit.address, plebbit);
+    const post = await publishRandomPost(subplebbit.address, publisherPlebbit);
     const storedPostUpdate = await waitForStoredCommentUpdateWithAssertions(subplebbit, post);
 
     let forcedSubplebbitStoredUpdate;
@@ -253,7 +279,7 @@ async function createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids = f
     }
 
     return {
-        plebbit,
+        plebbit: publisherPlebbit,
         subplebbit,
         replyDepth: 0,
         rootCid: post.cid,
@@ -261,26 +287,25 @@ async function createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids = f
         leafParentCid: undefined,
         expectedPostUpdate: storedPostUpdate,
         forcedSubplebbitStoredUpdate,
-        createPostComment: () => plebbit.createComment({ cid: post.cid }),
         cleanup: async () => {
             await subplebbit.delete().catch(() => {});
-            await plebbit.destroy().catch(() => {});
+            await publisherPlebbit.destroy().catch(() => {});
         }
     };
 }
 
 async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesPageCids = false }) {
-    const plebbit = await mockPlebbit();
-    const subplebbit = await createSubWithNoChallenge({}, plebbit);
+    const publisherPlebbit = await mockPlebbit();
+    const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit);
     await subplebbit.start();
     await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
-    const chain = await buildReplyDepthChain({ replyDepth, plebbit, subplebbit });
+    const chain = await buildReplyDepthChain({ replyDepth, plebbit: publisherPlebbit, subplebbit });
 
     let forcedParentStoredUpdate;
     if (forceParentRepliesPageCids) {
         if (!chain.parentOfLeafCid) throw new Error("parent cid is required to force page generation");
-        const parentComment = await plebbit.createComment({ cid: chain.parentOfLeafCid });
+        const parentComment = await publisherPlebbit.createComment({ cid: chain.parentOfLeafCid });
         try {
             await parentComment.update();
             await resolveWhenConditionIsTrue({
@@ -304,7 +329,7 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
     }
 
     return {
-        plebbit,
+        plebbit: publisherPlebbit,
         subplebbit,
         replyDepth,
         rootCid: chain.rootCid,
@@ -312,15 +337,15 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
         leafParentCid: chain.parentOfLeafCid,
         expectedLeafUpdate: chain.expectedLeafUpdate,
         forcedParentStoredUpdate,
-        createRootComment: () => plebbit.createComment({ cid: chain.rootCid }),
-        createLeafComment: () => plebbit.createComment({ cid: chain.leafCid }),
-        createLeafParentComment: () => {
+        createRootComment: (plebbitInstance = publisherPlebbit) => plebbitInstance.createComment({ cid: chain.rootCid }),
+        createLeafComment: (plebbitInstance = publisherPlebbit) => plebbitInstance.createComment({ cid: chain.leafCid }),
+        createLeafParentComment: (plebbitInstance = publisherPlebbit) => {
             if (!chain.parentOfLeafCid) throw new Error("leaf parent cid missing");
-            return plebbit.createComment({ cid: chain.parentOfLeafCid });
+            return plebbitInstance.createComment({ cid: chain.parentOfLeafCid });
         },
         cleanup: async () => {
             await subplebbit.delete().catch(() => {});
-            await plebbit.destroy().catch(() => {});
+            await publisherPlebbit.destroy().catch(() => {});
         }
     };
 }
