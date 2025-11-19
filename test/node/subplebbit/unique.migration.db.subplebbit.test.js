@@ -3,7 +3,6 @@ import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc("db-handler duplicate signature purge during migration", function () {
-
     let dbHandler;
     let subplebbitAddress;
     let cidCounter = 0;
@@ -25,7 +24,26 @@ describeSkipIfRpc("db-handler duplicate signature purge during migration", funct
             _plebbit: fakePlebbit,
             _cidsToUnPin: new Set(),
             _blocksToRm: [],
-            _clientsManager: {}
+            _mfsPathsToRemove: new Set(),
+            _clientsManager: {},
+            _calculateLocalMfsPathForCommentUpdate: () => "",
+            async _addOldPageCidsToCidsToUnpin() {},
+            _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate) {
+                this._cidsToUnPin.add(purgedCommentAndCommentUpdate.commentTableRow.cid);
+                this._blocksToRm.push(purgedCommentAndCommentUpdate.commentTableRow.cid);
+                if (typeof purgedCommentAndCommentUpdate.commentUpdateTableRow?.postUpdatesBucket === "number") {
+                    const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
+                        purgedCommentAndCommentUpdate.commentTableRow,
+                        purgedCommentAndCommentUpdate.commentUpdateTableRow.postUpdatesBucket
+                    );
+                    this._mfsPathsToRemove.add(localCommentUpdatePath);
+                }
+                if (purgedCommentAndCommentUpdate.commentUpdateTableRow?.replies) {
+                    this._addOldPageCidsToCidsToUnpin(purgedCommentAndCommentUpdate.commentUpdateTableRow.replies, undefined, true).catch(
+                        () => {}
+                    );
+                }
+            }
         };
         const handler = new DbHandler(fakeSubplebbit);
         await handler.initDbIfNeeded({ filename: ":memory:", fileMustExist: false });
@@ -127,10 +145,7 @@ describeSkipIfRpc("db-handler duplicate signature purge during migration", funct
         } catch (error) {
             return undefined;
         }
-        return pathSegments.reduce(
-            (acc, segment) => (acc && typeof acc === "object" && segment in acc ? acc[segment] : undefined),
-            parsed
-        );
+        return pathSegments.reduce((acc, segment) => (acc && typeof acc === "object" && segment in acc ? acc[segment] : undefined), parsed);
     }
 
     function rowsWithSignature(tableName, column, pathSegments, targetSignature) {
