@@ -7,9 +7,9 @@ import {
     loadAllUniquePostsUnderSubplebbit,
     processAllCommentsRecursively,
     forceParentRepliesToAlwaysGenerateMultipleChunks,
+    forcePagesToUsePageCidsOnly,
     mockGatewayPlebbit,
     getCommentWithCommentUpdateProps,
-    forceSubplebbitToGenerateAllPostsPages,
     publishToModQueueWithDepth,
     generateMockVote,
     loadAllPages,
@@ -180,7 +180,10 @@ for (const commentMod of commentModProps) {
                         expect(foundInPosts).to.equal(shouldItBeInPosts);
 
                         if (Object.keys(subplebbit.posts.pageCids).length === 0)
-                            await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+                            await forcePagesToUsePageCidsOnly({
+                                subplebbit,
+                                subplebbitPostsCommentProps: { signer: modSigner }
+                            }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
                         expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
 
@@ -248,11 +251,11 @@ for (const commentMod of commentModProps) {
                         const postComment = await plebbit.getComment(commentToBeRejected.postCid);
                         await postComment.update();
                         await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
-                            const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
-                                subplebbit,
-                                parentComment: postComment,
-                                parentCommentReplyProps: { signer: modSigner }
-                            });
+                        const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                            subplebbit,
+                            parentComment: postComment,
+                            parentCommentReplyProps: { signer: modSigner }
+                        });
                         try {
                             const expectedResult = !shouldCommentBePurged;
 
