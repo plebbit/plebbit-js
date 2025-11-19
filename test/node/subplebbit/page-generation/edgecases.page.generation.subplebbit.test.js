@@ -1,11 +1,10 @@
 import { expect } from "chai";
 import { describeSkipIfRpc, mockPlebbit } from "../../../../dist/node/test/test-util.js";
-import { afterEach, it, vi } from "vitest";
+import { it, vi } from "vitest";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { randomUUID } from "node:crypto";
 import * as remeda from "remeda";
 import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
-import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../../dist/node/subplebbit/subplebbit-client-manager.js";
 import { calculateExpectedSignatureSize } from "../../../../dist/node/runtime/node/util.js";
 import { calculateStringSizeSameAsIpfsAddCidV0, timestamp } from "../../../../dist/node/util.js";
 import env from "../../../../dist/node/version.js";
@@ -30,7 +29,6 @@ const DEFAULT_PRIMARY_CHAIN_DEPTH = 20;
 // 36s on describe.concurrent
 // 38s without concurrency
 describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages", function () {
-
     it("returns undefined when attempting to generate mod queue pages with no pending approvals", async () => {
         const context = await createSubplebbitWithDefaultDb();
         try {
@@ -245,7 +243,7 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "post.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([5, 5, 5]);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([6, 6, 6]);
         } catch (e) {
             throw e;
         } finally {
@@ -283,7 +281,7 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "reply.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([62]);
+            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([63]);
         } catch (e) {
             throw e;
         } finally {

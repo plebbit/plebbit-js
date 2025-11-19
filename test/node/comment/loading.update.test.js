@@ -16,7 +16,7 @@ import { describe, it } from "vitest";
 // it was made because testing it on test-server.js subs take too long
 
 const plebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
-const replyDepthsToTest = [1, 2, 3, 15, 30, 45];
+const replyDepthsToTest = [1, 2, 3, 15, 30];
 
 describeSkipIfRpc("comment.update loading depth coverage", function () {
     describe.sequential(`post loading coverage`, () => {

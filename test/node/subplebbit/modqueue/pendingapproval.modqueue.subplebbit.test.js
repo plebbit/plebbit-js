@@ -8,10 +8,10 @@ import {
     processAllCommentsRecursively,
     resolveWhenConditionIsTrue,
     loadAllPages,
-    forceSubplebbitToGenerateAllRepliesPages,
+    forceParentRepliesToAlwaysGenerateMultipleChunks,
     getCommentWithCommentUpdateProps,
     mockGatewayPlebbit,
-    forceSubplebbitToGenerateAllPostsPages,
+    forcePagesToUsePageCidsOnly,
     publishToModQueueWithDepth,
     generateMockVote,
     generateMockComment,
@@ -179,7 +179,10 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             });
             expect(foundInPosts).to.be.false;
 
-            await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+            await forcePagesToUsePageCidsOnly({
+                subplebbit,
+                subplebbitPostsCommentProps: { signer: modSigner }
+            }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
             expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
 
@@ -211,21 +214,28 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 });
                 expect(foundInReplies).to.be.false;
 
-                await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+                const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                    subplebbit,
+                    parentComment,
+                    parentCommentReplyProps: { signer: modSigner }
+                });
+                try {
+                    expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
 
-                expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
+                    for (const pageCid of Object.values(parentComment.replies.pageCids)) {
+                        const pageComments = await loadAllPages(pageCid, parentComment.replies);
 
-                for (const pageCid of Object.values(parentComment.replies.pageCids)) {
-                    const pageComments = await loadAllPages(pageCid, parentComment.replies);
-
-                    expect(pageComments.length).to.be.greaterThan(0);
-                    processAllCommentsRecursively(pageComments, (comment) => {
-                        if (comment.cid === commentInPendingApproval.cid) {
-                            foundInReplies = true;
-                            return;
-                        }
-                    });
-                    expect(foundInReplies).to.be.false;
+                        expect(pageComments.length).to.be.greaterThan(0);
+                        processAllCommentsRecursively(pageComments, (comment) => {
+                            if (comment.cid === commentInPendingApproval.cid) {
+                                foundInReplies = true;
+                                return;
+                            }
+                        });
+                        expect(foundInReplies).to.be.false;
+                    }
+                } finally {
+                    cleanup();
                 }
                 await parentComment.stop();
             });
@@ -234,22 +244,29 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 const postComment = await plebbit.getComment(commentInPendingApproval.postCid);
                 await postComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
-                await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+                const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                    subplebbit,
+                    parentComment: postComment,
+                    parentCommentReplyProps: { signer: modSigner }
+                });
+                try {
+                    const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
 
-                const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+                    let foundInFlatPages = false;
+                    for (const flatPageCid of flatPageCids) {
+                        const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
 
-                let foundInFlatPages = false;
-                for (const flatPageCid of flatPageCids) {
-                    const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
-
-                    expect(flatPageComments.length).to.be.greaterThan(0);
-                    processAllCommentsRecursively(flatPageComments, (comment) => {
-                        if (comment.cid === commentInPendingApproval.cid) {
-                            foundInFlatPages = true;
-                            return;
-                        }
-                    });
-                    expect(foundInFlatPages).to.be.false;
+                        expect(flatPageComments.length).to.be.greaterThan(0);
+                        processAllCommentsRecursively(flatPageComments, (comment) => {
+                            if (comment.cid === commentInPendingApproval.cid) {
+                                foundInFlatPages = true;
+                                return;
+                            }
+                        });
+                        expect(foundInFlatPages).to.be.false;
+                    }
+                } finally {
+                    cleanup();
                 }
 
                 await postComment.stop();
