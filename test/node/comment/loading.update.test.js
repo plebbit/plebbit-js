@@ -140,60 +140,71 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 await context?.cleanup();
             });
 
-            it.sequential("loads reply updates when the post was stopped", async () => {
-                const replyComment = await context.createLeafComment();
-                try {
-                    await replyComment.update();
-                    await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
-                    expect(replyComment.updatedAt).to.equal(context.expectedLeafUpdate.updatedAt);
-                    const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
-                    expect(updatingReply).to.exist;
-                    const parentForUpdating = updatingReply._clientsManager._postForUpdating;
-                    expect(parentForUpdating).to.exist;
-                    expect(parentForUpdating.comment.cid).to.equal(context.rootCid);
-                    expect(updatingReply.depth).to.equal(replyDepth);
-                } finally {
-                    await replyComment.stop();
-                }
-            });
+            plebbitLoadingConfigs.forEach((plebbitConfig) => {
+                describe.sequential(`reply loading with ${plebbitConfig.name}`, () => {
+                    it.sequential("loads reply updates when the post was stopped", async () => {
+                        const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
+                        const replyComment = await remotePlebbit.getComment(context.leafCid);
+                        try {
+                            await replyComment.update();
+                            await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
+                            expect(replyComment.updatedAt).to.equal(context.expectedLeafUpdate.updatedAt);
+                            const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
+                            expect(updatingReply).to.exist;
+                            const parentForUpdating = updatingReply._clientsManager._postForUpdating;
+                            expect(parentForUpdating).to.exist;
+                            expect(parentForUpdating.comment.cid).to.equal(context.rootCid);
+                            expect(updatingReply.depth).to.equal(replyDepth);
+                        } finally {
+                            await replyComment.stop();
+                        }
+                    });
 
-            it("loads reply updates while the post keeps updating", async () => {
-                const postComment = await context.createRootComment();
-                const replyComment = await context.createLeafComment();
-                try {
-                    await postComment.update();
-                    await waitForPostToStartUpdating(postComment);
-                    await replyComment.update();
-                    await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
-                    expect(replyComment.updatedAt).to.equal(context.expectedLeafUpdate.updatedAt);
-                    const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
-                    expect(updatingReply).to.exist;
-                    const parentForUpdating = updatingReply._clientsManager._postForUpdating;
-                    expect(parentForUpdating).to.exist;
-                    expect(parentForUpdating.comment.cid).to.equal(context.rootCid);
-                    expect(updatingReply.depth).to.equal(replyDepth);
-                } finally {
-                    await replyComment.stop();
-                    await postComment.stop();
-                }
-            });
+                    it("loads reply updates while the post keeps updating", async () => {
+                        const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
 
-            describe.sequential("parent replies served via pageCids", () => {
-                let paginationContext;
+                        const postComment = await remotePlebbit.getComment(context.rootCid);
 
-                before(async () => {
-                    paginationContext = await createReplyDepthTestEnvironment({
-                        replyDepth,
-                        forceParentRepliesPageCids: true
+                        const replyComment = await remotePlebbit.getComment(context.leafCid);
+                        try {
+                            await postComment.update();
+                            await waitForPostToStartUpdating(postComment);
+                            await replyComment.update();
+                            await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
+                            expect(replyComment.updatedAt).to.equal(context.expectedLeafUpdate.updatedAt);
+                            const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
+                            expect(updatingReply).to.exist;
+                            const parentForUpdating = updatingReply._clientsManager._postForUpdating;
+                            expect(parentForUpdating).to.exist;
+                            expect(parentForUpdating.comment.cid).to.equal(context.rootCid);
+                            expect(updatingReply.depth).to.equal(replyDepth);
+                        } finally {
+                            await replyComment.stop();
+                            await postComment.stop();
+                        }
                     });
                 });
+            });
+        });
 
-                after(async () => {
-                    await paginationContext?.cleanup();
+        describe.sequential("parent replies served via pageCids", () => {
+            let paginationContext;
+
+            before(async () => {
+                paginationContext = await createReplyDepthTestEnvironment({
+                    replyDepth,
+                    forceParentRepliesPageCids: true
                 });
+            });
 
+            after(async () => {
+                await paginationContext?.cleanup();
+            });
+
+            plebbitLoadingConfigs.forEach((plebbitConfig) => {
                 it.sequential("loads reply updates when the parent was stopped", async () => {
-                    const replyComment = await paginationContext.createLeafComment();
+                    const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
+                    const replyComment = await remotePlebbit.getComment(paginationContext.leafCid);
                     try {
                         const storedParentUpdate = paginationContext.forcedParentStoredUpdate;
                         expect(storedParentUpdate).to.exist;
@@ -215,13 +226,14 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
                         expect(updatingReply.depth).to.equal(replyDepth);
                     } finally {
-                        await replyComment.stop();
+                        await remotePlebbit.destroy();
                     }
                 });
 
                 it("loads reply updates while the parent keeps updating", async () => {
-                    const parentComment = await paginationContext.createLeafParentComment();
-                    const replyComment = await paginationContext.createLeafComment();
+                    const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
+                    const parentComment = await remotePlebbit.getComment(paginationContext.leafParentCid);
+                    const replyComment = await remotePlebbit.getComment(paginationContext.leafCid);
                     try {
                         await parentComment.update();
                         await waitForPostToStartUpdating(parentComment);
@@ -243,8 +255,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
                         expect(updatingReply.depth).to.equal(replyDepth);
                     } finally {
-                        await replyComment.stop();
-                        await parentComment.stop();
+                        await remotePlebbit.destroy();
                     }
                 });
             });
@@ -328,12 +339,6 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
         leafParentCid: chain.parentOfLeafCid,
         expectedLeafUpdate: chain.expectedLeafUpdate,
         forcedParentStoredUpdate,
-        createRootComment: (plebbitInstance = publisherPlebbit) => plebbitInstance.createComment({ cid: chain.rootCid }),
-        createLeafComment: (plebbitInstance = publisherPlebbit) => plebbitInstance.createComment({ cid: chain.leafCid }),
-        createLeafParentComment: (plebbitInstance = publisherPlebbit) => {
-            if (!chain.parentOfLeafCid) throw new Error("leaf parent cid missing");
-            return plebbitInstance.createComment({ cid: chain.parentOfLeafCid });
-        },
         cleanup: async () => {
             await subplebbit.delete().catch(() => {});
             await publisherPlebbit.destroy().catch(() => {});
