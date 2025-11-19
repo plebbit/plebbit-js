@@ -3,14 +3,15 @@ import {
     mockRemotePlebbit,
     describeSkipIfRpc,
     resolveWhenConditionIsTrue,
-    findOrGeneratePostWithMultiplePages,
     getAvailablePlebbitConfigsToTestAgainst,
-    publishRandomReply
+    mockPlebbit,
+    createSubWithNoChallenge,
+    publishRandomPost,
+    forceParentRepliesToAlwaysGenerateMultipleChunks
 } from "../../../dist/node/test/test-util.js";
 import { PlebbitError } from "../../../dist/node/plebbit-error.js";
 import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
-import { signCommentUpdate } from "../../../dist/node/signer/signatures.js";
 import { describe } from "vitest";
 
 const cloneCommentInstance = (source) => {
@@ -24,74 +25,81 @@ const cloneCommentInstance = (source) => {
     return clone;
 };
 
-getAvailablePlebbitConfigsToTestAgainst().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true }).map((config) => {
     describeSkipIfRpc.concurrent(`plebbit.validateComment - ${config.name}`, async () => {
-        let plebbit, subplebbit, postCommentInstance, postPageComment, replyFromFlatPage, replyFromBestPage;
+        let remotePlebbit,
+            subplebbit,
+            postCommentInstance,
+            postWithRepliesInstance,
+            postPageComment,
+            replyFromFlatPage,
+            replyFromBestPage,
+            publisherEnv;
 
         before(async () => {
-            plebbit = await config.plebbitInstancePromise();
-            subplebbit = await plebbit.getSubplebbit(signers[0].address);
+            publisherEnv = await createValidateCommentTestEnvironment();
+            remotePlebbit = await config.plebbitInstancePromise();
+            subplebbit = await remotePlebbit.getSubplebbit(publisherEnv.subplebbitAddress);
+            await subplebbit.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: subplebbit,
+                predicate: () =>
+                    Boolean(
+                        subplebbit.posts.pages.hot &&
+                            subplebbit.posts.pages.hot.comments.find(
+                                (comment) => comment.cid === publisherEnv.postCid || comment.cid === publisherEnv.repliesPostCid
+                            )
+                    )
+            });
 
-            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.posts.pages.hot });
-
-            // Get a post instance
-            postCommentInstance = await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
+            postCommentInstance = await remotePlebbit.getComment(publisherEnv.postCid);
             await postCommentInstance.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: postCommentInstance,
                 predicate: () => typeof postCommentInstance.updatedAt === "number"
             });
 
-            // Find a post page comment
             postPageComment = subplebbit.posts.pages.hot.comments.find((c) => c.cid === postCommentInstance.cid);
             expect(postPageComment, "Failed to find the post comment in the page").to.exist;
 
-            // --- Setup for Reply Tests ---
-            // Find or generate a post with multiple pages to ensure flat pages exist
-            const postWithReplies = await findOrGeneratePostWithMultiplePages(subplebbit);
-            const postWithRepliesInstance = await plebbit.getComment(postWithReplies.cid);
-            await postWithRepliesInstance.update(); // Ensure it has data
+            postWithRepliesInstance = await remotePlebbit.getComment(publisherEnv.repliesPostCid);
+            await postWithRepliesInstance.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: postWithRepliesInstance,
+                predicate: () => Boolean(postWithRepliesInstance.replies.pageCids?.newFlat)
+            });
 
-            // Ensure there's at least one reply on the 'best' page
-            if (!postWithRepliesInstance.replies?.pages?.best?.comments?.length > 0) {
-                console.log(`Post ${postWithRepliesInstance.cid} has no replies on 'best' page, creating one...`);
-                await publishRandomReply(postWithRepliesInstance, plebbit);
-                await postWithRepliesInstance.update(); // Update again to fetch the new reply
-                await resolveWhenConditionIsTrue({
-                    toUpdate: postWithRepliesInstance,
-                    predicate: () => postWithRepliesInstance.replies.pages.best?.comments?.length > 0
-                });
-                console.log(`Reply created for post ${postWithRepliesInstance.cid}.`);
-            }
-            expect(
-                postWithRepliesInstance.replies?.pages?.best?.comments?.length,
-                "Post must have replies on 'best' page for test"
-            ).to.be.greaterThan(0);
-            replyFromBestPage = postWithRepliesInstance.replies.pages.best.comments[0];
-            expect(replyFromBestPage, "Failed to get a reply from the 'best' page").to.exist;
-
-            // Get a flat page for replies of that post
-            const flatPage = await postWithRepliesInstance.replies.getPage(postWithReplies.replies.pageCids.newFlat);
+            const flatPageCid = postWithRepliesInstance.replies.pageCids?.newFlat;
+            expect(flatPageCid, "Post must expose a flat replies page").to.be.a("string");
+            const flatPage = await postWithRepliesInstance.replies.getPage(flatPageCid);
             expect(flatPage.comments.length).to.be.greaterThan(0, "Flat page must contain comments");
-            replyFromFlatPage = flatPage.comments[0]; // Get a reply from the flat page
+            replyFromFlatPage = flatPage.comments[0];
             expect(replyFromFlatPage, "Failed to get a reply from the flat page").to.exist;
             expect(replyFromFlatPage.raw.comment.depth, "Reply from flat page should have depth > 0").to.be.greaterThan(0);
 
-            // Clean up the extra instance
-            await postWithRepliesInstance.stop();
+            let bestPage = postWithRepliesInstance.replies.pages.best;
+            if (!bestPage?.comments?.length) {
+                const bestPageCid = postWithRepliesInstance.replies.pageCids?.best;
+                expect(bestPageCid, "Post must expose a best replies page").to.be.a("string");
+                bestPage = await postWithRepliesInstance.replies.getPage(bestPageCid);
+            }
+            expect(bestPage?.comments?.length, "Post must have replies on 'best' page for test").to.be.greaterThan(0);
+            replyFromBestPage = bestPage.comments[0];
+            expect(replyFromBestPage, "Failed to get a reply from the 'best' page").to.exist;
         });
 
         after(async () => {
             if (postCommentInstance) await postCommentInstance.stop();
-            // No need to stop replyFromFlatPage/replyFromBestPage as it's just data
-            if (plebbit) await plebbit.destroy();
+            if (postWithRepliesInstance) await postWithRepliesInstance.stop();
+            if (remotePlebbit) await remotePlebbit.destroy();
+            if (publisherEnv) await publisherEnv.cleanup();
         });
 
         describe.concurrent("Valid Comments", () => {
             // --- Tests for Post Comment Instance ---
             it("should validate a valid Post Comment instance (validateReplies=undefined)", async () => {
                 try {
-                    await plebbit.validateComment(cloneCommentInstance(postCommentInstance));
+                    await remotePlebbit.validateComment(cloneCommentInstance(postCommentInstance));
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -99,7 +107,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post Comment instance (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(cloneCommentInstance(postCommentInstance), { validateReplies: false });
+                    await remotePlebbit.validateComment(cloneCommentInstance(postCommentInstance), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -107,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post Comment instance (validateReplies=true)", async () => {
                 try {
-                    await plebbit.validateComment(cloneCommentInstance(postCommentInstance), { validateReplies: true });
+                    await remotePlebbit.validateComment(cloneCommentInstance(postCommentInstance), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -116,7 +124,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // --- Tests for Post Page Comment ---
             it("should validate a valid Post pageComment object (validateReplies=undefined)", async () => {
                 try {
-                    await plebbit.validateComment(postPageComment);
+                    await remotePlebbit.validateComment(postPageComment);
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -124,7 +132,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post pageComment object (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(remeda.clone(postPageComment), { validateReplies: false });
+                    await remotePlebbit.validateComment(remeda.clone(postPageComment), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -132,7 +140,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Post pageComment object (validateReplies=true)", async () => {
                 try {
-                    await plebbit.validateComment(remeda.clone(postPageComment), { validateReplies: true });
+                    await remotePlebbit.validateComment(remeda.clone(postPageComment), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill, but it rejected with: ${e}`);
                 }
@@ -141,7 +149,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // --- Tests for Reply Page Comment (from Flat Page) ---
             it("should validate a valid Reply pageComment object from flat page (validateReplies=undefined)", async () => {
                 try {
-                    await plebbit.validateComment(remeda.clone(replyFromFlatPage));
+                    await remotePlebbit.validateComment(remeda.clone(replyFromFlatPage));
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromFlatPage, but it rejected with: ${e}`);
                 }
@@ -149,7 +157,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Reply pageComment object from flat page (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(remeda.clone(replyFromFlatPage), { validateReplies: false });
+                    await remotePlebbit.validateComment(remeda.clone(replyFromFlatPage), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromFlatPage, but it rejected with: ${e}`);
                 }
@@ -158,7 +166,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             it("should validate a valid Reply pageComment object from flat page (validateReplies=true)", async () => {
                 // Since this reply might itself have replies (even though fetched via flat page), validating them is valid
                 try {
-                    await plebbit.validateComment(remeda.clone(replyFromFlatPage), { validateReplies: true });
+                    await remotePlebbit.validateComment(remeda.clone(replyFromFlatPage), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromFlatPage, but it rejected with: ${e}`);
                 }
@@ -167,7 +175,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // --- Tests for Reply Page Comment (from Best Page) ---
             it("should validate a valid Reply pageComment object from best page (validateReplies=undefined)", async () => {
                 try {
-                    await plebbit.validateComment(remeda.clone(replyFromBestPage));
+                    await remotePlebbit.validateComment(remeda.clone(replyFromBestPage));
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromBestPage, but it rejected with: ${e}`);
                 }
@@ -175,7 +183,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it("should validate a valid Reply pageComment object from best page (validateReplies=false)", async () => {
                 try {
-                    await plebbit.validateComment(remeda.clone(replyFromBestPage), { validateReplies: false });
+                    await remotePlebbit.validateComment(remeda.clone(replyFromBestPage), { validateReplies: false });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromBestPage, but it rejected with: ${e}`);
                 }
@@ -184,7 +192,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             it("should validate a valid Reply pageComment object from best page (validateReplies=true)", async () => {
                 // Since this reply might itself have replies, validating them is valid
                 try {
-                    await plebbit.validateComment(remeda.clone(replyFromBestPage), { validateReplies: true });
+                    await remotePlebbit.validateComment(remeda.clone(replyFromBestPage), { validateReplies: true });
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for replyFromBestPage, but it rejected with: ${e}`);
                 }
@@ -352,10 +360,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             it("should reject Post pageComment if commentUpdate signature is invalid", async () => {
                 try {
                     const invalidPageComment = remeda.clone(postPageComment);
-                    const wrongSigner = await plebbit.createSigner(signers[1]); // Different signer
-                    const tamperedUpdate = remeda.clone(invalidPageComment.raw.commentUpdate);
-                    tamperedUpdate.signature = await signCommentUpdate(tamperedUpdate, wrongSigner);
-                    invalidPageComment.raw.commentUpdate = tamperedUpdate;
+                    invalidPageComment.raw.commentUpdate = remeda.clone(invalidPageComment.raw.commentUpdate);
+                    invalidPageComment.raw.commentUpdate.signature.signature += "invalid";
                     await plebbit.validateComment(invalidPageComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
@@ -415,3 +421,77 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 });
+
+async function createValidateCommentTestEnvironment() {
+    const publisherPlebbit = await mockPlebbit();
+    const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit);
+    await subplebbit.start();
+    await resolveWhenConditionIsTrue({
+        toUpdate: subplebbit,
+        predicate: () => typeof subplebbit.updatedAt === "number"
+    });
+
+    const postForInstance = await publishRandomPost(subplebbit.address, publisherPlebbit, {
+        content: `validate-comment-post ${Date.now()}`
+    });
+    await postForInstance.update();
+    await resolveWhenConditionIsTrue({
+        toUpdate: postForInstance,
+        predicate: () => typeof postForInstance.updatedAt === "number"
+    });
+
+    const postWithReplies = await publishRandomPost(subplebbit.address, publisherPlebbit, {
+        content: `validate-comment-reply-root ${Date.now()}`
+    });
+    await postWithReplies.update();
+    await resolveWhenConditionIsTrue({
+        toUpdate: postWithReplies,
+        predicate: () => typeof postWithReplies.updatedAt === "number"
+    });
+
+    await ensureCommentHasPaginatedReplies({ subplebbit, comment: postWithReplies });
+
+    await postForInstance.stop();
+    await postWithReplies.stop();
+
+    return {
+        subplebbitAddress: subplebbit.address,
+        postCid: postForInstance.cid,
+        repliesPostCid: postWithReplies.cid,
+        cleanup: async () => {
+            await subplebbit.delete().catch(() => {});
+            await publisherPlebbit.destroy().catch(() => {});
+        }
+    };
+}
+
+async function ensureCommentHasPaginatedReplies({ subplebbit, comment }) {
+    const cleanupForcedChunking = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+        subplebbit,
+        parentComment: comment,
+        forcedPreloadedPageSizeBytes: 512
+    });
+
+    try {
+        await resolveWhenConditionIsTrue({
+            toUpdate: comment,
+            predicate: () => Boolean(comment.replies.pageCids?.newFlat && comment.replies.pageCids?.best)
+        });
+    } finally {
+        cleanupForcedChunking();
+    }
+
+    const hasFlatPage = Boolean(comment.replies.pageCids?.newFlat);
+    const hasBestPage = Boolean(comment.replies.pageCids?.best);
+    if (!hasFlatPage || !hasBestPage) throw new Error("Forced pagination did not create the expected reply pageCids");
+
+    const flatPageCid = comment.replies.pageCids?.newFlat;
+    if (!flatPageCid) throw new Error("Failed to generate flat replies page for validateComment test");
+    const flatPage = await comment.replies.getPage(flatPageCid);
+    if (!flatPage.comments?.length) throw new Error("Flat replies page is empty");
+
+    const bestPageCid = comment.replies.pageCids?.best;
+    if (!bestPageCid) throw new Error("Failed to generate best replies page for validateComment test");
+    const bestPage = await comment.replies.getPage(bestPageCid);
+    if (!bestPage.comments?.length) throw new Error("Best replies page is empty");
+}
