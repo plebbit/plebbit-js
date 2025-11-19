@@ -1708,11 +1708,13 @@ function ensureLocalSubplebbitForForcedChunking(subplebbit?: LocalSubplebbit | R
 export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
     subplebbit,
     parentComment,
-    forcedPreloadedPageSizeBytes = 1
+    forcedPreloadedPageSizeBytes = 1,
+    parentCommentReplyProps
 }: {
     subplebbit: LocalSubplebbit;
     parentComment?: Comment;
     forcedPreloadedPageSizeBytes?: number;
+    parentCommentReplyProps?: Partial<CreateCommentOptions>;
 }): Promise<() => void> {
     ensureLocalSubplebbitForForcedChunking(subplebbit);
     const parentCid = parentComment?.cid;
@@ -1733,9 +1735,7 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
               generateSubplebbitPosts?: (
                   preloadedPageSortName: keyof typeof POSTS_SORT_TYPES,
                   preloadedPageSizeBytes: number
-              ) => Promise<
-                  PostsPagesTypeIpfs | { singlePreloadedPage: Record<keyof typeof POSTS_SORT_TYPES, PageIpfs> } | undefined
-              >;
+              ) => Promise<PostsPagesTypeIpfs | { singlePreloadedPage: Record<keyof typeof POSTS_SORT_TYPES, PageIpfs> } | undefined>;
           })
         | undefined;
     if (!pageGenerator) throw Error("Local subplebbit page generator is not initialized");
@@ -1782,7 +1782,8 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
 
     if (parentComment) {
         try {
-            if (Object.keys(parentComment.replies.pageCids).length === 0) await ensureParentCommentHasPageCidsForChunking(parentComment);
+            if (Object.keys(parentComment.replies.pageCids).length === 0)
+                await ensureParentCommentHasPageCidsForChunking(parentComment, parentCommentReplyProps);
         } catch (err) {
             cleanup();
             throw err;
@@ -1795,16 +1796,19 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
 export async function forcePagesToUsePageCidsOnly({
     subplebbit,
     parentComment,
-    forcedPreloadedPageSizeBytes = 1
+    forcedPreloadedPageSizeBytes = 1,
+    parentCommentReplyProps
 }: {
     subplebbit: LocalSubplebbit;
     parentComment?: Comment;
     forcedPreloadedPageSizeBytes?: number;
+    parentCommentReplyProps?: Partial<CreateCommentOptions>;
 }) {
     const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
         subplebbit,
         parentComment,
-        forcedPreloadedPageSizeBytes
+        forcedPreloadedPageSizeBytes,
+        parentCommentReplyProps
     });
     try {
         if (parentComment) await forceSubplebbitToGenerateAllRepliesPages(parentComment);
@@ -1814,16 +1818,18 @@ export async function forcePagesToUsePageCidsOnly({
     }
 }
 
-async function ensureParentCommentHasPageCidsForChunking(parentComment: Comment) {
+async function ensureParentCommentHasPageCidsForChunking(parentComment: Comment, commentProps?: Partial<CreateCommentOptions>) {
     if (!parentComment?.cid) throw Error("parent comment cid should be defined before ensuring page cids");
     const hasPageCids = () => Object.keys(parentComment.replies.pageCids).length > 0;
     if (hasPageCids()) return;
 
     const MAX_REPLIES_TO_PUBLISH = 5;
     for (let i = 0; i < MAX_REPLIES_TO_PUBLISH && !hasPageCids(); i++) {
-        await publishRandomReply(parentComment as CommentIpfsWithCidDefined, parentComment._plebbit, {
-            content: `force pagination reply ${i} ${Date.now()}`
-        });
+        const replyProps: Partial<CreateCommentOptions> = {
+            ...commentProps,
+            content: commentProps?.content ?? `force pagination reply ${i} ${Date.now()}`
+        };
+        await publishRandomReply(parentComment as CommentIpfsWithCidDefined, parentComment._plebbit, replyProps);
         await parentComment.update();
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,

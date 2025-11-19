@@ -6,7 +6,7 @@ import {
     generateMockComment,
     loadAllUniquePostsUnderSubplebbit,
     processAllCommentsRecursively,
-    forceSubplebbitToGenerateAllRepliesPages,
+    forceParentRepliesToAlwaysGenerateMultipleChunks,
     mockGatewayPlebbit,
     getCommentWithCommentUpdateProps,
     forceSubplebbitToGenerateAllPostsPages,
@@ -19,7 +19,9 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
 
-const depthsToTest = [0, 1, 2, 30];
+// TODO need to rewrite this so it forces pageCids just like loading.update.test.js
+
+const depthsToTest = [0, 1, 2, 3, 30];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const commentModProps = [
@@ -87,7 +89,6 @@ for (const commentMod of commentModProps) {
                 });
 
                 after(async () => {
-                    await commentToBeRejected.stop();
                     await subplebbit.delete();
                     await plebbit.destroy();
                     await remotePlebbit.destroy();
@@ -215,22 +216,29 @@ for (const commentMod of commentModProps) {
                             });
                             expect(foundInReplies).to.equal(expectedResult);
 
-                            await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+                            const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                                subplebbit,
+                                parentComment,
+                                parentCommentReplyProps: { signer: modSigner }
+                            });
+                            try {
+                                expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
 
-                            expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
+                                for (const pageCid of Object.values(parentComment.replies.pageCids)) {
+                                    foundInReplies = false;
+                                    const pageComments = await loadAllPages(pageCid, parentComment.replies);
 
-                            for (const pageCid of Object.values(parentComment.replies.pageCids)) {
-                                foundInReplies = false;
-                                const pageComments = await loadAllPages(pageCid, parentComment.replies);
-
-                                expect(pageComments.length).to.be.greaterThan(0);
-                                processAllCommentsRecursively(pageComments, (comment) => {
-                                    if (comment.cid === commentToBeRejected.cid) {
-                                        foundInReplies = true;
-                                        return;
-                                    }
-                                });
-                                expect(foundInReplies).to.equal(expectedResult);
+                                    expect(pageComments.length).to.be.greaterThan(0);
+                                    processAllCommentsRecursively(pageComments, (comment) => {
+                                        if (comment.cid === commentToBeRejected.cid) {
+                                            foundInReplies = true;
+                                            return;
+                                        }
+                                    });
+                                    expect(foundInReplies).to.equal(expectedResult);
+                                }
+                            } finally {
+                                cleanup();
                             }
                             await parentComment.stop();
                         }
@@ -240,24 +248,31 @@ for (const commentMod of commentModProps) {
                         const postComment = await plebbit.getComment(commentToBeRejected.postCid);
                         await postComment.update();
                         await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
-                        await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
-
-                        const expectedResult = !shouldCommentBePurged;
-
-                        const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
-
-                        for (const flatPageCid of flatPageCids) {
-                            let foundInFlatPages = false;
-                            const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
-
-                            expect(flatPageComments.length).to.be.greaterThan(0);
-                            processAllCommentsRecursively(flatPageComments, (comment) => {
-                                if (comment.cid === commentToBeRejected.cid) {
-                                    foundInFlatPages = true;
-                                    return;
-                                }
+                            const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                                subplebbit,
+                                parentComment: postComment,
+                                parentCommentReplyProps: { signer: modSigner }
                             });
-                            expect(foundInFlatPages).to.equal(expectedResult);
+                        try {
+                            const expectedResult = !shouldCommentBePurged;
+
+                            const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+
+                            for (const flatPageCid of flatPageCids) {
+                                let foundInFlatPages = false;
+                                const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
+
+                                expect(flatPageComments.length).to.be.greaterThan(0);
+                                processAllCommentsRecursively(flatPageComments, (comment) => {
+                                    if (comment.cid === commentToBeRejected.cid) {
+                                        foundInFlatPages = true;
+                                        return;
+                                    }
+                                });
+                                expect(foundInFlatPages).to.equal(expectedResult);
+                            }
+                        } finally {
+                            cleanup();
                         }
 
                         await postComment.stop();
