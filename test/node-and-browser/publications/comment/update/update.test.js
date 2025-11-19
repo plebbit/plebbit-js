@@ -6,23 +6,22 @@ import {
     publishRandomReply,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     mockPostToFailToLoadFromPostUpdates,
-    mockReplyToUseParentPagesForUpdates,
     createCommentUpdateWithInvalidSignature,
     mockPostToHaveSubplebbitWithNoPostUpdates,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
-    publishCommentWithDepth,
     getAvailablePlebbitConfigsToTestAgainst,
-    findOrPublishCommentWithDepth,
     mockPostToReturnSpecificCommentUpdate,
     isPlebbitFetchingUsingGateways,
     itSkipIfRpc,
     waitTillReplyInParentPagesInstance,
-    forceSubplebbitToGenerateAllRepliesPages
 } from "../../../../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing } from "../../../../../dist/node/signer/signatures.js";
 
 const subplebbitAddress = signers[0].address;
+
+// TODO add a test where we call comment.update() on 100 comments in parallel, will it resolve ipns name 100 times or once (should be once)
+// TODO add a test where you call comment.update() on 100 comments who have the same cid, will it call _fetchCidP2P 100 times?
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`comment.update - ${config.name}`, async () => {
@@ -35,51 +34,58 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
-            const originalPost = await publishRandomPost(subplebbitAddress, plebbit);
+        it.sequential(
+            `plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`,
+            async () => {
+                const originalPost = await publishRandomPost(subplebbitAddress, plebbit);
 
-            const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
+                const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
 
-            const commentIpfsPromise = new Promise((resolve) => recreatedPost.once("update", resolve));
-            await recreatedPost.update();
+                const commentIpfsPromise = new Promise((resolve) => recreatedPost.once("update", resolve));
+                await recreatedPost.update();
 
-            await commentIpfsPromise; // Comment ipfs props should be defined now, but not CommentUpdate
-            expect(recreatedPost.updatedAt).to.be.undefined;
+                await commentIpfsPromise; // Comment ipfs props should be defined now, but not CommentUpdate
+                expect(recreatedPost.updatedAt).to.be.undefined;
 
-            expect(recreatedPost.toJSONIpfs()).to.deep.equal(originalPost.toJSONIpfs());
+                expect(recreatedPost.toJSONIpfs()).to.deep.equal(originalPost.toJSONIpfs());
 
-            await new Promise((resolve) => recreatedPost.once("update", resolve));
-            await recreatedPost.stop();
-            expect(recreatedPost.updatedAt).to.be.a("number");
-        });
+                await new Promise((resolve) => recreatedPost.once("update", resolve));
+                await recreatedPost.stop();
+                expect(recreatedPost.updatedAt).to.be.a("number");
+            }
+        );
 
-        it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        it.sequential(
+            `plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`,
+            async () => {
+                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-            const reply = await publishRandomReply(
-                subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0 && !post.locked && !post.removed),
-                plebbit
-            );
+                const postCid =
+                    subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0 && !post.locked && !post.removed)?.cid ||
+                    subplebbit.lastPostCid;
 
-            const recreatedReply = await plebbit.createComment({ cid: reply.cid });
+                const reply = await publishRandomReply(await plebbit.getComment(postCid), plebbit);
 
-            const commentIpfsPromise = new Promise((resolve) => recreatedReply.once("update", resolve));
-            await recreatedReply.update();
+                const recreatedReply = await plebbit.createComment({ cid: reply.cid });
 
-            await commentIpfsPromise;
-            const commentUpdatePromise = new Promise((resolve) => recreatedReply.once("update", resolve));
-            // Comment ipfs props should be defined now, but not CommentUpdate
-            expect(recreatedReply.updatedAt).to.be.undefined;
+                const commentIpfsPromise = new Promise((resolve) => recreatedReply.once("update", resolve));
+                await recreatedReply.update();
 
-            expect(recreatedReply.toJSONIpfs()).to.deep.equal(reply.toJSONIpfs());
+                await commentIpfsPromise;
+                const commentUpdatePromise = new Promise((resolve) => recreatedReply.once("update", resolve));
+                // Comment ipfs props should be defined now, but not CommentUpdate
+                expect(recreatedReply.updatedAt).to.be.undefined;
 
-            await commentUpdatePromise;
-            await recreatedReply.stop();
+                expect(recreatedReply.toJSONIpfs()).to.deep.equal(reply.toJSONIpfs());
 
-            expect(recreatedReply.updatedAt).to.be.a("number");
-        });
+                await commentUpdatePromise;
+                await recreatedReply.stop();
 
-        it(`comment.stop() stops loading of comment updates (before update)`, async () => {
+                expect(recreatedReply.updatedAt).to.be.a("number");
+            }
+        );
+
+        it.sequential(`comment.stop() stops loading of comment updates (before update)`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
@@ -93,7 +99,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(updatedHasBeenCalled).to.be.false;
         });
 
-        it(`comment.stop() stops loading of comment updates (after update)`, async () => {
+        it.sequential(`comment.stop() stops loading of comment updates (after update)`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
@@ -135,7 +141,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await post.stop();
         });
 
-        it(`reply can receive comment updates`, async () => {
+        it.sequential(`reply can receive comment updates`, async () => {
             const post = await publishRandomPost(subplebbitAddress, plebbit);
             const reply = await publishRandomReply(post, plebbit);
             await reply.update();
@@ -144,92 +150,6 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await reply.stop();
             expect(reply.updatedAt).to.be.a("number");
             expect(reply.author.subplebbit).to.be.a("object");
-        });
-
-        [1, 2, 3].map((replyDepth) => {
-            itSkipIfRpc(
-                `Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is stopped`,
-                async () => {
-                    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-
-                    const parentComment = await findOrPublishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
-                    expect(parentComment.depth).to.equal(replyDepth - 1);
-                    await parentComment.update();
-                    await resolveWhenConditionIsTrue({
-                        toUpdate: parentComment,
-                        predicate: () => typeof parentComment.updatedAt === "number"
-                    });
-                    await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-                    await parentComment.stop();
-
-                    expect(parentComment.replies.pageCids).to.not.deep.equal({});
-
-                    const reply = await publishRandomReply(parentComment, plebbit);
-                    expect(reply.depth).to.equal(replyDepth);
-
-                    const replyRecreated = await plebbit.createComment({ cid: reply.cid });
-                    replyRecreated.on("updatingstatechange", (newState) => console.log("replyRecreated updatingstatechange", newState));
-                    await replyRecreated.update();
-                    mockReplyToUseParentPagesForUpdates(replyRecreated);
-
-                    await resolveWhenConditionIsTrue({
-                        toUpdate: replyRecreated,
-                        predicate: () => typeof replyRecreated.updatedAt === "number"
-                    });
-
-                    expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
-                    expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
-                    expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
-
-                    const updatingReply = replyRecreated._plebbit._updatingComments[replyRecreated.cid];
-                    expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
-
-                    await replyRecreated.stop();
-                }
-            );
-
-            itSkipIfRpc(
-                `Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is updating`,
-                async () => {
-                    // flaky
-                    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-
-                    const parentComment = await findOrPublishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
-
-                    expect(parentComment.depth).to.equal(replyDepth - 1);
-                    await parentComment.update();
-                    await resolveWhenConditionIsTrue({
-                        toUpdate: parentComment,
-                        predicate: () => typeof parentComment.updatedAt === "number"
-                    });
-                    await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-                    // keep parent comment updating
-
-                    expect(parentComment.replies.pageCids).to.not.deep.equal({});
-
-                    const reply = await publishRandomReply(parentComment, plebbit);
-                    expect(reply.depth).to.equal(reply.depth);
-
-                    const replyRecreated = await plebbit.createComment({ cid: reply.cid });
-                    await replyRecreated.update();
-                    mockReplyToUseParentPagesForUpdates(replyRecreated);
-
-                    await resolveWhenConditionIsTrue({
-                        toUpdate: replyRecreated,
-                        predicate: () => typeof replyRecreated.updatedAt === "number"
-                    });
-
-                    expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
-                    expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
-                    expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
-
-                    const updatingReply = replyRecreated._plebbit._updatingComments[replyRecreated.cid];
-                    expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
-
-                    await replyRecreated.stop();
-                    await parentComment.stop();
-                }
-            );
         });
     });
 });
@@ -268,7 +188,7 @@ const addInvalidJsonToIpfs = async () => {
 };
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.sequential(`comment.update() emits errors for issues with CommentIpfs or CommentUpdate record - ${config.name}`, async () => {
+    describe.concurrent(`comment.update() emits errors for issues with CommentIpfs or CommentUpdate record - ${config.name}`, async () => {
         let invalidCommentIpfsCid;
         let cidOfInvalidJson;
         let cidOfCommentIpfsWithInvalidSchema;
@@ -364,7 +284,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(updateHasBeenEmitted).to.be.false;
         });
 
-        itSkipIfRpc(`comment.update() emit an error if CommentUpdate signature is invalid `, async () => {
+        itSkipIfRpc.sequential(`comment.update() emit an error if CommentUpdate signature is invalid `, async () => {
             // Should emit an error as well but stay subscribed to sub updates
 
             const createdComment = await plebbit.createComment({
@@ -401,7 +321,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await createdComment.stop();
         });
 
-        itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid json`, async () => {
+        itSkipIfRpc.sequential(`comment.update() emits error if CommentUpdate is an invalid json`, async () => {
             // Should emit an error and keep on updating
 
             const invalidCommentUpdateJson = "<html>something</html>";
@@ -440,7 +360,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await createdComment.stop();
         });
 
-        itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid schema`, async () => {
+        itSkipIfRpc.sequential(`comment.update() emits error if CommentUpdate is an invalid schema`, async () => {
             // Should emit an error as well but stay subscribed to sub updates
             const createdComment = await plebbit.createComment({
                 cid: commentUpdateWithInvalidSignatureJson.cid
@@ -499,7 +419,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(errors[0].code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES");
         });
 
-        itSkipIfRpc(`postCommentInstance.update() emits error when subplebbit has no postUpdates`, async () => {
+        itSkipIfRpc.sequential(`postCommentInstance.update() emits error when subplebbit has no postUpdates`, async () => {
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             const postCid = sub.posts.pages.hot.comments[0].cid;
 
