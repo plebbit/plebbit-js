@@ -1700,6 +1700,50 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment,
         throw Error("Reply count is less than the number of comments published");
 }
 
+function ensureLocalSubplebbitForForcedChunking(subplebbit?: LocalSubplebbit | RpcLocalSubplebbit): asserts subplebbit is LocalSubplebbit {
+    if (!subplebbit) throw Error("Local subplebbit instance is required to force reply pages to use page cids");
+    if (!(subplebbit instanceof LocalSubplebbit)) throw Error("Forcing reply page chunking is only supported when using a LocalSubplebbit");
+}
+
+export function forceParentRepliesToAlwaysGenerateMultipleChunks({
+    subplebbit,
+    parentCid,
+    forcedPreloadedPageSizeBytes = 1
+}: {
+    subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    parentCid: string;
+    forcedPreloadedPageSizeBytes?: number;
+}): () => void {
+    ensureLocalSubplebbitForForcedChunking(subplebbit);
+    if (!parentCid) throw Error("parentCid is required to force chunking to multiple pages");
+    const subplebbitWithGenerator = subplebbit as LocalSubplebbit & { [key: string]: unknown };
+    const pageGenerator = subplebbitWithGenerator["_pageGenerator"] as
+        | {
+              generateReplyPages?: (
+                  comment: Pick<CommentsTableRow, "cid" | "depth">,
+                  preloadedReplyPageSortName: keyof typeof REPLY_REPLIES_SORT_TYPES,
+                  preloadedPageSizeBytes: number
+              ) => Promise<RepliesPagesTypeIpfs | { singlePreloadedPage: Record<string, PageIpfs> } | undefined>;
+          }
+        | undefined;
+    if (!pageGenerator) throw Error("Local subplebbit page generator is not initialized");
+    if (typeof pageGenerator.generateReplyPages !== "function") throw Error("Page generator reply pages function is not available");
+
+    const originalGenerateReplyPages = pageGenerator.generateReplyPages;
+
+    pageGenerator.generateReplyPages = (async (comment, preloadedReplyPageSortName, preloadedPageSizeBytes) => {
+        const shouldForce = comment?.cid === parentCid;
+        const effectivePageSizeBytes = shouldForce
+            ? Math.min(preloadedPageSizeBytes, forcedPreloadedPageSizeBytes)
+            : preloadedPageSizeBytes;
+        return originalGenerateReplyPages.call(pageGenerator, comment, preloadedReplyPageSortName, effectivePageSizeBytes);
+    }) as typeof pageGenerator.generateReplyPages;
+
+    return () => {
+        pageGenerator.generateReplyPages = originalGenerateReplyPages;
+    };
+}
+
 export async function findOrPublishCommentWithDepth({
     depth,
     subplebbit,

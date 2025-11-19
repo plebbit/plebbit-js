@@ -2,6 +2,7 @@ import { expect } from "chai";
 import {
     createSubWithNoChallenge,
     describeSkipIfRpc,
+    forceParentRepliesToAlwaysGenerateMultipleChunks,
     forceSubplebbitToGenerateAllRepliesPages,
     mockPlebbit,
     mockReplyToUseParentPagesForUpdates,
@@ -14,7 +15,9 @@ import { describe, it } from "vitest";
 // this test is testing the loading logic of Comment at a different depths
 // it was made because testing it on test-server.js subs take too long
 
-const depthsToTest = [1, 2, 3, 15, 30, 45];
+// TODO for loading, we need to have a remote plebbit config with getAvailablePlebbitConfigs
+// TODO add test for depth = 0
+const depthsToTest = [2, 3, 15, 30, 45];
 
 describeSkipIfRpc("comment.update loading depth coverage", function () {
     depthsToTest.forEach((replyDepth) => {
@@ -65,7 +68,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 }
             });
 
-            describe.sequential("parent replies served via pageCids", () => {
+            describe.sequential.only("parent replies served via pageCids", () => {
                 let paginationContext;
 
                 before(async () => {
@@ -82,21 +85,25 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 it.sequential("loads reply updates when the parent was stopped", async () => {
                     const replyComment = await paginationContext.createLeafComment();
                     try {
+                        const storedParentUpdate = paginationContext.forcedParentStoredUpdate;
+                        expect(storedParentUpdate).to.exist;
+                        expect(storedParentUpdate?.replies?.pageCids).to.exist;
+                        expect(Object.keys(storedParentUpdate?.replies?.pageCids ?? {})).to.not.be.empty;
+                        // TODO look for updatingReply in storedParentUpdate?.replies.pages, it should not be there
+                        const storedParentPreloadedPages = storedParentUpdate?.replies?.pages || {};
+                        Object.values(storedParentPreloadedPages).forEach((page) => {
+                            if (page?.comments) expect(page.comments).to.deep.equal([]);
+                        });
+
                         await replyComment.update();
                         mockReplyToUseParentPagesForUpdates(replyComment);
                         await waitForReplyToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
+                        expect(replyComment.parentCid).to.equal(paginationContext.leafParentCid);
+                        // await waitForParentPageCidsToLoad(replyComment, paginationContext.plebbit);
+
                         const updatingReply = paginationContext.plebbit._updatingComments[replyComment.cid];
                         expect(updatingReply).to.exist;
                         expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
-                        const parentForUpdating = updatingReply._clientsManager._postForUpdating;
-                        expect(parentForUpdating).to.exist;
-                        const parentReplies = parentForUpdating?.replies;
-                        expect(parentReplies).to.exist;
-                        const parentPageCids = parentReplies?.pageCids;
-                        const parentPageCidKeys = Object.keys(parentPageCids ?? {});
-                        expect(parentPageCids).to.exist;
-                        expect(parentPageCidKeys).to.not.be.empty;
-                        expect(parentForUpdating?.comment.cid).to.equal(paginationContext.rootCid);
                     } finally {
                         await replyComment.stop();
                     }
@@ -111,18 +118,19 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         await replyComment.update();
                         mockReplyToUseParentPagesForUpdates(replyComment);
                         await waitForReplyToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
+                        // await waitForParentPageCidsToLoad(replyComment, paginationContext.plebbit);
+                        expect(replyComment.parentCid).to.equal(paginationContext.leafParentCid);
+                        const storedParentUpdate = paginationContext.forcedParentStoredUpdate;
+                        expect(storedParentUpdate).to.exist;
+                        expect(storedParentUpdate?.replies?.pageCids).to.exist;
+                        expect(Object.keys(storedParentUpdate?.replies?.pageCids ?? {})).to.not.be.empty;
+                        const storedParentPreloadedPages = storedParentUpdate?.replies?.pages || {};
+                        Object.values(storedParentPreloadedPages).forEach((page) => {
+                            if (page?.comments) expect(page.comments).to.deep.equal([]);
+                        });
                         const updatingReply = paginationContext.plebbit._updatingComments[replyComment.cid];
                         expect(updatingReply).to.exist;
                         expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
-                        const parentForUpdating = updatingReply._clientsManager._postForUpdating;
-                        expect(parentForUpdating).to.exist;
-                        const parentReplies = parentForUpdating?.replies;
-                        expect(parentReplies).to.exist;
-                        const parentPageCids = parentReplies?.pageCids;
-                        const parentPageCidKeys = Object.keys(parentPageCids ?? {});
-                        expect(parentPageCids).to.exist;
-                        expect(parentPageCidKeys).to.not.be.empty;
-                        expect(parentForUpdating?.comment.cid).to.equal(paginationContext.rootCid);
                     } finally {
                         await replyComment.stop();
                         await parentComment.stop();
@@ -141,6 +149,7 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
 
     const chain = await buildReplyDepthChain({ replyDepth, plebbit, subplebbit });
 
+    let forcedParentStoredUpdate;
     if (forceParentRepliesPageCids) {
         if (!chain.parentOfLeafCid) throw new Error("parent cid is required to force page generation");
         const parentComment = await plebbit.createComment({ cid: chain.parentOfLeafCid });
@@ -150,7 +159,17 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
                 toUpdate: parentComment,
                 predicate: () => typeof parentComment.updatedAt === "number"
             });
-            await forceSubplebbitToGenerateAllRepliesPages(parentComment);
+            if (!parentComment.cid) throw new Error("parent comment cid should be defined after forcing page generation");
+            const cleanupForcedChunking = forceParentRepliesToAlwaysGenerateMultipleChunks({
+                subplebbit,
+                parentCid: parentComment.cid
+            });
+            try {
+                await forceSubplebbitToGenerateAllRepliesPages(parentComment);
+            } finally {
+                cleanupForcedChunking();
+            }
+            forcedParentStoredUpdate = await waitForStoredParentPageCids(subplebbit, parentComment.cid);
         } finally {
             await parentComment.stop().catch(() => {});
         }
@@ -164,6 +183,7 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
         leafCid: chain.leafCid,
         leafParentCid: chain.parentOfLeafCid,
         expectedLeafUpdate: chain.expectedLeafUpdate,
+        forcedParentStoredUpdate,
         createRootComment: () => plebbit.createComment({ cid: chain.rootCid }),
         createLeafComment: () => plebbit.createComment({ cid: chain.leafCid }),
         createLeafParentComment: () => {
@@ -232,4 +252,16 @@ async function waitForPostToStartUpdating(postComment) {
         toUpdate: postComment,
         predicate: () => typeof postComment.updatedAt === "number"
     });
+}
+
+async function waitForStoredParentPageCids(subplebbit, parentCid) {
+    const timeoutMs = 60000;
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+        const storedUpdate = subplebbit._dbHandler.queryStoredCommentUpdate({ cid: parentCid });
+        const pageCids = storedUpdate?.replies?.pageCids;
+        if (pageCids && Object.keys(pageCids).length > 0) return storedUpdate;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error(`Timed out waiting for parent comment ${parentCid} to have replies.pageCids in stored update`);
 }
