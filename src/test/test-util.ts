@@ -69,7 +69,7 @@ import env from "../version.js";
 import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
-import type { PageIpfs, PageTypeJson } from "../pages/types.js";
+import type { PageIpfs, PageTypeJson, PostsPagesTypeIpfs, RepliesPagesTypeIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { messages } from "../errors.js";
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../publications/comment/comment-client-manager.js";
@@ -709,12 +709,23 @@ export async function publishVote(
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     const emittedErrors: Error[] = [];
     const timeoutMs = 60000;
+    const summarizePublication = () =>
+        removeUndefinedValuesRecursively({
+            type: publication.constructor?.name,
+            cid: (publication as any).cid,
+            parentCid: (publication as any).parentCid,
+            subplebbitAddress: publication.subplebbitAddress,
+            signerAddress: (publication as any).signer?.address,
+            commentModeration: (publication as any).commentModeration
+                ? remeda.pick((publication as any).commentModeration, ["approved", "reason", "spoiler", "nsfw", "pinned", "removed"])
+                : undefined
+        });
+
     publication.on("error", (err) => emittedErrors.push(err));
+    let cleanupChallengeVerificationListener: (() => void) | undefined;
     const challengeVerificationPromise = new Promise((resolve, reject) => {
-        publication.once("challengeverification", (verificationMsg) => {
-            if (verificationMsg.reason === messages["ERR_DUPLICATE_COMMENT"]) {
-                resolve(1);
-            } else if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
+        const challengeVerificationListener = (verificationMsg: DecryptedChallengeVerificationMessageType) => {
+            if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${
                     verificationMsg.challengeSuccess
                 }). Reason (${verificationMsg.reason}): ${JSON.stringify(remeda.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
@@ -725,13 +736,18 @@ export async function publishWithExpectedResult(publication: Publication, expect
                 )}`;
                 reject(msg);
             } else resolve(1);
-        });
+        };
+        publication.on("challengeverification", challengeVerificationListener);
+        cleanupChallengeVerificationListener = () => {
+            if (typeof publication.off === "function") publication.off("challengeverification", challengeVerificationListener);
+            else publication.removeListener("challengeverification", challengeVerificationListener);
+        };
     });
 
     const error = new Error("Publication did not receive response");
     //@ts-expect-error
     error.details = {
-        publication,
+        publication: summarizePublication(),
         expectedChallengeSuccess,
         expectedReason,
         waitTime: timeoutMs,
@@ -747,8 +763,9 @@ export async function publishWithExpectedResult(publication: Publication, expect
     try {
         await validateResponsePromise;
     } catch (error) {
-        console.error(error);
         throw error;
+    } finally {
+        cleanupChallengeVerificationListener?.();
     }
 }
 
@@ -776,7 +793,13 @@ export async function findCommentInSubplebbitInstancePagesPreloadedAndPageCids(o
     if (!comment) throw Error("Failed to provde opts.comment");
     if (Object.keys(sub.posts.pageCids).length === 0 && Object.keys(sub.posts.pages).length > 0) {
         // it's a single preloaded page
-        const postInPage = findCommentInPageInstanceRecursively(sub.posts, comment.cid);
+        const loadedAllHotPagesComments = <CommentWithinRepliesPostsPageJson[]>(
+            await loadAllPagesBySortName(Object.keys(sub.posts.pages)[0], sub.posts)
+        );
+        const pageIpfs = <PageIpfs>{
+            comments: loadedAllHotPagesComments.map((c) => c.raw)
+        };
+        const postInPage = findCommentInHierarchicalPageIpfsRecursively(pageIpfs, comment.cid);
         if (postInPage) return mapPageIpfsCommentToPageJsonComment(postInPage);
         else return undefined;
     } else if (Object.keys(sub.posts?.pageCids).length > 0) {
@@ -794,10 +817,16 @@ export async function findReplyInParentCommentPagesInstancePreloadedAndPageCids(
     const log = Logger("plebbit-js:test-util:waitTillReplyInParentPagesInstance");
     if (reply?.parentCid !== parentComment?.cid) throw Error("You need to provide a reply that's direct child of parentComment");
     log("waiting for reply", reply.cid, "in parent comment", parentComment.cid, "replyCount of parent comment", parentComment.replyCount);
-    if (Object.keys(parentComment.replies.pageCids).length === 0) {
+    if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
         // it's a single preloaded page
-        const replyInParentPages = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
-        if (replyInParentPages) return mapPageIpfsCommentToPageJsonComment(replyInParentPages);
+        const loadedAllBestPagesComments = <CommentWithinRepliesPostsPageJson[]>(
+            await loadAllPagesBySortName(Object.keys(parentComment.replies.pages)[0], parentComment.replies)
+        );
+        const pageIpfs = <PageIpfs>{
+            comments: loadedAllBestPagesComments.map((c) => c.raw)
+        };
+        const replyInPage = findCommentInHierarchicalPageIpfsRecursively(pageIpfs, reply.cid);
+        if (replyInPage) return mapPageIpfsCommentToPageJsonComment(replyInPage);
         else return undefined;
     } else {
         if (!("new" in parentComment.replies.pageCids)) {
@@ -853,6 +882,7 @@ export async function waitTillReplyInParentPagesInstance(
     parentComment: Comment
 ) {
     if (parentComment.state === "stopped") throw Error("Parent comment is stopped, can't wait for reply in parent pages");
+    if (!reply.cid) throw Error("reply.cid need to be defined so we can find it in parent pages");
     await resolveWhenConditionIsTrue({
         toUpdate: parentComment,
         predicate: async () => Boolean(await findReplyInParentCommentPagesInstancePreloadedAndPageCids({ reply, parentComment }))
@@ -1783,7 +1813,10 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
     if (parentComment) {
         try {
             if (Object.keys(parentComment.replies.pageCids).length === 0)
-                await ensureParentCommentHasPageCidsForChunking(parentComment, parentCommentReplyProps);
+                await ensureParentCommentHasPageCidsForChunking(parentComment, {
+                    commentProps: parentCommentReplyProps,
+                    publishWithPlebbit: subplebbit._plebbit
+                });
         } catch (err) {
             cleanup();
             throw err;
@@ -1797,12 +1830,14 @@ export async function forcePagesToUsePageCidsOnly({
     subplebbit,
     parentComment,
     forcedPreloadedPageSizeBytes = 1,
-    parentCommentReplyProps
+    parentCommentReplyProps,
+    subplebbitPostsCommentProps
 }: {
     subplebbit: LocalSubplebbit;
     parentComment?: Comment;
     forcedPreloadedPageSizeBytes?: number;
     parentCommentReplyProps?: Partial<CreateCommentOptions>;
+    subplebbitPostsCommentProps?: CreateCommentOptions;
 }) {
     const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
         subplebbit,
@@ -1812,16 +1847,21 @@ export async function forcePagesToUsePageCidsOnly({
     });
     try {
         if (parentComment) await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-        else await forceSubplebbitToGenerateAllPostsPages(subplebbit as unknown as RemoteSubplebbit);
+        else await forceSubplebbitToGenerateAllPostsPages(subplebbit as unknown as RemoteSubplebbit, subplebbitPostsCommentProps);
     } finally {
         cleanup();
     }
 }
 
-async function ensureParentCommentHasPageCidsForChunking(parentComment: Comment, commentProps?: Partial<CreateCommentOptions>) {
+async function ensureParentCommentHasPageCidsForChunking(
+    parentComment: Comment,
+    options?: { commentProps?: Partial<CreateCommentOptions>; publishWithPlebbit?: Plebbit }
+) {
     if (!parentComment?.cid) throw Error("parent comment cid should be defined before ensuring page cids");
     const hasPageCids = () => Object.keys(parentComment.replies.pageCids).length > 0;
     if (hasPageCids()) return;
+
+    const { commentProps, publishWithPlebbit } = options ?? {};
 
     const MAX_REPLIES_TO_PUBLISH = 5;
     for (let i = 0; i < MAX_REPLIES_TO_PUBLISH && !hasPageCids(); i++) {
@@ -1829,7 +1869,8 @@ async function ensureParentCommentHasPageCidsForChunking(parentComment: Comment,
             ...commentProps,
             content: commentProps?.content ?? `force pagination reply ${i} ${Date.now()}`
         };
-        await publishRandomReply(parentComment as CommentIpfsWithCidDefined, parentComment._plebbit, replyProps);
+        const publishingPlebbit = publishWithPlebbit ?? parentComment._plebbit;
+        await publishRandomReply(parentComment as CommentIpfsWithCidDefined, publishingPlebbit, replyProps);
         await parentComment.update();
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,
