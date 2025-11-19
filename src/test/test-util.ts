@@ -1705,17 +1705,18 @@ function ensureLocalSubplebbitForForcedChunking(subplebbit?: LocalSubplebbit | R
     if (!(subplebbit instanceof LocalSubplebbit)) throw Error("Forcing reply page chunking is only supported when using a LocalSubplebbit");
 }
 
-export function forceParentRepliesToAlwaysGenerateMultipleChunks({
+export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
     subplebbit,
-    parentCid,
+    parentComment,
     forcedPreloadedPageSizeBytes = 1
 }: {
     subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
-    parentCid: string;
+    parentComment: Comment;
     forcedPreloadedPageSizeBytes?: number;
-}): () => void {
+}): Promise<() => void> {
     ensureLocalSubplebbitForForcedChunking(subplebbit);
-    if (!parentCid) throw Error("parentCid is required to force chunking to multiple pages");
+    if (!parentComment?.cid) throw Error("parent comment cid is required to force chunking to multiple pages");
+    const parentCid = parentComment.cid;
     const subplebbitWithGenerator = subplebbit as LocalSubplebbit & { [key: string]: unknown };
     const pageGenerator = subplebbitWithGenerator["_pageGenerator"] as
         | {
@@ -1724,24 +1725,75 @@ export function forceParentRepliesToAlwaysGenerateMultipleChunks({
                   preloadedReplyPageSortName: keyof typeof REPLY_REPLIES_SORT_TYPES,
                   preloadedPageSizeBytes: number
               ) => Promise<RepliesPagesTypeIpfs | { singlePreloadedPage: Record<string, PageIpfs> } | undefined>;
+              generatePostPages?: (
+                  comment: Pick<CommentsTableRow, "cid">,
+                  preloadedReplyPageSortName: keyof typeof POST_REPLIES_SORT_TYPES,
+                  preloadedPageSizeBytes: number
+              ) => Promise<any>;
           }
         | undefined;
     if (!pageGenerator) throw Error("Local subplebbit page generator is not initialized");
-    if (typeof pageGenerator.generateReplyPages !== "function") throw Error("Page generator reply pages function is not available");
 
+    const isPost = parentComment.depth === 0;
     const originalGenerateReplyPages = pageGenerator.generateReplyPages;
+    const originalGeneratePostPages = pageGenerator.generatePostPages;
 
-    pageGenerator.generateReplyPages = (async (comment, preloadedReplyPageSortName, preloadedPageSizeBytes) => {
-        const shouldForce = comment?.cid === parentCid;
-        const effectivePageSizeBytes = shouldForce
-            ? Math.min(preloadedPageSizeBytes, forcedPreloadedPageSizeBytes)
-            : preloadedPageSizeBytes;
-        return originalGenerateReplyPages.call(pageGenerator, comment, preloadedReplyPageSortName, effectivePageSizeBytes);
-    }) as typeof pageGenerator.generateReplyPages;
+    if (isPost) {
+        if (typeof originalGeneratePostPages !== "function")
+            throw Error("Page generator post pages function is not available");
+        pageGenerator.generatePostPages = (async (comment, preloadedReplyPageSortName, preloadedPageSizeBytes) => {
+            const shouldForce = comment?.cid === parentCid;
+            const effectivePageSizeBytes = shouldForce
+                ? Math.min(preloadedPageSizeBytes, forcedPreloadedPageSizeBytes)
+                : preloadedPageSizeBytes;
+            return originalGeneratePostPages.call(pageGenerator, comment, preloadedReplyPageSortName, effectivePageSizeBytes);
+        }) as typeof pageGenerator.generatePostPages;
+    } else {
+        if (typeof originalGenerateReplyPages !== "function")
+            throw Error("Page generator reply pages function is not available");
+        pageGenerator.generateReplyPages = (async (comment, preloadedReplyPageSortName, preloadedPageSizeBytes) => {
+            const shouldForce = comment?.cid === parentCid;
+            const effectivePageSizeBytes = shouldForce
+                ? Math.min(preloadedPageSizeBytes, forcedPreloadedPageSizeBytes)
+                : preloadedPageSizeBytes;
+            return originalGenerateReplyPages.call(pageGenerator, comment, preloadedReplyPageSortName, effectivePageSizeBytes);
+        }) as typeof pageGenerator.generateReplyPages;
+    }
 
-    return () => {
-        pageGenerator.generateReplyPages = originalGenerateReplyPages;
+    const cleanup = () => {
+        if (isPost && originalGeneratePostPages) pageGenerator.generatePostPages = originalGeneratePostPages;
+        if (!isPost && originalGenerateReplyPages) pageGenerator.generateReplyPages = originalGenerateReplyPages;
     };
+
+    try {
+        if (Object.keys(parentComment.replies.pageCids).length === 0)
+            await ensureParentCommentHasPageCidsForChunking(parentComment);
+    } catch (err) {
+        cleanup();
+        throw err;
+    }
+
+    return cleanup;
+}
+
+async function ensureParentCommentHasPageCidsForChunking(parentComment: Comment) {
+    if (!parentComment?.cid) throw Error("parent comment cid should be defined before ensuring page cids");
+    const hasPageCids = () => Object.keys(parentComment.replies.pageCids).length > 0;
+    if (hasPageCids()) return;
+
+    const MAX_REPLIES_TO_PUBLISH = 5;
+    for (let i = 0; i < MAX_REPLIES_TO_PUBLISH && !hasPageCids(); i++) {
+        await publishRandomReply(parentComment as CommentIpfsWithCidDefined, parentComment._plebbit, {
+            content: `force pagination reply ${i} ${Date.now()}`
+        });
+        await parentComment.update();
+        await resolveWhenConditionIsTrue({
+            toUpdate: parentComment,
+            predicate: async () => hasPageCids()
+        });
+    }
+
+    if (!hasPageCids()) throw Error(`Failed to force parent comment ${parentComment.cid} to have replies.pageCids`);
 }
 
 export async function findOrPublishCommentWithDepth({
