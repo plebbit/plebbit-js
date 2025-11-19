@@ -656,7 +656,10 @@ export class DbHandler {
                         `
                     )
                     .all() as { cid: string }[];
-                for (const { cid } of duplicateCids) this.purgeComment(cid);
+                for (const { cid } of duplicateCids) {
+                    const purgedRows = this.purgeComment(cid);
+                    purgedRows.forEach((row) => this._subplebbit._addAllCidsUnderPurgedCommentToBeRemoved(row));
+                }
                 log(`Purged ${duplicateCids.length} duplicate comment row(s) based on signature.signature with higher rowid values.`);
                 continue;
             }
@@ -1690,9 +1693,9 @@ export class DbHandler {
     }
 
     private _calculateCommentNumbers(cid: string): { number: number; postNumber?: number } {
-        const commentRowMeta = this._db
-            .prepare(`SELECT rowid as rowid, depth FROM ${TABLES.COMMENTS} WHERE cid = ?`)
-            .get(cid) as { rowid: number; depth: number } | undefined;
+        const commentRowMeta = this._db.prepare(`SELECT rowid as rowid, depth FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as
+            | { rowid: number; depth: number }
+            | undefined;
         if (!commentRowMeta) throw Error(`Failed to query row metadata for comment ${cid}`);
 
         const existingNumbers = this._db
