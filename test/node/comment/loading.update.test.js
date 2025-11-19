@@ -2,9 +2,7 @@ import { expect } from "chai";
 import {
     createSubWithNoChallenge,
     describeSkipIfRpc,
-    forceParentRepliesToAlwaysGenerateMultipleChunks,
-    forceSubplebbitToGenerateAllPostsPages,
-    forceSubplebbitToGenerateAllRepliesPages,
+    forcePagesToUsePageCidsOnly,
     getAvailablePlebbitConfigsToTestAgainst,
     mockPlebbit,
     mockReplyToUseParentPagesForUpdates,
@@ -269,13 +267,14 @@ async function createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids = f
             toUpdate: subplebbit,
             predicate: () => typeof subplebbit.updatedAt === "number"
         });
-        await forceSubplebbitToGenerateAllPostsPages(subplebbit);
+        await forcePagesToUsePageCidsOnly({ subplebbit });
         await resolveWhenConditionIsTrue({
             toUpdate: subplebbit,
             predicate: () => typeof subplebbit.updatedAt === "number"
         });
         clearSubplebbitPreloadedPages(subplebbit);
         forcedSubplebbitStoredUpdate = await waitForStoredSubplebbitPageCids(subplebbit);
+        // TODO need to load subplebbit.updateCid and verify it actually looks like what we want here
     }
 
     return {
@@ -313,15 +312,7 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
                 predicate: () => typeof parentComment.updatedAt === "number"
             });
             if (!parentComment.cid) throw new Error("parent comment cid should be defined after forcing page generation");
-            const cleanupForcedChunking = await forceParentRepliesToAlwaysGenerateMultipleChunks({
-                subplebbit,
-                parentComment
-            });
-            try {
-                await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-            } finally {
-                cleanupForcedChunking();
-            }
+            await forcePagesToUsePageCidsOnly({ subplebbit, parentComment });
             forcedParentStoredUpdate = await waitForStoredParentPageCids(subplebbit, parentComment.cid);
         } finally {
             await parentComment.stop().catch(() => {});

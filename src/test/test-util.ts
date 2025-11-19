@@ -1710,16 +1710,15 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
     parentComment,
     forcedPreloadedPageSizeBytes = 1
 }: {
-    subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
-    parentComment: Comment;
+    subplebbit: LocalSubplebbit;
+    parentComment?: Comment;
     forcedPreloadedPageSizeBytes?: number;
 }): Promise<() => void> {
     ensureLocalSubplebbitForForcedChunking(subplebbit);
-    if (!parentComment?.cid) throw Error("parent comment cid is required to force chunking to multiple pages");
-    const parentCid = parentComment.cid;
+    const parentCid = parentComment?.cid;
     const subplebbitWithGenerator = subplebbit as LocalSubplebbit & { [key: string]: unknown };
     const pageGenerator = subplebbitWithGenerator["_pageGenerator"] as
-        | {
+        | ({
               generateReplyPages?: (
                   comment: Pick<CommentsTableRow, "cid" | "depth">,
                   preloadedReplyPageSortName: keyof typeof REPLY_REPLIES_SORT_TYPES,
@@ -1730,17 +1729,32 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
                   preloadedReplyPageSortName: keyof typeof POST_REPLIES_SORT_TYPES,
                   preloadedPageSizeBytes: number
               ) => Promise<any>;
-          }
+          } & {
+              generateSubplebbitPosts?: (
+                  preloadedPageSortName: keyof typeof POSTS_SORT_TYPES,
+                  preloadedPageSizeBytes: number
+              ) => Promise<
+                  PostsPagesTypeIpfs | { singlePreloadedPage: Record<keyof typeof POSTS_SORT_TYPES, PageIpfs> } | undefined
+              >;
+          })
         | undefined;
     if (!pageGenerator) throw Error("Local subplebbit page generator is not initialized");
 
-    const isPost = parentComment.depth === 0;
+    const isSubplebbitPosts = !parentComment;
+    const isPost = parentComment?.depth === 0;
     const originalGenerateReplyPages = pageGenerator.generateReplyPages;
     const originalGeneratePostPages = pageGenerator.generatePostPages;
+    const originalGenerateSubplebbitPosts = pageGenerator.generateSubplebbitPosts;
 
-    if (isPost) {
-        if (typeof originalGeneratePostPages !== "function")
-            throw Error("Page generator post pages function is not available");
+    if (isSubplebbitPosts) {
+        if (typeof originalGenerateSubplebbitPosts !== "function") throw Error("Page generator subplebbit posts function is not available");
+        pageGenerator.generateSubplebbitPosts = (async (preloadedPageSortName, preloadedPageSizeBytes) => {
+            const effectivePageSizeBytes = Math.min(preloadedPageSizeBytes, forcedPreloadedPageSizeBytes);
+            return originalGenerateSubplebbitPosts.call(pageGenerator, preloadedPageSortName, effectivePageSizeBytes);
+        }) as typeof pageGenerator.generateSubplebbitPosts;
+    } else if (isPost) {
+        if (!parentCid) throw Error("parent comment cid is required to force chunking to multiple pages");
+        if (typeof originalGeneratePostPages !== "function") throw Error("Page generator post pages function is not available");
         pageGenerator.generatePostPages = (async (comment, preloadedReplyPageSortName, preloadedPageSizeBytes) => {
             const shouldForce = comment?.cid === parentCid;
             const effectivePageSizeBytes = shouldForce
@@ -1749,8 +1763,8 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
             return originalGeneratePostPages.call(pageGenerator, comment, preloadedReplyPageSortName, effectivePageSizeBytes);
         }) as typeof pageGenerator.generatePostPages;
     } else {
-        if (typeof originalGenerateReplyPages !== "function")
-            throw Error("Page generator reply pages function is not available");
+        if (!parentCid) throw Error("parent comment cid is required to force chunking to multiple pages");
+        if (typeof originalGenerateReplyPages !== "function") throw Error("Page generator reply pages function is not available");
         pageGenerator.generateReplyPages = (async (comment, preloadedReplyPageSortName, preloadedPageSizeBytes) => {
             const shouldForce = comment?.cid === parentCid;
             const effectivePageSizeBytes = shouldForce
@@ -1761,19 +1775,43 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
     }
 
     const cleanup = () => {
+        if (isSubplebbitPosts && originalGenerateSubplebbitPosts) pageGenerator.generateSubplebbitPosts = originalGenerateSubplebbitPosts;
         if (isPost && originalGeneratePostPages) pageGenerator.generatePostPages = originalGeneratePostPages;
-        if (!isPost && originalGenerateReplyPages) pageGenerator.generateReplyPages = originalGenerateReplyPages;
+        if (!isSubplebbitPosts && !isPost && originalGenerateReplyPages) pageGenerator.generateReplyPages = originalGenerateReplyPages;
     };
 
-    try {
-        if (Object.keys(parentComment.replies.pageCids).length === 0)
-            await ensureParentCommentHasPageCidsForChunking(parentComment);
-    } catch (err) {
-        cleanup();
-        throw err;
+    if (parentComment) {
+        try {
+            if (Object.keys(parentComment.replies.pageCids).length === 0) await ensureParentCommentHasPageCidsForChunking(parentComment);
+        } catch (err) {
+            cleanup();
+            throw err;
+        }
     }
 
     return cleanup;
+}
+
+export async function forcePagesToUsePageCidsOnly({
+    subplebbit,
+    parentComment,
+    forcedPreloadedPageSizeBytes = 1
+}: {
+    subplebbit: LocalSubplebbit;
+    parentComment?: Comment;
+    forcedPreloadedPageSizeBytes?: number;
+}) {
+    const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+        subplebbit,
+        parentComment,
+        forcedPreloadedPageSizeBytes
+    });
+    try {
+        if (parentComment) await forceSubplebbitToGenerateAllRepliesPages(parentComment);
+        else await forceSubplebbitToGenerateAllPostsPages(subplebbit as unknown as RemoteSubplebbit);
+    } finally {
+        cleanup();
+    }
 }
 
 async function ensureParentCommentHasPageCidsForChunking(parentComment: Comment) {
