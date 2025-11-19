@@ -10,6 +10,7 @@ import {
     resolveWhenConditionIsTrue,
     mockPostToReturnSpecificCommentUpdate
 } from "../../../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 const clientsFieldName = {
@@ -73,6 +74,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`Correct order of ${clientFieldName} state when updating a reply that was created with plebbit.createComment({cid}) and the post has a single preloaded page`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
             const sub = await plebbit.getSubplebbit(signers[0].address);
             const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
             const reply = await plebbit.createComment({ cid: replyCid });
@@ -99,6 +101,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await reply.stop();
 
             expect(actualStates).to.deep.equal(expectedStates);
+            await plebbit.destroy();
         });
 
         it(
@@ -212,6 +215,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`Correct order of ${clientFieldName} when we update a post but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
+
             const sub = await plebbit.getSubplebbit(signers[0].address);
 
             const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(
@@ -307,6 +312,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             // Ensure the very last state is "stopped"
             expect(clientStates[clientStates.length - 1]).to.equal("stopped", "The last state should be 'stopped'");
+            await plebbit.destroy();
         });
     });
 });
