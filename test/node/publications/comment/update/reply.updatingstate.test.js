@@ -5,7 +5,6 @@ import {
     forcePagesToUsePageCidsOnly,
     getAvailablePlebbitConfigsToTestAgainst,
     mockPlebbit,
-    mockReplyToUseParentPagesForUpdates,
     publishRandomPost,
     publishRandomReply,
     resolveWhenConditionIsTrue
@@ -58,7 +57,6 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
                             });
 
                             await reply.update();
-                            mockReplyToUseParentPagesForUpdates(reply); // is this needed?
                             expect(reply.content).to.be.undefined;
                             expect(reply.updatedAt).to.be.undefined;
 
