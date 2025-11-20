@@ -395,6 +395,10 @@ export class Comment
             log("No kubo rpc client found, will not add newly published comment", this.cid, "to ipfs");
             return;
         }
+        if (decryptedVerification.commentUpdate.pendingApproval) {
+            log("comment is pending approval, we're not gonna add it to IPFS node for now", this.cid);
+            return;
+        }
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
         // use p-retry here, 3 times maybe?
         const addRes = await retryKuboIpfsAdd({
