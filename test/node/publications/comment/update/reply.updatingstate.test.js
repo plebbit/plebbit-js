@@ -11,88 +11,133 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 
+import { describe, it } from "vitest";
 const plebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
+const replyDepthsToTest = [1, 2, 3, 5, 15, 30];
 
-// TODO have different depths config
-// TODO have context be created once, instead of for each it
-plebbitConfigs.map((config) => {
-    describeSkipIfRpc.sequential(`reply.updatingState via parent pageCIDs (node) - ${config.name}`, async () => {
-        it(`loads reply updates from parent pageCIDs and emits expected state transitions - ${config.name}`, async () => {
-            const context = await createReplyParentPagesTestEnvironment();
-            const plebbit = await config.plebbitInstancePromise();
+describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
+    replyDepthsToTest.forEach((replyDepth) => {
+        describe.sequential(`reply depth ${replyDepth}`, () => {
+            let context;
 
-            const recordedStates = [];
-            let reply;
-            try {
-                reply = await plebbit.createComment({ cid: context.replyCid });
+            before(async () => {
+                context = await createReplyParentPagesTestEnvironment({ replyDepth });
+            });
 
-                expect(reply.content).to.be.undefined;
-                expect(reply.updatedAt).to.be.undefined;
+            after(async () => {
+                await context?.cleanup?.();
+            });
 
-                reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
+            plebbitConfigs.forEach((config) => {
+                it.concurrent(
+                    `loads reply updates from parent pageCIDs and emits expected state transitions - ${config.name}`,
+                    async () => {
+                        if (!context) throw new Error("Test context was not initialized");
+                        const plebbit = await config.plebbitInstancePromise();
 
-                const commentUpdatePromise = new Promise((resolve, reject) => {
-                    reply.on("update", () => {
-                        if (!reply.updatedAt) return;
-                        if (reply.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
-                        if (recordedStates.length === 0) reject("should have emitted an event");
-                        if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
-                        resolve(undefined);
-                    });
-                });
+                        const recordedStates = [];
+                        let reply;
+                        try {
+                            reply = await plebbit.createComment({ cid: context.replyCid });
 
-                await reply.update();
-                mockReplyToUseParentPagesForUpdates(reply); // is this needed?
-                expect(reply.content).to.be.undefined;
-                expect(reply.updatedAt).to.be.undefined;
+                            expect(reply.content).to.be.undefined;
+                            expect(reply.updatedAt).to.be.undefined;
 
-                await commentUpdatePromise;
-                await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
+                            reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-                const updatingMockReply = plebbit._updatingComments[reply.cid];
-                expect(updatingMockReply).to.exist;
-                const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
-                expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
+                            const commentUpdatePromise = new Promise((resolve, reject) => {
+                                reply.on("update", () => {
+                                    if (!reply.updatedAt) return;
+                                    if (reply.updatingState !== "succeeded")
+                                        reject("updating state should be succeeded after getting comment ipfs");
+                                    if (recordedStates.length === 0) reject("should have emitted an event");
+                                    if (recordedStates[recordedStates.length - 1] === "succeeded")
+                                        reject("should not emit an event just yet");
+                                    resolve(undefined);
+                                });
+                            });
 
-                await reply.stop();
+                            await reply.update();
+                            mockReplyToUseParentPagesForUpdates(reply); // is this needed?
+                            expect(reply.content).to.be.undefined;
+                            expect(reply.updatedAt).to.be.undefined;
 
-                const filteredRecordedStates = cleanupStateArray(recordedStates);
-                const configCode = config.testConfigCode;
-                const expectedStates = getExpectedStatesForConfig(configCode);
-                const trimmedRecordedStates = filteredRecordedStates.slice(0, expectedStates.length);
-                expect(trimmedRecordedStates).to.deep.equal(expectedStates, "recorded states: " + filteredRecordedStates.join(", "));
-                expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
-            } finally {
-                await reply?.stop?.().catch(() => {});
-                await plebbit.destroy();
-                await context.cleanup();
-            }
+                            await commentUpdatePromise;
+                            await resolveWhenConditionIsTrue({
+                                toUpdate: reply,
+                                predicate: () => typeof reply.updatedAt === "number"
+                            });
+
+                            const updatingMockReply = plebbit._updatingComments[reply.cid];
+                            expect(updatingMockReply).to.exist;
+                            const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
+                            expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(
+                                numOfUpdates
+                            );
+
+                            await reply.stop();
+
+                            const filteredRecordedStates = cleanupStateArray(recordedStates);
+                            const configCode = config.testConfigCode;
+                            const expectedStates = getExpectedStatesForConfig(configCode);
+                            const trimmedRecordedStates = filteredRecordedStates.slice(0, expectedStates.length);
+                            expect(trimmedRecordedStates).to.deep.equal(
+                                expectedStates,
+                                "recorded states: " + filteredRecordedStates.join(", ")
+                            );
+                            expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
+                        } finally {
+                            await reply?.stop?.().catch(() => {});
+                            await plebbit.destroy();
+                        }
+                    }
+                );
+            });
         });
     });
 });
 
-async function createReplyParentPagesTestEnvironment() {
+async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
+    if (replyDepth === undefined || replyDepth === null) throw new Error("replyDepth is required");
+    if (replyDepth < 1) throw new Error("replyDepth must be at least 1");
+
     const publisherPlebbit = await mockPlebbit();
     const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit);
-    let parentComment;
+    const commentsToCleanup = new Set();
+
     try {
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
         const post = await publishRandomPost(subplebbit.address, publisherPlebbit);
-        parentComment = await publisherPlebbit.createComment({ cid: post.cid });
-        await parentComment.update();
-        await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => typeof parentComment.updatedAt === "number" });
+        const rootComment = await publisherPlebbit.createComment({ cid: post.cid });
+        commentsToCleanup.add(rootComment);
+        await rootComment.update();
+        await resolveWhenConditionIsTrue({ toUpdate: rootComment, predicate: () => typeof rootComment.updatedAt === "number" });
 
-        const replies = [];
-        for (let i = 0; i < 3; i++) {
-            replies.push(await publishRandomReply(parentComment, publisherPlebbit));
+        let currentParent = rootComment;
+        let replyUnderTest;
+        for (let depth = 1; depth <= replyDepth; depth++) {
+            replyUnderTest = await publishRandomReply(currentParent, publisherPlebbit);
+
+            if (depth < replyDepth) {
+                currentParent = await publisherPlebbit.createComment({ cid: replyUnderTest.cid });
+                commentsToCleanup.add(currentParent);
+                await currentParent.update();
+                await resolveWhenConditionIsTrue({
+                    toUpdate: currentParent,
+                    predicate: () => typeof currentParent.updatedAt === "number"
+                });
+            }
         }
+
+        const parentComment = currentParent;
+        commentsToCleanup.add(parentComment);
 
         await parentComment.update();
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,
-            predicate: () => (parentComment.replyCount ?? 0) >= replies.length
+            predicate: () => (parentComment.replyCount ?? 0) >= 1
         });
 
         await forcePagesToUsePageCidsOnly({ subplebbit, parentComment });
@@ -102,11 +147,12 @@ async function createReplyParentPagesTestEnvironment() {
             predicate: () => Object.keys(parentComment.replies.pageCids).length > 0
         });
 
-        const replyUnderTest = replies[replies.length - 1];
         if (!replyUnderTest?.cid) throw new Error("reply cid should be defined");
 
         const cleanup = async () => {
-            await parentComment?.stop?.().catch(() => {});
+            for (const comment of commentsToCleanup) {
+                await comment?.stop?.().catch(() => {});
+            }
             await subplebbit.delete().catch(() => {});
             await publisherPlebbit.destroy().catch(() => {});
         };
@@ -117,7 +163,9 @@ async function createReplyParentPagesTestEnvironment() {
             cleanup
         };
     } catch (error) {
-        await parentComment?.stop?.().catch(() => {});
+        for (const comment of commentsToCleanup) {
+            await comment?.stop?.().catch(() => {});
+        }
         await subplebbit.delete().catch(() => {});
         await publisherPlebbit.destroy().catch(() => {});
         throw error;
