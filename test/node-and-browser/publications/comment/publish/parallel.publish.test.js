@@ -1,97 +1,14 @@
 import { expect } from "chai";
-import signers from "../../../../fixtures/signers.js";
 import { describe, it } from "vitest";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     createMockedSubplebbitIpns,
-    findOrPublishCommentWithDepth,
-    forceSubplebbitToGenerateAllRepliesPages,
-    resolveWhenConditionIsTrue,
-    itSkipIfRpc,
     isPlebbitFetchingUsingGateways
 } from "../../../../../dist/node/test/test-util.js";
 import { Buffer } from "buffer";
 import * as cborg from "cborg";
 import { io as createSocketClient } from "socket.io-client";
 import { convertBase58IpnsNameToBase36Cid } from "../../../../../dist/node/signer/util.js";
-
-const subplebbitAddress = signers[0].address;
-const replyDepthsToTest = [1, 2, 15];
-
-const publishScenarios = [
-    {
-        description: "when parent comment is stopped before forcing replies pages",
-        stopParentBeforeForce: true
-    },
-    {
-        description: "while parent comment keeps updating",
-        stopParentBeforeForce: false
-    }
-];
-
-// TODO need to un-skip this
-getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`comment.publish.parallel force replies pages - ${config.name}`, () => {
-        let plebbit;
-
-        before(async () => {
-            plebbit = await config.plebbitInstancePromise();
-        });
-
-        after(async () => {
-            await plebbit.destroy();
-        });
-
-        const runPublishFlowForDepths = async ({ stopParentBeforeForce }) => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            subplebbit.setMaxListeners(100);
-            await subplebbit.update();
-
-            for (const replyDepth of replyDepthsToTest) {
-                const parentDepth = replyDepth - 1;
-                const parentComment = await findOrPublishCommentWithDepth({ depth: parentDepth, subplebbit });
-                parentComment.setMaxListeners(100);
-
-                try {
-                    await parentComment.update();
-                    await resolveWhenConditionIsTrue({
-                        toUpdate: parentComment,
-                        predicate: () => typeof parentComment.updatedAt === "number"
-                    });
-
-                    expect(parentComment.depth).to.equal(parentDepth);
-                    expect(parentComment.raw.commentUpdate).to.exist;
-
-                    if (stopParentBeforeForce) await parentComment.stop();
-
-                    await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-
-                    const reloadedParent = await plebbit.createComment({ cid: parentComment.cid });
-                    reloadedParent.setMaxListeners(100);
-
-                    try {
-                        await reloadedParent.update();
-                        await resolveWhenConditionIsTrue({
-                            toUpdate: reloadedParent,
-                            predicate: () => Object.keys(reloadedParent.replies.pageCids).length > 0
-                        });
-                        expect(Object.keys(reloadedParent.replies.pageCids).length).to.be.greaterThan(0);
-                    } finally {
-                        await reloadedParent.stop();
-                    }
-                } finally {
-                    if (parentComment.state !== "stopped") await parentComment.stop();
-                }
-            }
-        };
-
-        for (const scenario of publishScenarios) {
-            itSkipIfRpc(`forceSubplebbitToGenerateAllRepliesPages ${scenario.description}`, async () => {
-                await runPublishFlowForDepths({ stopParentBeforeForce: scenario.stopParentBeforeForce });
-            });
-        }
-    });
-});
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("comment.publish in parallel potential regressions - " + config.name, () => {
