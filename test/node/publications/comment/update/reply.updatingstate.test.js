@@ -17,7 +17,7 @@ const replyDepthsToTest = [1, 2, 3, 5, 15, 30];
 
 describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
     replyDepthsToTest.forEach((replyDepth) => {
-        describe.sequential(`reply depth ${replyDepth}`, () => {
+        describe.concurrent(`reply depth ${replyDepth}`, () => {
             let context;
 
             before(async () => {
