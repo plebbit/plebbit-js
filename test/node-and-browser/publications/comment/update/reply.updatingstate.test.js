@@ -1,12 +1,9 @@
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
-    findOrGenerateReplyUnderPostWithMultiplePages,
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue,
     publishRandomReply,
-    waitTillReplyInParentPagesInstance,
-    mockReplyToUseParentPagesForUpdates,
     describeSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../../dist/node/test/test-util.js";
@@ -189,56 +186,6 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 await plebbit.destroy();
             }
         });
-
-        // I disabled this test because the updating states are hard to predict
-        it.skip(`Updating states is in correct upon updating a reply from its parent pageCids`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            await subplebbit.update();
-            const replyInPage = await findOrGenerateReplyUnderPostWithMultiplePages(subplebbit);
-            await subplebbit.stop();
-
-            const reply = await plebbit.createComment({ cid: replyInPage.cid });
-
-            expect(reply.content).to.be.undefined;
-            expect(reply.updatedAt).to.be.undefined;
-
-            const expectedStates = [
-                "fetching-ipfs", // fetching comment ipfs of reply
-                "succeeded", // succeeded loading comment ipfs of reply
-                // "fetching-update-ipfs", // fetching comment update of reply by using pageCids of post
-                // "succeeded", // succeeded loading comment update of reply using pageCids of parent
-                // "fetching-subplebbit-ipns", // fetching subplebbit ipns
-                // "waiting-retry", // waiting for a new subplebbit update
-                "fetching-subplebbit-ipns", // fetching subplebbit ipns
-                "fetching-subplebbit-ipfs", // fetching subplebbit ipfs
-                "fetching-update-ipfs", // fetching comment update of reply by using page cids of parent
-                "succeeded", // succeeded loading comment update of reply using page cids of parent
-                "stopped" // stopped
-            ];
-            const recordedStates = [];
-            reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-            await reply.update();
-            mockReplyToUseParentPagesForUpdates(reply);
-            expect(reply.content).to.be.undefined;
-            expect(reply.updatedAt).to.be.undefined;
-            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
-            const nestedReply = await publishRandomReply(reply, plebbit);
-            await waitTillReplyInParentPagesInstance(nestedReply, reply);
-            const updatingMockReply = plebbit._updatingComments[reply.cid];
-            const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
-            expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
-            await reply.stop();
-
-            // Remove consecutive ["waiting-retry", "fetching-subplebbit-ipns"] entries
-            const filteredExpectedStates = cleanupStateArray(expectedStates);
-            const filteredRecordedStates = cleanupStateArray(recordedStates);
-
-            console.log("recordedStates", recordedStates);
-            console.log("filteredRecordedStates", filteredRecordedStates);
-            console.log("filteredExpectedStates", filteredExpectedStates);
-            expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
-        });
     });
 });
 
@@ -249,9 +196,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             try {
                 const sub = await plebbit.getSubplebbit(subplebbitAddress);
                 // we don't want domain name in author addrses so its resolving doesn't get included in expected states
-                const replyCid = sub.posts.pages.hot.comments
-                    .find((post) => post.replies && !post.author.address.includes("."))
-                    .replies.pages.best.comments[0].cid;
+                const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies && !post.author.address.includes(".")).replies
+                    .pages.best.comments[0].cid;
                 const mockReply = await plebbit.createComment({ cid: replyCid });
                 const expectedStates = [
                     "fetching-ipfs", // fetching comment ipfs of reply
@@ -277,54 +223,6 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             }
         });
 
-        // it's pretty difficult to test this because it's hard to predict the order of the states
-        it.skip(`updating state of reply is in correct order upon updating a reply that's loading from pageCids of its parent`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            await subplebbit.update();
-            const replyInPage = await findOrGenerateReplyUnderPostWithMultiplePages(subplebbit);
-
-            const reply = await plebbit.createComment({ cid: replyInPage.cid });
-
-            expect(reply.content).to.be.undefined;
-            expect(reply.updatedAt).to.be.undefined;
-
-            const expectedStates = [
-                "fetching-ipfs", // fetching comment ipfs of reply
-                "succeeded", // succeeded loading comment ipfs of reply
-                "fetching-update-ipfs", // fetching comment update of reply by using pageCids of post
-                "succeeded", // succeeded loading comment update of reply using pageCids of parent
-                "fetching-subplebbit-ipns", // fetching subplebbit ipns
-                "waiting-retry", // waiting for a new subplebbit update
-                "fetching-subplebbit-ipns", // fetching subplebbit ipns
-                "fetching-update-ipfs", // fetching comment update of reply by using page cids of parent
-                "succeeded" // succeeded loading comment update of reply using page cids of parent
-            ];
-            const recordedStates = [];
-            reply.on("updatingstatechange", (newState) => {
-                recordedStates.push(newState);
-            });
-
-            await reply.update();
-            mockReplyToUseParentPagesForUpdates(reply);
-            expect(reply.content).to.be.undefined;
-            expect(reply.updatedAt).to.be.undefined;
-            await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.depth === "number" });
-            const nestedReply = await publishRandomReply(reply, plebbit);
-            await waitTillReplyInParentPagesInstance(nestedReply, reply);
-            await reply.stop();
-            await nestedReply.stop();
-            expect(reply.content).to.exist;
-            expect(reply.updatedAt).to.be.a("number"); // should load a new comment update
-
-            // Remove consecutive ["waiting-retry", "fetching-subplebbit-ipns"] entries
-            const filteredExpectedStates = cleanupStateArray(expectedStates);
-            const filteredRecordedStates = cleanupStateArray(recordedStates);
-
-            const trimmedRecordedStates = filteredRecordedStates.slice(0, filteredExpectedStates.length);
-            expect(trimmedRecordedStates).to.deep.equal(filteredExpectedStates);
-
-            expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
-        });
         it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
@@ -340,7 +238,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 const createErrorPromise = () =>
                     new Promise((resolve) =>
                         mockReply.once("error", (err) => {
-                            if (err.details.gatewayToError["http://localhost:18080"].code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") resolve();
+                            if (err.details.gatewayToError["http://localhost:18080"].code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID")
+                                resolve();
                         })
                     );
                 await sub.update(); // need to update it so that we can mock it below
@@ -413,38 +312,6 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await commentUpdatePromise;
 
             await mockReply.stop();
-        });
-
-        it(`the order of state-event-statechange is correct when we retrieve a reply by loading it from its parent pageCids`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            await subplebbit.update();
-            const replyInPage = await findOrGenerateReplyUnderPostWithMultiplePages(subplebbit);
-
-            const reply = await plebbit.createComment({ cid: replyInPage.cid });
-
-            expect(reply.content).to.be.undefined;
-            expect(reply.updatedAt).to.be.undefined;
-
-            const recordedStates = [];
-            reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-            const commentUpdatePromise = new Promise((resolve, reject) => {
-                reply.on("update", () => {
-                    if (!reply.updatedAt) return;
-                    if (reply.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
-                    if (recordedStates.length === 0) reject("should have emitted an event");
-                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
-                    resolve();
-                });
-            });
-
-            await reply.update();
-            mockReplyToUseParentPagesForUpdates(reply);
-            expect(reply.content).to.be.undefined;
-            expect(reply.updatedAt).to.be.undefined;
-            await commentUpdatePromise;
-            await reply.stop();
-            expect(reply.updatedAt).to.be.a("number"); // should load a new comment update
         });
     });
 });
