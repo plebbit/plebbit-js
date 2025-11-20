@@ -8,137 +8,21 @@ import {
     mockReplyToUseParentPagesForUpdates,
     publishRandomPost,
     publishRandomReply,
-    resolveWhenConditionIsTrue,
-    waitTillReplyInParentPagesInstance
+    resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 
-// TODO add depth config here so we can test it on different depths
+const plebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
-const kuboAndLibp2pConfigs = getAvailablePlebbitConfigsToTestAgainst({
-    includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"],
-    includeAllPossibleConfigOnEnv: true
-});
-const gatewayConfigs = getAvailablePlebbitConfigsToTestAgainst({
-    includeOnlyTheseTests: ["remote-ipfs-gateway"],
-    includeAllPossibleConfigOnEnv: true
-});
-const allPlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
-
-kuboAndLibp2pConfigs.map((config) => {
-    describeSkipIfRpc.sequential(`reply.updatingState parent page CIDs (node) - ${config.name}`, async () => {
-        it(`Updating states is in correct order upon updating a reply from its parent pageCids`, async () => {
+// TODO have different depths config
+// TODO have context be created once, instead of for each it
+plebbitConfigs.map((config) => {
+    describeSkipIfRpc.sequential(`reply.updatingState via parent pageCIDs (node) - ${config.name}`, async () => {
+        it(`loads reply updates from parent pageCIDs and emits expected state transitions - ${config.name}`, async () => {
             const context = await createReplyParentPagesTestEnvironment();
             const plebbit = await config.plebbitInstancePromise();
-            const expectedStates = [
-                "fetching-ipfs",
-                "succeeded",
-                "fetching-subplebbit-ipns",
-                "fetching-subplebbit-ipfs",
-                "fetching-update-ipfs",
-                "succeeded",
-                "stopped"
-            ];
+
             const recordedStates = [];
             let reply;
-            let replyStopped = false;
-            try {
-                reply = await plebbit.createComment({ cid: context.replyCid });
-
-                expect(reply.content).to.be.undefined;
-                expect(reply.updatedAt).to.be.undefined;
-
-                reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-                await reply.update();
-                // mockReplyToUseParentPagesForUpdates(reply);
-                expect(reply.content).to.be.undefined;
-                expect(reply.updatedAt).to.be.undefined;
-
-                await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
-
-                const updatingMockReply = plebbit._updatingComments[reply.cid];
-                const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
-                expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
-
-                await reply.stop();
-                replyStopped = true;
-
-                const filteredExpectedStates = cleanupStateArray(expectedStates);
-                const filteredRecordedStates = cleanupStateArray(recordedStates);
-                expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates, "recorded states: " + recordedStates.join(", "));
-            } finally {
-                if (!replyStopped) await reply?.stop?.().catch(() => {});
-                await plebbit.destroy();
-                await context.cleanup();
-            }
-        });
-    });
-});
-
-gatewayConfigs.map((config) => {
-    describeSkipIfRpc.concurrent(`reply.updatingState parent page CIDs gateway (node) - ${config.name}`, async () => {
-        it(`updating state of reply is in correct order upon updating a reply that's loading from parent pageCids`, async () => {
-            const context = await createReplyParentPagesTestEnvironment();
-            const plebbit = await config.plebbitInstancePromise();
-            const expectedStates = [
-                "fetching-ipfs",
-                "succeeded",
-                "fetching-update-ipfs",
-                "succeeded",
-                "fetching-subplebbit-ipns",
-                "waiting-retry",
-                "fetching-subplebbit-ipns",
-                "fetching-update-ipfs",
-                "succeeded",
-                "stopped"
-            ];
-            const recordedStates = [];
-            let reply;
-            try {
-                reply = await plebbit.createComment({ cid: context.replyCid });
-
-                expect(reply.content).to.be.undefined;
-                expect(reply.updatedAt).to.be.undefined;
-
-                reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-                await reply.update();
-                // mockReplyToUseParentPagesForUpdates(reply); // do we even need this? I think if context is correctly created then we shouldn't need to mock anything
-                expect(reply.content).to.be.undefined;
-                expect(reply.updatedAt).to.be.undefined;
-                await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
-
-                const updatingMockReply = plebbit._updatingComments[reply.cid];
-                const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1; // -1 is because we wanna subtract CommentIpfs update
-                expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
-
-                await reply.stop();
-
-                expect(reply.content).to.exist;
-                expect(reply.updatedAt).to.be.a("number");
-
-                const filteredExpectedStates = cleanupStateArray(expectedStates);
-                const filteredRecordedStates = cleanupStateArray(recordedStates);
-                const trimmedRecordedStates = filteredRecordedStates.slice(0, filteredExpectedStates.length);
-                expect(trimmedRecordedStates).to.deep.equal(filteredExpectedStates);
-                expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
-            } finally {
-                await reply?.stop?.().catch(() => {});
-                await plebbit.destroy();
-                await context.cleanup();
-            }
-        });
-    });
-});
-
-allPlebbitConfigs.map((config) => {
-    describeSkipIfRpc.concurrent(`reply.updatingState parent page event order (node) - ${config.name}`, async () => {
-        it(`the order of state-event-statechange is correct when we retrieve a reply by loading it from its parent pageCids`, async () => {
-            const context = await createReplyParentPagesTestEnvironment();
-            const plebbit = await config.plebbitInstancePromise();
-            const recordedStates = [];
-            let reply;
-            let replyStopped = false;
             try {
                 reply = await plebbit.createComment({ cid: context.replyCid });
 
@@ -153,20 +37,33 @@ allPlebbitConfigs.map((config) => {
                         if (reply.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
                         if (recordedStates.length === 0) reject("should have emitted an event");
                         if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
-                        resolve();
+                        resolve(undefined);
                     });
                 });
 
                 await reply.update();
-                mockReplyToUseParentPagesForUpdates(reply);
+                mockReplyToUseParentPagesForUpdates(reply); // is this needed?
                 expect(reply.content).to.be.undefined;
                 expect(reply.updatedAt).to.be.undefined;
+
                 await commentUpdatePromise;
+                await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
+
+                const updatingMockReply = plebbit._updatingComments[reply.cid];
+                expect(updatingMockReply).to.exist;
+                const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
+                expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
 
                 await reply.stop();
-                replyStopped = true;
+
+                const filteredRecordedStates = cleanupStateArray(recordedStates);
+                const configCode = config.testConfigCode;
+                const expectedStates = getExpectedStatesForConfig(configCode);
+                const trimmedRecordedStates = filteredRecordedStates.slice(0, expectedStates.length);
+                expect(trimmedRecordedStates).to.deep.equal(expectedStates, "recorded states: " + filteredRecordedStates.join(", "));
+                expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
             } finally {
-                if (!replyStopped) await reply?.stop?.().catch(() => {});
+                await reply?.stop?.().catch(() => {});
                 await plebbit.destroy();
                 await context.cleanup();
             }
@@ -225,6 +122,41 @@ async function createReplyParentPagesTestEnvironment() {
         await publisherPlebbit.destroy().catch(() => {});
         throw error;
     }
+}
+
+function getExpectedStatesForConfig(configCode) {
+    if (!configCode) throw new Error("plebbit config code is required");
+    const normalizedCode = configCode.toLowerCase();
+    const base = ["fetching-ipfs", "succeeded"];
+
+    if (normalizedCode === "remote-ipfs-gateway") {
+        return cleanupStateArray([...base, "fetching-subplebbit-ipns", "fetching-update-ipfs", "succeeded", "stopped"]);
+    }
+
+    if (normalizedCode === "local-kubo-rpc") {
+        return cleanupStateArray([...base, "fetching-update-ipfs", "succeeded", "stopped"]);
+    }
+
+    if (normalizedCode === "remote-libp2pjs") {
+        return cleanupStateArray([
+            ...base,
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "fetching-update-ipfs",
+            "succeeded",
+            "stopped"
+        ]);
+    }
+
+    // default (e.g. remote Kubo without datapath)
+    return cleanupStateArray([
+        ...base,
+        "fetching-subplebbit-ipns",
+        "fetching-subplebbit-ipfs",
+        "fetching-update-ipfs",
+        "succeeded",
+        "stopped"
+    ]);
 }
 
 const cleanupStateArray = (states) => {
