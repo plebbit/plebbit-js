@@ -51,6 +51,4 @@ describe(`subplebbit.delete`, async () => {
         await updatingSubplebbit.delete();
         expect(updatingSubplebbit.state).to.equal("stopped");
     });
-
-    it(`Deleting a subplebbit will unpin all cids under the subplebbit`);
 });
