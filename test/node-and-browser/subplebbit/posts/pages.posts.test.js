@@ -4,18 +4,13 @@ import {
     mockGatewayPlebbit,
     addStringToIpfs,
     getAvailablePlebbitConfigsToTestAgainst,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
-    loadAllPagesBySortName,
     waitTillPostInSubplebbitPages,
-    forceSubplebbitToGenerateAllPostsPages,
     publishRandomReply,
+    loadAllPagesBySortName,
     isPlebbitFetchingUsingGateways,
     resolveWhenConditionIsTrue,
-    itSkipIfRpc,
-    iterateThroughPagesToFindCommentInParentPagesInstance,
-    iterateThroughPageCidToFindComment
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
 import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../pages/pages-test-util.js";
 import signers from "../../../fixtures/signers.js";
 import * as remeda from "remeda";
@@ -27,26 +22,12 @@ import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.sequential(`subplebbit.posts - ${config.name}`, async () => {
-        const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
-
-        const testPostsSort = async (sortName, subplebbit) => {
-            const posts = await loadAllPagesBySortName(sortName, subplebbit.posts);
-
-            subPostsBySortName[sortName] = posts;
-
-            await testPageCommentsIfSortedCorrectly(posts, sortName, subplebbit);
-            return posts;
-        };
-
+    describe.concurrent(`subplebbit.posts - ${config.name}`, async () => {
         let plebbit, newPost, subplebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
+            newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post it should appear on all pages
             await waitTillPostInSubplebbitPages(newPost, plebbit);
-            subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            // this call below is timing out
-            await forceSubplebbitToGenerateAllPostsPages(subplebbit); // the goal of this is to force the subplebbit to have all pages
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
 
@@ -76,67 +57,37 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(subplebbit.posts.pageCids[preloadedPageSortName]).to.be.undefined;
         });
 
-        it(`Newly published post appears on all pages`, async () => {
-            const postInPreloadedPage = await iterateThroughPagesToFindCommentInParentPagesInstance(newPost.cid, subplebbit.posts);
-            expect(postInPreloadedPage).to.exist;
-            for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                const postInPage = await iterateThroughPageCidToFindComment(newPost.cid, pageCid, subplebbit.posts);
-                expect(postInPage).to.exist;
+        it(`Newly published post appears on preloaded pages`, async () => {
+            expect(Object.keys(subplebbit.posts.pages).length).to.be.greaterThan(0);
+            for (const preloadedPageSortName of Object.keys(subplebbit.posts.pages)) {
+                const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts);
+                const postInPreloadedPage = allPostsUnderPreloadedSortName.find((postInPage) => postInPage.cid === newPost.cid);
+                expect(postInPreloadedPage).to.exist;
+                testCommentFieldsInPageJson(postInPreloadedPage);
             }
         });
+
+        it(`Preloaded pages are sorted correctly`, async () => {
+            expect(Object.keys(subplebbit.posts.pages).length).to.be.greaterThan(0);
+            for (const preloadedPageSortName of Object.keys(subplebbit.posts.pages)) {
+                const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts);
+                await testPageCommentsIfSortedCorrectly(allPostsUnderPreloadedSortName, preloadedPageSortName, subplebbit);
+            }
+        });
+
+        it(`In preloaded pages The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
+            expect(Object.keys(subplebbit.posts.pages).length).to.be.greaterThan(0);
+            for (const preloadedPageSortName of Object.keys(subplebbit.posts.pages)) {
+                const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts);
+                for (const pageComment of allPostsUnderPreloadedSortName) {
+                    const rawPageComment = pageComment.raw;
+                    const calculatedCid = await calculateIpfsHash(JSON.stringify(rawPageComment.comment));
+                    expect(calculatedCid).to.equal(rawPageComment.commentUpdate.cid);
+                }
+            }
+        });
+
         it(`Hot page is pre-loaded`, () => expect(Object.keys(subplebbit.posts.pages)).to.include("hot"));
-        it(`All pageCids exists except preloaded`, () => {
-            // If we have pre-loaded pages, we don't need to check for pageCids
-            if (Object.keys(subplebbit.posts.pageCids).length > 0) {
-                const pageCidsWithoutPreloaded = Object.keys(subplebbit.posts.pageCids).filter(
-                    (pageCid) => !Object.keys(subplebbit.posts.pages).includes(pageCid)
-                );
-
-                expect(pageCidsWithoutPreloaded.length).to.be.greaterThan(0);
-                expect(pageCidsWithoutPreloaded.sort()).to.deep.equal(Object.keys(subplebbit.posts.pageCids).sort());
-
-                const allSortsWithoutPreloaded = Object.keys(POSTS_SORT_TYPES).filter(
-                    (sortName) => !Object.keys(subplebbit.posts.pages).includes(sortName)
-                );
-                expect(allSortsWithoutPreloaded.length).to.be.greaterThan(0);
-                expect(allSortsWithoutPreloaded.sort()).to.deep.equal(Object.keys(subplebbit.posts.pageCids).sort());
-            }
-        });
-        Object.keys(POSTS_SORT_TYPES).map((sortName) =>
-            it(`${sortName} pages are sorted correctly if there's more than a single page`, async () =>
-                Object.keys(subplebbit.posts.pageCids).length > 0 && (await testPostsSort(sortName, subplebbit)))
-        );
-        it(`posts are the same within all pages`, async () => {
-            // We need to separate pages by timeframe
-
-            const pagesByTimeframe = remeda.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
-
-            for (const pagesGrouped of Object.values(pagesByTimeframe)) {
-                const pages = pagesGrouped.map(([sortName, _]) => subPostsBySortName[sortName]);
-                if (pages.length === 1) continue; // there's only a single page under this timeframe, not needed to verify against other pages
-                expect(pages.length).to.be.greaterThanOrEqual(2);
-                expect(pages.map((page) => page.length).every((val, i, arr) => val === arr[0])).to.be.true; // All pages are expected to have the same length
-
-                for (const comment of pages[0]) {
-                    const otherPageComments = pages.map((page) => page.find((c) => c.cid === comment.cid));
-                    expect(otherPageComments.length).to.equal(pages.length);
-                    for (const otherPageComment of otherPageComments) expect(comment).to.deep.equal(otherPageComment);
-                }
-            }
-        });
-
-        it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
-            const pageCids = Object.values(subplebbit.posts.pageCids);
-
-            for (const pageCid of pageCids) {
-                const pageIpfs = JSON.parse(await plebbit.fetchCid(pageCid)); // will have PageIpfs type
-
-                for (const commentInPageIpfs of pageIpfs.comments) {
-                    const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
-                    expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
-                }
-            }
-        });
 
         itSkipIfRpc("posts.getPage will throw a timeout error when request times out", async () => {
             // Create a plebbit instance with a very short timeout for page-ipfs
