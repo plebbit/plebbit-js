@@ -386,37 +386,35 @@ export class PageGenerator {
 
         const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, pageOptions);
         const firstChunkSize = await getSerializedCommentsSize(preloadedChunk[0], preloadedChunk.length > 1);
-        const disablePreload = firstChunkSize > preloadedPageSizeBytes;
-        if (!disablePreload && preloadedChunk.length === 1)
-            return { singlePreloadedPage: { [preloadedPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one preloaded page
+        if (firstChunkSize > preloadedPageSizeBytes)
+            throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
+                firstChunkSize,
+                preloadedPageSizeBytes,
+                sortName: preloadedPageSortName
+            });
+
+        if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one preloaded page
 
         // we're gonna have pages for each sort type, they don't fit in a single preloaded chunk
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
-        if (disablePreload) {
-            sortResults.push(
-                await this.sortChunkAddIpfsNonPreloaded(rawPosts, preloadedPageSortName, {
-                    ...pageOptions,
-                    firstPageSizeBytes: 1024 * 1024
-                })
-            );
-        } else {
-            sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedPageSortName));
-        }
+        sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedPageSortName));
 
         const nonPreloadedSorts = remeda.keys.strict(POSTS_SORT_TYPES).filter((sortName) => sortName !== preloadedPageSortName);
         await Promise.all(
             nonPreloadedSorts.map(async (sortName) => {
                 sortResults.push(
-                    await this.sortChunkAddIpfsNonPreloaded(rawPosts, sortName, { ...pageOptions, firstPageSizeBytes: 1024 * 1024 })
+                    await this.sortChunkAddIpfsNonPreloaded(rawPosts, sortName, {
+                        ...pageOptions,
+                        firstPageSizeBytes: 1024 * 1024
+                    })
                 );
             })
         );
 
         const generatedPages = <PostsPagesTypeIpfs | undefined>this._generationResToPages(sortResults);
         if (!generatedPages) return undefined;
-        if (disablePreload) return { pageCids: generatedPages.pageCids, pages: {} };
-        else return generatedPages;
+        return generatedPages;
     }
 
     async _bundleLatestCommentUpdateWithQueuedComments(queuedComment: CommentsTableRow): Promise<ModQueueCommentInPage> {

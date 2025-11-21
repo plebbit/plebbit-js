@@ -437,12 +437,12 @@ export function calculateInlineRepliesBudget({
     comment,
     commentUpdateWithoutReplies,
     maxCommentUpdateBytes = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE,
-    maxPageBytes = 1024 * 1024,
-    minInlineRepliesBytes = 256 * 1024,
-    hardInlineRepliesLimitBytes = 1024 * 1024,
-    depthBufferBaseBytes = 1024,
-    depthBufferPerDepthBytes = 2 * 1024,
-    commentUpdateHeadroomBytes = 1000,
+    maxPageBytes = 512 * 1024,
+    minInlineRepliesBytes = 96 * 1024,
+    hardInlineRepliesLimitBytes = 256 * 1024,
+    depthBufferBaseBytes = 8 * 1024,
+    depthBufferPerDepthBytes = 8 * 1024,
+    commentUpdateHeadroomBytes = 4 * 1024,
     pageSafetyMarginBytes = 1024,
     inlineMetadataBytes = 2 * 1024
 }: InlineRepliesBudgetOptions): number {

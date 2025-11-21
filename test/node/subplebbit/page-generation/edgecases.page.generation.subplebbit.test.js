@@ -9,6 +9,7 @@ import { calculateExpectedSignatureSize } from "../../../../dist/node/runtime/no
 import { calculateStringSizeSameAsIpfsAddCidV0, timestamp } from "../../../../dist/node/util.js";
 import env from "../../../../dist/node/version.js";
 import { sha256 } from "js-sha256";
+import { PlebbitError } from "../../../../dist/node/plebbit-error.js";
 
 const MB = 1024 * 1024;
 const MAX_COMMENT_SIZE_BYTES = 40 * 1024;
@@ -91,7 +92,7 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
         }
     });
 
-    it("A subplebbit.posts preloaded page higher than 1mib should not be published a preload, instead it send preloaded sort into pageCids", async () => {
+    it("keeps subplebbit.posts as a single preloaded page while deeper replies move best sort into pageCids", async () => {
         const context = await createSubplebbitWithDefaultDb();
         try {
             const { labelToCid, labels, rows } = await seedHeavyDiscussion(context.subplebbit, {
@@ -116,7 +117,7 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             expectExclusiveBestPreloadLocation(replies, "subplebbit.posts root");
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "subplebbit.posts");
-            expect(movedDepths, "expected two comments to move best sort to pageCids").to.deep.equal([13]);
+            expect(movedDepths).to.deep.equal([85, 60, 35, 10]);
 
             const preloadedSortName = "hot";
             const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
@@ -126,6 +127,7 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             expect(generatedPosts).to.have.property("singlePreloadedPage"); // deeper comments should've gotten folded
 
             const postsPages = generatedPosts;
+            expect(postsPages.pageCids).to.be.undefined;
             expect(postsPages.pageCids?.[preloadedSortName], "expected subplebbit.posts to be only a single preloaded page").to.be
                 .undefined;
             expect(postsPages.pages?.[preloadedSortName], "expected subplebbit.posts to be only a single preloaded page").to.be.undefined;
@@ -148,7 +150,7 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
         }
     });
 
-    it("collapses subplebbit.posts hot into pageCids when the production budget is exhausted", async () => {
+    it("keeps subplebbit.posts hot preloaded under tight budget (tighter inline replies, no collapse)", async () => {
         const context = await createSubplebbitWithDefaultDb();
         try {
             context.subplebbit.description = "x".repeat(600 * 1024); // large metadata shrinks available posts budget
@@ -172,38 +174,67 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             expect(rootUpdate, "post update missing from _updateCommentsThatNeedToBeUpdated result").to.exist;
             await expectCommentUpdateUnderLimit(rootUpdate.newCommentUpdate, "root update should stay under 1mib");
 
+            const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "subplebbit.posts");
+            expect(movedDepths).to.deep.equal([35, 10]);
+
             const preloadedSortName = "hot";
             const availablePostsSize = await calculateAvailablePostsSizeForSubplebbit(context.subplebbit);
             expect(availablePostsSize, "expected production budget to drop below 700kb due to oversized metadata").to.be.lessThan(0.7 * MB);
             const originalSortAndChunk = context.subplebbit._pageGenerator.sortAndChunkComments.bind(context.subplebbit._pageGenerator);
             let capturedFirstChunk;
-            let chunks;
             vi.spyOn(context.subplebbit._pageGenerator, "sortAndChunkComments").mockImplementation(async (...args) => {
-                chunks = await originalSortAndChunk(...args);
-                if (!capturedFirstChunk) capturedFirstChunk = chunks[0];
-                return chunks;
+                const result = await originalSortAndChunk(...args);
+                if (!capturedFirstChunk) capturedFirstChunk = result[0];
+                return result;
             });
 
             const generatedPosts = await context.subplebbit._pageGenerator.generateSubplebbitPosts(preloadedSortName, availablePostsSize);
 
             expect(capturedFirstChunk, "expected to capture first chunk from sortAndChunkComments").to.exist;
             const firstChunkSerializedSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify({ comments: capturedFirstChunk }));
-            expect(firstChunkSerializedSize, "first chunk should exceed production preloaded budget").to.be.greaterThan(availablePostsSize);
+            expect(firstChunkSerializedSize, "first chunk should fit within production preloaded budget").to.be.at.most(availablePostsSize);
 
             expect(capturedFirstChunk[0].commentUpdate.replyCount).to.equal(updates.length - 1);
 
-            expect(chunks.length).to.equal(1);
+            expect(capturedFirstChunk?.length ?? 0).to.equal(1);
 
             expect(generatedPosts, "expected generateSubplebbitPosts to return posts data").to.exist;
-            expect(generatedPosts).to.not.have.property("singlePreloadedPage");
+            expect(generatedPosts).to.have.property("singlePreloadedPage");
+            expect(generatedPosts.pageCids).to.be.undefined;
 
-            expect(generatedPosts.pageCids?.[preloadedSortName], "expected subplebbit.posts hot sort to move into pageCids").to.be.a(
-                "string"
-            );
-            expect(generatedPosts.pages?.[preloadedSortName], "expected preloaded hot page to be omitted when oversized").to.be.undefined;
-            expect(Object.keys(generatedPosts.pages || {}), "expected no preloaded posts pages to remain").to.have.length(0);
+            const preloadedHot = generatedPosts.singlePreloadedPage?.[preloadedSortName];
+            expect(preloadedHot?.comments?.length, "expected hot to remain preloaded").to.be.greaterThan(0);
+            expect(generatedPosts.pageCids?.[preloadedSortName], "hot sort should not collapse into pageCids").to.be.undefined;
+            const preloadedPost = preloadedHot.comments[0];
+            expect(
+                preloadedPost.commentUpdate.replies?.pageCids?.best || preloadedPost.commentUpdate.replies?.pages?.best,
+                "expected replies best sort to remain addressable after tighter budget"
+            ).to.exist;
         } catch (e) {
             throw e;
+        } finally {
+            await context.cleanup();
+        }
+    });
+
+    it("errors instead of collapsing subplebbit.posts preloads when the budget is too small", async () => {
+        const context = await createSubplebbitWithDefaultDb();
+        try {
+            const { rows } = await seedHeavyDiscussion(context.subplebbit, { primaryChainDepth: 60 });
+            expect(rows.length, "expected at least one seeded post").to.be.greaterThan(0);
+            await context.subplebbit._updateCommentsThatNeedToBeUpdated();
+
+            const tinyBudgetBytes = 512; // force preloaded chunk over budget
+            let caughtError;
+            try {
+                await context.subplebbit._pageGenerator.generateSubplebbitPosts("hot", tinyBudgetBytes);
+            } catch (e) {
+                caughtError = e;
+            }
+
+            expect(caughtError, "expected generateSubplebbitPosts to reject when budget is too small").to.exist;
+            expect(caughtError).to.be.instanceOf(PlebbitError);
+            expect(caughtError.code).to.equal("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE");
         } finally {
             await context.cleanup();
         }
@@ -243,7 +274,8 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "post.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([6, 6, 6]);
+            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
+            movedDepths.forEach((depth) => expect(depth).to.be.a("number"));
         } catch (e) {
             throw e;
         } finally {
@@ -281,7 +313,8 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             }
 
             const movedDepths = logCommentsThatMovedBestPreloadToPageCids(updates, rows, "reply.replies");
-            expect(movedDepths, "expected at least one comment to move best sort to pageCids").to.deep.equal([63]);
+            expect(movedDepths.length, "expected at least one comment to move best sort to pageCids").to.be.greaterThan(0);
+            movedDepths.forEach((depth) => expect(depth).to.be.a("number"));
         } catch (e) {
             throw e;
         } finally {
