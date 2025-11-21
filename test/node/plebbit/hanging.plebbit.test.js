@@ -23,7 +23,7 @@ before(async () => {
 for (const scenario of scenarioDefinitions) {
     describe(`[Scenario: ${scenario.description}]`, () => {
         for (const config of configs) {
-            describe.concurrent(`[Config: ${config.name}]`, () => {
+            describe.sequential(`[Config: ${config.name}]`, () => {
                 it(`Hanging sceneario: ${scenario.description}. It should not keep the Node process alive - ${config.name}`, async function () {
                     await runHangingScenarioInChildProcess({
                         configCode: config.testConfigCode,
