@@ -2989,16 +2989,27 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // scenario 4: we call delete() on a subplebbit that is not started, but the same sub is started in plebbit._startedSubplebbits[address]
 
         try {
+            await this._addOldPageCidsToCidsToUnpin(this.raw?.subplebbitIpfs?.posts, undefined);
+        } catch (e) {
+            log.error("Failed to add old page cids from subplebbit.posts to be unpinned", e);
+        }
+        try {
             await this.initDbHandlerIfNeeded();
             await this._dbHandler.initDbIfNeeded();
-            const allCids = this._dbHandler.queryAllCidsUnderThisSubplebbit();
-            allCids.forEach((cid) => this._cidsToUnPin.add(cid));
+            const cidsAndReplies = this._dbHandler.queryAllCommentCidsAndTheirReplies();
+            cidsAndReplies.forEach((comment) => this._cidsToUnPin.add(comment.cid));
+            await Promise.all(
+                cidsAndReplies
+                    .filter((comment) => comment.replies)
+                    .map(async (commentWithReplies) => {
+                        await this._addOldPageCidsToCidsToUnpin(commentWithReplies.replies, undefined);
+                    })
+            );
         } catch (e) {
             log.error("Failed to query all cids under this subplebbit to delete them", e);
         }
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid);
         if (this.statsCid) this._cidsToUnPin.add(this.statsCid);
-        if (this.posts.pageCids) Object.values(this.posts.pageCids).forEach((pageCid) => this._cidsToUnPin.add(pageCid));
 
         try {
             await this._unpinStaleCids();

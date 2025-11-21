@@ -70,6 +70,8 @@ export interface PurgedCommentTableRows {
     commentUpdateTableRow?: CommentUpdatesRow;
 }
 
+type CommentCidWithReplies = Pick<CommentsTableRow, "cid"> & Pick<CommentUpdatesRow, "replies">;
+
 export class DbHandler {
     private _db!: BetterSqlite3Database;
     private _subplebbit!: LocalSubplebbit;
@@ -2097,23 +2099,43 @@ export class DbHandler {
             .run(...commentCids);
     }
 
-    queryAllCidsUnderThisSubplebbit(): Set<string> {
-        const allCids = new Set<string>();
-        (this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS}`).all() as { cid: string }[]).forEach((c) => allCids.add(c.cid));
-        const pageCidsResult = this._db
+    queryAllCommentCidsAndTheirReplies(): CommentCidWithReplies[] {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:queryAllCidsUnderThisSubplebbit");
+
+        const rows = this._db
             .prepare(
-                `SELECT json_extract(replies, '$.pageCids') AS pageCids 
-                             FROM ${TABLES.COMMENT_UPDATES} 
-                             WHERE json_extract(replies, '$.pageCids') IS NOT NULL`
+                `SELECT 
+                     c.cid AS cid,
+                     CASE
+                         WHEN cu.replies IS NULL THEN NULL
+                         ELSE json_set(
+                             cu.replies,
+                             '$.pages',
+                             (
+                                 SELECT json_group_object(
+                                     pages.key,
+                                     json_set(pages.value, '$.comments', json('[]'))
+                                 )
+                                 FROM json_each(cu.replies, '$.pages') AS pages
+                             )
+                         )
+                     END AS replies
+                 FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid`
             )
-            .all() as { pageCids: string }[];
+            .all() as { cid: string; replies?: string | null }[];
 
-        pageCidsResult.forEach((row) => {
-            const pageCidsParsed = JSON.parse(row.pageCids) as NonNullable<RepliesPagesTypeIpfs["pageCids"]>;
-
-            Object.values(pageCidsParsed).forEach((cid) => allCids.add(cid));
+        return rows.map((row) => {
+            let parsedReplies: CommentUpdatesRow["replies"];
+            if (typeof row.replies === "string" && row.replies.length > 0) {
+                try {
+                    parsedReplies = JSON.parse(row.replies) as CommentUpdatesRow["replies"];
+                } catch (e) {
+                    log.error(`Failed to parse replies JSON for comment ${row.cid} when collecting cids`, e);
+                }
+            }
+            return { cid: row.cid, replies: parsedReplies };
         });
-        return allCids;
     }
 
     queryPostsWithActiveScore(
