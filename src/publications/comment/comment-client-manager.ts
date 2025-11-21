@@ -1,6 +1,6 @@
 import { CachedTextRecordResolve, OptionsToLoadFromGateway } from "../../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../../clients/chain-provider-client.js";
-import type { PageIpfs } from "../../pages/types.js";
+import type { PageIpfs, PageTypeJson } from "../../pages/types.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import type { ChainTicker } from "../../types.js";
 import { Comment } from "./comment.js";
@@ -600,6 +600,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
         await resolveWhenPredicateIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
         if (startedUpdatingParentComment) await parentCommentInstance.stop();
+        if (parentCommentInstance.updatedAt! < this._comment.timestamp) return; // if updatedAt is older then it doesn't include this comment yet
         const replyInPreloadedParentPages =
             parentCommentInstance.replies && findCommentInPageInstance(parentCommentInstance.replies, this._comment.cid);
 
@@ -638,23 +639,45 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         let newCommentUpdate: PageIpfs["comments"][0] | undefined;
-        const pageCidsSearchedForNewUpdate: string[] = [];
+        const pageCidsSearchedForNewUpdate: {
+            pageCid: string;
+            error?: Error;
+            replyWithinUpdatingPages?: boolean;
+            replyWithinParentPage?: boolean;
+        }[] = [];
+        let replyFoundWithoutNewerUpdate = false;
         while (curPageCid && !newCommentUpdate) {
-            const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid);
-            if (pageCidsSearchedForNewUpdate.length === 0) this._parentFirstPageCidsAlreadyLoaded.add(curPageCid);
-            pageCidsSearchedForNewUpdate.push(curPageCid);
+            let pageLoaded: PageTypeJson;
+            try {
+                pageLoaded = await parentCommentInstance.replies.getPage(curPageCid);
+            } catch (e) {
+                pageCidsSearchedForNewUpdate.push({ pageCid: curPageCid, error: e as Error });
+                break;
+            }
+            if (pageCidsSearchedForNewUpdate.length === 0) {
+                this._parentFirstPageCidsAlreadyLoaded.add(curPageCid);
+            }
             const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid)?.raw;
-            const replyWithinUpdatingPages = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: parentCommentInstance });
+            const replyWithinUpdatingPages = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ parent: parentCommentInstance });
+
+            pageCidsSearchedForNewUpdate.push({
+                pageCid: curPageCid,
+                replyWithinParentPage: Boolean(replyWithinParentPage),
+                replyWithinUpdatingPages: Boolean(replyWithinUpdatingPages)
+            });
 
             if (replyWithinParentPage) {
                 const isNewUpdate = replyWithinParentPage.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0);
                 if (isNewUpdate) {
                     newCommentUpdate = replyWithinParentPage;
+                } else {
+                    replyFoundWithoutNewerUpdate = true;
                 }
                 break; // if we found the comment in parent pages, there's no point in continuing to look for it in updating pages
             } else if (replyWithinUpdatingPages) {
                 const isNewUpdate = replyWithinUpdatingPages.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0);
                 if (isNewUpdate) newCommentUpdate = replyWithinUpdatingPages;
+                else replyFoundWithoutNewerUpdate = true;
             }
 
             if (pageSortName === "new" && pageLoaded.comments.find((comment) => comment.timestamp < this._comment.timestamp)) {
@@ -687,7 +710,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         );
         if (newCommentUpdate)
             this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: newCommentUpdate.commentUpdate }, subplebbitWithSignature, log);
-        else
+        else if (!replyFoundWithoutNewerUpdate)
             throw new PlebbitError("ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS", {
                 replyCid: this._comment.cid,
                 parentCommentCid: parentCommentInstance.cid,
