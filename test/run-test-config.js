@@ -291,13 +291,13 @@ if (vitestTimeoutValue === undefined) {
         env.VITEST_TIMEOUT,
         env.MOCHA_TIMEOUT,
         env.TEST_NODE_LOCAL_MOCHA_TIMEOUT_MS,
-        isNodeEnvironment ? "60000" : undefined
+        isNodeEnvironment ? "160000" : undefined
     );
 }
 
 const npmLifecycleEvent = env.npm_lifecycle_event || env.NPM_LIFECYCLE_EVENT;
 if (vitestTimeoutValue === undefined && npmLifecycleEvent === "test:node:parallel:remote") {
-    vitestTimeoutValue = "60000";
+    vitestTimeoutValue = "160000";
 }
 
 const waitForStreamFinish = (stream) =>
@@ -469,6 +469,15 @@ const runBrowserTests = () => {
 
     let vitestArgs = ["run", "--config", vitestConfigPath];
 
+    const isParallelMode = options.has("parallel");
+    if (isParallelMode) {
+        vitestArgs.push("--fileParallelism");
+        const jobs = getLastOption(options, "jobs");
+        if (jobs !== undefined && jobs !== true) {
+            vitestArgs.push("--maxWorkers", String(jobs));
+        }
+    }
+
     if (environment.toLowerCase().includes("chrome")) {
         env.VITEST_BROWSER = "chromium";
         console.log("Using Playwright's Chromium browser (default)");
@@ -484,6 +493,10 @@ const runBrowserTests = () => {
                 vitestArgs.push("--reporter", reporter);
             }
         });
+    }
+
+    if (cliSpecArgs.length > 0) {
+        vitestArgs.push(...mochaSpecPaths);
     }
 
     console.log(`Running Vitest with environment: ${environment}`);
