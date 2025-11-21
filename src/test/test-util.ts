@@ -1367,7 +1367,11 @@ export function getAvailablePlebbitConfigsToTestAgainst(opts?: {
             ? ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
             : ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"];
         if (isNode && isRpcFlagOn()) plebbitConfigCodes.push("remote-plebbit-rpc");
-        return Object.values(remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes));
+        if (opts.includeOnlyTheseTests?.length)
+            Object.values(
+                remeda.pick(remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes), opts.includeOnlyTheseTests)
+            );
+        else return Object.values(remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes));
     }
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
