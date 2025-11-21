@@ -41,6 +41,25 @@ const isServerRunning = async () => {
     });
 };
 
+const waitForServerListening = (httpServer) =>
+    new Promise((resolve, reject) => {
+        if (!httpServer || httpServer.listening) return resolve();
+        const cleanup = () => {
+            httpServer.off("listening", onListening);
+            httpServer.off("error", onError);
+        };
+        const onListening = () => {
+            cleanup();
+            resolve();
+        };
+        const onError = (error) => {
+            cleanup();
+            reject(error);
+        };
+        httpServer.once("listening", onListening);
+        httpServer.once("error", onError);
+    });
+
 const ensureServerStarted = async () => {
     if (ioServer || (await isServerRunning())) return;
     const peers = new Set();
@@ -52,7 +71,7 @@ const ensureServerStarted = async () => {
             for (const peer of peers) peer.emit(topic, message);
         });
     });
-    await new Promise((resolve) => ioServer.on("listening", resolve));
+    await waitForServerListening(ioServer.httpServer);
     startedLocalServer = true;
 };
 
