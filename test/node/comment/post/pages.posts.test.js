@@ -135,12 +135,6 @@ async function createLocalSubplebbitWithPageCids(plebbitConfig) {
         subplebbitPostsCommentProps: { content: `local pagination coverage ${plebbitConfig.name}` }
     });
 
-    // await resolveWhenConditionIsTrue({
-    //     toUpdate: publisherSubplebbit,
-    //     predicate: () => Object.keys(publisherSubplebbit.posts.pageCids).length > 0
-    // });
-
-    // TODO need to add a test to ensure preloaded pages are never undefined
     await resolveWhenConditionIsTrue({
         toUpdate: publisherSubplebbit,
         predicate: () =>

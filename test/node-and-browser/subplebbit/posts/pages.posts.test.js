@@ -22,7 +22,7 @@ import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent(`subplebbit.posts - ${config.name}`, async () => {
+    describe.sequential(`subplebbit.posts - ${config.name}`, async () => {
         let plebbit, newPost, subplebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();

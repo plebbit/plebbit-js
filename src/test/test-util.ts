@@ -47,6 +47,9 @@ import {
     findCommentInPageInstance,
     findCommentInPageInstanceRecursively,
     mapPageIpfsCommentToPageJsonComment,
+    POST_REPLIES_SORT_TYPES,
+    POSTS_SORT_TYPES,
+    REPLY_REPLIES_SORT_TYPES,
     TIMEFRAMES_TO_SECONDS
 } from "../pages/util.js";
 import { importSignerIntoKuboNode } from "../runtime/node/util.js";
@@ -1706,47 +1709,80 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
 
+const FORCE_PAGE_GENERATION_PAGE_SAFETY_MARGIN_BYTES = 1024;
+const FORCE_PAGE_GENERATION_MAX_REPLY_CONTENT_BYTES = 30 * 1024; // keep publication comfortably under 40kb cap
+const FORCE_PAGE_GENERATION_ESTIMATED_REPLY_GROWTH_BYTES = 24 * 1024;
+const FORCE_PAGE_GENERATION_EXTRA_MARGIN_BYTES = 4 * 1024;
+const FORCE_PAGE_GENERATION_MAX_REPLIES_TO_PUBLISH = 80;
+const FORCE_SUBPLEBBIT_MIN_POST_CONTENT_BYTES = 30 * 1024;
+
+// This may not be needed
+
 export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment, commentProps?: CreateCommentOptions) {
-    // max comment size is 40kb = 40000
+    await comment.update();
     const rawCommentUpdateRecord = comment.raw.commentUpdate;
     if (!rawCommentUpdateRecord) throw Error("Comment should be updating before forcing to generate all pages");
-
     if (Object.keys(comment.replies.pageCids).length > 0) return;
-    const curRecordSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(rawCommentUpdateRecord));
 
-    const maxCommentSize = 30000;
-    const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
-
-    const content = "x".repeat(1024 * 30); //30kb
-    await Promise.all(
-        new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
-            return publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content, ...commentProps });
-        })
-    );
-
-    const lastPublishedReply = await publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, {
-        content,
-        ...commentProps
-    });
     const log = Logger("plebbit-js:test-util:forceSubplebbitToGenerateAllRepliesPages");
-    log(
-        "Published",
-        numOfCommentsToPublish,
-        "replies under comment",
-        comment.cid,
-        "to force subplebbit",
-        comment.subplebbitAddress,
-        "to generate all pages"
-    );
+    const targetUpdateSize = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - FORCE_PAGE_GENERATION_PAGE_SAFETY_MARGIN_BYTES;
+    const getCommentUpdateSize = async () => {
+        if (!comment.raw.commentUpdate) throw Error("Comment should be updating while measuring commentUpdate size");
+        return calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(comment.raw.commentUpdate));
+    };
 
-    const updatingComment = await comment._plebbit.createComment({ cid: comment.cid! });
-    await updatingComment.update();
-    await waitTillReplyInParentPagesInstance(
-        lastPublishedReply as Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>,
-        updatingComment
-    );
-    if (Object.keys(updatingComment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
-    if (updatingComment.replyCount && updatingComment.replyCount < numOfCommentsToPublish)
+    let currentUpdateSize = await getCommentUpdateSize();
+    const initialReplyCount = comment.replyCount ?? 0;
+    let repliesPublished = 0;
+    let lastPublishedReply: Comment | undefined;
+
+    if (Object.keys(comment.replies.pageCids).length === 0) {
+        const bytesRemaining = Math.max(0, targetUpdateSize - currentUpdateSize);
+        const repliesToPublish = Math.max(
+            1,
+            Math.min(
+                FORCE_PAGE_GENERATION_MAX_REPLIES_TO_PUBLISH,
+                Math.ceil((bytesRemaining + FORCE_PAGE_GENERATION_EXTRA_MARGIN_BYTES) / FORCE_PAGE_GENERATION_ESTIMATED_REPLY_GROWTH_BYTES)
+            )
+        );
+        const replyContentSize = Math.min(
+            FORCE_PAGE_GENERATION_MAX_REPLY_CONTENT_BYTES,
+            bytesRemaining + FORCE_PAGE_GENERATION_EXTRA_MARGIN_BYTES
+        );
+        const replyContent = "x".repeat(replyContentSize);
+
+        const publishedReplies = await Promise.all(
+            Array.from({ length: repliesToPublish }, async () =>
+                publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, {
+                    ...commentProps,
+                    content: replyContent
+                })
+            )
+        );
+
+        repliesPublished += publishedReplies.length;
+        lastPublishedReply = publishedReplies[publishedReplies.length - 1];
+
+        await comment.update();
+        await waitTillReplyInParentPagesInstance(
+            lastPublishedReply as Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>,
+            comment
+        );
+        currentUpdateSize = await getCommentUpdateSize();
+        log(
+            "Published",
+            publishedReplies.length,
+            "replies under comment",
+            comment.cid,
+            "to force page generation. Current commentUpdate size",
+            currentUpdateSize,
+            "target",
+            targetUpdateSize
+        );
+    }
+
+    if (Object.keys(comment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
+    if (comment.replyCount && comment.replyCount < repliesPublished)
         throw Error("Reply count is less than the number of comments published");
 }
 
@@ -1798,10 +1834,7 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
 
     if (isSubplebbitPosts) {
         if (typeof originalGenerateSubplebbitPosts !== "function") throw Error("Page generator subplebbit posts function is not available");
-        pageGenerator.generateSubplebbitPosts = (async (preloadedPageSortName, preloadedPageSizeBytes) => {
-            const effectivePageSizeBytes = Math.min(preloadedPageSizeBytes, forcedPreloadedPageSizeBytes);
-            return originalGenerateSubplebbitPosts.call(pageGenerator, preloadedPageSortName, effectivePageSizeBytes);
-        }) as typeof pageGenerator.generateSubplebbitPosts;
+        // We avoid overriding generateSubplebbitPosts; forcing page cids is handled by publishing extra posts instead.
     } else if (isPost) {
         if (!parentCid) throw Error("parent comment cid is required to force chunking to multiple pages");
         if (typeof originalGeneratePostPages !== "function") throw Error("Page generator post pages function is not available");
@@ -1866,6 +1899,7 @@ export async function forcePagesToUsePageCidsOnly({
         parentCommentReplyProps
     });
     try {
+        // Are those two calls actually needed?
         if (parentComment) await forceSubplebbitToGenerateAllRepliesPages(parentComment);
         else await forceSubplebbitToGenerateAllPostsPages(subplebbit as unknown as RemoteSubplebbit, subplebbitPostsCommentProps);
     } finally {
@@ -2089,6 +2123,7 @@ export async function publishToModQueueWithDepth({
     }
 }
 
+// This may not be needed
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit, commentProps?: CreateCommentOptions) {
     // max comment size is 40kb = 40000
     const rawSubplebbitRecord = subplebbit.toJSONIpfs();
@@ -2099,13 +2134,19 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     const curRecordSize = await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(rawSubplebbitRecord));
 
     const maxCommentSize = 30000;
-    const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
+    const defaultContent = "x".repeat(FORCE_SUBPLEBBIT_MIN_POST_CONTENT_BYTES); // 30kb
+    const paddedContent =
+        typeof commentProps?.content === "string"
+            ? commentProps.content.padEnd(FORCE_SUBPLEBBIT_MIN_POST_CONTENT_BYTES, "x")
+            : defaultContent;
+    const estimatedCommentSize = Math.max(maxCommentSize, Buffer.byteLength(paddedContent, "utf8"));
+    const adjustedCommentProps = { ...commentProps, content: paddedContent };
+    const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / estimatedCommentSize) + 1;
 
-    const content = "x".repeat(1024 * 30); //30kb
-    let lastPublishedPost: Comment = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content, ...commentProps });
+    let lastPublishedPost: Comment = await publishRandomPost(subplebbit.address, subplebbit._plebbit, adjustedCommentProps);
     await Promise.all(
         new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content, ...commentProps });
+            const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, adjustedCommentProps);
             lastPublishedPost = post;
         })
     );
@@ -2113,35 +2154,6 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     await waitTillPostInSubplebbitPages(lastPublishedPost as CommentIpfsWithCidDefined, subplebbit._plebbit);
     const newSubplebbit = await subplebbit._plebbit.getSubplebbit(subplebbit.address);
     if (Object.keys(newSubplebbit.posts.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
-}
-
-export async function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit) {
-    let postInPage = subplebbit.posts?.pages?.hot?.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
-    if (!postInPage) {
-        let pageCid: string | undefined = subplebbit.posts?.pageCids.new;
-        while (pageCid && !postInPage) {
-            const loadedPage = await subplebbit.posts.getPage(pageCid);
-            postInPage = loadedPage.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
-            pageCid = loadedPage.nextCid;
-        }
-        if (postInPage) return postInPage;
-    }
-    // didn't find any post with multiple pages, so we'll publish a new one
-    const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
-    await post.update();
-    await resolveWhenConditionIsTrue({ toUpdate: post, predicate: async () => typeof post.updatedAt === "number" });
-    await forceSubplebbitToGenerateAllRepliesPages(post);
-    return post;
-}
-
-export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit) {
-    const post = await findOrGeneratePostWithMultiplePages(subplebbit);
-    const replyInPage = post.replies?.pages?.best?.comments[0];
-    if (replyInPage) return replyInPage;
-
-    //@ts-expect-error
-    const reply = await publishRandomReply(post, subplebbit._plebbit);
-    return reply;
 }
 
 export function mockReplyToUseParentPagesForUpdates(reply: Comment) {

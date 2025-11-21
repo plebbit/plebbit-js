@@ -3,9 +3,9 @@ import { loadAllUniqueCommentsUnderCommentInstance } from "../../../dist/node/te
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
 import signers from "../../fixtures/signers.js";
 
-const subplebbitAddress = signers[0].address;
+const defaultSubplebbitAddress = signers[0].address;
 
-export const testCommentFieldsInPageJson = (comment) => {
+export const testCommentFieldsInPageJson = (comment, expectedSubplebbitAddress = defaultSubplebbitAddress) => {
     if (!comment.link && !comment.content && !comment.title) expect.fail("Comment should either have link, content or title defined");
     expect(comment.author.address).to.be.a("string");
     expect(comment.cid).to.be.a("string");
@@ -25,7 +25,7 @@ export const testCommentFieldsInPageJson = (comment) => {
     expect(comment.childCount).to.be.a("number");
 
     expect(comment.signature).to.be.a("object");
-    expect(comment.subplebbitAddress).to.equal(subplebbitAddress);
+    expect(comment.subplebbitAddress).to.equal(expectedSubplebbitAddress);
     expect(comment.timestamp).to.be.a("number");
 
     // Verify CommentUpdate fields
@@ -139,10 +139,11 @@ export const testPageCommentsIfSortedCorrectly = async (sortedComments, sortName
     const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
         sortName.toLowerCase().includes(timeframe.toLowerCase())
     )[0];
+    const expectedSubplebbitAddress = subplebbit?.address || defaultSubplebbitAddress;
 
     for (let j = 0; j < sortedComments.length - 1; j++) {
         // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
-        testCommentFieldsInPageJson(sortedComments[j]);
+        testCommentFieldsInPageJson(sortedComments[j], expectedSubplebbitAddress);
         if (currentTimeframe && !sortedComments[j].pinned && currentTimeframe !== "ALL") {
             const syncIntervalSeconds = 5 * 60;
 
