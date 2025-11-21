@@ -5,14 +5,60 @@ import {
     createMockedSubplebbitIpns,
     isPlebbitFetchingUsingGateways
 } from "../../../../../dist/node/test/test-util.js";
-import { Buffer } from "buffer";
 import * as cborg from "cborg";
 import { io as createSocketClient } from "socket.io-client";
 import { convertBase58IpnsNameToBase36Cid } from "../../../../../dist/node/signer/util.js";
+import { Buffer } from "buffer";
 
+const MOCK_PUBSUB_URL = "ws://localhost:25963";
+const toBase64 = (input) => Buffer.from(input).toString("base64");
+const normalizeToUint8 = (msg) => {
+    if (msg instanceof Uint8Array) return msg;
+    if (msg instanceof ArrayBuffer) return new Uint8Array(msg);
+    if (Array.isArray(msg)) return Uint8Array.from(msg);
+    if (typeof msg === "string") {
+        try {
+            return Buffer.from(msg, "base64");
+        } catch {
+            return Buffer.from(msg);
+        }
+    }
+    if (msg?.data) return normalizeToUint8(msg.data);
+    return undefined;
+};
+const waitForMockPubsub = async (timeoutMs = 5000) =>
+    new Promise((resolve, reject) => {
+        const probe = createSocketClient(MOCK_PUBSUB_URL, {
+            transports: ["websocket"],
+            reconnection: false,
+            timeout: timeoutMs
+        });
+        const cleanup = () => {
+            probe.off("connect", onConnect);
+            probe.off("connect_error", onError);
+            if (probe.connected) probe.disconnect();
+            else probe.close();
+        };
+        const onConnect = () => {
+            cleanup();
+            resolve(undefined);
+        };
+        const onError = (error) => {
+            cleanup();
+            reject(error ?? new Error(`Failed to reach mock pubsub at ${MOCK_PUBSUB_URL}`));
+        };
+        probe.once("connect", onConnect);
+        probe.once("connect_error", onError);
+    });
+
+// this hangs on test:browser:chrome
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent("comment.publish in parallel potential regressions - " + config.name, () => {
+    describe.sequential("comment.publish in parallel potential regressions - " + config.name, () => {
         it.sequential("emits challenge requests for every queued publication even when publishing to a non-existing sub", async () => {
+            await waitForMockPubsub().catch((error) => {
+                throw new Error(`Mock pubsub server is not reachable: ${error?.message || error}`);
+            });
+
             const plebbit = await config.plebbitInstancePromise(); // this is using mocked pubsub/ipfs client to publish
             plebbit.on("error", console.error);
 
@@ -23,20 +69,25 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const challengeRequestIds = new Set();
             const externalPeerChallengeRequests = new Set();
 
-            const externalPeer = createSocketClient("ws://localhost:25963", { reconnectionAttempts: 3, reconnectionDelay: 500 });
+            const externalPeer = createSocketClient(MOCK_PUBSUB_URL, {
+                reconnectionAttempts: 3,
+                reconnectionDelay: 500,
+                transports: ["websocket"],
+                timeout: 5000
+            });
             await new Promise((resolve, reject) => {
                 externalPeer.once("connect", resolve);
                 externalPeer.once("connect_error", reject);
             });
             externalPeer.on(offlineSubAddress, (msg) => {
-                if (msg) {
-                    try {
-                        const decoded = cborg.decode(msg);
-                        if (decoded?.type === "CHALLENGEREQUEST" && decoded.challengeRequestId)
-                            externalPeerChallengeRequests.add(Buffer.from(decoded.challengeRequestId).toString("base64"));
-                    } catch {
-                        // ignore decode errors
-                    }
+                const asBytes = normalizeToUint8(msg);
+                if (!asBytes) return;
+                try {
+                    const decoded = cborg.decode(asBytes);
+                    if (decoded?.type === "CHALLENGEREQUEST" && decoded.challengeRequestId)
+                        externalPeerChallengeRequests.add(toBase64(decoded.challengeRequestId));
+                } catch {
+                    // ignore decode errors
                 }
             });
 
@@ -50,7 +101,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                             signer: await plebbit.createSigner()
                         });
                         comment.on("challengerequest", (request) => {
-                            challengeRequestIds.add(Buffer.from(request.challengeRequestId).toString("base64"));
+                            challengeRequestIds.add(toBase64(request.challengeRequestId));
                         });
                         return comment;
                     })
@@ -58,11 +109,23 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 await Promise.all([
                     ...comments.map((comment) => comment.publish()),
-                    new Promise((resolve) =>
+                    new Promise((resolve, reject) => {
+                        const timeout = setTimeout(
+                            () =>
+                                reject(
+                                    new Error(
+                                        `Timed out waiting for mock pubsub challenge requests on ${offlineSubAddress} after ${stressPublishCount} publishes`
+                                    )
+                                ),
+                            20000
+                        );
                         externalPeer.on(offlineSubAddress, () => {
-                            if (externalPeerChallengeRequests.size >= stressPublishCount) resolve();
-                        })
-                    )
+                            if (externalPeerChallengeRequests.size >= stressPublishCount) {
+                                clearTimeout(timeout);
+                                resolve();
+                            }
+                        });
+                    })
                 ]); // should publish comments  but not get a response
 
                 expect(challengeRequestIds.size).to.equal(stressPublishCount, "Not every publication emitted a challenge request");
