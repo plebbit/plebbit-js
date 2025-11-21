@@ -65,7 +65,7 @@ const copyDbToDataPath = async (databaseObj, plebbit) => {
     await fs.promises.cp(databaseObj.path, newPath);
 };
 
-describeSkipIfRpc.concurrent(`DB importing`, async () => {
+describeSkipIfRpc.sequential(`DB importing`, async () => {
     let plebbit;
 
     before(async () => {
@@ -172,7 +172,7 @@ describeSkipIfRpc.concurrent(`DB importing`, async () => {
     });
 });
 
-describeSkipIfRpc.concurrent("DB Migration", () => {
+describeSkipIfRpc.sequential("DB Migration", () => {
     const databasesToMigrate = getDatabasesToMigrate();
 
     databasesToMigrate.map((databaseInfo) =>

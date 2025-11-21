@@ -4,6 +4,7 @@ import {
     describeSkipIfRpc,
     forcePagesToUsePageCidsOnly,
     getAvailablePlebbitConfigsToTestAgainst,
+    mockCommentToNotUsePagesForUpdates,
     mockPlebbit,
     mockReplyToUseParentPagesForUpdates,
     publishRandomPost,
@@ -117,6 +118,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     const postComment = await remotePlebbit.createComment({ cid: paginationContext.rootCid });
 
                     await postComment.update();
+                    await mockCommentToNotUsePagesForUpdates(postComment);
                     await waitForReplyToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
                     expect(postComment.updatedAt).to.equal(paginationContext.expectedPostUpdate.updatedAt);
 

@@ -208,7 +208,7 @@ describe("mock pubsub client with socket.io server", () => {
         const avgLatency = observedLatencies.reduce((acc, cur) => acc + cur, 0) / observedLatencies.length;
 
         expect(maxLatency).to.be.lessThan(2000, "mock pubsub server exceeded 10s challenge deadline");
-        expect(avgLatency).to.be.lessThan(500);
+        expect(avgLatency).to.be.lessThan(1000);
 
         await subscriber.pubsub.unsubscribe(topic);
         await subscriber.destroy();

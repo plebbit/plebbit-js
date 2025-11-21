@@ -1,8 +1,7 @@
 import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import { resolveHangingScenarioModule } from "../../../dist/node/test/node/hanging-test/scenarios/hanging-test-util.js";
-import { describe } from "vitest";
+import { describe, it } from "vitest";
 
-// TODO need to change this test file so it tests against all possible config, not just local-kubo-rpc
 const DESTROY_TIMEOUT_MS = 10_000;
 const SCENARIO_MANIFEST_FILENAME = "scenario-manifest.json";
 const SCENARIO_DIST_DIR_URL = new URL("../../../dist/node/test/node/hanging-test/scenarios/", import.meta.url);
@@ -21,16 +20,19 @@ before(async () => {
 });
 
 for (const scenario of scenarioDefinitions) {
-    describe(`[Scenario: ${scenario.description}]`, () => {
+    describe.sequential(`[Scenario: ${scenario.description}]`, () => {
         for (const config of configs) {
             describe.sequential(`[Config: ${config.name}]`, () => {
-                it(`Hanging sceneario: ${scenario.description}. It should not keep the Node process alive - ${config.name}`, async function () {
-                    await runHangingScenarioInChildProcess({
-                        configCode: config.testConfigCode,
-                        timeoutMs: DESTROY_TIMEOUT_MS,
-                        scenarioModuleBaseName: scenario.moduleBaseName
-                    });
-                });
+                it.sequential(
+                    `Hanging sceneario: ${scenario.description}. It should not keep the Node process alive - ${config.name}`,
+                    async function () {
+                        await runHangingScenarioInChildProcess({
+                            configCode: config.testConfigCode,
+                            timeoutMs: DESTROY_TIMEOUT_MS,
+                            scenarioModuleBaseName: scenario.moduleBaseName
+                        });
+                    }
+                );
             });
         }
     });

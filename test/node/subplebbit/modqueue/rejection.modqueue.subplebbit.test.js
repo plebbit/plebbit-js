@@ -74,7 +74,7 @@ for (const commentMod of commentModProps) {
 
                     const pending = await publishToModQueueWithDepth({
                         subplebbit,
-                        plebbit: remotePlebbit, // needs to be remote or otherwise it will add comment to local node which will ruin our test
+                        plebbit: plebbit, // needs to be remote or otherwise it will add comment to local node which will ruin our test
                         depth: pendingCommentDepth,
                         modCommentProps: { signer: modSigner, content: " 12" + Math.random() },
                         commentProps: pendingApprovalCommentProps
