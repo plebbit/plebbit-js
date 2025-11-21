@@ -12,7 +12,7 @@ import { convertBase58IpnsNameToBase36Cid } from "../../../../../dist/node/signe
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("comment.publish in parallel potential regressions - " + config.name, () => {
-        it("emits challenge requests for every queued publication even when publishing to a non-existing sub", async () => {
+        it.sequential("emits challenge requests for every queued publication even when publishing to a non-existing sub", async () => {
             const plebbit = await config.plebbitInstancePromise(); // this is using mocked pubsub/ipfs client to publish
             plebbit.on("error", console.error);
 

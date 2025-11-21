@@ -8,7 +8,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 
-import { describe } from "vitest";
+import { describe, it } from "vitest";
 
 const subplebbitWithNoChallenge = signers[0].address;
 const subplebbitWithMathCliChallenge = signers[1].address;
@@ -110,7 +110,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         describe.concurrent("Bug #3: Race Condition in Challenge Exchange Handling", async () => {
-            it(`It should emit a single Challenge per challenge request maximum`, async () => {
+            it.sequential(`It should emit a single Challenge per challenge request maximum`, async () => {
                 // this test should be for both kubo and helia
                 const testPlebbit = await config.plebbitInstancePromise({
                     plebbitOptions: {
@@ -216,38 +216,46 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 await testPlebbit.destroy();
             });
 
-            it(`Should handle a single provider succeeding to subscribe in first attempt, but failing to publish. It should not throw when it retries`, async () => {
-                const testPlebbit = await config.plebbitInstancePromise({
-                    plebbitOptions: { pubsubKuboRpcClientsOptions: [workingPubsubUrl] },
-                    forceMockPubsub: true,
-                    remotePlebbit: true
-                });
+            it.sequential(
+                `Should handle a single provider succeeding to subscribe in first attempt, but failing to publish. It should not throw when it retries`,
+                async () => {
+                    const testPlebbit = await config.plebbitInstancePromise({
+                        plebbitOptions: { pubsubKuboRpcClientsOptions: [workingPubsubUrl] },
+                        forceMockPubsub: true,
+                        remotePlebbit: true
+                    });
 
-                const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbitWithMathCliChallenge }, testPlebbit);
+                    const mockPost = await generatePostToAnswerMathQuestion(
+                        { subplebbitAddress: subplebbitWithMathCliChallenge },
+                        testPlebbit
+                    );
 
-                let publishCount = 0;
-                const originalPublishOnProvider = testPlebbit._clientsManager.pubsubPublishOnProvider.bind(testPlebbit._clientsManager);
-                mockPost._clientsManager.pubsubPublishOnProvider = async (topic, data, providerUrl) => {
-                    publishCount++;
-                    if (publishCount === 1) throw new Error("Mock pubsub publish failure");
-                    else return originalPublishOnProvider(topic, data, providerUrl);
-                };
+                    let publishCount = 0;
+                    const originalPublishOnProvider = testPlebbit._clientsManager.pubsubPublishOnProvider.bind(testPlebbit._clientsManager);
+                    mockPost._clientsManager.pubsubPublishOnProvider = async (topic, data, providerUrl) => {
+                        publishCount++;
+                        if (publishCount === 1) throw new Error("Mock pubsub publish failure");
+                        else return originalPublishOnProvider(topic, data, providerUrl);
+                    };
 
-                const originalSubscribeOnProvider = testPlebbit._clientsManager.pubsubSubscribeOnProvider.bind(testPlebbit._clientsManager);
-                let subscribeCount = 0;
-                mockPost._clientsManager.pubsubSubscribeOnProvider = async (topic, handler, providerUrl) => {
-                    subscribeCount++;
-                    return originalSubscribeOnProvider(topic, handler, providerUrl);
-                };
+                    const originalSubscribeOnProvider = testPlebbit._clientsManager.pubsubSubscribeOnProvider.bind(
+                        testPlebbit._clientsManager
+                    );
+                    let subscribeCount = 0;
+                    mockPost._clientsManager.pubsubSubscribeOnProvider = async (topic, handler, providerUrl) => {
+                        subscribeCount++;
+                        return originalSubscribeOnProvider(topic, handler, providerUrl);
+                    };
 
-                await publishWithExpectedResult(mockPost, true);
+                    await publishWithExpectedResult(mockPost, true);
 
-                expect(publishCount).to.equal(3); // 1st attempt fails, 2nd attempt succeeds, 3rd attempt is from publishChallengeAnswer
+                    expect(publishCount).to.equal(3); // 1st attempt fails, 2nd attempt succeeds, 3rd attempt is from publishChallengeAnswer
 
-                expect(subscribeCount).to.equal(2); // should re-subscribe with every attempt
+                    expect(subscribeCount).to.equal(2); // should re-subscribe with every attempt
 
-                await testPlebbit.destroy();
-            });
+                    await testPlebbit.destroy();
+                }
+            );
         });
 
         describe.concurrent("Pubsub Resource Leak Detection", async () => {
