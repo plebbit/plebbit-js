@@ -40,7 +40,7 @@ describe.concurrent(`Client side verification`, async () => {
         }
     });
 
-    itSkipIfRpc(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
+    itSkipIfRpc.sequential(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockRemotePlebbit();
         const invalidSubRecord = (await customPlebbit.getSubplebbit(subplebbitAddress)).toJSONIpfs();
         invalidSubRecord.updatedAt += 1; // should invalidate the signature

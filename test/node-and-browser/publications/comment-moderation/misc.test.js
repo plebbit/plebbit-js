@@ -17,7 +17,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent("plebbit.createCommentModeration misc - " + config.name, async () => {
+    describe.sequential("plebbit.createCommentModeration misc - " + config.name, async () => {
         let plebbit;
         let commentToMod;
 

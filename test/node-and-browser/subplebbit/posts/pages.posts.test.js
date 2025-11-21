@@ -27,7 +27,7 @@ import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent(`subplebbit.posts - ${config.name}`, async () => {
+    describe.sequential(`subplebbit.posts - ${config.name}`, async () => {
         const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
 
         const testPostsSort = async (sortName, subplebbit) => {
@@ -45,6 +45,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
             await waitTillPostInSubplebbitPages(newPost, plebbit);
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            // this call below is timing out
             await forceSubplebbitToGenerateAllPostsPages(subplebbit); // the goal of this is to force the subplebbit to have all pages
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });

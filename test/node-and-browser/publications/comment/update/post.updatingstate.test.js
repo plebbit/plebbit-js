@@ -11,6 +11,7 @@ import {
     getAvailablePlebbitConfigsToTestAgainst,
     addStringToIpfs
 } from "../../../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 // Helper function to clean up state arrays by removing:
@@ -75,7 +76,7 @@ const cleanupStateArray = (states) => {
 };
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describeSkipIfRpc.concurrent(`post.updatingState - ${config.name}`, async () => {
+    describeSkipIfRpc.sequential(`post.updatingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -85,7 +86,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await plebbit.destroy();
         });
 
-        it(`Updating states is in correct upon updating a post that's included in preloaded pages of subplebbit`, async () => {
+        it.sequential(`Updating states is in correct upon updating a post that's included in preloaded pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             const postCid = sub.posts.pages.hot.comments.find((comment) => !comment.author.address.includes(".")).cid;
             const mockPost = await plebbit.createComment({ cid: postCid });
@@ -138,7 +139,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             }
         });
 
-        it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
+        it.sequential(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { resolveAuthorAddresses: false } }); // set resolve to false so it wouldn't show up in states
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
@@ -469,7 +470,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await mockPost.stop();
         });
 
-        it(`the order of state-event-statechange is correct when we get an unretriable error from post`, async () => {
+        it.sequential(`the order of state-event-statechange is correct when we get an unretriable error from post`, async () => {
             const cidOfInvalidJson = await addStringToIpfs("<html>something");
             const createdComment = await plebbit.createComment({ cid: cidOfInvalidJson });
 

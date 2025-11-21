@@ -7,6 +7,7 @@ import {
     describeSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../../dist/node/test/test-util.js";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 // Helper function to clean up state arrays by removing:
@@ -97,7 +98,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await tempPlebbit.destroy();
         });
 
-        it(`Updating states is in correct upon updating a reply that's included in preloaded pages of its parent`, async () => {
+        it.sequential(`Updating states is in correct upon updating a reply that's included in preloaded pages of its parent`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
                 const sub = await plebbit.getSubplebbit(subplebbitAddress);
@@ -223,7 +224,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             }
         });
 
-        it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
+        it.sequential(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
                 const sub = await plebbit.getSubplebbit(subplebbitAddress);
