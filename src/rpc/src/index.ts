@@ -88,11 +88,21 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     subscriptionCleanups: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
     // store publishing publications so they can be used by publishChallengeAnswers
     publishing: { [subscriptionId: number]: Publication } = {};
+    private subplebbitUpdateSubscriptions: { [connectionId: string]: { [subscriptionId: number]: string } } = {};
     authKey: string | undefined;
     private _trackedSubplebbitListeners = new WeakMap<LocalSubplebbit, Map<keyof SubplebbitEvents, Set<(...args: any[]) => void>>>();
     private _getIpFromConnectionRequest = (req: IncomingMessage) => <string>req.socket.remoteAddress; // we set it up here so we can mock it in tests
 
     private _onSettingsChange: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
+    private async _waitForPublishingToFinish(timeoutMs = 60000) {
+        const startedAt = Date.now();
+        while (Object.keys(this.publishing).length > 0) {
+            if (Date.now() - startedAt > timeoutMs) {
+                throw new Error("Timed out waiting for in-flight publishes to finish before applying new settings");
+            }
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+    }
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
         super();
@@ -286,11 +296,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         return subplebbit.toJSONInternalRpcBeforeFirstUpdate();
     }
 
-    private _trackSubplebbitListener(
-        subplebbit: LocalSubplebbit,
-        event: keyof SubplebbitEvents,
-        listener: (...args: any[]) => void
-    ) {
+    private _trackSubplebbitListener(subplebbit: LocalSubplebbit, event: keyof SubplebbitEvents, listener: (...args: any[]) => void) {
         let listenersByEvent = this._trackedSubplebbitListeners.get(subplebbit);
         if (!listenersByEvent) {
             listenersByEvent = new Map();
@@ -306,11 +312,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         listeners.add(listener);
     }
 
-    private _untrackSubplebbitListener(
-        subplebbit: LocalSubplebbit,
-        event: keyof SubplebbitEvents,
-        listener: (...args: any[]) => void
-    ) {
+    private _untrackSubplebbitListener(subplebbit: LocalSubplebbit, event: keyof SubplebbitEvents, listener: (...args: any[]) => void) {
         const listenersByEvent = this._trackedSubplebbitListeners.get(subplebbit);
         if (!listenersByEvent) return;
 
@@ -579,6 +581,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         }
 
         log(`RPC client called setSettings, the clients need to call all subscription methods again`);
+        await this._waitForPublishingToFinish();
         await this.plebbit.destroy(); // make sure to destroy previous fs watcher before changing the instance
 
         this._initPlebbit(await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions));
@@ -603,6 +606,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         for (const connectionId of remeda.keys.strict(this._onSettingsChange))
             for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
                 await this._onSettingsChange[connectionId][subscriptionId]();
+
+        await this._rebindSubplebbitUpdateSubscriptionsAfterRestart();
 
         // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
         // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
@@ -679,6 +684,15 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const address = SubplebbitAddressSchema.parse(params[0]);
         const subscriptionId = generateSubscriptionId();
 
+        if (!this.subplebbitUpdateSubscriptions[connectionId]) this.subplebbitUpdateSubscriptions[connectionId] = {};
+        this.subplebbitUpdateSubscriptions[connectionId][subscriptionId] = address;
+
+        await this._bindSubplebbitUpdateSubscription(address, connectionId, subscriptionId);
+
+        return subscriptionId;
+    }
+
+    private async _bindSubplebbitUpdateSubscription(address: string, connectionId: string, subscriptionId: number) {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({
                 method: "subplebbitUpdateNotification",
@@ -721,8 +735,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const startedStateListener = () => sendEvent("updatingstatechange", subplebbit.startedState);
         if (isSubStarted) {
             subplebbit.on("startedstatechange", startedStateListener);
-            if (maybeLocalSubplebbit)
-                this._trackSubplebbitListener(maybeLocalSubplebbit, "startedstatechange", startedStateListener);
+            if (maybeLocalSubplebbit) this._trackSubplebbitListener(maybeLocalSubplebbit, "startedstatechange", startedStateListener);
         }
 
         const errorListener = (error: PlebbitError | Error) => {
@@ -741,8 +754,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             subplebbit.removeListener("update", updateListener);
             if (maybeLocalSubplebbit) this._untrackSubplebbitListener(maybeLocalSubplebbit, "update", updateListener);
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
-            if (maybeLocalSubplebbit)
-                this._untrackSubplebbitListener(maybeLocalSubplebbit, "updatingstatechange", updatingStateListener);
+            if (maybeLocalSubplebbit) this._untrackSubplebbitListener(maybeLocalSubplebbit, "updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
             if (maybeLocalSubplebbit) this._untrackSubplebbitListener(maybeLocalSubplebbit, "error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
@@ -751,7 +763,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")
-                subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, params }));
+                subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, address }));
         };
 
         // if fail, cleanup
@@ -765,8 +777,38 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             this.subscriptionCleanups[connectionId][subscriptionId]();
             throw e;
         }
+    }
 
-        return subscriptionId;
+    private async _rebindSubplebbitUpdateSubscriptionsAfterRestart() {
+        for (const connectionId of remeda.keys.strict(this.subplebbitUpdateSubscriptions)) {
+            if (!this.connections[connectionId]) continue; // connection gone
+            for (const subscriptionIdStr of remeda.keys.strict(this.subplebbitUpdateSubscriptions[connectionId])) {
+                const subscriptionId = Number(subscriptionIdStr);
+                const address = this.subplebbitUpdateSubscriptions[connectionId][subscriptionId];
+                // cleanup old handlers if any
+                if (this.subscriptionCleanups?.[connectionId]?.[subscriptionId]) {
+                    try {
+                        this.subscriptionCleanups[connectionId][subscriptionId]();
+                    } catch (error) {
+                        log.error("Failed to cleanup old subplebbitUpdate subscription before rebind", {
+                            connectionId,
+                            subscriptionId,
+                            error
+                        });
+                    }
+                }
+                try {
+                    await this._bindSubplebbitUpdateSubscription(address, connectionId, subscriptionId);
+                } catch (error) {
+                    log.error("Failed to rebind subplebbitUpdate subscription after setSettings", {
+                        connectionId,
+                        subscriptionId,
+                        address,
+                        error
+                    });
+                }
+            }
+        }
     }
 
     private async _createCommentInstanceFromPublishCommentParams(params: CommentChallengeRequestToEncryptType) {
