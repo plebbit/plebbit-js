@@ -18,8 +18,36 @@ const waitForSettings = async (rpcClient) =>
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const waitForSubscriptionEvent = (rpcClient, subscriptionId, eventName, trigger) =>
+    new Promise((resolve, reject) => {
+        const subscription = rpcClient.getSubscription(subscriptionId);
+        if (!subscription) return reject(new Error(`No subscription ${subscriptionId} found for ${eventName}`));
+
+        const onEvent = (res) => {
+            subscription.removeListener("error", onError);
+            resolve(res.params?.result);
+        };
+        const onError = (err) => {
+            subscription.removeListener(eventName, onEvent);
+            reject(err);
+        };
+
+        subscription.once(eventName, onEvent);
+        subscription.once("error", onError);
+
+        if (trigger) {
+            Promise.resolve()
+                .then(trigger)
+                .catch((err) => {
+                    subscription.removeListener(eventName, onEvent);
+                    subscription.removeListener("error", onError);
+                    reject(err);
+                });
+        }
+    });
+
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) =>
-    describe.concurrent(`plebbit RPC concurrency - ${config.name}`, () => {
+    describe.sequential(`plebbit RPC concurrency - ${config.name}`, () => {
         it("handles two RPC clients publishing in parallel without dropping either connection", async () => {
             const plebbitA = await config.plebbitInstancePromise();
             const plebbitB = await config.plebbitInstancePromise();
@@ -111,7 +139,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
                     ...currentSettings.plebbitOptions,
-                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 1
+                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 1,
+                    userAgent: "hello" + Math.random()
                 };
 
                 const settingsChangeOnB = pTimeout(new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)), {
@@ -291,7 +320,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             }
         }, 80000);
 
-        it.only("does not throw ERR_PLEBBIT_IS_DESTROYED when setSettings overlaps with createSubplebbit/getComment", async () => {
+        it("does not throw ERR_PLEBBIT_IS_DESTROYED when setSettings overlaps with startSubplebbit/getComment", async () => {
             const plebbitA = await config.plebbitInstancePromise();
             const plebbitB = await config.plebbitInstancePromise();
 
@@ -302,13 +331,17 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                     updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 23
                 };
 
-                const settingsChangeOnB = pTimeout(
-                    new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)),
-                    { milliseconds: 45000, message: "Timed out waiting for settingschange on client B" }
-                );
+                const settingsChangeOnB = pTimeout(new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)), {
+                    milliseconds: 45000,
+                    message: "Timed out waiting for settingschange on client B"
+                });
 
-                const createSubPromise = pTimeout(
-                    createSubWithNoChallenge({ title: "temp overlap " + Date.now(), description: "tmp" }, plebbitB),
+                const createStartSubPromise = pTimeout(
+                    (async () => {
+                        const sub = await createSubWithNoChallenge({ title: "temp overlap " + Date.now(), description: "tmp" }, plebbitB);
+                        await sub.start();
+                        return sub;
+                    })(),
                     { milliseconds: 45000, message: "Timed out creating sub during overlapping setSettings" }
                 );
 
@@ -319,7 +352,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 });
                 await settingsChangeOnB;
 
-                const sub = await createSubPromise;
+                const sub = await createStartSubPromise;
                 const post = await publishRandomPost(sub.address, plebbitB);
                 const fetched = await plebbitB.getComment(post.cid);
                 expect(fetched.cid).to.equal(post.cid);
@@ -328,5 +361,102 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 if (!plebbitB.destroyed) await plebbitB.destroy();
             }
         }, 80000);
+
+        it("setSettings completes while a subplebbitUpdate subscription is mid-update", async () => {
+            const plebbitA = await config.plebbitInstancePromise();
+            const plebbitB = await config.plebbitInstancePromise();
+
+            try {
+                const subB = await plebbitB.getSubplebbit(subplebbitAddress);
+                await subB.update();
+
+                const subplebbitUpdateSubscriptionId = await plebbitB._plebbitRpcClient.subplebbitUpdateSubscribe(subplebbitAddress);
+
+                const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
+                const updatedOptions = {
+                    ...currentSettings.plebbitOptions,
+                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 29
+                };
+
+                const overlappingUpdate = pTimeout(subB.update(), {
+                    milliseconds: 45000,
+                    message: "subplebbit.update timed out while setSettings ran"
+                });
+
+                const setSettingsPromise = pTimeout(plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: updatedOptions }), {
+                    milliseconds: 45000,
+                    message: "setSettings hung with active subplebbitUpdate subscription"
+                });
+
+                await Promise.all([setSettingsPromise, overlappingUpdate]);
+
+                const updateAfterSettings = await pTimeout(
+                    waitForSubscriptionEvent(plebbitB._plebbitRpcClient, subplebbitUpdateSubscriptionId, "update", () => subB.update()),
+                    { milliseconds: 45000, message: "subplebbitUpdate subscription stopped emitting after setSettings" }
+                );
+
+                expect(updateAfterSettings).to.be.ok;
+            } finally {
+                if (!plebbitA.destroyed) await plebbitA.destroy();
+                if (!plebbitB.destroyed) await plebbitB.destroy();
+            }
+        }, 90000);
+
+        it("startSubplebbit subscription stays responsive through setSettings even with subplebbitUpdate running", async () => {
+            const plebbitA = await config.plebbitInstancePromise();
+            const plebbitB = await config.plebbitInstancePromise();
+
+            try {
+                const freshSub = await createSubWithNoChallenge(
+                    { title: "sub setSettings overlap " + Date.now(), description: "tmp" },
+                    plebbitB
+                );
+                const freshAddress = freshSub.address;
+
+                const startSubplebbitSubscriptionId = await plebbitB._plebbitRpcClient.startSubplebbit(freshAddress);
+                await pTimeout(waitForSubscriptionEvent(plebbitB._plebbitRpcClient, startSubplebbitSubscriptionId, "update"), {
+                    milliseconds: 45000,
+                    message: "startSubplebbit failed to emit initial update"
+                });
+
+                const subplebbitUpdateSubscriptionId = await plebbitB._plebbitRpcClient.subplebbitUpdateSubscribe(freshAddress);
+
+                const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
+                const updatedOptions = {
+                    ...currentSettings.plebbitOptions,
+                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 31
+                };
+
+                const nextStartUpdate = pTimeout(
+                    waitForSubscriptionEvent(plebbitB._plebbitRpcClient, startSubplebbitSubscriptionId, "update"),
+                    { milliseconds: 50000, message: "startSubplebbit stopped emitting updates after setSettings" }
+                );
+
+                const subUpdateAfterSettings = pTimeout(
+                    waitForSubscriptionEvent(plebbitB._plebbitRpcClient, subplebbitUpdateSubscriptionId, "update", async () =>
+                        (await plebbitB.getSubplebbit(freshAddress)).update()
+                    ),
+                    { milliseconds: 50000, message: "subplebbitUpdate subscription died during setSettings+startSubplebbit" }
+                );
+
+                const publishPromise = pTimeout(publishRandomPost(freshAddress, plebbitB), {
+                    milliseconds: 50000,
+                    message: "publish stalled while setSettings ran alongside startSubplebbit"
+                });
+
+                const setSettingsPromise = pTimeout(plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: updatedOptions }), {
+                    milliseconds: 50000,
+                    message: "setSettings hung while startSubplebbit/subplebbitUpdate listeners were active"
+                });
+
+                const [publishedPost] = await Promise.all([publishPromise, nextStartUpdate, subUpdateAfterSettings, setSettingsPromise]);
+                const fetched = await plebbitB.getComment(publishedPost.cid);
+
+                expect(fetched.cid).to.equal(publishedPost.cid);
+            } finally {
+                if (!plebbitA.destroyed) await plebbitA.destroy();
+                if (!plebbitB.destroyed) await plebbitB.destroy();
+            }
+        }, 100000);
     })
 );
