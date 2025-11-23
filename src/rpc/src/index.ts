@@ -81,13 +81,14 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     subscriptionCleanups: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
     // store publishing publications so they can be used by publishChallengeAnswers
     publishing: { [subscriptionId: number]: Publication } = {};
-    private subplebbitUpdateSubscriptions: { [connectionId: string]: { [subscriptionId: number]: string } } = {};
     private _setSettingsQueue: Promise<void> = Promise.resolve();
     authKey: string | undefined;
     private _trackedSubplebbitListeners = new WeakMap<LocalSubplebbit, Map<keyof SubplebbitEvents, Set<(...args: any[]) => void>>>();
     private _getIpFromConnectionRequest = (req: IncomingMessage) => <string>req.socket.remoteAddress; // we set it up here so we can mock it in tests
 
-    private _onSettingsChange: { [connectionId: string]: { [subscriptionId: number]: () => Promise<void> } } = {}; // TODO rename this to _afterSettingsChange
+    private _onSettingsChange: {
+        [connectionId: string]: { [subscriptionId: number]: (args: { newPlebbit: Plebbit }) => Promise<void> };
+    } = {}; // TODO rename this to _afterSettingsChange
 
     private _startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {};
 
@@ -428,7 +429,12 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             }
         };
 
-        this._onSettingsChange[connectionId][subscriptionId] = startSub;
+        this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
+            const subplebbit = await this.getStartedSubplebbit(address);
+            await subplebbit.stop();
+            subplebbit._plebbit = newPlebbit;
+            await startSub();
+        };
 
         await startSub();
 
@@ -548,15 +554,13 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         return res;
     }
 
-    private async _getCurrentSettings(): Promise<PlebbitWsServerSettingsSerialized> {
-        const plebbit = await this._getPlebbitInstance();
+    private _serializeSettingsFromPlebbit(plebbit: Plebbit): PlebbitWsServerSettingsSerialized {
         const plebbitOptions = plebbit.parsedPlebbitOptions;
         const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
             remeda.omit(challengeFactory({}), ["getChallenge"])
         );
 
-        const rpcSettings = <PlebbitWsServerSettingsSerialized>{ plebbitOptions, challenges };
-        return rpcSettings;
+        return <PlebbitWsServerSettingsSerialized>{ plebbitOptions, challenges };
     }
 
     async settingsSubscribe(params: any, connectionId: string): Promise<number> {
@@ -571,8 +575,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             });
         };
 
-        const sendRpcSettings = async () => {
-            sendEvent("settingschange", await this._getCurrentSettings());
+        const sendRpcSettings = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
+            sendEvent("settingschange", this._serializeSettingsFromPlebbit(newPlebbit));
         };
 
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -580,7 +584,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = sendRpcSettings;
-        await sendRpcSettings();
+        await sendRpcSettings({ newPlebbit: this.plebbit });
 
         return subscriptionId;
     }
@@ -595,35 +599,36 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async setSettings(params: any) {
-        // what happens when this method is called five times in parallel or 10?
-
         // TODO need to figure out how to move subscriptions from old plebbit to new plebbit
         const runSetSettings = async () => {
             const settings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(params[0]);
-            const currentSettings = await this._getCurrentSettings();
+            const currentSettings = this._serializeSettingsFromPlebbit(this.plebbit);
             if (deterministicStringify(settings.plebbitOptions) === deterministicStringify(currentSettings.plebbitOptions)) {
                 log("RPC client called setSettings with the same settings as the current one, aborting");
                 return;
             }
 
             log(`RPC client called setSettings, the clients need to call all subscription methods again`);
-            const oldPlebbit = await this._getPlebbitInstance();
+            const oldPlebbit = this.plebbit;
             const newPlebbit = await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions);
             this._initPlebbit(newPlebbit); // swap to new instance first so new RPC calls don't hit a destroyed plebbit
             await oldPlebbit.destroy(); // now clean up the old instance
-            const plebbit = await this._getPlebbitInstance();
+            // TODO we need to get list of started subplebbits and restart them with new plebbit instances
+            // ideally without having to re-listen
 
             // send a settingsNotification to all subscribers
             for (const connectionId of remeda.keys.strict(this._onSettingsChange))
                 for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
-                    await this._onSettingsChange[connectionId][subscriptionId]();
+                    await this._onSettingsChange[connectionId][subscriptionId]({ newPlebbit });
 
             // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
             // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
         };
 
-        this._setSettingsQueue = runSetSettings();
-        await this._setSettingsQueue;
+        const setSettingsRun = this._setSettingsQueue.then(() => runSetSettings());
+        // keep queue usable even if a run fails; error still propagates to the caller via setSettingsRun
+        this._setSettingsQueue = setSettingsRun.catch(() => {});
+        await setSettingsRun;
         return true;
     }
 
@@ -680,6 +685,12 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
+            delete this._onSettingsChange[connectionId][subscriptionId];
+        };
+
+        this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
+            comment._plebbit = newPlebbit;
+            await comment.update();
         };
 
         // if fail, cleanup
@@ -698,9 +709,6 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         // TODO need to implement _onSettingsChange here
         const address = SubplebbitAddressSchema.parse(params[0]);
         const subscriptionId = generateSubscriptionId();
-
-        if (!this.subplebbitUpdateSubscriptions[connectionId]) this.subplebbitUpdateSubscriptions[connectionId] = {};
-        this.subplebbitUpdateSubscriptions[connectionId][subscriptionId] = address;
 
         await this._bindSubplebbitUpdateSubscription(address, connectionId, subscriptionId);
 
@@ -722,7 +730,6 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const subplebbit = isSubStarted
             ? await this.getStartedSubplebbit(address)
             : <LocalSubplebbit | RemoteSubplebbit>await plebbit.createSubplebbit({ address });
-        const maybeLocalSubplebbit = subplebbit instanceof LocalSubplebbit ? subplebbit : undefined;
 
         const sendSubJson = () => {
             let jsonToSend:
@@ -741,17 +748,14 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         const updateListener = () => sendSubJson();
         subplebbit.on("update", updateListener);
-        if (maybeLocalSubplebbit) this._trackSubplebbitListener(maybeLocalSubplebbit, "update", updateListener);
 
         const updatingStateListener = () => sendEvent("updatingstatechange", subplebbit.updatingState);
         subplebbit.on("updatingstatechange", updatingStateListener);
-        if (maybeLocalSubplebbit) this._trackSubplebbitListener(maybeLocalSubplebbit, "updatingstatechange", updatingStateListener);
 
         // listener for startestatechange
         const startedStateListener = () => sendEvent("updatingstatechange", subplebbit.startedState);
         if (isSubStarted) {
             subplebbit.on("startedstatechange", startedStateListener);
-            if (maybeLocalSubplebbit) this._trackSubplebbitListener(maybeLocalSubplebbit, "startedstatechange", startedStateListener);
         }
 
         const errorListener = (error: PlebbitError | Error) => {
@@ -763,23 +767,25 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             sendEvent("error", rpcError);
         };
         subplebbit.on("error", errorListener);
-        if (maybeLocalSubplebbit) this._trackSubplebbitListener(maybeLocalSubplebbit, "error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            const isSubStarted = address in this._startedSubplebbits;
             subplebbit.removeListener("update", updateListener);
-            if (maybeLocalSubplebbit) this._untrackSubplebbitListener(maybeLocalSubplebbit, "update", updateListener);
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
-            if (maybeLocalSubplebbit) this._untrackSubplebbitListener(maybeLocalSubplebbit, "updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
-            if (maybeLocalSubplebbit) this._untrackSubplebbitListener(maybeLocalSubplebbit, "error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
-            if (isSubStarted && maybeLocalSubplebbit)
-                this._untrackSubplebbitListener(maybeLocalSubplebbit, "startedstatechange", startedStateListener);
+            delete this._onSettingsChange[connectionId][subscriptionId];
 
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")
                 subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, address }));
+        };
+
+        this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
+            const isSubStarted = address in this._startedSubplebbits;
+            subplebbit._plebbit = newPlebbit;
+            if (!isSubStarted) await subplebbit.update();
         };
 
         // if fail, cleanup
