@@ -68,15 +68,6 @@ import type { ModQueuePageIpfs, PageIpfs } from "../../pages/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
-const startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {};
-const getStartedSubplebbit = async (address: string): Promise<LocalSubplebbit> => {
-    if (!(address in startedSubplebbits)) throw Error("Can't call getStartedSubplebbit when the sub hasn't been started");
-    // if pending, wait until no longer pendng
-    while (startedSubplebbits[address] === "pending") {
-        await new Promise((r) => setTimeout(r, 20));
-    }
-    return <LocalSubplebbit>startedSubplebbits[address];
-};
 
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 
@@ -97,6 +88,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     private _getIpFromConnectionRequest = (req: IncomingMessage) => <string>req.socket.remoteAddress; // we set it up here so we can mock it in tests
 
     private _onSettingsChange: { [connectionId: string]: { [subscriptionId: number]: () => Promise<void> } } = {}; // TODO rename this to _afterSettingsChange
+
+    private _startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {};
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
         super();
@@ -197,6 +190,15 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         hideClassPrivateProps(this);
     }
 
+    async getStartedSubplebbit(address: string): Promise<LocalSubplebbit> {
+        if (!(address in this._startedSubplebbits)) throw Error("Can't call getStartedSubplebbit when the sub hasn't been started");
+        // if pending, wait until no longer pendng
+        while (this._startedSubplebbits[address] === "pending") {
+            await new Promise((r) => setTimeout(r, 20));
+        }
+        return <LocalSubplebbit>this._startedSubplebbits[address];
+    }
+
     private _emitError(error: PlebbitError | Error) {
         if (this.listeners("error").length === 0)
             log.error("Unhandled error. This may crash your process, you need to listen for error event on PlebbitRpcWsServer", error);
@@ -260,8 +262,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // Use started subplebbit to fetch the page if possible, to expediete the process
         const sub =
-            subplebbitAddress in startedSubplebbits
-                ? await getStartedSubplebbit(subplebbitAddress)
+            subplebbitAddress in this._startedSubplebbits
+                ? await this.getStartedSubplebbit(subplebbitAddress)
                 : <RemoteSubplebbit | LocalSubplebbit>await plebbit.createSubplebbit({ address: subplebbitAddress });
         const page = await sub.modQueue._fetchAndVerifyPage(pageCid);
         return page;
@@ -274,8 +276,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // Use started subplebbit to fetch the page if possible, to expediete the process
         const sub =
-            subplebbitAddress in startedSubplebbits
-                ? await getStartedSubplebbit(subplebbitAddress)
+            subplebbitAddress in this._startedSubplebbits
+                ? await this.getStartedSubplebbit(subplebbitAddress)
                 : <RemoteSubplebbit | LocalSubplebbit>await plebbit.createSubplebbit({ address: subplebbitAddress });
         const page = await sub.posts._fetchAndVerifyPage(pageCid);
         return page;
@@ -403,23 +405,24 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const subscriptionId = generateSubscriptionId();
 
         const startSub = async () => {
-            const isSubStarted = address in startedSubplebbits;
+            const plebbit = await this._getPlebbitInstance();
+            const isSubStarted = address in this._startedSubplebbits;
             if (isSubStarted) {
-                const subplebbit = await getStartedSubplebbit(address);
+                const subplebbit = await this.getStartedSubplebbit(address);
                 this._setupStartedEvents(subplebbit, connectionId, subscriptionId);
             } else {
                 try {
-                    startedSubplebbits[address] = "pending";
+                    this._startedSubplebbits[address] = "pending";
                     const subplebbit = <LocalSubplebbit>await plebbit.createSubplebbit({ address });
                     this._setupStartedEvents(subplebbit, connectionId, subscriptionId);
                     subplebbit.started = true; // a small hack to make sure first update has started=true
                     subplebbit.emit("update", subplebbit); // Need to emit an update so rpc user can receive sub props prior to running
                     await subplebbit.start();
-                    startedSubplebbits[address] = subplebbit;
+                    this._startedSubplebbits[address] = subplebbit;
                 } catch (e) {
                     if (this.subscriptionCleanups?.[connectionId]?.[subscriptionId])
                         this.subscriptionCleanups[connectionId][subscriptionId]();
-                    delete startedSubplebbits[address];
+                    delete this._startedSubplebbits[address];
                     throw e;
                 }
             }
@@ -439,13 +442,13 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const localSubs = plebbit.subplebbits;
         if (!localSubs.includes(address))
             throw new PlebbitError("ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB", { subplebbitAddress: address });
-        const isSubStarted = address in startedSubplebbits;
+        const isSubStarted = address in this._startedSubplebbits;
         if (!isSubStarted) throw new PlebbitError("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
-        const startedSubplebbit = await getStartedSubplebbit(address);
+        const startedSubplebbit = await this.getStartedSubplebbit(address);
         await startedSubplebbit.stop();
         // emit last updates so subscribed instances can set their state to stopped
         await this._postStoppingOrDeleting(startedSubplebbit);
-        delete startedSubplebbits[address];
+        delete this._startedSubplebbits[address];
 
         return true;
     }
@@ -476,7 +479,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const localSubs = plebbit.subplebbits;
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
         let subplebbit: LocalSubplebbit;
-        if (startedSubplebbits[address] instanceof LocalSubplebbit) subplebbit = <LocalSubplebbit>startedSubplebbits[address];
+        if (this._startedSubplebbits[address] instanceof LocalSubplebbit) subplebbit = <LocalSubplebbit>this._startedSubplebbits[address];
         else {
             subplebbit = <LocalSubplebbit>await plebbit.createSubplebbit({ address });
             subplebbit.once("error", (error: PlebbitError | Error) => {
@@ -485,10 +488,10 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         }
 
         await subplebbit.edit(editSubplebbitOptions);
-        if (editSubplebbitOptions.address && startedSubplebbits[address]) {
-            // if (editSubplebbitOptions.address && startedSubplebbits[address] && editSubplebbitOptions.address !== address) {
-            startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];
-            delete startedSubplebbits[address];
+        if (editSubplebbitOptions.address && this._startedSubplebbits[address]) {
+            // if (editSubplebbitOptions.address && this._startedSubplebbits[address] && editSubplebbitOptions.address !== address) {
+            this._startedSubplebbits[editSubplebbitOptions.address] = this._startedSubplebbits[address];
+            delete this._startedSubplebbits[address];
         }
         if (typeof subplebbit.updatedAt === "number") return subplebbit.toJSONInternalRpcAfterFirstUpdate();
         else return subplebbit.toJSONInternalRpcBeforeFirstUpdate();
@@ -501,13 +504,13 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const addresses = plebbit.subplebbits;
         if (!addresses.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB", { subplebbitAddress: address });
 
-        const isSubStarted = address in startedSubplebbits;
+        const isSubStarted = address in this._startedSubplebbits;
         const subplebbit = isSubStarted
-            ? await getStartedSubplebbit(address)
+            ? await this.getStartedSubplebbit(address)
             : <LocalSubplebbit>await plebbit.createSubplebbit({ address });
         await subplebbit.delete();
         await this._postStoppingOrDeleting(subplebbit);
-        delete startedSubplebbits[address];
+        delete this._startedSubplebbits[address];
 
         return true;
     }
@@ -604,41 +607,16 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             }
 
             log(`RPC client called setSettings, the clients need to call all subscription methods again`);
-            const startedSubAddresses = remeda.keys.strict(startedSubplebbits);
-            await this._waitForPublishingToFinish();
             const oldPlebbit = await this._getPlebbitInstance();
             const newPlebbit = await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions);
             this._initPlebbit(newPlebbit); // swap to new instance first so new RPC calls don't hit a destroyed plebbit
             await oldPlebbit.destroy(); // now clean up the old instance
             const plebbit = await this._getPlebbitInstance();
 
-            // restart all started subplebbits with new plebbit options
-            const rebuiltStartedSubs: { [address: string]: LocalSubplebbit } = {};
-            for (const key of remeda.keys.strict(startedSubplebbits)) delete startedSubplebbits[key];
-            for (const address of startedSubAddresses) {
-                const sub = <LocalSubplebbit>await plebbit.createSubplebbit({ address });
-                if (sub.started !== true) {
-                    try {
-                        await sub.start();
-                    } catch (error) {
-                        if ((error as PlebbitError)?.code === "ERR_SUB_ALREADY_STARTED")
-                            log("setSettings restart: sub already started, skipping start", { address });
-                        else throw error;
-                    }
-                }
-                rebuiltStartedSubs[address] = sub;
-            }
-            // replace global map with fresh instances
-            for (const key of remeda.keys.strict(startedSubplebbits)) delete startedSubplebbits[key];
-            Object.assign(startedSubplebbits, rebuiltStartedSubs);
-
             // send a settingsNotification to all subscribers
             for (const connectionId of remeda.keys.strict(this._onSettingsChange))
                 for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
                     await this._onSettingsChange[connectionId][subscriptionId]();
-
-            await this._rebindStartedSubSubscriptionsAfterRestart();
-            await this._rebindSubplebbitUpdateSubscriptionsAfterRestart();
 
             // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
             // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
@@ -739,10 +717,10 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
                 connectionId
             });
 
-        const isSubStarted = address in startedSubplebbits;
+        const isSubStarted = address in this._startedSubplebbits;
         const plebbit = await this._getPlebbitInstance();
         const subplebbit = isSubStarted
-            ? await getStartedSubplebbit(address)
+            ? await this.getStartedSubplebbit(address)
             : <LocalSubplebbit | RemoteSubplebbit>await plebbit.createSubplebbit({ address });
         const maybeLocalSubplebbit = subplebbit instanceof LocalSubplebbit ? subplebbit : undefined;
 
@@ -1223,8 +1201,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         this.ws.close();
         const plebbit = await this._getPlebbitInstance();
         await plebbit.destroy(); // this will stop all started subplebbits
-        for (const subplebbitAddress of remeda.keys.strict(startedSubplebbits)) {
-            delete startedSubplebbits[subplebbitAddress];
+        for (const subplebbitAddress of remeda.keys.strict(this._startedSubplebbits)) {
+            delete this._startedSubplebbits[subplebbitAddress];
         }
         this._onSettingsChange = {};
     }
