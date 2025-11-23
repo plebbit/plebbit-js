@@ -431,9 +431,17 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
             const subplebbit = await this.getStartedSubplebbit(address);
-            await subplebbit.stop();
-            subplebbit._plebbit = newPlebbit;
-            await startSub();
+            // mark as pending so other consumers wait while we restart with the new plebbit instance
+            this._startedSubplebbits[address] = "pending";
+            try {
+                await subplebbit.stop();
+                subplebbit._plebbit = newPlebbit;
+                await subplebbit.start();
+                this._startedSubplebbits[address] = subplebbit;
+            } catch (error) {
+                delete this._startedSubplebbits[address];
+                throw error;
+            }
         };
 
         await startSub();
