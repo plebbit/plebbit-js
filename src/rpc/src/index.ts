@@ -867,8 +867,17 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             comment.removeListener("publishingstatechange", publishingStateListener);
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
-            delete this.publishing[subscriptionId];
             comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
+            delete this.publishing[subscriptionId];
+            delete this._onSettingsChange[connectionId][subscriptionId];
+        };
+
+        this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }) => {
+            // need to switch plebbit instance here
+            // and re-subscribe to pubsub topics
+            await comment.stop();
+            comment._plebbit = newPlebbit;
+            await comment.publish();
         };
 
         // if fail, cleanup
