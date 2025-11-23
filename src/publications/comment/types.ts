@@ -21,6 +21,7 @@ import { Comment } from "./comment.js";
 import type { RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationRpcErrorToTransmit, PublicationState } from "../types.js";
 import type { JsonSignature, SignerType } from "../../signer/types.js";
+import Publication from "../publication.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
@@ -45,6 +46,13 @@ export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallen
 export type RpcCommentUpdateResultType = z.infer<typeof RpcCommentUpdateResultSchema>;
 
 type CommentOriginalField = z.infer<typeof OriginalCommentFieldsBeforeCommentUpdateSchema>;
+
+export interface CommentRawField extends Omit<Required<Publication["raw"]>, "pubsubMessageToPublish"> {
+    comment?: CommentIpfsType;
+    commentUpdate?: CommentUpdateType;
+    pubsubMessageToPublish?: CommentPubsubMessagePublication;
+    commentUpdateFromChallengeVerification?: CommentUpdateForChallengeVerification;
+}
 
 // JSON types
 

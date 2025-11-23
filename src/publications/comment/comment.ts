@@ -17,6 +17,7 @@ import type {
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessagePublication,
+    CommentRawField,
     CommentRpcErrorToTransmit,
     CommentState,
     CommentUpdateForChallengeVerification,
@@ -101,12 +102,7 @@ export class Comment
     private _updatingState!: CommentUpdatingState;
 
     // private
-    override raw: {
-        comment?: CommentIpfsType;
-        commentUpdate?: CommentUpdateType;
-        pubsubMessageToPublish?: CommentPubsubMessagePublication;
-        commentUpdateFromChallengeVerification?: CommentUpdateForChallengeVerification;
-    } = {};
+    override raw: CommentRawField = {};
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
     _invalidCommentUpdateMfsPaths: Set<string> = new Set<string>();
     private _commentIpfsloadingOperation?: RetryOperation = undefined;
