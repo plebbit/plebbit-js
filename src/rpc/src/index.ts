@@ -657,8 +657,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
             // send a settingsNotification to all subscribers
             for (const connectionId of remeda.keys.strict(this._onSettingsChange))
-                for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
-                    await this._onSettingsChange[connectionId][subscriptionId]({ newPlebbit });
+                if (this._onSettingsChange[connectionId])
+                    for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
+                        await this._onSettingsChange[connectionId][subscriptionId]({ newPlebbit });
 
             // ensure any existing publications get a timeout if they were created before the first setSettings
             for (const [subscriptionId, pub] of Object.entries(this.publishing).filter((pub) => pub[1].plebbit === oldPlebbit)) {
