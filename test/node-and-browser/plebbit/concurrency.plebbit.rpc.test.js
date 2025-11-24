@@ -200,7 +200,65 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             }
         }, 70000);
 
-        it("subplebbit.update does not hang when client A calls setSettings mid-update", async () => {
+        it("in-flight publish survives back-to-back setSettings from different clients", async () => {
+            const plebbitA = await config.plebbitInstancePromise();
+            const plebbitB = await config.plebbitInstancePromise();
+            const plebbitC = await config.plebbitInstancePromise();
+
+            try {
+                const initialSettings = await waitForSettings(plebbitA._plebbitRpcClient);
+                const firstUpdatedOptions = {
+                    ...initialSettings.plebbitOptions,
+                    updateInterval: (initialSettings.plebbitOptions.updateInterval || 60000) + 37,
+                    userAgent: "first" + Math.random()
+                };
+
+                const firstSettingsChangeOnB = pTimeout(
+                    new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)),
+                    { milliseconds: 45000, message: "Timed out waiting for first settingschange on client B" }
+                );
+                const firstSettingsChangeOnC = pTimeout(
+                    new Promise((resolve) => plebbitC._plebbitRpcClient.once("settingschange", resolve)),
+                    { milliseconds: 45000, message: "Timed out waiting for first settingschange on client C" }
+                );
+
+                await plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: firstUpdatedOptions });
+                await Promise.all([firstSettingsChangeOnB, firstSettingsChangeOnC]);
+
+                const postFirstSettings = await waitForSettings(plebbitC._plebbitRpcClient);
+                const secondUpdatedOptions = {
+                    ...postFirstSettings.plebbitOptions,
+                    updateInterval: (postFirstSettings.plebbitOptions.updateInterval || 60000) + 41,
+                    userAgent: "second" + Math.random()
+                };
+
+                const secondSettingsChangeOnB = pTimeout(
+                    new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)),
+                    { milliseconds: 45000, message: "Timed out waiting for second settingschange on client B" }
+                );
+
+                const publishPromise = pTimeout(publishRandomPost(subplebbitAddress, plebbitB), {
+                    milliseconds: 45000,
+                    message: "Timed out publishing across consecutive setSettings"
+                });
+
+                await delay(20); // overlap publish with the second setSettings
+                await plebbitC._plebbitRpcClient.setSettings({ plebbitOptions: secondUpdatedOptions });
+                await secondSettingsChangeOnB;
+
+                const publishedPost = await publishPromise;
+                const fetched = await plebbitB.getComment(publishedPost.cid);
+
+                expect(fetched.cid).to.equal(publishedPost.cid);
+                expect(plebbitB._plebbitRpcClient?.state).to.equal("connected");
+            } finally {
+                if (!plebbitA.destroyed) await plebbitA.destroy();
+                if (!plebbitB.destroyed) await plebbitB.destroy();
+                if (!plebbitC.destroyed) await plebbitC.destroy();
+            }
+        }, 90000);
+
+        it.only("subplebbit.update does not hang when client A calls setSettings mid-update", async () => {
             const plebbitA = await config.plebbitInstancePromise();
             const plebbitB = await config.plebbitInstancePromise();
 
@@ -211,7 +269,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
                     ...currentSettings.plebbitOptions,
-                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 11
+                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 11,
+                    userAgent: "hello" + Math.random()
                 };
 
                 const settingsChangeOnB = pTimeout(new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)), {
@@ -230,7 +289,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 await Promise.all([settingsChangeOnB, updatePromise]);
 
                 const post = await publishRandomPost(subplebbitAddress, plebbitB);
-                await waitTillPostInSubplebbitInstancePages(post, subB);
+                await waitTillPostInSubplebbitInstancePages(post, subB); // hangs here
                 const fetched = await plebbitB.getComment(post.cid);
                 expect(fetched.cid).to.equal(post.cid);
             } finally {
