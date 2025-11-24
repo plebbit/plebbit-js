@@ -830,8 +830,12 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
             const isSubStarted = address in this._startedSubplebbits;
-            subplebbit._plebbit = newPlebbit;
-            if (!isSubStarted) await subplebbit.update();
+
+            if (!isSubStarted) {
+                subplebbit._plebbit = newPlebbit;
+                await subplebbit.stop();
+                await subplebbit.update();
+            }
         };
 
         // if fail, cleanup
