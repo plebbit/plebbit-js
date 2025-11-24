@@ -47,7 +47,7 @@ const waitForSubscriptionEvent = (rpcClient, subscriptionId, eventName, trigger)
     });
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) =>
-    describe.sequential(`plebbit RPC concurrency - ${config.name}`, () => {
+    describe.concurrent(`plebbit RPC concurrency - ${config.name}`, () => {
         it("handles two RPC clients publishing in parallel without dropping either connection", async () => {
             const plebbitA = await config.plebbitInstancePromise();
             const plebbitB = await config.plebbitInstancePromise();
@@ -258,7 +258,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             }
         }, 90000);
 
-        it.only("subplebbit.update does not hang when client A calls setSettings mid-update", async () => {
+        it("subplebbit.update does not hang when client A calls setSettings mid-update", async () => {
             const plebbitA = await config.plebbitInstancePromise();
             const plebbitB = await config.plebbitInstancePromise();
 
@@ -348,12 +348,13 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             try {
                 const freshSub = await createSubWithNoChallenge({ title: "temp publish sub " + Date.now(), description: "tmp" }, plebbitB);
                 const freshAddress = freshSub.address;
-                await plebbitB._plebbitRpcClient._webSocketClient.call("startSubplebbit", [freshAddress]);
+                await freshSub.start();
 
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
                     ...currentSettings.plebbitOptions,
-                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 19
+                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 19,
+                    userAgent: "hello" + Math.random()
                 };
 
                 const settingsChangeOnB = pTimeout(new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)), {
