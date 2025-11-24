@@ -80,7 +80,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     connections: { [connectionId: string]: WebSocket } = {};
     subscriptionCleanups: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
     // store publishing publications so they can be used by publishChallengeAnswers
-    publishing: { [subscriptionId: number]: Publication } = {};
+    publishing: {
+        [subscriptionId: number]: { publication: Publication; plebbit: Plebbit; connectionId: string; timeout?: NodeJS.Timeout };
+    } = {};
     private _setSettingsQueue: Promise<void> = Promise.resolve();
     authKey: string | undefined;
     private _trackedSubplebbitListeners = new WeakMap<LocalSubplebbit, Map<keyof SubplebbitEvents, Set<(...args: any[]) => void>>>();
@@ -243,6 +245,38 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             }
         };
         this.connections[connectionId]?.send?.(JSON.stringify(message));
+    }
+
+    private _registerPublishing(subscriptionId: number, publication: Publication, plebbit: Plebbit, connectionId: string) {
+        this.publishing[subscriptionId] = { publication, plebbit, connectionId };
+    }
+
+    private _clearPublishing(subscriptionId: number) {
+        const record = this.publishing[subscriptionId];
+        if (record?.timeout) clearTimeout(record.timeout);
+        delete this.publishing[subscriptionId];
+    }
+
+    private async _forceCleanupPublication(subscriptionId: number, reason: string) {
+        const record = this.publishing[subscriptionId];
+        if (!record) return;
+        const cleanup = await this.subscriptionCleanups?.[record.connectionId]?.[subscriptionId];
+        log(`Force-cleaning publication ${subscriptionId} after ${reason}`);
+        if (cleanup) {
+            cleanup();
+            if (this.subscriptionCleanups?.[record.connectionId]) delete this.subscriptionCleanups[record.connectionId][subscriptionId];
+        }
+        this._clearPublishing(subscriptionId);
+        await this._retirePlebbitIfNeeded(record.plebbit);
+    }
+
+    private async _retirePlebbitIfNeeded(plebbit: Plebbit) {
+        const activePublishes = Object.values(this.publishing).filter(({ plebbit: p }) => p === plebbit).length;
+        if (activePublishes === 0) {
+            // nothing relies on this instance anymore
+            await plebbit.destroy().catch((error) => log.error("Failed destroying old plebbit immediately after setSettings", { error }));
+            return;
+        }
     }
 
     async _getPlebbitInstance() {
@@ -620,14 +654,18 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             const oldPlebbit = this.plebbit;
             const newPlebbit = await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions);
             this._initPlebbit(newPlebbit); // swap to new instance first so new RPC calls don't hit a destroyed plebbit
-            await oldPlebbit.destroy(); // now clean up the old instance
-            // TODO we need to get list of started subplebbits and restart them with new plebbit instances
-            // ideally without having to re-listen
 
             // send a settingsNotification to all subscribers
             for (const connectionId of remeda.keys.strict(this._onSettingsChange))
                 for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
                     await this._onSettingsChange[connectionId][subscriptionId]({ newPlebbit });
+
+            // ensure any existing publications get a timeout if they were created before the first setSettings
+            for (const [subscriptionId, pub] of Object.entries(this.publishing).filter((pub) => pub[1].plebbit === oldPlebbit)) {
+                pub.timeout = setTimeout(async () => {
+                    await this._forceCleanupPublication(Number(subscriptionId), "timeout");
+                }, 60000);
+            }
 
             // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
             // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
@@ -832,7 +870,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             });
 
         const comment = await this._createCommentInstanceFromPublishCommentParams(publishOptions);
-        this.publishing[subscriptionId] = comment;
+        this._registerPublishing(subscriptionId, comment, comment._plebbit, connectionId);
         const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodeChallengeMessage(challenge));
         comment.on("challenge", challengeListener);
 
@@ -876,16 +914,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
             comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
-            delete this.publishing[subscriptionId];
+            this._clearPublishing(subscriptionId);
             delete this._onSettingsChange[connectionId][subscriptionId];
-        };
-
-        this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }) => {
-            // need to switch plebbit instance here
-            // and re-subscribe to pubsub topics
-            await comment.stop();
-            comment._plebbit = newPlebbit;
-            await comment.publish();
         };
 
         // if fail, cleanup
@@ -921,7 +951,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             this.jsonRpcSendNotification({ method: "publishVoteNotification", subscription: subscriptionId, event, result, connectionId });
 
         const vote = await this._createVoteInstanceFromPublishVoteParams(publishOptions);
-        this.publishing[subscriptionId] = vote;
+        this._registerPublishing(subscriptionId, vote, vote._plebbit, connectionId);
         const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodeChallengeMessage(challenge));
         vote.on("challenge", challengeListener);
         const challengeAnswerListener = (answer: DecryptedChallengeAnswerMessageType) =>
@@ -945,7 +975,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            delete this.publishing[subscriptionId];
+            this._clearPublishing(subscriptionId);
             vote.stop().catch((error: any) => log.error("publishVote stop error", { error, params }));
             vote.removeListener("challenge", challengeListener);
             vote.removeListener("challengeanswer", challengeAnswerListener);
@@ -991,7 +1021,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             });
 
         const subplebbitEdit = await this._createSubplebbitEditInstanceFromPublishSubplebbitEditParams(publishOptions);
-        this.publishing[subscriptionId] = subplebbitEdit;
+        this._registerPublishing(subscriptionId, subplebbitEdit, subplebbitEdit._plebbit, connectionId);
         const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodeChallengeMessage(challenge));
         subplebbitEdit.on("challenge", challengeListener);
         const challengeAnswerListener = (answer: DecryptedChallengeAnswerMessageType) =>
@@ -1015,7 +1045,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            delete this.publishing[subscriptionId];
+            this._clearPublishing(subscriptionId);
             subplebbitEdit.stop().catch((error: any) => log.error("publishSubplebbitEdit stop error", { error, params }));
             subplebbitEdit.removeListener("challenge", challengeListener);
             subplebbitEdit.removeListener("challengeanswer", challengeAnswerListener);
@@ -1060,7 +1090,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             });
 
         const commentEdit = await this._createCommentEditInstanceFromPublishCommentEditParams(publishOptions);
-        this.publishing[subscriptionId] = commentEdit;
+        this._registerPublishing(subscriptionId, commentEdit, commentEdit._plebbit, connectionId);
         const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodeChallengeMessage(challenge));
         commentEdit.on("challenge", challengeListener);
         const challengeAnswerListener = (answer: DecryptedChallengeAnswerMessageType) =>
@@ -1087,7 +1117,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            delete this.publishing[subscriptionId];
+            this._clearPublishing(subscriptionId);
             commentEdit.stop().catch((error: any) => log.error("publishCommentEdit stop error", { error, params }));
             commentEdit.removeListener("challenge", challengeListener);
             commentEdit.removeListener("challengeanswer", challengeAnswerListener);
@@ -1133,7 +1163,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         const commentMod = await this._createCommentModerationInstanceFromPublishCommentModerationParams(publishOptions);
 
-        this.publishing[subscriptionId] = commentMod;
+        this._registerPublishing(subscriptionId, commentMod, commentMod._plebbit, connectionId);
         const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodeChallengeMessage(challenge));
         commentMod.on("challenge", challengeListener);
         const challengeAnswerListener = (answer: DecryptedChallengeAnswerMessageType) =>
@@ -1160,7 +1190,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            delete this.publishing[subscriptionId];
+            this._clearPublishing(subscriptionId);
             commentMod.stop().catch((error: any) => log.error("publishCommentModeration stop error", { error, params }));
             commentMod.removeListener("challenge", challengeListener);
             commentMod.removeListener("challengeanswer", challengeAnswerListener);
@@ -1187,10 +1217,11 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const subscriptionId = SubscriptionIdSchema.parse(params[0]);
         const decryptedChallengeAnswers = parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(params[1]);
 
-        if (!this.publishing[subscriptionId]) {
+        const record = this.publishing[subscriptionId];
+        if (!record?.publication) {
             throw Error(`no subscription with id '${subscriptionId}'`);
         }
-        const publication = this.publishing[subscriptionId];
+        const publication = record.publication;
 
         await this._getPlebbitInstance(); // to await for settings change
 
