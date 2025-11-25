@@ -46,6 +46,7 @@ const waitForSubscriptionEvent = (rpcClient, subscriptionId, eventName, trigger)
         }
     });
 
+// TODO here add an after statement to reset rpc settings
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) =>
     describe.concurrent(`plebbit RPC concurrency - ${config.name}`, () => {
         it("handles two RPC clients publishing in parallel without dropping either connection", async () => {
@@ -162,6 +163,52 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 if (!plebbitB.destroyed) await plebbitB.destroy();
             }
         }, 70000);
+
+        it("createSubplebbit survives setSettings overlap (no ERR_PLEBBIT_IS_DESTROYED)", async () => {
+            const plebbitA = await config.plebbitInstancePromise();
+            const plebbitB = await config.plebbitInstancePromise();
+
+            try {
+                const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
+                const updatedOptions = {
+                    ...currentSettings.plebbitOptions,
+                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 7,
+                    userAgent: "overlap-create" + Math.random()
+                };
+
+                // Run several overlapping createSubplebbit + setSettings pairs to maximize the window where the old plebbit can be destroyed mid-call
+                const overlapAttempts = 4;
+                const tasks = Array.from({ length: overlapAttempts }).map((_, attemptIdx) => {
+                    const optionsWithJitter = {
+                        ...updatedOptions,
+                        updateInterval: (updatedOptions.updateInterval || 60000) + attemptIdx * 13
+                    };
+                    return pTimeout(
+                        (async () => {
+                            const createPromise = createSubWithNoChallenge(
+                                { title: "overlap setSettings create " + Date.now() + "-" + attemptIdx, description: "tmp" },
+                                plebbitB
+                            );
+
+                            const settingsPromise = plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: optionsWithJitter });
+
+                            const createdSub = await createPromise;
+                            await settingsPromise;
+                            await createdSub.start();
+                            const post = await publishRandomPost(createdSub.address, plebbitB);
+                            const fetched = await plebbitB.getComment(post.cid);
+                            expect(fetched.cid).to.equal(post.cid);
+                        })(),
+                        { milliseconds: 55000, message: "Timed out during createSubplebbit/setSettings overlap" }
+                    );
+                });
+
+                await Promise.all(tasks);
+            } finally {
+                if (!plebbitA.destroyed) await plebbitA.destroy();
+                if (!plebbitB.destroyed) await plebbitB.destroy();
+            }
+        }, 80000);
 
         it("does not drop an in-flight publish on client B when client A calls setSettings (server restart)", async () => {
             const plebbitA = await config.plebbitInstancePromise();
@@ -388,7 +435,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
                     ...currentSettings.plebbitOptions,
-                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 23
+                    updateInterval: (currentSettings.plebbitOptions.updateInterval || 60000) + 23,
+                    userAgent: "Hello" + Math.random()
                 };
 
                 const settingsChangeOnB = pTimeout(new Promise((resolve) => plebbitB._plebbitRpcClient.once("settingschange", resolve)), {
