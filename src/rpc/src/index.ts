@@ -152,7 +152,15 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup on disconnect
         this.rpcWebsockets.on("disconnection", (ws) => {
+            log("RPC client disconnected", ws._id);
             const subscriptionCleanups = this.subscriptionCleanups[ws._id];
+            if (!subscriptionCleanups) {
+                delete this.subscriptionCleanups[ws._id];
+                delete this.connections[ws._id];
+                delete this._onSettingsChange[ws._id];
+                log("Disconnected from RPC client (no subscriptions to clean)", ws._id);
+                return;
+            }
             for (const subscriptionId in subscriptionCleanups) {
                 subscriptionCleanups[subscriptionId]();
                 delete subscriptionCleanups[subscriptionId];
@@ -272,7 +280,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
     private async _retirePlebbitIfNeeded(plebbit: Plebbit) {
         const activePublishes = Object.values(this.publishing).filter(({ plebbit: p }) => p === plebbit).length;
-        if (activePublishes === 0) {
+        if (activePublishes === 0 && !plebbit.destroyed) {
             // nothing relies on this instance anymore
             await plebbit.destroy().catch((error) => log.error("Failed destroying old plebbit immediately after setSettings", { error }));
             return;
@@ -426,6 +434,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             this._untrackSubplebbitListener(subplebbit, "challengeverification", challengeVerificationListener);
             subplebbit.removeListener("error", errorListener);
             this._untrackSubplebbitListener(subplebbit, "error", errorListener);
+            if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
         };
     }
 
@@ -455,8 +464,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
                     await subplebbit.start();
                     this._startedSubplebbits[address] = subplebbit;
                 } catch (e) {
-                    if (this.subscriptionCleanups?.[connectionId]?.[subscriptionId])
-                        this.subscriptionCleanups[connectionId][subscriptionId]();
+                    const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+                    if (cleanup) cleanup();
                     delete this._startedSubplebbits[address];
                     throw e;
                 }
@@ -622,7 +631,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         };
 
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            delete this._onSettingsChange[connectionId][subscriptionId];
+            if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = sendRpcSettings;
@@ -656,10 +665,14 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             this._initPlebbit(newPlebbit); // swap to new instance first so new RPC calls don't hit a destroyed plebbit
 
             // send a settingsNotification to all subscribers
-            for (const connectionId of remeda.keys.strict(this._onSettingsChange))
-                if (this._onSettingsChange[connectionId])
-                    for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
-                        await this._onSettingsChange[connectionId][subscriptionId]({ newPlebbit });
+            for (const connectionId of remeda.keys.strict(this._onSettingsChange)) {
+                const connectionHandlers = this._onSettingsChange[connectionId];
+                if (!connectionHandlers) continue;
+                for (const subscriptionId of remeda.keys.strict(connectionHandlers)) {
+                    const handler = connectionHandlers[subscriptionId];
+                    if (handler) await handler({ newPlebbit });
+                }
+            }
 
             // ensure any existing publications get a timeout if they were created before the first setSettings
             for (const [subscriptionId, pub] of Object.entries(this.publishing).filter((pub) => pub[1].plebbit === oldPlebbit)) {
@@ -668,8 +681,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
                 }, 60000);
             }
 
-            // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
-            // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
+            setTimeout(async () => {
+                await this._retirePlebbitIfNeeded(oldPlebbit);
+            }, 60000); // set this in a timeout because createSubplebbit may be using it
         };
 
         const setSettingsRun = this._setSettingsQueue.then(() => runSetSettings());
@@ -727,15 +741,17 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            log("Cleaning up commentUpdate subscription", { subscriptionId, connectionId, cid: comment.cid });
             comment.removeListener("update", updateListener);
             comment.removeListener("updatingstatechange", updatingStateListener);
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
-            delete this._onSettingsChange[connectionId][subscriptionId];
+            if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
+            // TODO need to clean up and remove old comment here, and create a new comment
             comment._plebbit = newPlebbit;
             await comment.update();
         };
@@ -745,7 +761,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             sendUpdate();
             await comment.update();
         } catch (e) {
-            this.subscriptionCleanups[connectionId][subscriptionId]();
+            log.error("Cleaning up subscription to comment", comment.cid, "because comment.update threw an error", e);
+            const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+            if (cleanup) cleanup();
             throw e;
         }
 
@@ -822,7 +840,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
-            delete this._onSettingsChange[connectionId][subscriptionId];
+            if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
 
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")
@@ -847,7 +865,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             // No need to call .update() if it's already running locally because we're listening to update event
             if (!isSubStarted) await subplebbit.update();
         } catch (e) {
-            this.subscriptionCleanups[connectionId][subscriptionId]();
+            const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+            if (cleanup) cleanup();
             throw e;
         }
     }
@@ -920,7 +939,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             comment.removeListener("error", errorListener);
             comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
             this._clearPublishing(subscriptionId);
-            delete this._onSettingsChange[connectionId][subscriptionId];
+            if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
         };
 
         // if fail, cleanup
@@ -931,7 +950,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             const error = e as PublicationRpcErrorToTransmit;
             error.details = { ...error.details, publishThrowError: true };
             errorListener(error);
-            this.subscriptionCleanups[connectionId][subscriptionId]();
+            const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+            if (cleanup) cleanup();
             return subscriptionId;
         }
 
@@ -997,7 +1017,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             const error = e as PublicationRpcErrorToTransmit;
             error.details = { ...error.details, publishThrowError: true };
             errorListener(error);
-            this.subscriptionCleanups[connectionId][subscriptionId]();
+            const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+            if (cleanup) cleanup();
         }
 
         return subscriptionId;
@@ -1067,7 +1088,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             const error = e as PublicationRpcErrorToTransmit;
             error.details = { ...error.details, publishThrowError: true };
             errorListener(error);
-            this.subscriptionCleanups[connectionId][subscriptionId]();
+            const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+            if (cleanup) cleanup();
         }
 
         return subscriptionId;
@@ -1139,7 +1161,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             const error = e as PublicationRpcErrorToTransmit;
             error.details = { ...error.details, publishThrowError: true };
             errorListener(error);
-            this.subscriptionCleanups[connectionId][subscriptionId]();
+            const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+            if (cleanup) cleanup();
         }
 
         return subscriptionId;
@@ -1212,7 +1235,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             const error = e as PublicationRpcErrorToTransmit;
             error.details = { ...error.details, publishThrowError: true };
             errorListener(error);
-            this.subscriptionCleanups[connectionId][subscriptionId]();
+            const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
+            if (cleanup) cleanup();
         }
 
         return subscriptionId;
@@ -1245,10 +1269,12 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     async unsubscribe(params: any, connectionId: string) {
         const subscriptionId = SubscriptionIdSchema.parse(params[0]);
 
-        if (!this.subscriptionCleanups[connectionId][subscriptionId]) return true;
+        log("Received unsubscribe", { connectionId, subscriptionId });
+        const connectionCleanups = this.subscriptionCleanups[connectionId];
+        if (!connectionCleanups || !connectionCleanups[subscriptionId]) return true;
 
-        this.subscriptionCleanups[connectionId][subscriptionId]();
-        delete this.subscriptionCleanups[connectionId][subscriptionId];
+        connectionCleanups[subscriptionId]();
+        delete connectionCleanups[subscriptionId];
         return true;
     }
 
