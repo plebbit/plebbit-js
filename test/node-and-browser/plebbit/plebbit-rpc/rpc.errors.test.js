@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import PlebbitRpcClient from "../../../dist/node/clients/rpc-client/plebbit-rpc-client.js";
-import { PlebbitError } from "../../../dist/node/plebbit-error.js";
-import { messages } from "../../../dist/node/errors.js";
-import { sanitizeRpcNotificationResult } from "../../../dist/node/rpc/src/json-rpc-util.js";
+import PlebbitRpcClient from "../../../../dist/node/clients/rpc-client/plebbit-rpc-client.js";
+import { PlebbitError } from "../../../../dist/node/plebbit-error.js";
+import { messages } from "../../../../dist/node/errors.js";
+import { sanitizeRpcNotificationResult } from "../../../../dist/node/rpc/src/json-rpc-util.js";
 
 describe("RPC error (de)serialization helpers", () => {
     describe("_deserializeRpcError", () => {

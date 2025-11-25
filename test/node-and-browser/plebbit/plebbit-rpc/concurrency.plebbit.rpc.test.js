@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import pTimeout from "p-timeout";
-import signers from "../../fixtures/signers.js";
+import signers from "../../../fixtures/signers.js";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     createSubWithNoChallenge,
     publishRandomPost,
     waitTillPostInSubplebbitInstancePages
-} from "../../../dist/node/test/test-util.js";
+} from "../../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 
