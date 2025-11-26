@@ -1,9 +1,16 @@
 import { expect } from "chai";
-import { getAvailablePlebbitConfigsToTestAgainst, itSkipIfRpc, resolveWhenConditionIsTrue, itIfRpc } from "../../../dist/node/test/test-util.js";
+import {
+    getAvailablePlebbitConfigsToTestAgainst,
+    itSkipIfRpc,
+    resolveWhenConditionIsTrue,
+    itIfRpc,
+    publishRandomPost
+} from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`plebbit._updatingSubplebbits - ${config.name}`, async () => {
+    describe.sequential(`plebbit._updatingSubplebbits - ${config.name}`, async () => {
         let plebbit;
         beforeEach(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -39,7 +46,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await sub3.update();
             expect(sub3.state).to.equal("updating");
 
-            await Promise.all([sub1, sub2, sub3].map((sub) => resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" })));
+            await Promise.all(
+                [sub1, sub2, sub3].map((sub) =>
+                    resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" })
+                )
+            );
 
             // all subs have received an update event now
             expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.be.a("number");
@@ -180,6 +191,35 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(plebbit._updatingComments[comment1.cid]).to.be.undefined;
             }
         );
+
+        it(`can stop two comments in parallel and remove _updatingSubplebbits entry`, async () => {
+            const post1 = await publishRandomPost(subplebbitAddress, plebbit);
+            const post2 = await publishRandomPost(subplebbitAddress, plebbit);
+
+            const comment1 = await plebbit.createComment({ cid: post1.cid });
+            const comment2 = await plebbit.createComment({ cid: post2.cid });
+
+            await comment1.update();
+            await comment2.update();
+
+            await Promise.all(
+                [comment1, comment2].map((comment) =>
+                    resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" })
+                )
+            );
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
+
+            expect(comment1.state).to.equal("updating");
+            expect(comment2.state).to.equal("updating");
+
+            await Promise.all([comment1.stop(), comment2.stop()]);
+            await new Promise((resolve) => setTimeout(resolve, 200));
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
+            expect(plebbit._updatingComments[comment1.cid]).to.be.undefined;
+            expect(plebbit._updatingComments[comment2.cid]).to.be.undefined;
+        });
 
         it(`calling plebbit._updatingSubplebbits[subplebbitAddress].stop() should stop all instances listening to that instance`, async () => {
             const sub1 = await plebbit.createSubplebbit({ address: subplebbitAddress });
