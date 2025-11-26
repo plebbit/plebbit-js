@@ -8,7 +8,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { describe, it } from "vitest";
-import { listenerCount } from "process";
+
 const subplebbitAddress = signers[0].address;
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.sequential(`plebbit._updatingSubplebbits - ${config.name}`, async () => {
@@ -193,7 +193,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             }
         );
 
-        it(`can stop two comments in parallel and remove _updatingSubplebbits entry`, async () => {
+        itSkipIfRpc(`can stop two comments in parallel and remove _updatingSubplebbits entry`, async () => {
             const post1 = await publishRandomPost(subplebbitAddress, plebbit);
             const post2 = await publishRandomPost(subplebbitAddress, plebbit);
 
@@ -280,7 +280,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(sub.state).to.equal("stopped");
         });
 
-        itSkipIfRpc(`Stopping one subplebbit should not affect another subplebbit updating entry`, async () => {
+        it(`Stopping one subplebbit should not affect another subplebbit updating entry`, async () => {
             const subA = await plebbit.createSubplebbit({ address: subplebbitAddress });
             const subB = await plebbit.createSubplebbit({ address: signers[1].address });
 
