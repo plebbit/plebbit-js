@@ -62,7 +62,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await Promise.all(
                 emojiContents.map(async (content) => {
-                    const publishedPostWithEmojiContent = await publishRandomPost(subplebbitAddress, plebbit, { content, title: content });
+                    const publishedPostWithEmojiContent = await publishRandomPost(subplebbitAddress, plebbit, {
+                        content,
+                        title: content
+                    });
                     expect(publishedPostWithEmojiContent.content).to.equal(content);
                     expect(publishedPostWithEmojiContent.title).to.equal(content);
 
@@ -209,7 +212,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can publish a post with linkHtmlTagName defined`, async () => {
-            const post = await generateMockPost(subplebbitAddress, plebbit, false, { linkHtmlTagName: "img", link: "https://google.com" });
+            const post = await generateMockPost(subplebbitAddress, plebbit, false, {
+                linkHtmlTagName: "img",
+                link: "https://google.com"
+            });
             expect(post.linkHtmlTagName).to.equal("img");
             expect(post.link).to.equal("https://google.com");
 
