@@ -1,14 +1,23 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import pTimeout from "p-timeout";
 import signers from "../../../fixtures/signers.js";
+import * as remeda from "remeda";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     createSubWithNoChallenge,
     publishRandomPost,
+    publishRandomReply,
+    publishWithExpectedResult,
+    generateMockComment,
+    generateMockVote,
+    resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitInstancePages
 } from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;
+const moderationSubplebbitAddress = signers[7].address;
+const modSigner = signers[3];
 
 const waitForSettings = async (rpcClient) =>
     rpcClient.settings ??
@@ -47,7 +56,84 @@ const waitForSubscriptionEvent = (rpcClient, subscriptionId, eventName, trigger)
     });
 
 // TODO here add an after statement to reset rpc settings
-getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) =>
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
+    describe.concurrent.only(`RPC comment moderation regression - removing post (${config.name})`, () => {
+        let plebbit;
+        let postToRemove;
+
+        beforeAll(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            postToRemove = await publishRandomPost(moderationSubplebbitAddress, plebbit);
+            await postToRemove.update();
+        });
+
+        afterAll(async () => {
+            await plebbit.destroy();
+        });
+
+        it.sequential("publishes CommentUpdate removed=true", async () => {
+            const removeEdit = await plebbit.createCommentModeration({
+                subplebbitAddress: postToRemove.subplebbitAddress,
+                commentCid: postToRemove.cid,
+                commentModeration: { reason: "to remove a post RPC regression", removed: true },
+                signer: modSigner
+            });
+            await publishWithExpectedResult(removeEdit, true);
+
+            await postToRemove.update();
+            await resolveWhenConditionIsTrue({ toUpdate: postToRemove, predicate: () => postToRemove.removed === true });
+            expect(postToRemove.removed).to.be.true;
+            expect(postToRemove.raw.commentUpdate.removed).to.be.true;
+        });
+
+        it.sequential("publishes CommentUpdate removed=false", async () => {
+            const unremoveEdit = await plebbit.createCommentModeration({
+                subplebbitAddress: postToRemove.subplebbitAddress,
+                commentCid: postToRemove.cid,
+                commentModeration: { reason: "to unremove a post RPC regression", removed: false },
+                signer: modSigner
+            });
+            await publishWithExpectedResult(unremoveEdit, true);
+
+            await postToRemove.update();
+            await resolveWhenConditionIsTrue({ toUpdate: postToRemove, predicate: () => postToRemove.removed === false });
+            expect(postToRemove.removed).to.be.false;
+            expect(postToRemove.raw.commentUpdate.removed).to.be.false;
+        });
+    });
+
+    describe.concurrent.only(`RPC comment moderation regression - removing reply (${config.name})`, () => {
+        let plebbit;
+        let post;
+        let replyToBeRemoved;
+
+        beforeAll(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            post = await publishRandomPost(moderationSubplebbitAddress, plebbit);
+            replyToBeRemoved = await publishRandomReply(post, plebbit);
+            await replyToBeRemoved.update();
+        });
+
+        afterAll(async () => {
+            await plebbit.destroy();
+        });
+
+        it.sequential("publishes CommentUpdate removed=true for reply", async () => {
+            const removeEdit = await plebbit.createCommentModeration({
+                subplebbitAddress: replyToBeRemoved.subplebbitAddress,
+                commentCid: replyToBeRemoved.cid,
+                commentModeration: { reason: "remove reply RPC regression", removed: true },
+                signer: modSigner
+            });
+            await publishWithExpectedResult(removeEdit, true);
+
+            await replyToBeRemoved.update();
+            await resolveWhenConditionIsTrue({ toUpdate: replyToBeRemoved, predicate: () => replyToBeRemoved.removed === true });
+            expect(replyToBeRemoved.removed).to.be.true;
+            expect(replyToBeRemoved.raw.commentUpdate.removed).to.be.true;
+        });
+    });
+
     describe.concurrent(`plebbit RPC concurrency - ${config.name}`, () => {
         it("handles two RPC clients publishing in parallel without dropping either connection", async () => {
             const plebbitA = await config.plebbitInstancePromise();
@@ -566,5 +652,5 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 if (!plebbitB.destroyed) await plebbitB.destroy();
             }
         }, 100000);
-    })
-);
+    });
+});
