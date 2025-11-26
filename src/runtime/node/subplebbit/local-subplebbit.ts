@@ -2230,7 +2230,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             (row): row is CommentUpdateToWriteToDbAndPublishToIpfs & { localMfsPath: string } => typeof row.localMfsPath === "string"
         );
 
-        if (commentUpdatesWithLocalPath.length === 0) throw Error("No comment updates of posts to publish to postUpdates directory");
+        if (commentUpdatesWithLocalPath.length === 0)
+            throw Error("No comment updates of posts to publish to postUpdates directory. This is a critical bug");
 
         const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         const removedMfsPaths: string[] = await this._rmUnneededMfsPaths();
