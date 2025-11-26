@@ -179,6 +179,23 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         expect(cids).to.include(post.cid);
     });
 
+    it("enqueues all comments of an author when one of their comments requires an update", async () => {
+        const sharedAuthor = "12D3KooAuthorShared";
+        const postNeedingUpdate = insertComment({
+            overrides: { authorSignerAddress: sharedAuthor, author: { address: sharedAuthor } }
+        });
+        insertCommentUpdate(postNeedingUpdate, { publishedToPostUpdatesMFS: 0 });
+
+        const upToDatePost = insertComment({
+            overrides: { authorSignerAddress: sharedAuthor, author: { address: sharedAuthor } }
+        });
+        insertCommentUpdate(upToDatePost, { publishedToPostUpdatesMFS: 1, updatedAt: currentTimestamp() + 5 });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(postNeedingUpdate.cid, "author's comment needing update should be present");
+        expect(cids).to.include(upToDatePost.cid, "other comments by same author should also be enqueued");
+    });
+
     it("fails to include a post with a newer vote when commentUpdates.updatedAt is ahead by more than one second (captures regression)", async () => {
         const post = insertComment();
         const futureTime = currentTimestamp() + 10;
