@@ -2230,16 +2230,16 @@ const skipFunction = (_: any) => {};
 skipFunction.skip = () => {};
 
 //@ts-expect-error
-export const describeSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["describe"];
+export const describeSkipIfRpc = globalThis["describe"]?.runIf(!isRpcFlagOn());
 
 //@ts-expect-error
-export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : skipFunction;
+export const describeIfRpc = globalThis["describe"]?.runIf(isRpcFlagOn());
 
 //@ts-expect-error
-export const itSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["it"];
+export const itSkipIfRpc = globalThis["it"]?.runIf(!isRpcFlagOn());
 
 //@ts-expect-error
-export const itIfRpc = isRpcFlagOn() ? globalThis["it"] : skipFunction;
+export const itIfRpc = globalThis["it"]?.runIf(isRpcFlagOn());
 
 export function mockViemClient({
     plebbit,
