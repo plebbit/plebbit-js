@@ -698,6 +698,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async commentUpdateSubscribe(params: any, connectionId: string) {
+        const logUpdate = Logger("plebbit-js-rpc:plebbit-ws-server:commentUpdateSubscribe");
         // TODO need to implement _onSettingsChange here
         const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
@@ -745,13 +746,29 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = async () => {
-            log("Cleaning up commentUpdate subscription", { subscriptionId, connectionId, cid: comment.cid });
+            logUpdate(
+                "Cleaning up commentUpdate subscription",
+                { subscriptionId, connectionId, cid: comment.cid },
+                "_updatingSubplebbbits before",
+                Object.keys(this.plebbit._updatingSubplebbits),
+                "_updatingComments before",
+                Object.keys(this.plebbit._updatingComments)
+            );
             comment.removeListener("update", updateListener);
             comment.removeListener("updatingstatechange", updatingStateListener);
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
             await comment.stop();
             if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
+
+            logUpdate(
+                "After Cleaning up commentUpdate subscription",
+                { subscriptionId, connectionId, cid: comment.cid },
+                "_updatingSubplebbbits after",
+                Object.keys(this.plebbit._updatingSubplebbits),
+                "_updatingComments after",
+                Object.keys(this.plebbit._updatingComments)
+            );
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
@@ -765,7 +782,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             sendUpdate();
             await comment.update();
         } catch (e) {
-            log.error("Cleaning up subscription to comment", comment.cid, "because comment.update threw an error", e);
+            logUpdate.error("Cleaning up subscription to comment", comment.cid, "because comment.update threw an error", e);
             const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
             if (cleanup) await cleanup();
             throw e;
