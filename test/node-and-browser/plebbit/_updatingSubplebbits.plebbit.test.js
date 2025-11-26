@@ -8,6 +8,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { describe, it } from "vitest";
+import { listenerCount } from "process";
 const subplebbitAddress = signers[0].address;
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.sequential(`plebbit._updatingSubplebbits - ${config.name}`, async () => {
@@ -277,6 +278,69 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(plebbit._updatingSubplebbits[sub.address]).to.exist;
             await updatingSub.stop();
             expect(sub.state).to.equal("stopped");
+        });
+
+        itSkipIfRpc(`Stopping one subplebbit should not affect another subplebbit updating entry`, async () => {
+            const subA = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            const subB = await plebbit.createSubplebbit({ address: signers[1].address });
+
+            await subA.update();
+            await subB.update();
+
+            await Promise.all(
+                [subA, subB].map((sub) => resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" }))
+            );
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
+            expect(plebbit._updatingSubplebbits[signers[1].address]).to.exist;
+
+            await subA.stop();
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
+            expect(plebbit._updatingSubplebbits[signers[1].address]).to.exist;
+
+            await subB.stop();
+        });
+
+        itSkipIfRpc(`Comment listeners should restore updating subplebbit listener count after cleanup`, async () => {
+            const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
+
+            const listenerCountOfSub = () => {
+                return plebbit._updatingSubplebbits[sub.address].listenerCount("update");
+            };
+
+            const baseListenerCount = listenerCountOfSub();
+
+            const post = await publishRandomPost(subplebbitAddress, plebbit);
+            const comment = await plebbit.createComment({ cid: post.cid });
+            await comment.update();
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
+
+            expect(listenerCountOfSub()).to.equal(baseListenerCount + 1);
+
+            await comment.stop();
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            expect(listenerCountOfSub()).to.equal(baseListenerCount);
+            await sub.stop();
+        });
+
+        itIfRpc(`Updating a comment over RPC should not populate _updatingSubplebbits`, async () => {
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const postCid = sub.posts.pages.hot.comments[0].cid;
+            const comment = await plebbit.createComment({ cid: postCid });
+
+            expect(Object.keys(plebbit._updatingSubplebbits)).to.deep.equal([]);
+            await comment.update();
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
+
+            expect(Object.keys(plebbit._updatingSubplebbits)).to.deep.equal([]);
+
+            await comment.stop();
+            expect(Object.keys(plebbit._updatingSubplebbits)).to.deep.equal([]);
         });
     });
 });
