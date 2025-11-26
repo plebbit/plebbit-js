@@ -1,4 +1,10 @@
-import { itSkipIfRpc, mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
+import {
+    itSkipIfRpc,
+    mockPlebbit,
+    resolveWhenConditionIsTrue,
+    publishRandomPost,
+    createSubWithNoChallenge
+} from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { describe } from "vitest";
 
@@ -94,5 +100,32 @@ describe.concurrent(`plebbit._startedSubplebbits`, () => {
         await updatingSubplebbit.delete();
 
         expect(plebbit._updatingSubplebbits[sub.address]).to.not.exist;
+    });
+
+    it(`Publishing/updating via comment should not stop a started subplebbit`, async () => {
+        const startedSub = await createSubWithNoChallenge({}, plebbit);
+        await startedSub.start();
+        expect(plebbit._startedSubplebbits[startedSub.address]).to.exist;
+
+        const post = await publishRandomPost(startedSub.address, plebbit);
+        const comment = await plebbit.createComment({ cid: post.cid });
+        await comment.update();
+        await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
+        expect(plebbit._startedSubplebbits[startedSub.address]).to.exist;
+        expect(plebbit._updatingSubplebbits[startedSub.address]).to.be.undefined;
+        expect(plebbit._updatingComments[comment.cid]).to.exist;
+
+        await comment.stop();
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        expect(plebbit._startedSubplebbits[startedSub.address]).to.exist;
+        expect(plebbit._updatingSubplebbits[startedSub.address]).to.be.undefined;
+        expect(plebbit._updatingComments[comment.cid]).to.not.exist;
+
+        expect(startedSub.state).to.equal("started");
+        await startedSub.stop();
+        expect(plebbit._startedSubplebbits[startedSub.address]).to.not.exist;
+        expect(plebbit._updatingSubplebbits[startedSub.address]).to.be.undefined;
+        expect(plebbit._updatingComments[comment.cid]).to.not.exist;
     });
 });
