@@ -420,6 +420,131 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         expect(cids).to.include(parent.cid, "parent comment should be enqueued because replies JSON embeds outdated child updatedAt");
     });
 
+    it("includes post ancestor when childCount is stale after a child was removed", async () => {
+        const baseTimestamp = currentTimestamp();
+        const post = insertComment({ timestamp: baseTimestamp, overrides: { insertedAt: baseTimestamp } });
+
+        const reply = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { insertedAt: baseTimestamp + 1 }
+        });
+
+        const child = insertComment({
+            depth: 2,
+            parentCid: reply.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { insertedAt: baseTimestamp + 2 }
+        });
+
+        const childInitialUpdatedAt = baseTimestamp + 3;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: childInitialUpdatedAt,
+            insertedAt: childInitialUpdatedAt
+        });
+
+        const postUpdateInsertedAt = baseTimestamp + 5;
+        insertCommentUpdate(post, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: postUpdateInsertedAt,
+            insertedAt: postUpdateInsertedAt,
+            childCount: 1,
+            lastChildCid: reply.cid,
+            replyCount: 1
+        });
+
+        const replyUpdateInsertedAt = baseTimestamp + 6;
+        insertCommentUpdate(reply, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: child.cid,
+            updatedAt: replyUpdateInsertedAt,
+            insertedAt: replyUpdateInsertedAt
+        });
+
+        // Child gets removed later, but parent/post are not updated afterwards
+        const childRemovalUpdatedAt = baseTimestamp + 10;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: childRemovalUpdatedAt,
+            insertedAt: childRemovalUpdatedAt,
+            removed: 1
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(reply.cid, "reply should be enqueued because its childCount is stale after removal");
+        expect(cids).to.include(post.cid, "post should be enqueued when descendant childCount becomes stale");
+    });
+
+    it("includes post ancestor when lastChildCid is stale but childCount is correct", async () => {
+        const baseTimestamp = currentTimestamp();
+        const post = insertComment({ timestamp: baseTimestamp, overrides: { insertedAt: baseTimestamp } });
+
+        const reply = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { insertedAt: baseTimestamp + 1 }
+        });
+
+        const olderChild = insertComment({
+            depth: 2,
+            parentCid: reply.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { insertedAt: baseTimestamp + 2 }
+        });
+        insertCommentUpdate(olderChild, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: baseTimestamp + 3,
+            insertedAt: baseTimestamp + 3
+        });
+
+        const newerChild = insertComment({
+            depth: 2,
+            parentCid: reply.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 4,
+            overrides: { insertedAt: baseTimestamp + 4 }
+        });
+        insertCommentUpdate(newerChild, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: baseTimestamp + 5,
+            insertedAt: baseTimestamp + 5
+        });
+
+        const postUpdateInsertedAt = baseTimestamp + 6;
+        insertCommentUpdate(post, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: postUpdateInsertedAt,
+            insertedAt: postUpdateInsertedAt,
+            childCount: 1,
+            lastChildCid: reply.cid,
+            replyCount: 1
+        });
+
+        const replyUpdateInsertedAt = baseTimestamp + 7;
+        insertCommentUpdate(reply, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 2,
+            childCount: 2,
+            // Intentionally stale lastChildCid (should be newerChild)
+            lastChildCid: olderChild.cid,
+            updatedAt: replyUpdateInsertedAt,
+            insertedAt: replyUpdateInsertedAt
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(reply.cid, "reply should be enqueued because its lastChildCid is stale");
+        expect(cids).to.include(post.cid, "post should be enqueued when descendant lastChildCid is stale");
+    });
+
     it("requeues parent when replies JSON references a child whose comment update row was purged", async () => {
         const post = insertComment();
         insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, replyCount: 1, childCount: 1, lastChildCid: post.cid });
@@ -693,5 +818,95 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
             parent.cid,
             "parent comment should be enqueued because replies include a pending approval child that is filtered out of counts"
         );
+    });
+
+    it("includes post ancestor when replies JSON is stale even if all updates were already published", async () => {
+        const baseTimestamp = currentTimestamp();
+        const post = insertComment({ timestamp: baseTimestamp, overrides: { insertedAt: baseTimestamp } });
+
+        const reply = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { insertedAt: baseTimestamp + 1 }
+        });
+        const child = insertComment({
+            depth: 2,
+            parentCid: reply.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { insertedAt: baseTimestamp + 2 }
+        });
+
+        const childInitialUpdatedAt = baseTimestamp + 3;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: childInitialUpdatedAt,
+            insertedAt: childInitialUpdatedAt
+        });
+
+        const postUpdateInsertedAt = baseTimestamp + 5;
+        insertCommentUpdate(post, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: postUpdateInsertedAt,
+            insertedAt: postUpdateInsertedAt,
+            childCount: 1,
+            lastChildCid: reply.cid,
+            replyCount: 1
+        });
+
+        const repliesSnapshot = JSON.stringify({
+            pages: {
+                best: {
+                    comments: [
+                        {
+                            comment: {
+                                cid: child.cid,
+                                parentCid: reply.cid,
+                                postCid: post.cid,
+                                depth: child.depth,
+                                subplebbitAddress
+                            },
+                            commentUpdate: {
+                                cid: child.cid,
+                                replyCount: 0,
+                                childCount: 0,
+                                updatedAt: childInitialUpdatedAt,
+                                protocolVersion,
+                                author: {
+                                    subplebbit: {
+                                        firstCommentTimestamp: child.timestamp,
+                                        lastCommentCid: child.cid
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+
+        const replyUpdateInsertedAt = baseTimestamp + 6;
+        insertCommentUpdate(reply, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: child.cid,
+            replies: repliesSnapshot,
+            updatedAt: replyUpdateInsertedAt,
+            insertedAt: replyUpdateInsertedAt
+        });
+
+        const childNewUpdatedAt = childInitialUpdatedAt + 10;
+        insertCommentUpdate(child, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: childNewUpdatedAt,
+            insertedAt: childNewUpdatedAt
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(reply.cid, "reply should be enqueued because its replies JSON is stale");
+        expect(cids).to.include(post.cid, "post should also be enqueued when descendant replies JSON becomes stale");
     });
 });

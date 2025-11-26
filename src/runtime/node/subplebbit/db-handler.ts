@@ -1166,14 +1166,6 @@ export class DbHandler {
                     OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.insertedAt)
                   )
             ),
-            authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM direct_updates),
-            parent_chain AS (
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
-                UNION
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
-            ),
             child_counts AS (
                 SELECT 
                     c.parentCid AS cid,
@@ -1257,13 +1249,24 @@ export class DbHandler {
                   )
                 GROUP BY r.parentCid
             ),
+            base_updates AS (
+                SELECT * FROM direct_updates
+                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_child_counts scc ON c.cid = scc.cid
+                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_last_child_cids slc ON c.cid = slc.cid
+                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_replies_json srj ON c.cid = srj.cid
+            ),
+            authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM base_updates),
+            parent_chain AS (
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN base_updates bu ON p.cid = bu.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
+                UNION
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
+            ),
             all_updates AS (
-                SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
+                SELECT cid FROM base_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
                 WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                UNION SELECT cid FROM stale_child_counts
-                UNION SELECT cid FROM stale_last_child_cids
-                UNION SELECT cid FROM stale_replies_json
             )
             SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
             WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
