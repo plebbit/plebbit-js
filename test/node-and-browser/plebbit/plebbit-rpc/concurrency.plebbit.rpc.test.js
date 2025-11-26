@@ -1,19 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import pTimeout from "p-timeout";
 import signers from "../../../fixtures/signers.js";
-import * as remeda from "remeda";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     createSubWithNoChallenge,
     publishRandomPost,
     publishRandomReply,
     publishWithExpectedResult,
-    generateMockComment,
-    generateMockVote,
+    
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitInstancePages
 } from "../../../../dist/node/test/test-util.js";
-import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;
 const moderationSubplebbitAddress = signers[7].address;
@@ -57,7 +54,7 @@ const waitForSubscriptionEvent = (rpcClient, subscriptionId, eventName, trigger)
 
 // TODO here add an after statement to reset rpc settings
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
-    describe.concurrent.only(`RPC comment moderation regression - removing post (${config.name})`, () => {
+    describe.concurrent(`RPC comment moderation regression - removing post (${config.name})`, () => {
         let plebbit;
         let postToRemove;
 
@@ -102,7 +99,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         });
     });
 
-    describe.concurrent.only(`RPC comment moderation regression - removing reply (${config.name})`, () => {
+    describe.concurrent(`RPC comment moderation regression - removing reply (${config.name})`, () => {
         let plebbit;
         let post;
         let replyToBeRemoved;
@@ -132,6 +129,64 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             expect(replyToBeRemoved.removed).to.be.true;
             expect(replyToBeRemoved.raw.commentUpdate.removed).to.be.true;
         });
+    });
+
+    describe.concurrent(`RPC comment update survives sibling unsubscribe (${config.name})`, () => {
+        it("keeps updates flowing after a sibling calls comment.stop()", async () => {
+            const plebbitA = await config.plebbitInstancePromise();
+            const plebbitB = await config.plebbitInstancePromise();
+
+            try {
+                const post = await publishRandomPost(moderationSubplebbitAddress, plebbitB);
+                const commentA = await plebbitA.createComment({
+                    cid: post.cid,
+                    subplebbitAddress: post.subplebbitAddress
+                });
+                const commentB = await plebbitB.createComment({
+                    cid: post.cid,
+                    subplebbitAddress: post.subplebbitAddress
+                });
+
+                await commentA.update(); // starts shared updater
+                commentB.update(); // attach B to the same updater
+
+                // Force A to disconnect its RPC subscriptions before B has confirmed any update
+                await plebbitA.destroy();
+
+                await pTimeout(
+                    resolveWhenConditionIsTrue({
+                        toUpdate: commentB,
+                        predicate: () => typeof commentB.updatedAt === "number"
+                    }),
+                    { milliseconds: 45000, message: "Comment B never reached initial updatedAt after sibling disconnect (regression)" }
+                );
+
+                const removeEdit = await plebbitB.createCommentModeration({
+                    subplebbitAddress: post.subplebbitAddress,
+                    commentCid: post.cid,
+                    commentModeration: { reason: "keep updates after sibling teardown", removed: true },
+                    signer: modSigner
+                });
+                await publishWithExpectedResult(removeEdit, true);
+
+                await pTimeout(
+                    resolveWhenConditionIsTrue({
+                        toUpdate: commentB,
+                        predicate: () => commentB.removed === true
+                    }),
+                    {
+                        milliseconds: 30000,
+                        message: "Remaining subscriber did not receive removal update after sibling stop (regression)"
+                    }
+                );
+
+                expect(commentB.removed).to.be.true;
+                expect(commentB.raw.commentUpdate?.removed).to.be.true;
+            } finally {
+                if (!plebbitA.destroyed) await plebbitA.destroy();
+                if (!plebbitB.destroyed) await plebbitB.destroy();
+            }
+        }, 80000);
     });
 
     describe.concurrent(`plebbit RPC concurrency - ${config.name}`, () => {
