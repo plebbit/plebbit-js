@@ -2,16 +2,10 @@
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
-import {
-    startSubplebbits,
-    mockRpcServerPlebbit,
-    mockRpcServerForTests,
-    mockPlebbitNoDataPathWithOnlyKuboClient
-} from "../../dist/node/test/test-util.js";
+import { startSubplebbits, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
 
-import PlebbitWsServer from "../../dist/node/rpc/src/index.js";
 import signers from "../fixtures/signers.js";
 import http from "http";
 import path from "path";
@@ -21,6 +15,7 @@ import url from "url";
 import querystring from "querystring";
 
 import fs from "fs";
+import startPlebbitWebSocketServers from "./plebbit-ws-server.js";
 
 process.env["PLEBBIT_CONFIGS"] = process.env["PLEBBIT_CONFIGS"] || "local-kubo-rpc";
 process.env["DEBUG"] = process.env["DEBUG"] || "*";
@@ -697,32 +692,9 @@ const setUpMockPubsubServer = async () => {
 
     await import("./pubsub-mock-server.js");
 
-    if (process.env["START_RPC_SERVER"] === "1") {
-        // run RPC server here
-        // This server will create subs and interact with them
-        const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
-
-        plebbitWebSocketServer._initPlebbit(await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") }));
-        plebbitWebSocketServer._createPlebbitInstanceFromSetSettings = async (newOptions) =>
-            mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server"), ...newOptions });
-        mockRpcServerForTests(plebbitWebSocketServer);
-
-        // This server will fetch subs remotely
-
-        const remotePort = rpcPort + 1;
-        const plebbitWebSocketRemoteServer = await PlebbitWsServer.PlebbitWsServer({
-            port: remotePort,
-            authKey: rpcAuthKey
-        });
-        plebbitWebSocketRemoteServer._initPlebbit(
-            await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server-remote") })
-        );
-        plebbitWebSocketRemoteServer._createPlebbitInstanceFromSetSettings = async (newOptions) =>
-            mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server"), ...newOptions });
-
-        mockRpcServerForTests(plebbitWebSocketRemoteServer);
-
-        console.log(`test server plebbit wss listening on port ${rpcPort} and ${remotePort}`);
+    const shouldStartRpcServer = process.env["START_RPC_SERVER"] === "1" || process.env["start_rpc_server"] === "1";
+    if (shouldStartRpcServer) {
+        await startPlebbitWebSocketServers({ rpcPort, rpcAuthKey });
     }
 
     if (process.env["NO_SUBPLEBBITS"] !== "1") {
@@ -773,20 +745,17 @@ const setUpMockPubsubServer = async () => {
                     throw new Error("commentDepth query parameter is required");
 
                 const commentDepth = Number(depthParam);
-                if (!Number.isInteger(commentDepth) || commentDepth < 0)
-                    throw new Error("commentDepth must be a non-negative integer");
+                if (!Number.isInteger(commentDepth) || commentDepth < 0) throw new Error("commentDepth must be a non-negative integer");
 
                 const normalizedAddress = subAddressParam.trim();
-                const [, subInstance] =
-                    Object.entries(subs).find(([, sub]) => sub?.address === normalizedAddress) || [];
+                const [, subInstance] = Object.entries(subs).find(([, sub]) => sub?.address === normalizedAddress) || [];
                 if (!subInstance) throw new Error(`Subplebbit ${normalizedAddress} not found`);
 
                 const dbHandler = subInstance._dbHandler;
                 if (!dbHandler) throw new Error(`dbHandler is not ready for ${normalizedAddress}`);
 
                 const comment = dbHandler.queryFirstCommentWithDepth(commentDepth);
-                if (!comment)
-                    throw new Error(`No comment found with depth ${commentDepth} or lower for ${normalizedAddress}`);
+                if (!comment) throw new Error(`No comment found with depth ${commentDepth} or lower for ${normalizedAddress}`);
 
                 return sendJson(200, comment);
             }

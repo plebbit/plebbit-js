@@ -29,6 +29,18 @@
             }
         },
         {
+            "type": "node",
+            "request": "launch",
+            "runtimeVersion": "20",
+            "name": "Launch Plebbit RPC WS Server",
+            "skipFiles": ["<node_internals>/**"],
+            "program": "${workspaceFolder}/test/server/plebbit-ws-server.js",
+            "console": "integratedTerminal",
+            "env": {
+                "DEBUG": "plebbit*, -plebbit*trace"
+            }
+        },
+        {
             "args": [
                 "run",
                 "--config",
@@ -49,14 +61,7 @@
             }
         },
         {
-            "args": [
-                "run",
-                "--config",
-                "${workspaceFolder}/config/vitest.launch.config.js",
-                "--bail",
-                "0",
-                "${file}"
-            ],
+            "args": ["run", "--config", "${workspaceFolder}/config/vitest.launch.config.js", "--bail", "1", "${file}"],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Debug current file (remote)",
             "console": "integratedTerminal",
@@ -65,11 +70,7 @@
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
             "runtimeArgs": ["--max-old-space-size=18192"],
-            "skipFiles": [
-                "<node_internals>/**",
-                "**/node_modules/**",
-                "${workspaceFolder}/dist/browser/**",
-            ],
+            "skipFiles": ["<node_internals>/**", "**/node_modules/**", "${workspaceFolder}/dist/browser/**"],
             "type": "node",
             "env": {
                 "DEBUG": "plebbit*, -plebbit*trace",
@@ -77,14 +78,7 @@
             }
         },
         {
-            "args": [
-                "run",
-                "--config",
-                "${workspaceFolder}/config/vitest.launch.config.js",
-                "--bail",
-                "1",
-                "${file}"
-            ],
+            "args": ["run", "--config", "${workspaceFolder}/config/vitest.launch.config.js", "--bail", "1", "${file}"],
             "internalConsoleOptions": "openOnSessionStart",
             "name": "Debug current file (local)",
             "console": "integratedTerminal",
@@ -93,11 +87,7 @@
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
             "runtimeArgs": ["--max-old-space-size=18192"],
-            "skipFiles": [
-                "<node_internals>/**",
-                "**/node_modules/**",
-                "${workspaceFolder}/dist/browser/**",
-            ],
+            "skipFiles": ["<node_internals>/**", "**/node_modules/**", "${workspaceFolder}/dist/browser/**"],
             "type": "node",
             "env": {
                 "DEBUG": "plebbit-js:*, -plebbit*trace",
@@ -111,6 +101,8 @@
                 "${workspaceFolder}/config/vitest.launch.config.js",
                 "--bail",
                 "1",
+                "--testTimeout",
+                "0",
                 "${file}"
             ],
             "internalConsoleOptions": "openOnSessionStart",
@@ -120,11 +112,7 @@
             "request": "launch",
             "outFiles": [],
             "runtimeArgs": ["--max-old-space-size=18192"],
-            "skipFiles": [
-                "<node_internals>/**",
-                "**/node_modules/**",
-                "${workspaceFolder}/dist/browser/**",
-            ],
+            "skipFiles": ["<node_internals>/**", "**/node_modules/**", "${workspaceFolder}/dist/browser/**"],
             "type": "node",
             "env": {
                 "DEBUG": "plebbit-js:*",
@@ -152,11 +140,7 @@
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
             "runtimeArgs": ["--max-old-space-size=18192", "--trace-warnings", "--unhandled-rejections=strict"],
-            "skipFiles": [
-                "<node_internals>/**",
-                "**/node_modules/**",
-                "${workspaceFolder}/dist/browser/**",
-            ],
+            "skipFiles": ["<node_internals>/**", "**/node_modules/**", "${workspaceFolder}/dist/browser/**"],
             "type": "node",
             "env": {
                 "DEBUG": "plebbit-js:*, -plebbit-js*trace",
@@ -180,11 +164,7 @@
             "outFiles": [],
             "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
             "runtimeArgs": ["--max-old-space-size=18192", "--trace-warnings", "--unhandled-rejections=strict"],
-            "skipFiles": [
-                "<node_internals>/**",
-                "**/node_modules/**",
-                "${workspaceFolder}/dist/browser/**",
-            ],
+            "skipFiles": ["<node_internals>/**", "**/node_modules/**", "${workspaceFolder}/dist/browser/**"],
             "type": "node",
             "env": {
                 "DEBUG": "*",
