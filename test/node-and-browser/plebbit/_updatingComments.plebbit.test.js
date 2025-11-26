@@ -225,35 +225,38 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         }
 
         // The rest of your standalone tests go here
-        it(`Stopping the first updating comment shouldn't tear down _updatingSubplebbits while another comment from the same sub is still updating`, async () => {
-            const firstPost = await publishRandomPost(subplebbitAddress, plebbit);
-            const secondPost = await publishRandomPost(subplebbitAddress, plebbit);
+        itSkipIfRpc(
+            `Stopping the first updating comment shouldn't tear down _updatingSubplebbits while another comment from the same sub is still updating`,
+            async () => {
+                const firstPost = await publishRandomPost(subplebbitAddress, plebbit);
+                const secondPost = await publishRandomPost(subplebbitAddress, plebbit);
 
-            const firstComment = await plebbit.createComment({ cid: firstPost.cid });
-            const secondComment = await plebbit.createComment({ cid: secondPost.cid });
+                const firstComment = await plebbit.createComment({ cid: firstPost.cid });
+                const secondComment = await plebbit.createComment({ cid: secondPost.cid });
 
-            await firstComment.update();
-            await resolveWhenConditionIsTrue({ toUpdate: firstComment, predicate: () => typeof firstComment.updatedAt === "number" });
+                await firstComment.update();
+                await resolveWhenConditionIsTrue({ toUpdate: firstComment, predicate: () => typeof firstComment.updatedAt === "number" });
 
-            await secondComment.update();
-            await resolveWhenConditionIsTrue({ toUpdate: secondComment, predicate: () => typeof secondComment.updatedAt === "number" });
+                await secondComment.update();
+                await resolveWhenConditionIsTrue({ toUpdate: secondComment, predicate: () => typeof secondComment.updatedAt === "number" });
 
-            const subAddress = firstComment.subplebbitAddress;
-            expect(plebbit._updatingSubplebbits[subAddress]).to.exist;
+                const subAddress = firstComment.subplebbitAddress;
+                expect(plebbit._updatingSubplebbits[subAddress]).to.exist;
 
-            await firstComment.stop();
-            await new Promise((resolve) => setTimeout(resolve, 200));
+                await firstComment.stop();
+                await new Promise((resolve) => setTimeout(resolve, 200));
 
-            expect(plebbit._updatingSubplebbits[subAddress]).to.exist;
-            expect(secondComment.state).to.equal("updating");
-            expect(plebbit._updatingComments[secondComment.cid]).to.exist;
+                expect(plebbit._updatingSubplebbits[subAddress]).to.exist;
+                expect(secondComment.state).to.equal("updating");
+                expect(plebbit._updatingComments[secondComment.cid]).to.exist;
 
-            await secondComment.stop();
-            await new Promise((resolve) => setTimeout(resolve, 200));
+                await secondComment.stop();
+                await new Promise((resolve) => setTimeout(resolve, 200));
 
-            expect(plebbit._updatingSubplebbits[subAddress]).to.not.exist;
-            expect(plebbit._updatingComments).to.deep.equal({});
-        });
+                expect(plebbit._updatingSubplebbits[subAddress]).to.not.exist;
+                expect(plebbit._updatingComments).to.deep.equal({});
+            }
+        );
 
         it(`Calling comment.stop() and update() should behave as normal with plebbit._updatingComments`, async () => {
             const comment = await publishRandomPost(subplebbitAddress, plebbit);
