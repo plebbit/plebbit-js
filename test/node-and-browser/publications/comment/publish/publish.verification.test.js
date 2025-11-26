@@ -14,9 +14,10 @@ import {
 } from "../../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../../dist/node/errors.js";
+import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
-describe.concurrent(`Client side verification`, async () => {
+describe.sequential(`Client side verification`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();

@@ -9,11 +9,14 @@ import {
     resolveWhenConditionIsTrue,
     getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPagesToFindCommentInParentPagesInstance,
-    iterateThroughPageCidToFindComment
+    iterateThroughPageCidToFindComment,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    getCommentWithCommentUpdateProps
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { describe, it } from "vitest";
+import remeda from "remeda";
 
 const subplebbitAddress = signers[7].address;
 const roles = [
@@ -22,13 +25,15 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
+// TODO need to replicate this env in concurrency.plebbit.rpc.test.js to reproduce the bug
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Removing post - ${config.name}`, async () => {
         let plebbit, postToRemove, postReply;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            postToRemove = await publishRandomPost(subplebbitAddress, plebbit);
-            postReply = await publishRandomReply(postToRemove, plebbit);
+            postToRemove = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post to be removed" });
+            postToRemove.on("updatingstatechange", console.log);
+            postReply = await publishRandomReply(postToRemove, plebbit, { content: "reply under removed post" });
             await postToRemove.update();
         });
         after(async () => {
@@ -95,7 +100,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Author of post can't remove it`, async () => {
-            const postToBeRemoved = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const postToBeRemoved = await publishRandomPost(subplebbitAddress, plebbit);
             const removeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToBeRemoved.subplebbitAddress,
                 commentCid: postToBeRemoved.cid,
@@ -152,8 +157,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
-            modPost.update();
+            modPost = await publishRandomPost(subplebbitAddress, plebbit, {
+                signer: roles[2].signer,
+                content: "mod removing their own post"
+            });
+            await modPost.update();
         });
 
         after(async () => {
@@ -184,10 +192,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            post = await publishRandomPost(subplebbitAddress, plebbit);
-            replyToBeRemoved = await publishRandomReply(post, plebbit);
-            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved, plebbit);
-            await Promise.all([replyToBeRemoved.update(), post.update(), new Promise((resolve) => post.once("update", resolve))]);
+            post = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post with removed reply under it" });
+            replyToBeRemoved = await publishRandomReply(post, plebbit, { content: "reply to be removed" });
+            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved, plebbit, { content: "reply under removed reply" });
+            await Promise.all([
+                replyToBeRemoved.update(),
+                post.update(),
+                resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" })
+            ]);
         });
 
         after(async () => {
