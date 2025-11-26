@@ -166,10 +166,10 @@ export class PublicationClientsManager extends PlebbitClientsManager {
     async _createSubInstanceWithStateTranslation() {
         // basically in Publication or comment we need to be fetching the subplebbit record
         // this function will be for translating between the states of the subplebbit and its clients to publication/comment states
-        const sub =
+        const directSubInstance =
             this._plebbit._updatingSubplebbits[this._publication.subplebbitAddress] ||
-            this._plebbit._startedSubplebbits[this._publication.subplebbitAddress] ||
-            (await this._plebbit.createSubplebbit({ address: this._publication.subplebbitAddress }));
+            this._plebbit._startedSubplebbits[this._publication.subplebbitAddress];
+        const sub = directSubInstance || (await this._plebbit.createSubplebbit({ address: this._publication.subplebbitAddress }));
 
         this._subplebbitForUpdating = {
             subplebbit: sub,
@@ -262,6 +262,10 @@ export class PublicationClientsManager extends PlebbitClientsManager {
         this._subplebbitForUpdating.subplebbit.on("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
 
         this._subplebbitForUpdating.subplebbit.on("error", this._subplebbitForUpdating.error);
+
+        if (directSubInstance) {
+            directSubInstance._numOfListenersForUpdatingInstance++;
+        }
         return this._subplebbitForUpdating!;
     }
 
@@ -322,7 +326,15 @@ export class PublicationClientsManager extends PlebbitClientsManager {
         if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
             // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
             await this._subplebbitForUpdating.subplebbit.stop();
-
+        else {
+            // _subplebbitForUpdating is actually plebbit._updatingSubplebbits or plebbit._startedSubplebbits
+            this._subplebbitForUpdating.subplebbit._numOfListenersForUpdatingInstance--;
+            if (
+                this._subplebbitForUpdating.subplebbit._numOfListenersForUpdatingInstance <= 0 &&
+                this._subplebbitForUpdating.subplebbit.state === "updating"
+            )
+                await this._subplebbitForUpdating.subplebbit.stop();
+        }
         this._subplebbitForUpdating = undefined;
     }
 
