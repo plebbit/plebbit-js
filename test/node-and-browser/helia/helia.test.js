@@ -8,6 +8,7 @@ import {
     addStringToIpfs
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
+import { describe, it } from "vitest";
 const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub is connected to a plebbit instance whose pubsub is not mocked
 
 // should connect to a kubo node and exchange pubsub messages with it
@@ -39,12 +40,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
 
         it(`Can fetch Comment IPFS`, async () => {
             const commentCid = publishedPost.cid;
+            expect(commentCid).to.be.a("string");
             const comment = await plebbit.getComment(commentCid);
             expect(comment.signature).to.be.a("object");
         });
 
         it(`Can fetch comment update`, async () => {
             const commentCid = publishedPost.cid;
+            expect(commentCid).to.be.a("string");
             const comment = await plebbit.getComment(commentCid);
             expect(comment.signature).to.be.a("object");
 
