@@ -16,6 +16,7 @@ import {
     generateMockVote,
     generateMockComment,
     itSkipIfRpc,
+    describeSkipIfRpc,
     createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
@@ -182,7 +183,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             await forcePagesToUsePageCidsOnly({
                 subplebbit,
                 subplebbitPostsCommentProps: { signer: modSigner }
-            }); // the goal of this is to force the subplebbit to have all pages and page.cids
+            }); // the goal of this is to force the subplebbit.posts to have all pages and page.cids
 
             expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
 
@@ -201,7 +202,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         });
 
         if (commentInPendingApprovalDepth > 0)
-            it.sequential("A pending approval comment will not show up in parentComment.replies", async () => {
+            itSkipIfRpc.sequential("A pending approval comment will not show up in parentComment.replies", async () => {
                 const parentComment = await plebbit.getComment(commentInPendingApproval.parentCid);
                 await parentComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
@@ -240,7 +241,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 await parentComment.stop();
             });
         if (commentInPendingApprovalDepth > 0)
-            it.sequential(`A pending approval comment will not show up in flat pages of post`, async () => {
+            itSkipIfRpc.sequential(`A pending approval comment will not show up in flat pages of post`, async () => {
                 const postComment = await plebbit.getComment(commentInPendingApproval.postCid);
                 await postComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
