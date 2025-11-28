@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import {
     createSubWithNoChallenge,
-    describeSkipIfRpc,
     forcePagesToUsePageCidsOnly,
     getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPageCidToFindComment,

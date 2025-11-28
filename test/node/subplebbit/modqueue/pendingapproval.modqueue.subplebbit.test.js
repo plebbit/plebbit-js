@@ -16,7 +16,6 @@ import {
     generateMockVote,
     generateMockComment,
     itSkipIfRpc,
-    describeSkipIfRpc,
     createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";

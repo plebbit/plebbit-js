@@ -3,7 +3,6 @@ import {
     mockPlebbit,
     resolveWhenConditionIsTrue,
     publishToModQueueWithDepth,
-    describeSkipIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
