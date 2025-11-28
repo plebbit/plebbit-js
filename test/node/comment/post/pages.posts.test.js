@@ -5,7 +5,6 @@ import {
     forcePagesToUsePageCidsOnly,
     getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPageCidToFindComment,
-    iterateThroughPagesToFindCommentInParentPagesInstance,
     loadAllPagesBySortName,
     mockPlebbit,
     publishRandomPost,
@@ -20,7 +19,7 @@ import { describe, it } from "vitest";
 
 const plebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
-describeSkipIfRpc("local subplebbit.posts pagination coverage", () => {
+describe("local subplebbit.posts pagination coverage", () => {
     plebbitLoadingConfigs.forEach((plebbitConfig) => {
         describe.sequential(`with ${plebbitConfig.name}`, () => {
             let plebbit, subplebbit, newPost, cleanup;
