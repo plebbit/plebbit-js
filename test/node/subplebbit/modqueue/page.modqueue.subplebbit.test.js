@@ -31,7 +31,7 @@ const setupSubplebbitWithModerator = async () => {
     return { plebbit, subplebbit, modSigner };
 };
 
-describeSkipIfRpc.concurrent("Modqueue depths", () => {
+describe.concurrent("Modqueue depths", () => {
     // should be a for loop that iterates over all depths
     for (const depth of depthsToTest) {
         it(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
