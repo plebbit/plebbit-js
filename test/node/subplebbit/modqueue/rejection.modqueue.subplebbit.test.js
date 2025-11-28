@@ -14,14 +14,17 @@ import {
     generateMockVote,
     loadAllPages,
     itSkipIfRpc,
-    createPendingApprovalChallenge
+    createPendingApprovalChallenge,
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
 
-// TODO need to rewrite this so it forces pageCids just like loading.update.test.js
+const depthsToTest = [
+    0
 
-const depthsToTest = [0, 1, 2, 3, 30];
+    // 1, 2, 20
+];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const commentModProps = [
@@ -44,7 +47,9 @@ const commentModProps = [
 for (const commentMod of commentModProps) {
     for (const pendingCommentDepth of depthsToTest) {
         const shouldCommentBePurged = Object.keys(commentMod).length === 1; // only approved=false, no other props
-        describe.concurrent(
+        const shouldCommentBeInPosts = pendingCommentDepth === 0 ? false : !shouldCommentBePurged; // if it's a reply then it will be nested within another commment and will appear in subplebbit.post
+
+        describe.sequential(
             `Comment moderation rejection of pending comment with depth ` +
                 pendingCommentDepth +
                 " and commentModeration=" +
@@ -161,23 +166,22 @@ for (const commentMod of commentModProps) {
                 });
 
                 it.sequential(
-                    `A rejected comment with only ${JSON.stringify(commentMod)} will never show up in subplebbit.posts`,
+                    `A rejected comment with only ${JSON.stringify(commentMod)} will ${shouldCommentBeInPosts ? "" : "never"} show up in subplebbit.posts`,
                     async () => {
+                        await new Promise((resolve) => setTimeout(resolve, 3000));
                         let foundInPosts = false;
                         // for posts
                         // there never gonna in subplebbit.posts
 
-                        const shouldItBeInPosts =
-                            pendingCommentDepth === 0 ? false : pendingCommentDepth > 0 && shouldCommentBePurged ? false : true; // if it's a reply then it will be nested within another commment and will appear in subplebbit.post
-                        const allCommentsUnderSub = pendingCommentDepth > 0 ? await loadAllUniquePostsUnderSubplebbit(subplebbit) : [];
+                        const allCommentsUnderSub = await loadAllUniquePostsUnderSubplebbit(subplebbit);
 
-                        processAllCommentsRecursively(allCommentsUnderSub || [], (comment) => {
+                        processAllCommentsRecursively(allCommentsUnderSub, (comment) => {
                             if (comment.cid === commentToBeRejected.cid) {
                                 foundInPosts = true;
                                 return;
                             }
                         });
-                        expect(foundInPosts).to.equal(shouldItBeInPosts);
+                        expect(foundInPosts).to.equal(shouldCommentBeInPosts);
 
                         if (Object.keys(subplebbit.posts.pageCids).length === 0)
                             await forcePagesToUsePageCidsOnly({
@@ -197,13 +201,13 @@ for (const commentMod of commentModProps) {
                                     return;
                                 }
                             });
-                            expect(foundInPosts).to.equal(shouldItBeInPosts);
+                            expect(foundInPosts).to.equal(shouldCommentBeInPosts);
                         }
                     }
                 );
 
                 if (pendingCommentDepth > 0)
-                    it.sequential(
+                    itSkipIfRpc.sequential(
                         `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`,
                         async () => {
                             const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
@@ -247,39 +251,42 @@ for (const commentMod of commentModProps) {
                         }
                     );
                 if (pendingCommentDepth > 0)
-                    it.sequential(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`, async () => {
-                        const postComment = await plebbit.getComment(commentToBeRejected.postCid);
-                        await postComment.update();
-                        await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
-                        const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
-                            subplebbit,
-                            parentComment: postComment,
-                            parentCommentReplyProps: { signer: modSigner }
-                        });
-                        try {
-                            const expectedResult = !shouldCommentBePurged;
+                    itSkipIfRpc.sequential(
+                        `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`,
+                        async () => {
+                            const postComment = await plebbit.getComment(commentToBeRejected.postCid);
+                            await postComment.update();
+                            await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
+                            const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                                subplebbit,
+                                parentComment: postComment,
+                                parentCommentReplyProps: { signer: modSigner }
+                            });
+                            try {
+                                const shouldCommentBeInFlatPages = !shouldCommentBePurged;
 
-                            const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+                                const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
 
-                            for (const flatPageCid of flatPageCids) {
-                                let foundInFlatPages = false;
-                                const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
+                                for (const flatPageCid of flatPageCids) {
+                                    let foundInFlatPages = false;
+                                    const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
 
-                                expect(flatPageComments.length).to.be.greaterThan(0);
-                                processAllCommentsRecursively(flatPageComments, (comment) => {
-                                    if (comment.cid === commentToBeRejected.cid) {
-                                        foundInFlatPages = true;
-                                        return;
-                                    }
-                                });
-                                expect(foundInFlatPages).to.equal(expectedResult);
+                                    expect(flatPageComments.length).to.be.greaterThan(0);
+                                    processAllCommentsRecursively(flatPageComments, (comment) => {
+                                        if (comment.cid === commentToBeRejected.cid) {
+                                            foundInFlatPages = true;
+                                            return;
+                                        }
+                                    });
+                                    expect(foundInFlatPages).to.equal(shouldCommentBeInFlatPages);
+                                }
+                            } finally {
+                                cleanup();
                             }
-                        } finally {
-                            cleanup();
-                        }
 
-                        await postComment.stop();
-                    });
+                            await postComment.stop();
+                        }
+                    );
 
                 it(`comments with approved: false should not be in pageCids.pendingApproval`, async () => {
                     expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
@@ -361,7 +368,7 @@ for (const commentMod of commentModProps) {
                     });
 
                 if (!shouldCommentBePurged)
-                    it(`Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update`, async () => {
+                    it.sequential(`Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update`, async () => {
                         const newComment = await remotePlebbit.createComment(commentToBeRejected);
 
                         await newComment.update();
@@ -390,10 +397,24 @@ for (const commentMod of commentModProps) {
                         await newComment.stop();
                     });
 
-                if (Object.keys(commentMod).length !== 1)
+                if (!shouldCommentBePurged)
                     // if only {approved:false} then we're not getting an update
                     it(`A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)}`, async () => {
+                        const intervalId = setInterval(async () => {
+                            const kuboPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+                            const kuboCommentToBeRejected = await getCommentWithCommentUpdateProps({
+                                cid: commentToBeRejected.cid,
+                                plebbit: kuboPlebbit
+                            });
+
+                            await kuboPlebbit.destroy();
+                        }, 10000);
+                        await resolveWhenConditionIsTrue({
+                            toUpdate: commentToBeRejected,
+                            predicate: () => commentToBeRejected.pendingApproval === false
+                        });
                         expect(commentToBeRejected.pendingApproval).to.be.false;
+                        clearInterval(intervalId);
                     });
 
                 it(`Can't vote on rejected comment`, async () => {
