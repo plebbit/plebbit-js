@@ -52,159 +52,161 @@ const waitForMockPubsub = async (timeoutMs = 5000) =>
     });
 
 // this hangs on test:browser:chrome
-getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.sequential("comment.publish in parallel potential regressions - " + config.name, () => {
-        it.sequential("emits challenge requests for every queued publication even when publishing to a non-existing sub", async () => {
-            await waitForMockPubsub().catch((error) => {
-                throw new Error(`Mock pubsub server is not reachable: ${error?.message || error}`);
-            });
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway", "remote-kubo-rpc", "remote-libp2pjs"] }).map(
+    (config) => {
+        describe.sequential("comment.publish in parallel potential regressions - " + config.name, () => {
+            it.sequential("emits challenge requests for every queued publication even when publishing to a non-existing sub", async () => {
+                await waitForMockPubsub().catch((error) => {
+                    throw new Error(`Mock pubsub server is not reachable: ${error?.message || error}`);
+                });
 
-            const plebbit = await config.plebbitInstancePromise(); // this is using mocked pubsub/ipfs client to publish
-            plebbit.on("error", console.error);
+                const plebbit = await config.plebbitInstancePromise(); // this is using mocked pubsub/ipfs client to publish
+                plebbit.on("error", console.error);
 
-            const stressPublishCount = 100;
-            const offlineSubplebbit = await createMockedSubplebbitIpns({});
-            const offlineSubAddress = offlineSubplebbit.subplebbitRecord.address; // this sub is not online so can't respond to messages, although the IPNS record is fetchable
+                const stressPublishCount = 100;
+                const offlineSubplebbit = await createMockedSubplebbitIpns({});
+                const offlineSubAddress = offlineSubplebbit.subplebbitRecord.address; // this sub is not online so can't respond to messages, although the IPNS record is fetchable
 
-            const challengeRequestIds = new Set();
-            const externalPeerChallengeRequests = new Set();
+                const challengeRequestIds = new Set();
+                const externalPeerChallengeRequests = new Set();
 
-            const externalPeer = createSocketClient(MOCK_PUBSUB_URL, {
-                reconnectionAttempts: 3,
-                reconnectionDelay: 500,
-                transports: ["websocket"],
-                timeout: 5000
-            });
-            await new Promise((resolve, reject) => {
-                externalPeer.once("connect", resolve);
-                externalPeer.once("connect_error", reject);
-            });
-            externalPeer.on(offlineSubAddress, (msg) => {
-                const asBytes = normalizeToUint8(msg);
-                if (!asBytes) return;
+                const externalPeer = createSocketClient(MOCK_PUBSUB_URL, {
+                    reconnectionAttempts: 3,
+                    reconnectionDelay: 500,
+                    transports: ["websocket"],
+                    timeout: 5000
+                });
+                await new Promise((resolve, reject) => {
+                    externalPeer.once("connect", resolve);
+                    externalPeer.once("connect_error", reject);
+                });
+                externalPeer.on(offlineSubAddress, (msg) => {
+                    const asBytes = normalizeToUint8(msg);
+                    if (!asBytes) return;
+                    try {
+                        const decoded = cborg.decode(asBytes);
+                        if (decoded?.type === "CHALLENGEREQUEST" && decoded.challengeRequestId)
+                            externalPeerChallengeRequests.add(toBase64(decoded.challengeRequestId));
+                    } catch {
+                        // ignore decode errors
+                    }
+                });
+
                 try {
-                    const decoded = cborg.decode(asBytes);
-                    if (decoded?.type === "CHALLENGEREQUEST" && decoded.challengeRequestId)
-                        externalPeerChallengeRequests.add(toBase64(decoded.challengeRequestId));
-                } catch {
-                    // ignore decode errors
+                    const comments = await Promise.all(
+                        new Array(stressPublishCount).fill(null).map(async (_, index) => {
+                            const comment = await plebbit.createComment({
+                                subplebbitAddress: offlineSubAddress,
+                                title: `parallel publish stress ${index}`,
+                                content: `parallel publish stress content ${index}`,
+                                signer: await plebbit.createSigner()
+                            });
+                            comment.on("challengerequest", (request) => {
+                                challengeRequestIds.add(toBase64(request.challengeRequestId));
+                            });
+                            return comment;
+                        })
+                    );
+
+                    await Promise.all([
+                        ...comments.map((comment) => comment.publish()),
+                        new Promise((resolve, reject) => {
+                            const timeout = setTimeout(
+                                () =>
+                                    reject(
+                                        new Error(
+                                            `Timed out waiting for mock pubsub challenge requests on ${offlineSubAddress} after ${stressPublishCount} publishes`
+                                        )
+                                    ),
+                                20000
+                            );
+                            externalPeer.on(offlineSubAddress, () => {
+                                if (externalPeerChallengeRequests.size >= stressPublishCount) {
+                                    clearTimeout(timeout);
+                                    resolve();
+                                }
+                            });
+                        })
+                    ]); // should publish comments  but not get a response
+
+                    expect(challengeRequestIds.size).to.equal(stressPublishCount, "Not every publication emitted a challenge request");
+                    expect(externalPeerChallengeRequests.size).to.equal(
+                        stressPublishCount,
+                        "External peer did not receive all challenge requests"
+                    );
+                    expect([...challengeRequestIds].sort()).to.deep.equal(
+                        [...externalPeerChallengeRequests].sort(),
+                        "Challenge request IDs differ between local emitter and external peer"
+                    );
+                    await Promise.all(comments.map((comment) => comment.stop()));
+                } finally {
+                    externalPeer.disconnect();
+                    await plebbit.destroy();
                 }
             });
 
-            try {
-                const comments = await Promise.all(
-                    new Array(stressPublishCount).fill(null).map(async (_, index) => {
-                        const comment = await plebbit.createComment({
-                            subplebbitAddress: offlineSubAddress,
-                            title: `parallel publish stress ${index}`,
-                            content: `parallel publish stress content ${index}`,
-                            signer: await plebbit.createSigner()
-                        });
-                        comment.on("challengerequest", (request) => {
-                            challengeRequestIds.add(toBase64(request.challengeRequestId));
-                        });
-                        return comment;
-                    })
-                );
+            it("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
+                const localPlebbit = await config.plebbitInstancePromise({});
+                localPlebbit.on("error", console.error);
+                const stressPublishCount = 350;
+                const randomSub = await createMockedSubplebbitIpns({}); // sub has a reachable IPNS but is not online
 
-                await Promise.all([
-                    ...comments.map((comment) => comment.publish()),
-                    new Promise((resolve, reject) => {
-                        const timeout = setTimeout(
-                            () =>
-                                reject(
-                                    new Error(
-                                        `Timed out waiting for mock pubsub challenge requests on ${offlineSubAddress} after ${stressPublishCount} publishes`
-                                    )
-                                ),
-                            20000
-                        );
-                        externalPeer.on(offlineSubAddress, () => {
-                            if (externalPeerChallengeRequests.size >= stressPublishCount) {
-                                clearTimeout(timeout);
-                                resolve();
-                            }
-                        });
-                    })
-                ]); // should publish comments  but not get a response
+                const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
+                const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
+                const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
 
-                expect(challengeRequestIds.size).to.equal(stressPublishCount, "Not every publication emitted a challenge request");
-                expect(externalPeerChallengeRequests.size).to.equal(
-                    stressPublishCount,
-                    "External peer did not receive all challenge requests"
-                );
-                expect([...challengeRequestIds].sort()).to.deep.equal(
-                    [...externalPeerChallengeRequests].sort(),
-                    "Challenge request IDs differ between local emitter and external peer"
-                );
-                await Promise.all(comments.map((comment) => comment.stop()));
-            } finally {
-                externalPeer.disconnect();
-                await plebbit.destroy();
-            }
-        });
+                const targetAddressForGatewayIpnsUrl = convertBase58IpnsNameToBase36Cid(randomSub.subplebbitRecord.address);
+                let fetchSpy;
+                let nameResolveSpy;
 
-        it("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
-            const localPlebbit = await config.plebbitInstancePromise({});
-            localPlebbit.on("error", console.error);
-            const stressPublishCount = 350;
-            const randomSub = await createMockedSubplebbitIpns({}); // sub has a reachable IPNS but is not online
-
-            const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
-            const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
-            const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
-
-            const targetAddressForGatewayIpnsUrl = convertBase58IpnsNameToBase36Cid(randomSub.subplebbitRecord.address);
-            let fetchSpy;
-            let nameResolveSpy;
-
-            if (!usesGateways) {
-                const p2pClient =
-                    Object.keys(localPlebbit.clients.kuboRpcClients).length > 0
-                        ? Object.values(localPlebbit.clients.kuboRpcClients)[0]._client
-                        : Object.keys(localPlebbit.clients.libp2pJsClients).length > 0
-                          ? Object.values(localPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions
-                          : undefined;
-                if (!p2pClient?.name?.resolve) {
-                    throw new Error("Expected p2p client like kubo or helia RPC client with name.resolve for this test");
+                if (!usesGateways) {
+                    const p2pClient =
+                        Object.keys(localPlebbit.clients.kuboRpcClients).length > 0
+                            ? Object.values(localPlebbit.clients.kuboRpcClients)[0]._client
+                            : Object.keys(localPlebbit.clients.libp2pJsClients).length > 0
+                              ? Object.values(localPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions
+                              : undefined;
+                    if (!p2pClient?.name?.resolve) {
+                        throw new Error("Expected p2p client like kubo or helia RPC client with name.resolve for this test");
+                    }
+                    nameResolveSpy = vi.spyOn(p2pClient.name, "resolve");
+                } else if (shouldMockFetchForIpns) {
+                    fetchSpy = vi.spyOn(globalThis, "fetch");
                 }
-                nameResolveSpy = vi.spyOn(p2pClient.name, "resolve");
-            } else if (shouldMockFetchForIpns) {
-                fetchSpy = vi.spyOn(globalThis, "fetch");
-            }
 
-            try {
-                expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
+                try {
+                    expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
 
-                const comments = await Promise.all(
-                    new Array(stressPublishCount).fill(null).map(async (_, index) =>
-                        localPlebbit.createComment({
-                            subplebbitAddress: randomSub.subplebbitRecord.address,
-                            title: `parallel publish cache regression ${index}`,
-                            content: `parallel publish cache regression content ${index}`,
-                            signer: await localPlebbit.createSigner()
-                        })
-                    )
-                );
+                    const comments = await Promise.all(
+                        new Array(stressPublishCount).fill(null).map(async (_, index) =>
+                            localPlebbit.createComment({
+                                subplebbitAddress: randomSub.subplebbitRecord.address,
+                                title: `parallel publish cache regression ${index}`,
+                                content: `parallel publish cache regression content ${index}`,
+                                signer: await localPlebbit.createSigner()
+                            })
+                        )
+                    );
 
-                await Promise.all(comments.map((comment) => comment.publish()));
+                    await Promise.all(comments.map((comment) => comment.publish()));
 
-                expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
+                    expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
 
-                const resolveCallsCount = fetchSpy
-                    ? fetchSpy.mock.calls.filter(([input]) => {
-                          const url = typeof input === "string" ? input : input?.url;
-                          return typeof url === "string" && url.includes("/ipns/" + targetAddressForGatewayIpnsUrl);
-                      }).length
-                    : nameResolveSpy.mock.calls.filter((callArgs) => callArgs[0] === randomSub.subplebbitRecord.address).length;
+                    const resolveCallsCount = fetchSpy
+                        ? fetchSpy.mock.calls.filter(([input]) => {
+                              const url = typeof input === "string" ? input : input?.url;
+                              return typeof url === "string" && url.includes("/ipns/" + targetAddressForGatewayIpnsUrl);
+                          }).length
+                        : nameResolveSpy.mock.calls.filter((callArgs) => callArgs[0] === randomSub.subplebbitRecord.address).length;
 
-                expect(resolveCallsCount).to.equal(1, "Publishing to the same subplebbit should only resolve IPNS once");
-                await Promise.all(comments.map((comment) => comment.stop()));
-            } finally {
-                if (nameResolveSpy) nameResolveSpy.mockRestore();
-                if (fetchSpy) fetchSpy.mockRestore();
-                await localPlebbit.destroy();
-            }
+                    expect(resolveCallsCount).to.equal(1, "Publishing to the same subplebbit should only resolve IPNS once");
+                    await Promise.all(comments.map((comment) => comment.stop()));
+                } finally {
+                    if (nameResolveSpy) nameResolveSpy.mockRestore();
+                    if (fetchSpy) fetchSpy.mockRestore();
+                    await localPlebbit.destroy();
+                }
+            });
         });
-    });
-});
+    }
+);
