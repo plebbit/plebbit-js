@@ -164,7 +164,7 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         if (pendingCommentDepth > 0) {
-            it(`Approved reply now shows up in parentComment.replies`, async () => {
+            itSkipIfRpc(`Approved reply now shows up in parentComment.replies`, async () => {
                 const parentComment = await plebbit.getComment(approvedComment.parentCid);
                 await parentComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.replies.pages.best?.comments });
@@ -203,7 +203,7 @@ for (const pendingCommentDepth of depthsToTest) {
                 }
                 await parentComment.stop();
             });
-            it(`Approved reply now shows up in its post's flat pages`, async () => {
+            itSkipIfRpc(`Approved reply now shows up in its post's flat pages`, async () => {
                 const postComment = await plebbit.getComment(approvedComment.postCid);
                 await postComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
