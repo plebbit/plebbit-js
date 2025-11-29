@@ -17,7 +17,6 @@ import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 // TODO these comments below should iterate over all comments under subplebbit.posts and execute the test against them
-// basically try to test as many different scenearios as possible
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.createComment - Remote (${config.name})`, async () => {
         let plebbit;
@@ -55,7 +54,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can recreate a stringifed local Comment instance before publishing with plebbit.createComment`, async () => {
-            const localComment = await generateMockPost(subplebbitAddress, plebbit, {}, false);
+            const localComment = await generateMockPost(subplebbitAddress, plebbit);
             const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
             const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
             const localCommentJson = jsonifyCommentAndRemoveInstanceProps(localComment);
@@ -94,6 +93,51 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const commentFromPageJson = jsonifyCommentAndRemoveInstanceProps(commentFromPage);
 
             expect(commentCloneJson).to.deep.equal(commentFromPageJson);
+        });
+
+        it(`Creating comment instances from all subplebbit.pages comments doesn't mutate props`, async () => {
+            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const pages = subplebbit.posts.pages || {};
+            expect(Object.keys(pages).length, "subplebbit.posts.pages should not be empty").to.be.greaterThan(0);
+            let testedComments = 0;
+
+            for (const [pageName, page] of Object.entries(pages)) {
+                if (!page?.comments?.length) continue;
+
+                for (const pageComment of page.comments) {
+                    const originalJson = jsonifyCommentAndRemoveInstanceProps(pageComment);
+
+                    const commentClone = await plebbit.createComment(pageComment);
+                    const commentCloneFromStringified = await plebbit.createComment(JSON.parse(JSON.stringify(pageComment)));
+                    const commentCloneFromSpread = await plebbit.createComment({ ...pageComment });
+                    const commentCloneFromRaw = await plebbit.createComment({ raw: pageComment.raw });
+
+                    expect(
+                        jsonifyCommentAndRemoveInstanceProps(pageComment),
+                        `comment from ${pageName} page changed after cloning`
+                    ).to.deep.equal(originalJson);
+                    expect(
+                        jsonifyCommentAndRemoveInstanceProps(commentClone),
+                        `createComment mutated props for page ${pageName}`
+                    ).to.deep.equal(originalJson);
+                    expect(
+                        jsonifyCommentAndRemoveInstanceProps(commentCloneFromStringified),
+                        `JSON.parse(JSON.stringify()) mutated props for page ${pageName}`
+                    ).to.deep.equal(originalJson);
+                    expect(
+                        jsonifyCommentAndRemoveInstanceProps(commentCloneFromSpread),
+                        `{...pageComment} mutated props for page ${pageName}`
+                    ).to.deep.equal(originalJson);
+                    expect(
+                        jsonifyCommentAndRemoveInstanceProps(commentCloneFromRaw),
+                        `{raw: pageComment.raw} mutated props for page ${pageName}`
+                    ).to.deep.equal(originalJson);
+
+                    testedComments += 1;
+                }
+            }
+
+            expect(testedComments).to.be.greaterThan(0);
         });
 
         it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
@@ -267,7 +311,6 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await subplebbit.stop();
         });
 
-        // TODO need to move test below to node
         [1, 2, 3, 5, 10].forEach((replyDepth) => {
             it.sequential(
                 `Creating a reply with depth ${replyDepth} that exists in updating parent replies should automatically get CommentIpfs and CommentUpdate from it`,
