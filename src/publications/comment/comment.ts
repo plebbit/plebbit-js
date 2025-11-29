@@ -28,7 +28,7 @@ import type {
     RpcCommentUpdateResultType
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
-import { parseRawPages } from "../../pages/util.js";
+import { findCommentInPageInstanceRecursively, parseRawPages } from "../../pages/util.js";
 import {
     CommentIpfsSchema,
     CommentUpdateForChallengeVerificationSchema,
@@ -763,11 +763,13 @@ export class Comment
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
-    _useUpdatePropsFromUpdatingSubplebbitIfPossible() {
+    _useUpdatePropsFromUpdatingStartedSubplebbitIfPossible() {
         if (!this.cid) throw Error("Need to have comment.cid defined");
         if (!this.subplebbitAddress) {
             // try to find cid in all _updatingSubplebbits
-            for (const updatingSubplebbit of Object.values(this._plebbit._updatingSubplebbits)) {
+            for (const updatingSubplebbit of Object.values(this._plebbit._updatingSubplebbits).concat(
+                Object.values(this._plebbit._startedSubplebbits)
+            )) {
                 const commentInSubplebbitPosts = findCommentInPageInstanceRecursively(updatingSubplebbit.posts, this.cid);
                 if (commentInSubplebbitPosts) {
                     this.setSubplebbitAddress(commentInSubplebbitPosts.comment.subplebbitAddress);
@@ -777,7 +779,9 @@ export class Comment
             if (!this.subplebbitAddress) return;
         }
         const updatingSubplebbitInstance =
-            this._plebbit._updatingSubplebbits[this.subplebbitAddress] || this._subplebbitForUpdating?.subplebbit;
+            this._plebbit._updatingSubplebbits[this.subplebbitAddress] ||
+            this._subplebbitForUpdating?.subplebbit ||
+            this._plebbit._startedSubplebbits[this.subplebbitAddress];
         if (updatingSubplebbitInstance?.raw?.subplebbitIpfs && this.cid) {
             const commentInSubplebbitPosts = findCommentInPageInstanceRecursively(updatingSubplebbitInstance.posts, this.cid);
             if (commentInSubplebbitPosts) {
