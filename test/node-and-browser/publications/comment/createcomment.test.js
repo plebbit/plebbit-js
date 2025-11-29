@@ -12,6 +12,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import validCommentWithRepliesFixture from "../../../fixtures/signatures/comment/valid_comment_with_replies_raw.json" with { type: "json" };
 import { describe, it } from "vitest";
+import { processAllCommentsRecursively } from "../../../../dist/node/pages/util.js";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
@@ -71,7 +72,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can recreate a stringified local comment instance after comment.update() with plebbit.createComment`, async () => {
-            const localComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const localComment = await publishRandomPost(subplebbitAddress, plebbit);
             await localComment.update();
             await resolveWhenConditionIsTrue({ toUpdate: localComment, predicate: () => typeof localComment.updatedAt === "number" });
             await localComment.stop();
@@ -244,6 +245,23 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             expect(comment.approved).to.equal(false);
             expect(comment.pendingApproval).to.equal(false);
+        });
+
+        it(`Creating a post that exists in updating subplebbit posts should automatically get CommentIpfs and CommentUpdate from it`, async () => {
+            const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await subplebbit.update();
+            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
+
+            expect(plebbit._updatingSubplebbits[subplebbit.address]).to.be.ok;
+
+            const postCid = subplebbit.posts.pages.hot.comments[0].cid;
+
+            const post = await plebbit.createComment({ cid: postCid });
+            expect(post.raw.comment).to.be.ok;
+            expect(post.raw.commentUpdate).to.be.ok;
+            expect(post.timestamp).to.be.a("number");
+            expect(post.updatedAt).to.be.a("number");
+            await subplebbit.stop();
         });
     });
 });
