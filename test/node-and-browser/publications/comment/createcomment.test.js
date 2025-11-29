@@ -8,13 +8,16 @@ import {
     resolveWhenConditionIsTrue,
     getAvailablePlebbitConfigsToTestAgainst,
     publishWithExpectedResult,
-    addStringToIpfs
+    addStringToIpfs,
+    findOrPublishCommentWithDepth,
+    waitTillReplyInParentPages
 } from "../../../../dist/node/test/test-util.js";
 import validCommentWithRepliesFixture from "../../../fixtures/signatures/comment/valid_comment_with_replies_raw.json" with { type: "json" };
 import { describe, it } from "vitest";
-import { processAllCommentsRecursively } from "../../../../dist/node/pages/util.js";
 const subplebbitAddress = signers[0].address;
 
+// TODO these comments below should iterate over all comments under subplebbit.posts and execute the test against them
+// basically try to test as many different scenearios as possible
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.createComment - Remote (${config.name})`, async () => {
         let plebbit;
@@ -262,6 +265,44 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(post.timestamp).to.be.a("number");
             expect(post.updatedAt).to.be.a("number");
             await subplebbit.stop();
+        });
+
+        // TODO need to move test below to node
+        [1, 2, 3, 5, 10].forEach((replyDepth) => {
+            it.sequential(
+                `Creating a reply with depth ${replyDepth} that exists in updating parent replies should automatically get CommentIpfs and CommentUpdate from it`,
+                async () => {
+                    // TODO how do you guarantee reply with this depth will be there?
+
+                    const parentComment = await findOrPublishCommentWithDepth({
+                        subplebbit: await plebbit.getSubplebbit(subplebbitAddress),
+                        depth: replyDepth - 1
+                    });
+                    await parentComment.update();
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: parentComment,
+                        predicate: () => typeof parentComment.updatedAt === "number"
+                    });
+
+                    expect(plebbit._updatingComments[parentComment.cid]).to.be.ok;
+
+                    const reply = await publishRandomReply(parentComment, plebbit);
+
+                    await waitTillReplyInParentPages(reply, plebbit);
+
+                    await reply.stop();
+                    expect(plebbit._updatingComments[parentComment.cid]).to.be.ok;
+                    expect(plebbit._updatingComments[reply.cid]).to.be.undefined;
+
+                    const replyRecreated = await plebbit.createComment({ cid: reply.cid });
+
+                    expect(replyRecreated.raw.comment).to.be.ok;
+                    expect(replyRecreated.raw.commentUpdate).to.be.ok;
+                    expect(replyRecreated.timestamp).to.be.a("number");
+                    expect(replyRecreated.updatedAt).to.be.a("number");
+                    await parentComment.stop();
+                }
+            );
         });
     });
 });
