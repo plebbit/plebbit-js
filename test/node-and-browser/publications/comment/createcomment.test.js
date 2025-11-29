@@ -233,5 +233,17 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(comment.signer.shortAddress).to.equal(fixture.signer.shortAddress);
             expect(comment.subplebbitAddress).to.equal(fixture.subplebbitAddress);
         });
+
+        it(`Creating a comment with commentUpdate.approved=false will set pendingApproval=false`, async () => {
+            const comment = await plebbit.createComment({
+                raw: {
+                    comment: validCommentWithRepliesFixture.raw.comment,
+                    commentUpdate: { ...validCommentWithRepliesFixture.raw.commentUpdate, approved: false }
+                }
+            });
+
+            expect(comment.approved).to.equal(false);
+            expect(comment.pendingApproval).to.equal(false);
+        });
     });
 });
