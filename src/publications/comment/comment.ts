@@ -253,6 +253,9 @@ export class Comment
         this._updateRepliesPostsInstance(props.replies, subplebbit);
         if (typeof this.pendingApproval === "boolean" || "pendingApproval" in props)
             this.pendingApproval = Boolean("pendingApproval" in props && props.pendingApproval); // revert pendingApproval if we just received a CommentUpdate
+        else if ("approved" in props && typeof props.approved === "boolean") {
+            this.pendingApproval = false; // we received either a rejection or acceptance
+        }
         this.approved = props.approved;
         this.number = props.number;
         this.postNumber = props.postNumber;
@@ -418,7 +421,8 @@ export class Comment
         this.raw.commentUpdateFromChallengeVerification = commentUpdate;
         if (commentUpdate.author) Object.assign(this.author, commentUpdate.author);
         this.protocolVersion = commentUpdate.protocolVersion;
-        this.pendingApproval = commentUpdate.pendingApproval;
+        if ("pendingApproval" in commentUpdate) this.pendingApproval = commentUpdate.pendingApproval;
+        else this.pendingApproval = false;
     }
 
     private _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification: DecryptedChallengeVerification) {

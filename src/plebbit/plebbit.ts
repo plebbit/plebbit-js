@@ -483,9 +483,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             });
         if (options.raw.comment) commentInstance._initIpfsProps(options.raw.comment);
         // can only get one CommentUpdate
-        if (options.raw.commentUpdate) commentInstance._initCommentUpdate(options.raw.commentUpdate);
-        else if ("commentUpdateFromChallengeVerification" in options.raw && options.raw.commentUpdateFromChallengeVerification)
+        if ("commentUpdateFromChallengeVerification" in options.raw && options.raw.commentUpdateFromChallengeVerification)
             commentInstance._initCommentUpdateFromChallengeVerificationProps(options.raw.commentUpdateFromChallengeVerification);
+        if (options.raw.commentUpdate) commentInstance._initCommentUpdate(options.raw.commentUpdate);
         return commentInstance;
     }
 
