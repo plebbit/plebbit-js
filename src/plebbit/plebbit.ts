@@ -474,6 +474,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         const commentInstance = new Comment(this);
 
         if (options.cid) commentInstance.setCid(options.cid);
+        if (options.subplebbitAddress) commentInstance.setSubplebbitAddress(options.subplebbitAddress);
         if (options.raw?.commentUpdate?.cid) commentInstance.setCid(options.raw?.commentUpdate?.cid);
         if ("pubsubMessageToPublish" in options.raw && options.raw.pubsubMessageToPublish && "signer" in options && options.signer)
             commentInstance._initLocalProps({

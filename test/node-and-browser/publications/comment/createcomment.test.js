@@ -14,6 +14,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import validCommentWithRepliesFixture from "../../../fixtures/signatures/comment/valid_comment_with_replies_raw.json" with { type: "json" };
 import { describe, it } from "vitest";
+import { calculateIpfsCidV0 } from "../../../../dist/node/util.js";
 const subplebbitAddress = signers[0].address;
 
 // TODO these comments below should iterate over all comments under subplebbit.posts and execute the test against them
@@ -93,6 +94,17 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const commentFromPageJson = jsonifyCommentAndRemoveInstanceProps(commentFromPage);
 
             expect(commentCloneJson).to.deep.equal(commentFromPageJson);
+        });
+
+        it(`Creating a comment with only cid and subplebbit address, then passing it to another plebbit.createComment should get us both cid and subplebbitAddress`, async () => {
+            const randomCid = await calculateIpfsCidV0("Hello" + Math.random());
+            const originalComment = await plebbit.createComment({ cid: randomCid, subplebbitAddress });
+            expect(originalComment.cid).to.equal(randomCid);
+            expect(originalComment.subplebbitAddress).to.equal(subplebbitAddress);
+
+            const anotherComment = await plebbit.createComment(originalComment);
+            expect(anotherComment.cid).to.equal(randomCid);
+            expect(anotherComment.subplebbitAddress).to.equal(subplebbitAddress);
         });
 
         it(`Creating comment instances from all subplebbit.pages comments doesn't mutate props`, async () => {
