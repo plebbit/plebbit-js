@@ -547,7 +547,10 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         } else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }
-        if (commentInstance.cid) commentInstance._useUpdatePropsFromUpdatingCommentIfPossible();
+        if (commentInstance.cid) {
+            commentInstance._useUpdatePropsFromUpdatingSubplebbitIfPossible();
+            commentInstance._useUpdatePropsFromUpdatingCommentIfPossible();
+        }
 
         return commentInstance;
     }

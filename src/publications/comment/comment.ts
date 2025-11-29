@@ -763,6 +763,36 @@ export class Comment
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
+    _useUpdatePropsFromUpdatingSubplebbitIfPossible() {
+        if (!this.cid) throw Error("Need to have comment.cid defined");
+        if (!this.subplebbitAddress) {
+            // try to find cid in all _updatingSubplebbits
+            for (const updatingSubplebbit of Object.values(this._plebbit._updatingSubplebbits)) {
+                const commentInSubplebbitPosts = findCommentInPageInstanceRecursively(updatingSubplebbit.posts, this.cid);
+                if (commentInSubplebbitPosts) {
+                    this.setSubplebbitAddress(commentInSubplebbitPosts.comment.subplebbitAddress);
+                    break;
+                }
+            }
+            if (!this.subplebbitAddress) return;
+        }
+        const updatingSubplebbitInstance =
+            this._plebbit._updatingSubplebbits[this.subplebbitAddress] || this._subplebbitForUpdating?.subplebbit;
+        if (updatingSubplebbitInstance?.raw?.subplebbitIpfs && this.cid) {
+            const commentInSubplebbitPosts = findCommentInPageInstanceRecursively(updatingSubplebbitInstance.posts, this.cid);
+            if (commentInSubplebbitPosts) {
+                if (!this.raw.comment) {
+                    this._initIpfsProps(commentInSubplebbitPosts.comment);
+                    this.emit("update", this);
+                }
+                if ((this.updatedAt || 0) < commentInSubplebbitPosts.commentUpdate.updatedAt) {
+                    this._initCommentUpdate(commentInSubplebbitPosts.commentUpdate, updatingSubplebbitInstance.raw.subplebbitIpfs);
+                    this.emit("update", this);
+                }
+            }
+        }
+    }
+
     _useUpdatePropsFromUpdatingCommentIfPossible() {
         if (!this.cid) throw Error("should have cid at this point");
         const updatingCommentInstance = this._plebbit._updatingComments[this.cid] || this._updatingCommentInstance?.comment;
@@ -780,6 +810,28 @@ export class Comment
                 this._commentUpdateIpfsPath = updatingCommentInstance._commentUpdateIpfsPath;
                 this.emit("update", this);
             }
+        } else {
+            const ancestorCids = [this.postCid, this.parentCid];
+            ancestorCids.forEach((ancestorCid) => {
+                if (!ancestorCid) return;
+                const updatingCommentInstanceOfAncestor = this._plebbit._updatingComments[ancestorCid];
+                if (updatingCommentInstanceOfAncestor) {
+                    const commentInAncestor = findCommentInPageInstanceRecursively(updatingCommentInstanceOfAncestor.replies, this.cid!);
+                    if (commentInAncestor) {
+                        if (!this.raw.comment) {
+                            this._initIpfsProps(commentInAncestor.comment);
+                            this.emit("update", this);
+                        }
+                        if ((this.updatedAt || 0) < commentInAncestor.commentUpdate.updatedAt) {
+                            this._initCommentUpdate(
+                                commentInAncestor.commentUpdate,
+                                this._plebbit._updatingSubplebbits[this.subplebbitAddress]?.raw?.subplebbitIpfs
+                            );
+                            this.emit("update", this);
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -853,8 +905,8 @@ export class Comment
         this._setStateWithEmission("updating");
 
         if (this._plebbit._updatingComments[this.cid]) {
-            this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]);
-        } else await this._setUpNewUpdatingCommentInstance();
+            this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]); // this comment instance will be mirroring this._plebbit._updatingComments[this.cid]
+        } else await this._setUpNewUpdatingCommentInstance(); // Create a this._plebbit._updatingComments[this.cid], then mirror it
 
         if (this.raw.comment || this.raw.commentUpdate) this.emit("update", this);
     }
