@@ -456,9 +456,6 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async _fetchCommentIpfsFromPages() {
-        // TODO need to stop this operation if we found CommentIpfs
-        // or statechange to stopped
-
         // this code below won't be executed by a post, and instead it will be a reply
         // what do we do if we don't have parentCid?
 
@@ -466,15 +463,39 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (!this._comment.subplebbitAddress) throw Error("Comment subplebbtiAddress should be defined");
         if (!this._comment.cid) throw Error("Comment cid should be defined");
 
-        const sub = await this._plebbit.getSubplebbit(this._comment.subplebbitAddress);
-        const commentAfterSearchingAllPages = await loadAllPagesUnderSubplebbitToFindComment({
-            subplebbit: sub,
-            commentCidToFind: this._comment.cid
-        });
-        if (commentAfterSearchingAllPages) {
-            if (!this._comment.raw.comment) this._comment._initIpfsProps(commentAfterSearchingAllPages.comment);
-            if ((this._comment.updatedAt || 0) < commentAfterSearchingAllPages.commentUpdate.updatedAt)
-                this._comment._initCommentUpdate(commentAfterSearchingAllPages.commentUpdate, sub.raw.subplebbitIpfs);
+        const abortController = new AbortController();
+        const abortIfNeeded = () => {
+            if (!abortController.signal.aborted) abortController.abort();
+        };
+        const onCommentUpdate = () => {
+            if (this._comment.raw.comment) abortIfNeeded();
+        };
+        const onStateChange = (newState: Comment["state"]) => {
+            if (newState === "stopped") abortIfNeeded();
+        };
+
+        this._comment.on("update", onCommentUpdate);
+        this._comment.on("statechange", onStateChange);
+
+        try {
+            const sub = await this._plebbit.getSubplebbit(this._comment.subplebbitAddress);
+            if (abortController.signal.aborted) return;
+
+            const commentAfterSearchingAllPages = await loadAllPagesUnderSubplebbitToFindComment({
+                subplebbit: sub,
+                commentCidToFind: this._comment.cid,
+                signal: abortController.signal
+            });
+            if (commentAfterSearchingAllPages) {
+                if (!this._comment.raw.comment) this._comment._initIpfsProps(commentAfterSearchingAllPages.comment);
+                if ((this._comment.updatedAt || 0) < commentAfterSearchingAllPages.commentUpdate.updatedAt)
+                    this._comment._initCommentUpdate(commentAfterSearchingAllPages.commentUpdate, sub.raw.subplebbitIpfs);
+            }
+        } catch (err) {
+            if ((err as Error)?.name !== "AbortError") throw err;
+        } finally {
+            this._comment.removeListener("update", onCommentUpdate);
+            this._comment.removeListener("statechange", onStateChange);
         }
     }
 
