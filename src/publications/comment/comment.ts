@@ -517,6 +517,7 @@ export class Comment
     private async _retryLoadingCommentIpfs(cid: string, log: Logger): Promise<CommentIpfsType | PlebbitError> {
         return new Promise((resolve) => {
             this._commentIpfsloadingOperation!.attempt(async (curAttempt) => {
+                if (this.raw.comment) return resolve(this.raw.comment);
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit();
@@ -538,6 +539,12 @@ export class Comment
                             newUpdatingState: "waiting-retry",
                             event: { name: "error", args: [error] }
                         });
+
+                        if (curAttempt === 1 && this.subplebbitAddress) {
+                            // if we fail for second time, start trying to find CommentIpfs using pages instead of comment.cid
+                            await this._clientsManager._fetchCommentIpfsFromPages();
+                        }
+
                         this._commentIpfsloadingOperation!.retry(<Error>e);
                     } else {
                         // a non retriable error
@@ -587,7 +594,7 @@ export class Comment
     }
 
     async startCommentUpdateSubplebbitSubscription() {
-        const log = Logger("plebbit-js:comment:update");
+        const log = Logger("plebbit-js:comment:update:startCommentUpdateSubplebbitSubscription");
         if (this.state === "stopped") return; // we may have called stop() before reaching comment update subscription and after loading commentipfs
         if (this.depth === 0) {
             if (!this._subplebbitForUpdating)

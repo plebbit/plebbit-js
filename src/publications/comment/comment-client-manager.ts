@@ -28,6 +28,7 @@ import {
 import { Plebbit } from "../../plebbit/plebbit.js";
 import type { PublicationEvents } from "../types.js";
 import { InflightResourceTypes } from "../../util/inflight-fetch-manager.js";
+import { loadAllPagesUnderSubplebbitToFindComment } from "./comment-util.js";
 
 const fetchCommentLogger = Logger("plebbit-js:comment:client-manager:fetchAndVerifyCommentCid");
 
@@ -454,6 +455,29 @@ export class CommentClientsManager extends PublicationClientsManager {
             throw new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", { commentIpfsValidation, verificationOpts });
     }
 
+    async _fetchCommentIpfsFromPages() {
+        // TODO need to stop this operation if we found CommentIpfs
+        // or statechange to stopped
+
+        // this code below won't be executed by a post, and instead it will be a reply
+        // what do we do if we don't have parentCid?
+
+        // - download all comments under a sub and look for our specific comment
+        if (!this._comment.subplebbitAddress) throw Error("Comment subplebbtiAddress should be defined");
+        if (!this._comment.cid) throw Error("Comment cid should be defined");
+
+        const sub = await this._plebbit.getSubplebbit(this._comment.subplebbitAddress);
+        const commentAfterSearchingAllPages = await loadAllPagesUnderSubplebbitToFindComment({
+            subplebbit: sub,
+            commentCidToFind: this._comment.cid
+        });
+        if (commentAfterSearchingAllPages) {
+            if (!this._comment.raw.comment) this._comment._initIpfsProps(commentAfterSearchingAllPages.comment);
+            if ((this._comment.updatedAt || 0) < commentAfterSearchingAllPages.commentUpdate.updatedAt)
+                this._comment._initCommentUpdate(commentAfterSearchingAllPages.commentUpdate, sub.raw.subplebbitIpfs);
+        }
+    }
+
     // We're gonna fetch Comment Ipfs, and verify its signature and schema
     async fetchAndVerifyCommentCid(cid: string): Promise<CommentIpfsType> {
         const cachedComment = this._plebbit._memCaches.commentIpfs.get(cid);
@@ -540,6 +564,12 @@ export class CommentClientsManager extends PublicationClientsManager {
         // this._subplebbitForUpdating!.subplebbit.raw.subplebbitIpfs?.posts.
 
         const postInUpdatingSubplebbit = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ sub });
+
+        if (postInUpdatingSubplebbit && !this._comment.raw.comment) {
+            log(`Loaded the CommentIpfs props of cid (${this._comment.cid}) from subplebbit.posts correctly, updating the instance props`);
+
+            this._comment._initIpfsProps(postInUpdatingSubplebbit.comment);
+        }
 
         if (
             postInUpdatingSubplebbit &&
@@ -834,8 +864,15 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
         const replyInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: postInstance });
 
-        const repliesSubplebbit = <Pick<SubplebbitIpfsType, "signature" | "address">>postInstance.replies._subplebbit;
+        const repliesSubplebbit = <Pick<SubplebbitIpfsType, "signature" | "address">>(
+            (this._plebbit._updatingSubplebbits[postInstance.subplebbitAddress]?.raw?.subplebbitIpfs ||
+                this._plebbit._startedSubplebbits[postInstance.subplebbitAddress]?.raw?.subplebbitIpfs ||
+                postInstance.replies._subplebbit)
+        );
         if (!repliesSubplebbit.signature) throw Error("repliesSubplebbit.signature needs to be defined to fetch comment update of reply");
+        if (replyInPage && !this._comment.raw.comment) {
+            this._comment._initIpfsProps(replyInPage.comment);
+        }
         if (replyInPage && replyInPage.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0)) {
             const log = Logger(
                 "plebbit-js:comment:update:handleUpdateEventFromPostToFetchReplyCommentUpdate:find-comment-update-in-updating-sub-or-comments-pages"
