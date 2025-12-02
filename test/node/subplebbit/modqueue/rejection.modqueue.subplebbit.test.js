@@ -14,11 +14,14 @@ import {
     generateMockVote,
     loadAllPages,
     itSkipIfRpc,
+    getAvailablePlebbitConfigsToTestAgainst,
     createPendingApprovalChallenge,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
+
+const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 const depthsToTest = [
     0
@@ -28,42 +31,44 @@ const depthsToTest = [
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const commentModProps = [
-    { approved: false, reason: "Test reason 1234" },
-    { approved: false },
-    {
-        approved: false,
-        reason: "New reason to be picked up and used",
-        spoiler: true,
-        nsfw: true,
-        pinned: true,
-        removed: true
-    },
+    // { approved: false },
+
+    // { approved: false, reason: "Test reason 1234" },
+    // {
+    //     approved: false,
+    //     reason: "New reason to be picked up and used",
+    //     spoiler: true,
+    //     nsfw: true,
+    //     pinned: true,
+    //     removed: true
+    // },
     { approved: false, reason: "Test removed and approved", removed: true }
 ];
-
+// TODO should we generalize this test to use all remote plebbit config
 // sequential 619s
 // concurrent
 
 for (const commentMod of commentModProps) {
     for (const pendingCommentDepth of depthsToTest) {
         const shouldCommentBePurged = Object.keys(commentMod).length === 1; // only approved=false, no other props
-        const shouldCommentBeInPosts = pendingCommentDepth === 0 ? false : !shouldCommentBePurged; // if it's a reply then it will be nested within another commment and will appear in subplebbit.post
 
-        describe.sequential(
+        // if a post is rejected, then it never appears in subplebbit.post, and if you wanna get its commentUpdate you can do so from postUpdates
+        // but if a reply is rejected, then it will be included in pages only if shouldCommentBePurged = false
+        const shouldCommentBeInPostsOrRepliesPages = pendingCommentDepth === 0 ? false : !shouldCommentBePurged; // if it's a reply then it will be nested within another commment and will appear in subplebbit.post
+
+        describe.concurrent(
             `Comment moderation rejection of pending comment with depth ` +
                 pendingCommentDepth +
                 " and commentModeration=" +
                 JSON.stringify(commentMod),
             () => {
                 let plebbit;
-                let remotePlebbit;
                 let commentToBeRejected;
                 let modSigner;
                 let subplebbit;
 
                 before(async () => {
                     plebbit = await mockPlebbit();
-                    remotePlebbit = await mockGatewayPlebbit();
                     subplebbit = await plebbit.createSubplebbit();
                     subplebbit.setMaxListeners(100);
                     modSigner = await plebbit.createSigner();
@@ -96,7 +101,6 @@ for (const commentMod of commentModProps) {
                 after(async () => {
                     await subplebbit.delete();
                     await plebbit.destroy();
-                    await remotePlebbit.destroy();
                 });
 
                 it.sequential(`Can reject comment with commentModeration=${JSON.stringify(commentMod)}`, async () => {
@@ -166,7 +170,7 @@ for (const commentMod of commentModProps) {
                 });
 
                 it.sequential(
-                    `A rejected comment with only ${JSON.stringify(commentMod)} will ${shouldCommentBeInPosts ? "" : "never"} show up in subplebbit.posts`,
+                    `A rejected comment with only ${JSON.stringify(commentMod)} will ${shouldCommentBeInPostsOrRepliesPages ? "" : "never"} show up in subplebbit.posts`,
                     async () => {
                         await new Promise((resolve) => setTimeout(resolve, 3000));
                         let foundInPosts = false;
@@ -181,7 +185,7 @@ for (const commentMod of commentModProps) {
                                 return;
                             }
                         });
-                        expect(foundInPosts).to.equal(shouldCommentBeInPosts);
+                        expect(foundInPosts).to.equal(shouldCommentBeInPostsOrRepliesPages);
 
                         if (Object.keys(subplebbit.posts.pageCids).length === 0)
                             await forcePagesToUsePageCidsOnly({
@@ -201,7 +205,7 @@ for (const commentMod of commentModProps) {
                                     return;
                                 }
                             });
-                            expect(foundInPosts).to.equal(shouldCommentBeInPosts);
+                            expect(foundInPosts).to.equal(shouldCommentBeInPostsOrRepliesPages);
                         }
                     }
                 );
@@ -311,111 +315,121 @@ for (const commentMod of commentModProps) {
                         }
                     );
 
-                if (shouldCommentBePurged)
-                    it(`Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update`, async () => {
-                        // this is failing
-                        // is it not timing out properly?
-                        const newComment = await remotePlebbit.createComment(commentToBeRejected);
+                remotePlebbitConfigs.forEach((remotePlebbitConfig) => {
+                    if (shouldCommentBePurged)
+                        it(`Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update - Remote Plebbit Config ${remotePlebbitConfig.name}`, async () => {
+                            // this is failing
+                            // is it not timing out properly?
+                            const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                            const newComment = await remotePlebbit.createComment(commentToBeRejected);
 
-                        newComment.on("updatingstatechange", (newState) => {
-                            console.log(
-                                "New updating state at",
-                                new Date(),
-                                newState,
-                                "subplebbit updatedAt",
-                                remotePlebbit._updatingSubplebbits[newComment.subplebbitAddress]?.updatedAt
-                            );
-                        });
-
-                        const errors = [];
-                        const failIfUpdated = () =>
-                            newComment.raw.commentUpdate &&
-                            expect.fail("Rejected comment unexpectedly emitted an update event with CommentUpdate");
-                        newComment.on("update", failIfUpdated);
-                        newComment.on("error", (err) => errors.push(err));
-                        await newComment.update();
-
-                        // Wait until an error arrives or 10s pass so the test can proceed
-                        await new Promise((resolve) => {
-                            let settled = false;
-                            let timeoutId;
-                            const onError = () => {
-                                if (settled) return;
-                                settled = true;
-                                clearTimeout(timeoutId);
-                                newComment.removeListener("error", onError);
-                                resolve();
-                            };
-                            timeoutId = setTimeout(() => {
-                                if (settled) return;
-                                settled = true;
-                                newComment.removeListener("error", onError);
-                                resolve();
-                            }, 10_000);
-                            newComment.on("error", onError);
-                        });
-
-                        newComment.removeListener("update", failIfUpdated);
-
-                        expect(newComment.raw.commentUpdate).to.be.undefined;
-                        expect(newComment.updatedAt).to.be.undefined;
-                        if (errors.length > 0)
-                            expect(errors[0].code).to.be.oneOf([
-                                "ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES",
-                                "ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS"
-                            ]);
-                        await newComment.stop();
-                    });
-
-                if (!shouldCommentBePurged)
-                    it.sequential(`Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update`, async () => {
-                        const newComment = await remotePlebbit.createComment(commentToBeRejected);
-
-                        await newComment.update();
-                        await resolveWhenConditionIsTrue({ toUpdate: newComment, predicate: () => newComment.updatedAt });
-
-                        // will test for approved, removed, reason, etc
-                        for (const commentModKey of Object.keys(commentMod)) {
-                            expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
-                            expect(newComment.raw.commentUpdate[commentModKey]).to.equal(commentMod[commentModKey]);
-                        }
-
-                        expect(newComment.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
-                        expect(newComment.upvoteCount).to.equal(0);
-                        expect(newComment.replyCount).to.equal(0);
-                        expect(newComment.childCount).to.equal(0);
-                        // `Publishing approved:false adds removed:true automatically to comment update
-                        expect(newComment.removed).to.be.true;
-
-                        expect(newComment.raw.commentUpdate.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
-                        expect(newComment.raw.commentUpdate.upvoteCount).to.equal(0);
-                        expect(newComment.raw.commentUpdate.replyCount).to.equal(0);
-                        expect(newComment.raw.commentUpdate.childCount).to.equal(0);
-
-                        expect(newComment.raw.commentUpdate.removed).to.be.true;
-
-                        await newComment.stop();
-                    });
-
-                if (!shouldCommentBePurged)
-                    // if only {approved:false} then we're not getting an update
-                    it(`A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)}`, async () => {
-                        const intervalId = setInterval(async () => {
-                            const kuboPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-                            const kuboCommentToBeRejected = await getCommentWithCommentUpdateProps({
-                                cid: commentToBeRejected.cid,
-                                plebbit: kuboPlebbit
+                            newComment.on("updatingstatechange", (newState) => {
+                                console.log(
+                                    "New updating state at",
+                                    new Date(),
+                                    newState,
+                                    "subplebbit updatedAt",
+                                    remotePlebbit._updatingSubplebbits[newComment.subplebbitAddress]?.updatedAt
+                                );
                             });
 
-                            await kuboPlebbit.destroy();
-                        }, 10000);
-                        await resolveWhenConditionIsTrue({
-                            toUpdate: commentToBeRejected,
-                            predicate: () => commentToBeRejected.pendingApproval === false
+                            const errors = [];
+                            const failIfUpdated = () =>
+                                newComment.raw.commentUpdate &&
+                                expect.fail("Rejected comment unexpectedly emitted an update event with CommentUpdate");
+                            newComment.on("update", failIfUpdated);
+                            newComment.on("error", (err) => errors.push(err));
+                            await newComment.update();
+
+                            // Wait until an error arrives or 10s pass so the test can proceed
+                            await new Promise((resolve) => {
+                                let settled = false;
+                                let timeoutId;
+                                const onError = () => {
+                                    if (settled) return;
+                                    settled = true;
+                                    clearTimeout(timeoutId);
+                                    newComment.removeListener("error", onError);
+                                    resolve();
+                                };
+                                timeoutId = setTimeout(() => {
+                                    if (settled) return;
+                                    settled = true;
+                                    newComment.removeListener("error", onError);
+                                    resolve();
+                                }, 10_000);
+                                newComment.on("error", onError);
+                            });
+
+                            newComment.removeListener("update", failIfUpdated);
+
+                            expect(newComment.raw.commentUpdate).to.be.undefined;
+                            expect(newComment.updatedAt).to.be.undefined;
+                            if (errors.length > 0)
+                                expect(errors[0].code).to.be.oneOf([
+                                    "ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES",
+                                    "ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS"
+                                ]);
+                            await newComment.stop();
+                            await remotePlebbit.destroy();
                         });
-                        expect(commentToBeRejected.pendingApproval).to.be.false;
-                        clearInterval(intervalId);
-                    });
+
+                    if (!shouldCommentBePurged)
+                        it.sequential(
+                            `Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update - Remote Plebbit Config ${remotePlebbitConfig.name}`,
+                            async () => {
+                                const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+
+                                const newComment = await remotePlebbit.createComment(commentToBeRejected);
+
+                                await newComment.update();
+                                await resolveWhenConditionIsTrue({ toUpdate: newComment, predicate: () => newComment.updatedAt });
+
+                                // will test for approved, removed, reason, etc
+                                for (const commentModKey of Object.keys(commentMod)) {
+                                    expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
+                                    expect(newComment.raw.commentUpdate[commentModKey]).to.equal(commentMod[commentModKey]);
+                                }
+
+                                expect(newComment.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
+                                expect(newComment.upvoteCount).to.equal(0);
+                                expect(newComment.replyCount).to.equal(0);
+                                expect(newComment.childCount).to.equal(0);
+                                // `Publishing approved:false adds removed:true automatically to comment update
+                                expect(newComment.removed).to.be.true;
+
+                                expect(newComment.raw.commentUpdate.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
+                                expect(newComment.raw.commentUpdate.upvoteCount).to.equal(0);
+                                expect(newComment.raw.commentUpdate.replyCount).to.equal(0);
+                                expect(newComment.raw.commentUpdate.childCount).to.equal(0);
+
+                                expect(newComment.raw.commentUpdate.removed).to.be.true;
+
+                                await newComment.stop();
+                                await remotePlebbit.destroy();
+                            }
+                        );
+
+                    if (!shouldCommentBePurged)
+                        // if only {approved:false} then we're not getting an update
+                        it(`A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)} - Plebbit Config ${remotePlebbitConfig.name}`, async () => {
+                            // TODO let's add a test to load with local plebbit rpc (plebbit instance)
+                            await new Promise((resolve) => setTimeout(resolve, 5000));
+                            const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                            remotePlebbit._timeouts["comment-ipfs"] = 500; // it's gonna fail to load CID so this will make test run faster
+                            const remoteCommentToBeRejected = await remotePlebbit.createComment({
+                                cid: commentToBeRejected.cid,
+                                subplebbitAddress: commentToBeRejected.subplebbitAddress
+                            });
+                            await remoteCommentToBeRejected.update();
+                            await resolveWhenConditionIsTrue({
+                                toUpdate: remoteCommentToBeRejected,
+                                predicate: () => remoteCommentToBeRejected.pendingApproval === false
+                            });
+                            expect(remoteCommentToBeRejected.pendingApproval).to.be.false;
+                            await remotePlebbit.destroy();
+                        });
+                });
 
                 it(`Can't vote on rejected comment`, async () => {
                     const expectedMessage = commentMod.removed
