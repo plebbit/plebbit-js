@@ -25,12 +25,12 @@ const getTestPort = (() => {
     };
 })();
 
-const cloneTrackedListeners = (trackedMap) =>
-    new Map([...trackedMap.entries()].map(([event, listeners]) => [event, new Set(listeners)]));
+const cloneTrackedListeners = (trackedMap) => new Map([...trackedMap.entries()].map(([event, listeners]) => [event, new Set(listeners)]));
 
 const setupConnectionContext = (rpcServer, connectionId) => {
     rpcServer.subscriptionCleanups[connectionId] = {};
     rpcServer.connections[connectionId] = { send: () => {} };
+    rpcServer._onSettingsChange[connectionId] = {};
 };
 
 describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
@@ -164,10 +164,7 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
                 undefined,
                 "Tracked listeners should be removed after delete"
             );
-            expect(rpcServer.plebbit._startedSubplebbits[address]).to.equal(
-                undefined,
-                "Started sub list should not contain deleted sub"
-            );
+            expect(rpcServer.plebbit._startedSubplebbits[address]).to.equal(undefined, "Started sub list should not contain deleted sub");
 
             trackedSnapshot.forEach((listeners, event) => {
                 const emitterListeners = capturedSubplebbit.listeners(event);
