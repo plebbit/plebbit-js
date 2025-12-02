@@ -12,10 +12,7 @@ import {
     getAvailablePlebbitConfigsToTestAgainst,
     waitTillReplyInParentPages,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    mockPlebbitNoDataPathWithOnlyKuboClientNoAdd,
-    describeSkipIfRpc,
-    mockGatewayPlebbit,
-    iterateThroughPagesToFindCommentInParentPagesInstance
+    mockPlebbitNoDataPathWithOnlyKuboClientNoAdd
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { CID } from "kubo-rpc-client";
