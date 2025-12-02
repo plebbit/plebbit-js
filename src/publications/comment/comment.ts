@@ -442,6 +442,7 @@ export class Comment
             log("Found unknown props on decryptedVerification.commentUpdate record", unknownProps, "Will set them on Comment instance");
             Object.assign(this, remeda.pick(decryptedVerification.commentUpdate, unknownProps));
         }
+        this.emit("update", this);
     }
 
     protected override async _verifyDecryptedChallengeVerificationAndUpdateCommentProps(
@@ -541,6 +542,7 @@ export class Comment
                         });
 
                         if (curAttempt === 1 && this.subplebbitAddress) {
+                            log("Failed the first time in loading comment", this.cid, "will try to load from subplebbit pages");
                             // if we fail for second time, start trying to find CommentIpfs using pages instead of comment.cid
                             await this._clientsManager._fetchCommentIpfsFromPages();
                         }
@@ -600,16 +602,20 @@ export class Comment
             if (!this._subplebbitForUpdating)
                 this._subplebbitForUpdating = await this._clientsManager._createSubInstanceWithStateTranslation();
 
+            if (this.state !== "updating") return; // there are cases where stop() is called in parallel
             if (this._subplebbitForUpdating.subplebbit.state === "stopped") {
-                await this._subplebbitForUpdating!.subplebbit.update();
+                await this._subplebbitForUpdating!.subplebbit.update(); // BUG: calling this resets this._subplebbitForUpdating to undefined
             }
+            if (this.state !== "updating") return; // there are cases where stop() is called in parallel
             if (this._subplebbitForUpdating.subplebbit.raw.subplebbitIpfs)
                 await this._subplebbitForUpdating.update(this._subplebbitForUpdating.subplebbit);
         } else {
             if (!this._postForUpdating) this._postForUpdating = await this._clientsManager._createPostInstanceWithStateTranslation();
+            if (this.state !== "updating") return; // there are cases where stop() is called in parallel
             if (this._postForUpdating!.comment.state === "stopped") {
                 await this._postForUpdating!.comment.update();
             }
+            if (this.state !== "updating") return; // there are cases where stop() is called in parallel
             if (this._postForUpdating!.comment.raw.commentUpdate) await this._postForUpdating!.update(this._postForUpdating!.comment);
         }
     }

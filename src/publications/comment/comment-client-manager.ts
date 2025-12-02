@@ -477,6 +477,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._comment.on("update", onCommentUpdate);
         this._comment.on("statechange", onStateChange);
 
+        if (this._comment.state === "stopped" || this._plebbit.destroyed) return;
         try {
             const sub = await this._plebbit.getSubplebbit(this._comment.subplebbitAddress);
             if (abortController.signal.aborted) return;
@@ -489,7 +490,10 @@ export class CommentClientsManager extends PublicationClientsManager {
                 signal: abortController.signal
             });
             if (commentAfterSearchingAllPages) {
-                if (!this._comment.raw.comment) this._comment._initIpfsProps(commentAfterSearchingAllPages.comment);
+                if (!this._comment.raw.comment) {
+                    this._comment._initIpfsProps(commentAfterSearchingAllPages.comment);
+                    this._comment.emit("update", this._comment);
+                }
                 if ((this._comment.updatedAt || 0) < commentAfterSearchingAllPages.commentUpdate.updatedAt)
                     this._comment._initCommentUpdate(commentAfterSearchingAllPages.commentUpdate, sub.raw.subplebbitIpfs);
             }
@@ -587,12 +591,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         // this._subplebbitForUpdating!.subplebbit.raw.subplebbitIpfs?.posts.
 
         const postInUpdatingSubplebbit = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ sub });
-
-        if (postInUpdatingSubplebbit && !this._comment.raw.comment) {
-            log(`Loaded the CommentIpfs props of cid (${this._comment.cid}) from subplebbit.posts correctly, updating the instance props`);
-
-            this._comment._initIpfsProps(postInUpdatingSubplebbit.comment);
-        }
 
         if (
             postInUpdatingSubplebbit &&
@@ -895,6 +893,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (!repliesSubplebbit.signature) throw Error("repliesSubplebbit.signature needs to be defined to fetch comment update of reply");
         if (replyInPage && !this._comment.raw.comment) {
             this._comment._initIpfsProps(replyInPage.comment);
+            this._comment.emit("update", this._comment);
         }
         if (replyInPage && replyInPage.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0)) {
             const log = Logger(
