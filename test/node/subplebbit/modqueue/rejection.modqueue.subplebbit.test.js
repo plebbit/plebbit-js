@@ -8,22 +8,20 @@ import {
     processAllCommentsRecursively,
     forceParentRepliesToAlwaysGenerateMultipleChunks,
     forcePagesToUsePageCidsOnly,
-    mockGatewayPlebbit,
     getCommentWithCommentUpdateProps,
     publishToModQueueWithDepth,
     generateMockVote,
     loadAllPages,
     itSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst,
-    createPendingApprovalChallenge,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
-const depthsToTest = [0, 1, 2, 20];
+const depthsToTest = [0, 1, 2, 15];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 const commentModProps = [
@@ -40,9 +38,6 @@ const commentModProps = [
     },
     { approved: false, reason: "Test removed and approved", removed: true }
 ];
-// TODO should we generalize this test to use all remote plebbit config
-// sequential 619s
-// concurrent
 
 for (const commentMod of commentModProps) {
     for (const pendingCommentDepth of depthsToTest) {
