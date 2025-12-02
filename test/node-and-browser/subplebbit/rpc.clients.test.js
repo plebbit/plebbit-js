@@ -1,7 +1,12 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
-import { createNewIpns, resolveWhenConditionIsTrue, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
+import {
+    createNewIpns,
+    resolveWhenConditionIsTrue,
+    getAvailablePlebbitConfigsToTestAgainst,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util.js";
 
 import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
 
@@ -44,7 +49,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
             await sub.update();
 
-            await new Promise((resolve) => sub.once("update", resolve));
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
 
             await sub.stop();
             expect(recordedStates).to.deep.equal(expectedStates);
