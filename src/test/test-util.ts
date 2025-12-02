@@ -211,8 +211,7 @@ export async function loadAllPagesBySortName(pageSortName: string, pagesInstance
 }
 
 export async function loadAllUniquePostsUnderSubplebbit(subplebbit: RemoteSubplebbit) {
-    if (Object.keys(subplebbit.posts.pageCids).length === 0 && Object.keys(subplebbit.posts.pages).length === 0)
-        throw Error("Page instance has no comments under it");
+    if (Object.keys(subplebbit.posts.pageCids).length === 0 && Object.keys(subplebbit.posts.pages).length === 0) return [];
     const allCommentsInPreloadedPages =
         Object.keys(subplebbit.posts.pageCids).length === 0 && Object.keys(subplebbit.posts.pages).length > 0;
     if (allCommentsInPreloadedPages) {
