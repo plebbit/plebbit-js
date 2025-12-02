@@ -6,9 +6,11 @@ import Logger from "@plebbit/plebbit-logger";
 export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
     commentCidToFind: CommentIpfsWithCidDefined["cid"];
     subplebbit: RemoteSubplebbit;
+    postCid?: CommentIpfsWithCidDefined["cid"];
+    parentCid?: CommentIpfsWithCidDefined["cid"];
     signal?: AbortSignal;
 }): Promise<PageIpfs["comments"][number] | undefined> {
-    const { commentCidToFind, subplebbit, signal } = opts;
+    const { commentCidToFind, subplebbit, signal, postCid, parentCid } = opts;
     if (!commentCidToFind) throw Error("commentCidToFind should be defined");
 
     const log = Logger("plebbit-js:comment:loadAllPagesUnderSubplebbitToFindComment");
@@ -18,6 +20,12 @@ export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
     const queued = new Map<string, PendingPageCid>();
     const visited = new Set<string>();
     const parentCommentCache = new Map<string, Promise<any>>();
+
+    const resetTraversalState = () => {
+        queue.length = 0;
+        queued.clear();
+        visited.clear();
+    };
 
     const getParentCommentInstance = (parentCid: string) => {
         let existing = parentCommentCache.get(parentCid);
@@ -41,12 +49,17 @@ export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
         return page as PageIpfs;
     };
 
+    const getPageKey = (cid: string, source: PendingPageCid["source"], parentCommentCid?: string) =>
+        `${source}:${parentCommentCid || ""}:${cid}`;
+
     const enqueue = (cid: string | undefined, source: PendingPageCid["source"], parentCommentCid?: string) => {
-        if (typeof cid !== "string" || cid.length === 0 || visited.has(cid)) return;
-        const existingEntry = queued.get(cid);
+        if (typeof cid !== "string" || cid.length === 0) return;
+        const key = getPageKey(cid, source, parentCommentCid);
+        if (visited.has(key)) return;
+        const existingEntry = queued.get(key);
         if (existingEntry) return;
         const entry = { cid, source, parentCommentCid };
-        queued.set(cid, entry);
+        queued.set(key, entry);
         queue.push(entry);
     };
 
@@ -114,6 +127,100 @@ export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
         return undefined;
     };
 
+    const drainQueue = async (
+        processPageFunc: (
+            page: PageIpfs | PageTypeJson,
+            source: PendingPageCid["source"],
+            parentCommentCid?: string
+        ) => Promise<PageIpfs["comments"][number] | undefined>
+    ): Promise<PageIpfs["comments"][number] | undefined> => {
+        while (queue.length) {
+            throwIfAborted();
+            const { cid, source, parentCommentCid } = queue.shift() as PendingPageCid;
+            const pageKey = getPageKey(cid, source, parentCommentCid);
+            queued.delete(pageKey);
+            if (visited.has(pageKey)) continue;
+            visited.add(pageKey);
+
+            const page = await fetchPage(cid, source, parentCommentCid);
+            if (!page) continue;
+
+            const foundComment = await processPageFunc(page, source, parentCommentCid);
+            if (foundComment) return foundComment;
+        }
+        return undefined;
+    };
+
+    const processPageForCidOnly =
+        (targetCid: string) =>
+        async (
+            page: PageIpfs | PageTypeJson,
+            source: PendingPageCid["source"],
+            _parentCommentCid?: string
+        ): Promise<PageIpfs["comments"][number] | undefined> => {
+            throwIfAborted();
+            const pageIpfs = normalizePage(page);
+            for (const pageComment of pageIpfs.comments) {
+                if (pageComment.commentUpdate.cid === targetCid) return pageComment;
+            }
+            if (pageIpfs.nextCid) enqueue(pageIpfs.nextCid, source);
+            return undefined;
+        };
+
+    const findPostCommentInSubplebbit = async (targetPostCid: string): Promise<PageIpfs["comments"][number] | undefined> => {
+        const processPostPage = processPageForCidOnly(targetPostCid);
+        for (const page of Object.values(subplebbit.posts.pages || {})) {
+            if (!page) continue;
+            const comment = await processPostPage(page, "posts");
+            if (comment) return comment;
+        }
+
+        const initialPostsPageCid =
+            subplebbit.posts.pageCids?.new || Object.values(subplebbit.posts.pageCids || {}).find((cid) => typeof cid === "string");
+        enqueue(initialPostsPageCid, "posts");
+        const foundFromQueue = await drainQueue(processPostPage);
+        if (foundFromQueue) return foundFromQueue;
+        return undefined;
+    };
+
+    const searchUnderParent = async (parentCommentCid: string): Promise<PageIpfs["comments"][number] | undefined> => {
+        resetTraversalState();
+        try {
+            const parentCommentInstance = await getParentCommentInstance(parentCommentCid);
+            const foundFromReplies = await processReplies(parentCommentInstance.replies, parentCommentCid);
+            if (foundFromReplies) return foundFromReplies;
+            const foundFromQueue = await drainQueue(processPage);
+            if (foundFromQueue) return foundFromQueue;
+        } catch (err) {
+            log.trace("searchUnderParent failed", { parentCommentCid, err });
+        }
+        return undefined;
+    };
+
+    const searchUnderPost = async (postCidToSearch: string): Promise<PageIpfs["comments"][number] | undefined> => {
+        resetTraversalState();
+        const postComment = await findPostCommentInSubplebbit(postCidToSearch);
+        if (!postComment) return undefined;
+        if (postComment.commentUpdate.cid === commentCidToFind) return postComment;
+
+        resetTraversalState();
+        const foundFromReplies = await processReplies(postComment.commentUpdate.replies, postCidToSearch);
+        if (foundFromReplies) return foundFromReplies;
+        return await drainQueue(processPage);
+    };
+
+    if (parentCid) {
+        const foundFromParent = await searchUnderParent(parentCid);
+        if (foundFromParent) return foundFromParent;
+    }
+
+    if (postCid) {
+        const foundFromPost = await searchUnderPost(postCid);
+        if (foundFromPost) return foundFromPost;
+    }
+
+    resetTraversalState();
+
     for (const page of Object.values(subplebbit.posts.pages || {})) {
         if (!page) continue;
         const comment = await processPage(page, "posts");
@@ -124,19 +231,5 @@ export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
         subplebbit.posts.pageCids?.new || Object.values(subplebbit.posts.pageCids || {}).find((cid) => typeof cid === "string");
     enqueue(initialPageCid, "posts");
 
-    while (queue.length) {
-        throwIfAborted();
-        const { cid, source, parentCommentCid } = queue.shift() as PendingPageCid;
-        queued.delete(cid);
-        if (visited.has(cid)) continue;
-        visited.add(cid);
-
-        const page = await fetchPage(cid, source, parentCommentCid);
-        if (!page) continue;
-
-        const foundComment = await processPage(page, source, parentCommentCid);
-        if (foundComment) return foundComment;
-    }
-
-    return undefined;
+    return await drainQueue(processPage);
 }

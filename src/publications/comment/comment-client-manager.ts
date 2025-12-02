@@ -484,6 +484,8 @@ export class CommentClientsManager extends PublicationClientsManager {
             const commentAfterSearchingAllPages = await loadAllPagesUnderSubplebbitToFindComment({
                 subplebbit: sub,
                 commentCidToFind: this._comment.cid,
+                postCid: this._comment.postCid,
+                parentCid: this._comment.parentCid,
                 signal: abortController.signal
             });
             if (commentAfterSearchingAllPages) {
