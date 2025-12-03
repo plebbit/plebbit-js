@@ -5,8 +5,6 @@ import { MockHttpRouter } from "../../dist/node/runtime/node/test/mock-http-rout
 
 import tcpPortUsed from "tcp-port-used";
 
-// TODO this test should create a new http router instead of relying on existing routers that may fail
-
 // TODO calling plebbit.destroy() should stop the address rewriter proxy
 describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () => {
     const kuboNodeForHttpRouter = "http://localhost:15006/api/v0";
@@ -16,27 +14,6 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
     const startPort = 19575;
 
     let plebbit;
-
-    // const waitForProvidersOnRouter = async (keys) => {
-    //     const timeoutAt = Date.now() + 60_000;
-    //     while (Date.now() < timeoutAt) {
-    //         if (mockHttpRouter && keys.every((key) => mockHttpRouter.hasProvidersFor(key))) return;
-    //         await new Promise((resolve) => setTimeout(resolve, 250));
-    //     }
-    //     const diagnosticInfo = mockHttpRouter
-    //         ? {
-    //               url: mockHttpRouter.url,
-    //               requestCount: mockHttpRouter.requests.length,
-    //               lastRequest: mockHttpRouter.requests.at(-1),
-    //               recentRequests: mockHttpRouter.requests.slice(-5)
-    //           }
-    //         : null;
-    //     const error = new Error(
-    //         `Timed out waiting for mock HTTP router to record providers. Requests observed: ${JSON.stringify(diagnosticInfo, null, 2)}`
-    //     );
-    //     error.name = "ProvidersNotRecordedError";
-    //     throw error;
-    // };
 
     before(async () => {
         mockHttpRouter = new MockHttpRouter();
