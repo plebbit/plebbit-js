@@ -199,7 +199,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             await mockPost.stop();
 
-            const expectedFirstStates = ["fetching-ipfs", "stopped", "fetching-update-ipfs", "stopped"]; // for comment ipfs and comment update
+            const expectedFirstStates = ["fetching-update-ipfs", "stopped"]; // CommentIpfs is already loaded from updating subplebbit preloaded pages
             expect(recordedStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
 
             const noNewUpdateStates = recordedStates.slice(expectedFirstStates.length, recordedStates.length); // should be just 'fetching-ipns' and 'succeeded
