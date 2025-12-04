@@ -462,16 +462,18 @@ export class CommentClientsManager extends PublicationClientsManager {
         // - download all comments under a sub and look for our specific comment
         if (!this._comment.subplebbitAddress) throw Error("Comment subplebbtiAddress should be defined");
         if (!this._comment.cid) throw Error("Comment cid should be defined");
+        const sub = await this._plebbit.createSubplebbit({ address: this._comment.subplebbitAddress });
 
         const abortController = new AbortController();
-        const abortIfNeeded = () => {
+        const abortIfNeeded = async () => {
             if (!abortController.signal.aborted) abortController.abort();
+            if (sub.state === "updating") await sub.stop();
         };
-        const onCommentUpdate = () => {
-            if (this._comment.raw.comment) abortIfNeeded();
+        const onCommentUpdate = async () => {
+            if (this._comment.raw.comment) await abortIfNeeded();
         };
-        const onStateChange = (newState: Comment["state"]) => {
-            if (newState === "stopped") abortIfNeeded();
+        const onStateChange = async (newState: Comment["state"]) => {
+            if (newState === "stopped") await abortIfNeeded();
         };
 
         this._comment.on("update", onCommentUpdate);
@@ -479,8 +481,43 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         if (this._comment.state === "stopped" || this._plebbit.destroyed) return;
         try {
-            const sub = await this._plebbit.getSubplebbit(this._comment.subplebbitAddress);
             if (abortController.signal.aborted) return;
+            await sub.update();
+            await new Promise<void>((resolve, reject) => {
+                const abortError = () => {
+                    const error = new Error("The operation was aborted");
+                    error.name = "AbortError";
+                    return error;
+                };
+                const cleanup = () => {
+                    sub.removeListener("update", onUpdate);
+                    abortController.signal.removeEventListener("abort", onAbort);
+                };
+                const onAbort = () => {
+                    cleanup();
+                    reject(abortError());
+                };
+                const onUpdate = async () => {
+                    try {
+                        if (typeof sub.updatedAt === "number") {
+                            cleanup();
+                            resolve();
+                        }
+                    } catch (error) {
+                        cleanup();
+                        reject(error as Error);
+                    }
+                };
+                if (abortController.signal.aborted) {
+                    reject(abortError());
+                    return;
+                }
+                abortController.signal.addEventListener("abort", onAbort);
+                sub.on("update", onUpdate);
+                void onUpdate();
+            });
+
+            await sub.stop();
 
             const commentAfterSearchingAllPages = await loadAllPagesUnderSubplebbitToFindComment({
                 subplebbit: sub,
