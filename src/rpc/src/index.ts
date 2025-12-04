@@ -152,7 +152,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup on disconnect
         this.rpcWebsockets.on("disconnection", async (ws) => {
-            log("RPC client disconnected", ws._id);
+            log("RPC client disconnected", ws._id, "number of rpc clients connected", this.rpcWebsockets.wss.clients.size);
             const subscriptionCleanups = this.subscriptionCleanups[ws._id];
             if (!subscriptionCleanups) {
                 delete this.subscriptionCleanups[ws._id];
@@ -717,8 +717,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const comment = await plebbit.createComment({ cid });
         const sendUpdate = () => {
             if (!sentCommentIpfsUpdateEvent && comment.raw.comment) {
-                const commentIpfsRecord = comment.toJSONIpfs();
-                sendEvent("update", commentIpfsRecord);
+                sendEvent("update", comment.raw.comment);
                 sentCommentIpfsUpdateEvent = true;
             }
             if (comment.raw.commentUpdate) {
@@ -746,29 +745,13 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = async () => {
-            logUpdate(
-                "Cleaning up commentUpdate subscription",
-                { subscriptionId, connectionId, cid: comment.cid },
-                "_updatingSubplebbbits before",
-                Object.keys(this.plebbit._updatingSubplebbits),
-                "_updatingComments before",
-                Object.keys(this.plebbit._updatingComments)
-            );
+            logUpdate("Cleaning up commentUpdate subscription", { subscriptionId, connectionId, cid: comment.cid });
             comment.removeListener("update", updateListener);
             comment.removeListener("updatingstatechange", updatingStateListener);
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
             await comment.stop();
             if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
-
-            logUpdate(
-                "After Cleaning up commentUpdate subscription",
-                { subscriptionId, connectionId, cid: comment.cid },
-                "_updatingSubplebbbits after",
-                Object.keys(this.plebbit._updatingSubplebbits),
-                "_updatingComments after",
-                Object.keys(this.plebbit._updatingComments)
-            );
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
