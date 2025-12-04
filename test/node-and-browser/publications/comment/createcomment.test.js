@@ -10,7 +10,8 @@ import {
     publishWithExpectedResult,
     addStringToIpfs,
     findOrPublishCommentWithDepth,
-    waitTillReplyInParentPages
+    waitTillReplyInParentPages,
+    findReplyInParentCommentPagesInstancePreloadedAndPageCids
 } from "../../../../dist/node/test/test-util.js";
 import validCommentWithRepliesFixture from "../../../fixtures/signatures/comment/valid_comment_with_replies_raw.json" with { type: "json" };
 import { describe, it } from "vitest";
@@ -325,7 +326,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         [1, 2, 3, 5, 10].forEach((replyDepth) => {
             it.sequential(
-                `Creating a reply with depth ${replyDepth} that exists in updating parent replies should automatically get CommentIpfs and CommentUpdate from it`,
+                `Creating a reply with depth ${replyDepth} that exists in updating parent replies preloaded pages should automatically get CommentIpfs and CommentUpdate from it`,
                 async () => {
                     // TODO how do you guarantee reply with this depth will be there?
 
@@ -344,10 +345,17 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const reply = await publishRandomReply(parentComment, plebbit);
 
                     await waitTillReplyInParentPages(reply, plebbit);
+                    const replyInPage = await findReplyInParentCommentPagesInstancePreloadedAndPageCids({ parentComment, reply });
 
                     await reply.stop();
                     expect(plebbit._updatingComments[parentComment.cid]).to.be.ok;
                     expect(plebbit._updatingComments[reply.cid]).to.be.undefined;
+
+                    // we need to include replyInPage forcibly in parent comment replies pages
+
+                    for (const preloadedPages of Object.values(plebbit._updatingComments[parentComment.cid].replies.pages)) {
+                        preloadedPages.comments.push(replyInPage);
+                    }
 
                     const replyRecreated = await plebbit.createComment({ cid: reply.cid });
 
