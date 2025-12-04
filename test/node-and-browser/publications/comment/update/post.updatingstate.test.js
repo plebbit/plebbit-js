@@ -436,6 +436,35 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(comment.updatingState).to.equal("stopped");
         });
 
+        it(`does not recurse when the post instance is already tracked as the updating instance`, async () => {
+            const postCid = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D";
+            const post = await plebbit.createComment({ cid: postCid });
+            const previousUpdatingEntry = plebbit._updatingComments[postCid];
+
+            // Mirror the bug scenario: the same instance is placed in _updatingComments before update()
+            plebbit._updatingComments[postCid] = post;
+
+            try {
+                await post.update(); // _updatingCommentInstance points to itself after this call
+                const readUpdatingState = () => post.updatingState;
+
+                expect(readUpdatingState).to.not.throw();
+                expect(readUpdatingState()).to.equal("stopped");
+            } finally {
+                if (post._updatingCommentInstance) {
+                    post.removeListener("statechange", post._updatingCommentInstance.statechange);
+                    post.removeListener("updatingstatechange", post._updatingCommentInstance.updatingstatechange);
+                    post.removeListener("update", post._updatingCommentInstance.update);
+                    post.removeListener("error", post._updatingCommentInstance.error);
+                    post._updatingCommentInstance = undefined;
+                }
+                if (previousUpdatingEntry) plebbit._updatingComments[postCid] = previousUpdatingEntry;
+                else delete plebbit._updatingComments[postCid];
+
+                await post.stop().catch(() => {});
+            }
+        });
+
         it(`the order of state-event-statechange is correct when we get a new update from post`, async () => {
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             const postCid = sub.posts.pages.hot.comments[0].cid;

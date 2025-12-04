@@ -95,6 +95,41 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
     });
 });
 
+describeSkipIfRpc("reply.updatingState regression (node)", () => {
+    plebbitConfigs.forEach((config) => {
+        it.concurrent(`does not recurse when reply is already the updating instance - ${config.name}`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
+            const replyCid = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D";
+            const reply = await plebbit.createComment({ cid: replyCid });
+            const previousUpdatingEntry = plebbit._updatingComments[replyCid];
+
+            // Force the same instance to be treated as the updating instance to mirror the recursion bug
+            plebbit._updatingComments[replyCid] = reply;
+
+            try {
+                await reply.update(); // sets _updatingCommentInstance to itself
+
+                const readUpdatingState = () => reply.updatingState;
+                expect(readUpdatingState).to.not.throw();
+                expect(readUpdatingState()).to.equal("stopped");
+            } finally {
+                if (reply._updatingCommentInstance) {
+                    reply.removeListener("statechange", reply._updatingCommentInstance.statechange);
+                    reply.removeListener("updatingstatechange", reply._updatingCommentInstance.updatingstatechange);
+                    reply.removeListener("update", reply._updatingCommentInstance.update);
+                    reply.removeListener("error", reply._updatingCommentInstance.error);
+                    reply._updatingCommentInstance = undefined;
+                }
+                if (previousUpdatingEntry) plebbit._updatingComments[replyCid] = previousUpdatingEntry;
+                else delete plebbit._updatingComments[replyCid];
+
+                await reply.stop().catch(() => {});
+                await plebbit.destroy().catch(() => {});
+            }
+        });
+    });
+});
+
 async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
     if (replyDepth === undefined || replyDepth === null) throw new Error("replyDepth is required");
     if (replyDepth < 1) throw new Error("replyDepth must be at least 1");

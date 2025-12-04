@@ -637,7 +637,11 @@ export class Comment
     }
 
     get updatingState(): Comment["_updatingState"] {
-        if (this._updatingCommentInstance) return this._updatingCommentInstance.comment.updatingState;
+        if (this._updatingCommentInstance) {
+            const mirroredComment = this._updatingCommentInstance.comment;
+            if (mirroredComment === this) return this._updatingState; // prevent self-mirroring recursion
+            return mirroredComment.updatingState;
+        }
         return this._updatingState;
     }
 
