@@ -6,7 +6,7 @@ import { randomUUID } from "crypto";
 import { Buffer } from "buffer";
 import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client.js";
 
-const PORT = 25963;
+const PORT = 25964;
 let ioServer;
 let startedLocalServer = false;
 
