@@ -362,8 +362,8 @@ PubsubSignature {
 - [Plebbit API](#plebbit-api)
   - [`Plebbit(plebbitOptions)`](#plebbitplebbitoptions)
   - [`plebbit.getMultisub(multisubAddress)`](#plebbitgetmultisubmultisubaddress)
-  - [`plebbit.getSubplebbit(subplebbitAddress)`](#plebbitgetsubplebbitsubplebbitaddress)
-  - [`plebbit.getComment(commentCid)`](#plebbitgetcommentcommentcid)
+  - [`plebbit.getSubplebbit({address})`](#plebbitgetsubplebbitaddress)
+  - [`plebbit.getComment({cid})`](#plebbitgetcommentcid)
   - [`plebbit.createMultisub(createMultisubOptions)`](#plebbitcreatemultisubcreatemultisuboptions)
   - [`plebbit.createSubplebbit(createSubplebbitOptions)`](#plebbitcreatesubplebbitcreatesubplebbitoptions)
   - [`plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`](#plebbitcreatesubplebbiteditcreatesubplebbiteditoptions)
@@ -375,10 +375,10 @@ PubsubSignature {
   - `plebbit.subplebbits`
   - `plebbit.clients`
   - [`plebbit.getDefaults()`](#plebbitgetdefaults)
-  - `plebbit.fetchCid(cid)`
-  - `plebbit.resolveAuthorAddress(address)`
-  - `Plebbit.getShortAddress(address)`
-  - `Plebbit.getShortCid(cid)`
+  - `plebbit.fetchCid({cid})`
+  - `plebbit.resolveAuthorAddress({address})`
+  - `Plebbit.getShortAddress({address})`
+  - `Plebbit.getShortCid({cid})`
   - `Plebbit.setNativeFunctions(nativeFunctions)`
   - `Plebbit.nativeFunctions`
   - `Plebbit.challenges`
@@ -475,7 +475,7 @@ PubsubSignature {
   - [`updatingstatechange`](#updatingstatechange-1)
   - [`publishingstatechange`](#publishingstatechange)
 - [Pages API](#pages-api)
-  - [`pages.getPage(pageCid)`](#pagesgetpagepagecid)
+  - [`pages.getPage({cid})`](#pagesgetpagecid)
   - `pages.pages`
   - `pages.pageCids`
 - Client API
@@ -564,12 +564,12 @@ plebbit.on('error', console.log)
 
 ```js
 const multisubAddress = '12D3KooW...' // or 'john.eth'
-const multisub = await plebbit.getSubplebbit(multisubAddress)
+const multisub = await plebbit.getSubplebbit({address: multisubAddress})
 const multisubSubplebbitAddresses = multisub.map(subplebbit => subplebbit.address)
 console.log(multisubSubplebbitAddresses)
 ```
 
-### `plebbit.getSubplebbit(subplebbitAddress)`
+### `plebbit.getSubplebbit({address})`
 
 > Get a subplebbit by its `Address`.
 
@@ -577,7 +577,7 @@ console.log(multisubSubplebbitAddresses)
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| subplebbitAddress | `string` | The `Address` of the subplebbit |
+| address | `string` | The `Address` of the subplebbit |
 
 #### Returns
 
@@ -589,13 +589,13 @@ console.log(multisubSubplebbitAddresses)
 
 ```js
 const subplebbitAddress = '12D3KooW...'
-const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
+const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress})
 console.log(subplebbit)
 
 let currentPostCid = subplebbit.lastPostCid
 const scrollAllSubplebbitPosts = async () => {
   while (currentPostCid) {
-    const post = await plebbit.getComment(currentPostCid)
+    const post = await plebbit.getComment({cid: currentPostCid})
     console.log(post)
     currentPostCid = post.previousCid
   }
@@ -608,7 +608,7 @@ Prints:
 */
 ```
 
-### `plebbit.getComment(commentCid)`
+### `plebbit.getComment({cid})`
 
 > Get a plebbit comment by its IPFS CID. Posts are also comments.
 
@@ -616,7 +616,7 @@ Prints:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| commentCid | `string` | The IPFS CID of the comment |
+| cid | `string` | The IPFS CID of the comment |
 
 #### Returns
 
@@ -628,14 +628,14 @@ Prints:
 
 ```js
 const commentCid = 'Qm...'
-const comment = await plebbit.getComment(commentCid)
+const comment = await plebbit.getComment({cid: commentCid})
 console.log('comment:', comment)
 comment.on('update', updatedComment => console.log('comment with latest data', updatedComment))
 if (comment.parentCid) { // comment with no parent cid is a post
-  plebbit.getComment(comment.parentCid).then(parentPost => console.log('parent post:', parentPost))
+  plebbit.getComment({cid: comment.parentCid}).then(parentPost => console.log('parent post:', parentPost))
 }
-plebbit.getSubplebbit(comment.subplebbitAddress).then(subplebbit => console.log('subplebbit:', subplebbit))
-plebbit.getComment(comment.previousCid).then(previousComment => console.log('previous comment:', previousComment))
+plebbit.getSubplebbit({address: comment.subplebbitAddress}).then(subplebbit => console.log('subplebbit:', subplebbit))
+plebbit.getComment({cid: comment.previousCid}).then(previousComment => console.log('previous comment:', previousComment))
 /*
 Prints:
 { ...TODO }
@@ -1413,7 +1413,7 @@ await comment.publish()
 
 ```js
 const commentCid = 'Qm...'
-const comment = await plebbit.getComment(commentCid)
+const comment = await plebbit.getComment({cid: commentCid})
 comment.on('update', (updatedCommentInstance) => {
   console.log(updatedCommentInstance)
 
@@ -1457,7 +1457,7 @@ Object is of the form:
 #### Example
 
 ```js
-const comment = await plebbit.getComment(commentCid)
+const comment = await plebbit.getComment({cid: commentCid})
 comment.on('update', (updatedComment) => {
   console.log(updatedComment)
 })
@@ -1558,7 +1558,7 @@ await comment.publish()
 ## Pages API
 The pages API for scrolling pages of a subplebbit or replies to a post/comment. `Subplebbit.posts` and `Comment.replies` are `Pages` instances. `Subplebbit.posts.pages.hot` is a `Page` instance.
 
-### `pages.getPage(pageCid)`
+### `pages.getPage({cid})`
 
 > Get a `Page` instance using an IPFS CID from `Pages.pageCids[sortType]`, e.g. `Subplebbit.posts.pageCids.hot` or `Comment.replies.pageCids.topAll`.
 
@@ -1566,7 +1566,7 @@ The pages API for scrolling pages of a subplebbit or replies to a post/comment. 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| pageCid | `string` | The IPFS CID of the page |
+| cid | `string` | The IPFS CID of the page |
 
 #### Returns
 
@@ -1578,19 +1578,19 @@ The pages API for scrolling pages of a subplebbit or replies to a post/comment. 
 
 ```js
 // get sorted posts in a subplebbit
-const subplebbit = await plebbit.getSubplebbit(subplebbitAddress)
-const pageSortedByTopYear = await subplebbit.posts.getPage(subplebbit.posts.pageCids.topYear)
+const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress})
+const pageSortedByTopYear = await subplebbit.posts.getPage({cid: subplebbit.posts.pageCids.topYear})
 const postsSortedByTopYear = pageSortedByTopYear.comments
 console.log(postsSortedByTopYear)
 
 // get sorted replies to a post or comment
-const post = await plebbit.getComment(commentCid)
+const post = await plebbit.getComment({cid: commentCid})
 post.on('update', async updatedPost => {
   let replies
   // try to get sorted replies by sort type 'new'
   // sorted replies pages are not always available, for example if the post only has a few replies
   if (updatedPost.replies?.pageCids?.new) {
-    const repliesPageSortedByNew = await updatedPost.replies.getPage(updatedPost.replies.pageCids.new)
+    const repliesPageSortedByNew = await updatedPost.replies.getPage({cid: updatedPost.replies.pageCids.new})
     replies = repliesPageSortedByNew.comments
   }
   else {
