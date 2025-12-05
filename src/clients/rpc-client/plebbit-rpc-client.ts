@@ -286,8 +286,8 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         delete this._pendingSubscriptionMsgs[subscriptionId];
     }
 
-    async getComment(commentCid: CidRpcParam): Promise<CommentIpfsType> {
-        const parsedGetCommentArgs = parseRpcCidParam(commentCid);
+    async getComment(args: CidRpcParam): Promise<CommentIpfsType> {
+        const parsedGetCommentArgs = parseRpcCidParam(args);
         const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [parsedGetCommentArgs]);
         return commentProps;
     }
@@ -396,8 +396,8 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return publishRes;
     }
 
-    async commentUpdateSubscribe(commentCid: CidRpcParam) {
-        const parsedCommentUpdateArgs = parseRpcCidParam(commentCid);
+    async commentUpdateSubscribe(args: CidRpcParam) {
+        const parsedCommentUpdateArgs = parseRpcCidParam(args);
         const subscriptionId = SubscriptionIdSchema.parse(
             await this._webSocketClient.call("commentUpdateSubscribe", [parsedCommentUpdateArgs])
         );
