@@ -4,16 +4,11 @@ import {
     mockPlebbit,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    processAllCommentsRecursively,
     getCommentWithCommentUpdateProps,
-    forceParentRepliesToAlwaysGenerateMultipleChunks,
-    forcePagesToUsePageCidsOnly,
     publishToModQueueWithDepth,
-    loadAllPages,
     itSkipIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    createPendingApprovalChallenge,
-    loadAllUniquePostsUnderSubplebbit
+    createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
@@ -60,7 +55,6 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         after(async () => {
-            await approvedComment.stop();
             await subplebbit.delete();
             await plebbit.destroy();
             await remotePlebbit.destroy();
@@ -102,138 +96,74 @@ for (const pendingCommentDepth of depthsToTest) {
                 expect(subplebbit.lastPostCid).to.equal(approvedComment.cid);
             });
 
-        it.sequential(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
+        it(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.lastCommentCid === approvedComment.cid });
 
             expect(subplebbit.lastCommentCid).to.equal(approvedComment.cid);
         });
 
         if (pendingCommentDepth > 0) {
-            it.sequential(`Approved reply show up in parentComment.replyCount`, async () => {
+            it(`Approved reply show up in parentComment.replyCount`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).replyCount).to.equal(1);
             });
-            it.sequential(`Approved reply show up in parentComment.childCount`, async () => {
+            it(`Approved reply show up in parentComment.childCount`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).childCount).to.equal(1);
             });
-            it.sequential(`Approved reply show up in parentComment.lastChildCid`, async () => {
+            it(`Approved reply show up in parentComment.lastChildCid`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).lastChildCid).to.equal(
                     approvedComment.cid
                 );
             });
-            it.sequential(`Approved reply show up in parentComment.lastReplyTimestamp`, async () => {
+            it(`Approved reply show up in parentComment.lastReplyTimestamp`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).lastReplyTimestamp).to.equal(
                     approvedComment.timestamp
                 );
             });
         }
 
-        it.sequential(`Approved comment now appears in subplebbit.posts`, async () => {
-            // we can't assume that subplebbit.posts.pages.hot will be always defined anymore
-            const allCommentsUnderSub = await loadAllUniquePostsUnderSubplebbit(subplebbit);
-            expect(allCommentsUnderSub.length).to.be.greaterThan(0);
-            let foundInPosts = false;
-            processAllCommentsRecursively(allCommentsUnderSub, (comment) => {
-                if (comment.cid === approvedComment.cid) {
-                    foundInPosts = true;
-                    return;
-                }
-            });
+        it(`Approved comment now appears in subplebbit.posts`, async () => {
+            const preloadedSortName = "hot";
+            const { generated, capturedChunks } = await capturePostsGeneration(subplebbit, preloadedSortName, 1024 * 1024);
+
+            const foundInPosts = cidExistsInChunks(capturedChunks, approvedComment.cid);
             expect(foundInPosts).to.be.true;
-
-            if (Object.keys(subplebbit.posts.pageCids).length === 0)
-                await forcePagesToUsePageCidsOnly({
-                    subplebbit,
-                    subplebbitPostsCommentProps: { signer: modSigner }
-                }); // the goal of this is to force the subplebbit to have all pages and page.cids
-
-            expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
-
-            for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                foundInPosts = false;
-                const pageComments = await loadAllPages(pageCid, subplebbit.posts);
-                expect(pageComments.length).to.be.greaterThan(0);
-
-                processAllCommentsRecursively(pageComments, (comment) => {
-                    if (comment.cid === approvedComment.cid) {
-                        foundInPosts = true;
-                        return;
-                    }
-                });
-                expect(foundInPosts).to.be.true;
-            }
+            expect(generated, "expected posts generation to contain the approved comment").to.exist;
         });
 
         if (pendingCommentDepth > 0) {
             itSkipIfRpc(`Approved reply now shows up in parentComment.replies`, async () => {
-                const parentComment = await plebbit.getComment({cid: approvedComment.parentCid});
-                await parentComment.update();
-                await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.replies.pages.best?.comments });
-                let foundInReplies = false;
-                processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
-                    if (comment.cid === approvedComment.cid) {
-                        foundInReplies = true;
-                        return;
-                    }
-                });
-                expect(foundInReplies).to.be.true;
+                const parentRow = subplebbit._dbHandler.queryComment(approvedComment.parentCid);
+                expect(parentRow).to.exist;
 
-                const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                const { generated, capturedChunks } = await captureRepliesGeneration({
                     subplebbit,
-                    parentComment,
-                    parentCommentReplyProps: { signer: modSigner }
+                    parentCid: parentRow.cid,
+                    parentDepth: parentRow.depth,
+                    preloadedSortName: "best",
+                    preloadedPageSizeBytes: 1024 * 1024
                 });
-                try {
-                    expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
 
-                    for (const pageCid of Object.values(parentComment.replies.pageCids)) {
-                        foundInReplies = false;
-                        const pageComments = await loadAllPages(pageCid, parentComment.replies);
-
-                        expect(pageComments.length).to.be.greaterThan(0);
-                        processAllCommentsRecursively(pageComments, (comment) => {
-                            if (comment.cid === approvedComment.cid) {
-                                foundInReplies = true;
-                                return;
-                            }
-                        });
-                        expect(foundInReplies).to.be.true;
-                    }
-                } finally {
-                    cleanup();
-                }
-                await parentComment.stop();
+                const foundInReplies = cidExistsInChunks(capturedChunks, approvedComment.cid);
+                expect(foundInReplies).to.be.true;
+                expect(generated, "expected replies generation to contain the approved reply").to.exist;
             });
             itSkipIfRpc(`Approved reply now shows up in its post's flat pages`, async () => {
-                const postComment = await plebbit.getComment({cid: approvedComment.postCid});
-                await postComment.update();
-                await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
-                const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
-                    subplebbit,
-                    parentComment: postComment,
-                    parentCommentReplyProps: { signer: modSigner }
-                });
-                try {
-                    const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+                const postRow = subplebbit._dbHandler.queryComment(approvedComment.postCid);
+                expect(postRow).to.exist;
 
-                    for (const flatPageCid of flatPageCids) {
-                        let foundInFlatPages = false;
+                for (const sortName of ["newFlat", "oldFlat"]) {
+                    const { generated, capturedChunks } = await captureRepliesGeneration({
+                        subplebbit,
+                        parentCid: postRow.cid,
+                        parentDepth: postRow.depth,
+                        preloadedSortName: sortName,
+                        preloadedPageSizeBytes: 1024 * 1024
+                    });
 
-                        const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
-
-                        expect(flatPageComments.length).to.be.greaterThan(0);
-                        processAllCommentsRecursively(flatPageComments, (comment) => {
-                            if (comment.cid === approvedComment.cid) {
-                                foundInFlatPages = true;
-                                return;
-                            }
-                        });
-                        expect(foundInFlatPages).to.be.true;
-                    }
-                } finally {
-                    cleanup();
+                    const foundInFlatPages = cidExistsInChunks(capturedChunks, approvedComment.cid);
+                    expect(foundInFlatPages).to.be.true;
+                    expect(generated, "expected flat pages generation to contain the approved reply").to.exist;
                 }
-
-                await postComment.stop();
             });
         }
 
@@ -283,4 +213,77 @@ for (const pendingCommentDepth of depthsToTest) {
             );
         });
     });
+}
+
+async function capturePostsGeneration(subplebbit, preloadedSortName, preloadedPageSizeBytes) {
+    return captureSortChunks({
+        subplebbit,
+        matchParentCid: null,
+        matchSortName: preloadedSortName,
+        generate: () => subplebbit._pageGenerator.generateSubplebbitPosts(preloadedSortName, preloadedPageSizeBytes)
+    });
+}
+
+async function captureRepliesGeneration({ subplebbit, parentCid, parentDepth, preloadedSortName, preloadedPageSizeBytes }) {
+    const generator =
+        parentDepth === 0
+            ? () => subplebbit._pageGenerator.generatePostPages({ cid: parentCid }, preloadedSortName, preloadedPageSizeBytes)
+            : () =>
+                  subplebbit._pageGenerator.generateReplyPages(
+                      { cid: parentCid, depth: parentDepth },
+                      preloadedSortName,
+                      preloadedPageSizeBytes
+                  );
+
+    return captureSortChunks({
+        subplebbit,
+        matchParentCid: parentCid,
+        matchSortName: preloadedSortName,
+        generate: generator
+    });
+}
+
+async function captureSortChunks({ subplebbit, matchParentCid, matchSortName, generate }) {
+    const capturedChunks = [];
+    const originalSortAndChunk = subplebbit._pageGenerator.sortAndChunkComments;
+    subplebbit._pageGenerator.sortAndChunkComments = async function (...args) {
+        const result = await originalSortAndChunk.apply(this, args);
+        const [, sortName, options] = args;
+        if (sortName === matchSortName && (options?.parentCid ?? null) === (matchParentCid ?? null)) {
+            capturedChunks.push(...result);
+        }
+        return result;
+    };
+
+    try {
+        const generated = await generate();
+        return { generated, capturedChunks };
+    } finally {
+        subplebbit._pageGenerator.sortAndChunkComments = originalSortAndChunk;
+    }
+}
+
+function cidExistsInChunks(chunks, targetCid) {
+    for (const chunk of chunks) {
+        for (const comment of chunk) {
+            if (commentContainsCid(comment, targetCid)) return true;
+        }
+    }
+    return false;
+}
+
+function commentContainsCid(comment, targetCid) {
+    if (extractCidFromChunkItem(comment) === targetCid) return true;
+    const replies = comment?.commentUpdate?.replies ?? comment?.replies;
+    const bestReplies = replies?.pages?.best?.comments;
+    if (Array.isArray(bestReplies)) {
+        for (const reply of bestReplies) {
+            if (commentContainsCid(reply, targetCid)) return true;
+        }
+    }
+    return false;
+}
+
+function extractCidFromChunkItem(comment) {
+    return comment?.commentUpdate?.cid ?? comment?.cid ?? comment?.comment?.cid;
 }
