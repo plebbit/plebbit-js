@@ -4,20 +4,15 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     generateMockComment,
-    loadAllUniquePostsUnderSubplebbit,
-    processAllCommentsRecursively,
-    forceParentRepliesToAlwaysGenerateMultipleChunks,
-    forcePagesToUsePageCidsOnly,
     getCommentWithCommentUpdateProps,
     publishToModQueueWithDepth,
     generateMockVote,
-    loadAllPages,
     itSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst,
     createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
@@ -105,7 +100,7 @@ for (const commentMod of commentModProps) {
                     await publishWithExpectedResult(commentModeration, true);
                 });
 
-                it(`Rejecting a pending comment will purge it from modQueue`, async () => {
+                it.sequential(`Rejecting a pending comment will purge it from modQueue`, async () => {
                     await resolveWhenConditionIsTrue({
                         toUpdate: subplebbit,
                         predicate: () => !subplebbit.modQueue.pageCids.pendingApproval
@@ -129,167 +124,95 @@ for (const commentMod of commentModProps) {
                 }
 
                 if (pendingCommentDepth > 0) {
-                    it.sequential(`Rejected reply does not show up in parentComment.replyCount`, async () => {
+                    it(`Rejected reply does not show up in parentComment.replyCount`, async () => {
                         expect(
                             (await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).replyCount
                         ).to.equal(0);
                     });
 
-                    it.sequential(`Rejected reply does not show up in parentComment.childCount`, async () => {
+                    it(`Rejected reply does not show up in parentComment.childCount`, async () => {
                         expect(
                             (await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).childCount
                         ).to.equal(0);
                     });
 
-                    it.sequential(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
+                    it(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
                         expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastChildCid).to.be
                             .undefined;
                     });
-                    it.sequential(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
+                    it(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
                         expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastReplyTimestamp)
                             .to.be.undefined;
                     });
                 }
 
                 if (pendingCommentDepth === 0)
-                    it.sequential(`Rejected post does not show up in subplebbit.lastPostCid`, async () => {
+                    it(`Rejected post does not show up in subplebbit.lastPostCid`, async () => {
                         expect(subplebbit.lastPostCid).to.not.equal(commentToBeRejected.cid);
                     });
 
-                it.sequential(`Rejected comment does not show up in subplebbit.lastCommentCid`, async () => {
+                it(`Rejected comment does not show up in subplebbit.lastCommentCid`, async () => {
                     expect(subplebbit.lastCommentCid).to.not.equal(commentToBeRejected.cid);
                 });
 
-                it.sequential(
+                itSkipIfRpc(
                     `A rejected comment with only ${JSON.stringify(commentMod)} will ${shouldCommentBeInPostsOrRepliesPages ? "" : "never"} show up in subplebbit.posts`,
                     async () => {
-                        await new Promise((resolve) => setTimeout(resolve, 3000));
-                        let foundInPosts = false;
-                        // for posts
-                        // there never gonna in subplebbit.posts
+                        const preloadedSortName = "hot";
+                        const { generated, capturedChunks } = await capturePostsGeneration(subplebbit, preloadedSortName, 1024 * 1024);
 
-                        const allCommentsUnderSub = await loadAllUniquePostsUnderSubplebbit(subplebbit);
-
-                        processAllCommentsRecursively(allCommentsUnderSub, (comment) => {
-                            if (comment.cid === commentToBeRejected.cid) {
-                                foundInPosts = true;
-                                return;
-                            }
-                        });
-                        expect(foundInPosts).to.equal(shouldCommentBeInPostsOrRepliesPages);
-
-                        if (Object.keys(subplebbit.posts.pageCids).length === 0)
-                            await forcePagesToUsePageCidsOnly({
-                                subplebbit,
-                                subplebbitPostsCommentProps: { signer: modSigner }
-                            }); // the goal of this is to force the subplebbit to have all pages and page.cids
-
-                        expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
-
-                        // TODO rewrite this to access PageGenerator directly instead of publishing all these posts and comments
-                        // publishing takes very long
-                        // we need a way to see if pageCids and preloaded pages do include this rejected comment
-                        // should we make two calls to generateSubplebbitPosts, one with very low preloaded page size (to force pageCids), and other with high preloaded page size (to have preloaded pages)
-                        for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                            const pageComments = await loadAllPages(pageCid, subplebbit.posts);
-                            expect(pageComments.length).to.be.greaterThan(0);
-
-                            processAllCommentsRecursively(pageComments, (comment) => {
-                                if (comment.cid === commentToBeRejected.cid) {
-                                    foundInPosts = true;
-                                    return;
-                                }
-                            });
-                            expect(foundInPosts).to.equal(shouldCommentBeInPostsOrRepliesPages);
+                        const foundInGeneratedPages = cidExistsInChunks(capturedChunks, commentToBeRejected.cid);
+                        if (shouldCommentBeInPostsOrRepliesPages) {
+                            expect(generated, "expected posts generation when rejected comment should be visible").to.exist;
+                            expect(foundInGeneratedPages, "rejected comment should be present in generated posts").to.be.true;
+                        } else {
+                            expect(foundInGeneratedPages, "rejected comment should be excluded from generated posts").to.be.false;
                         }
                     }
                 );
 
                 if (pendingCommentDepth > 0)
-                    itSkipIfRpc.sequential(
+                    itSkipIfRpc(
                         `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`,
                         async () => {
-                            const parentComment = await plebbit.getComment({ cid: commentToBeRejected.parentCid });
-                            await parentComment.update();
-                            await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
                             const expectedResult = !shouldCommentBePurged;
-                            let foundInReplies = false;
-                            processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
-                                if (comment.cid === commentToBeRejected.cid) {
-                                    foundInReplies = true;
-                                    return;
-                                }
-                            });
-                            expect(foundInReplies).to.equal(expectedResult);
+                            const parentRow = subplebbit._dbHandler.queryComment(commentToBeRejected.parentCid);
+                            expect(parentRow).to.exist;
 
-                            // TODO rewrite this to access PageGenerator directly instead of publishing all these posts and comments
-
-                            const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                            const { generated, capturedChunks } = await captureRepliesGeneration({
                                 subplebbit,
-                                parentComment,
-                                parentCommentReplyProps: { signer: modSigner }
+                                parentCid: parentRow.cid,
+                                parentDepth: parentRow.depth,
+                                preloadedSortName: "best",
+                                preloadedPageSizeBytes: 1024 * 1024
                             });
-                            try {
-                                expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
 
-                                for (const pageCid of Object.values(parentComment.replies.pageCids)) {
-                                    foundInReplies = false;
-                                    const pageComments = await loadAllPages(pageCid, parentComment.replies);
-
-                                    expect(pageComments.length).to.be.greaterThan(0);
-                                    processAllCommentsRecursively(pageComments, (comment) => {
-                                        if (comment.cid === commentToBeRejected.cid) {
-                                            foundInReplies = true;
-                                            return;
-                                        }
-                                    });
-                                    expect(foundInReplies).to.equal(expectedResult);
-                                }
-                            } finally {
-                                cleanup();
-                            }
-                            await parentComment.stop();
+                            const foundInReplies = cidExistsInChunks(capturedChunks, commentToBeRejected.cid);
+                            expect(foundInReplies).to.equal(expectedResult);
+                            if (expectedResult) expect(generated, "expected replies generation to contain the rejected comment").to.exist;
                         }
                     );
                 if (pendingCommentDepth > 0)
-                    itSkipIfRpc.sequential(
-                        `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`,
-                        async () => {
-                            const postComment = await plebbit.getComment({ cid: commentToBeRejected.postCid });
-                            await postComment.update();
-                            await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
+                    itSkipIfRpc(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`, async () => {
+                        const shouldCommentBeInFlatPages = !shouldCommentBePurged;
+                        const postRow = subplebbit._dbHandler.queryComment(commentToBeRejected.postCid);
+                        expect(postRow).to.exist;
 
-                            // TODO rewrite this to access PageGenerator directly instead of publishing all these posts and comments
-                            const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                        for (const sortName of ["newFlat", "oldFlat"]) {
+                            const { generated, capturedChunks } = await captureRepliesGeneration({
                                 subplebbit,
-                                parentComment: postComment,
-                                parentCommentReplyProps: { signer: modSigner }
+                                parentCid: postRow.cid,
+                                parentDepth: postRow.depth,
+                                preloadedSortName: sortName,
+                                preloadedPageSizeBytes: 1024 * 1024
                             });
-                            try {
-                                const shouldCommentBeInFlatPages = !shouldCommentBePurged;
 
-                                const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
-
-                                for (const flatPageCid of flatPageCids) {
-                                    let foundInFlatPages = false;
-                                    const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
-
-                                    expect(flatPageComments.length).to.be.greaterThan(0);
-                                    processAllCommentsRecursively(flatPageComments, (comment) => {
-                                        if (comment.cid === commentToBeRejected.cid) {
-                                            foundInFlatPages = true;
-                                            return;
-                                        }
-                                    });
-                                    expect(foundInFlatPages).to.equal(shouldCommentBeInFlatPages);
-                                }
-                            } finally {
-                                cleanup();
-                            }
-
-                            await postComment.stop();
+                            const foundInFlatPages = cidExistsInChunks(capturedChunks, commentToBeRejected.cid);
+                            expect(foundInFlatPages).to.equal(shouldCommentBeInFlatPages);
+                            if (shouldCommentBeInFlatPages)
+                                expect(generated, "expected flat pages generation to include the rejected comment").to.exist;
                         }
-                    );
+                    });
 
                 it(`comments with approved: false should not be in pageCids.pendingApproval`, async () => {
                     expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
@@ -298,7 +221,6 @@ for (const commentMod of commentModProps) {
                     itSkipIfRpc(
                         `Rejecting a pending post with ${JSON.stringify(commentMod)} will ${shouldCommentBePurged ? "not" : ""} keep it in subplebbit.postUpdates`,
                         async () => {
-                            expect(subplebbit.postUpdates).to.exist;
                             const localMfsPath = `/${subplebbit.address}/postUpdates/86400/${commentToBeRejected.cid}/update`;
                             const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
 
@@ -316,120 +238,115 @@ for (const commentMod of commentModProps) {
 
                 remotePlebbitConfigs.forEach((remotePlebbitConfig) => {
                     if (shouldCommentBePurged) {
-                        it.sequential(
-                            `Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`,
-                            async () => {
-                                // this is failing
-                                // is it not timing out properly?
-                                const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
-                                remotePlebbit._timeouts["comment-ipfs"] = 500; // speed up the test
-                                try {
-                                    const newComment = await remotePlebbit.createComment({
-                                        cid: commentToBeRejected.cid,
-                                        subplebbitAddress: commentToBeRejected.subplebbitAddress
-                                    });
+                        it(`Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`, async () => {
+                            // this is failing
+                            // is it not timing out properly?
+                            const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                            remotePlebbit._timeouts["comment-ipfs"] = 500; // speed up the test
+                            try {
+                                const newComment = await remotePlebbit.createComment({
+                                    cid: commentToBeRejected.cid,
+                                    subplebbitAddress: commentToBeRejected.subplebbitAddress
+                                });
 
-                                    const errors = [];
-                                    const failIfUpdated = () =>
-                                        newComment.raw.comment &&
-                                        expect.fail("Rejected comment unexpectedly emitted an update event with CommentIpfs");
-                                    newComment.on("update", failIfUpdated);
-                                    newComment.on("error", (err) => errors.push(err));
-                                    await newComment.update();
+                                const errors = [];
+                                const failIfUpdated = () =>
+                                    newComment.raw.comment &&
+                                    expect.fail("Rejected comment unexpectedly emitted an update event with CommentIpfs");
+                                newComment.on("update", failIfUpdated);
+                                newComment.on("error", (err) => errors.push(err));
+                                await newComment.update();
 
-                                    // Wait until an error arrives or 10s pass so the test can proceed
-                                    await new Promise((resolve) => {
-                                        let settled = false;
-                                        let timeoutId;
-                                        const onError = () => {
-                                            if (settled) return;
-                                            settled = true;
-                                            clearTimeout(timeoutId);
-                                            newComment.removeListener("error", onError);
-                                            resolve();
-                                        };
-                                        timeoutId = setTimeout(() => {
-                                            if (settled) return;
-                                            settled = true;
-                                            newComment.removeListener("error", onError);
-                                            resolve();
-                                        }, 10_000);
-                                        newComment.on("error", onError);
-                                    });
+                                // Wait until an error arrives or 10s pass so the test can proceed
+                                await new Promise((resolve) => {
+                                    let settled = false;
+                                    let timeoutId;
+                                    const onError = () => {
+                                        if (settled) return;
+                                        settled = true;
+                                        clearTimeout(timeoutId);
+                                        newComment.removeListener("error", onError);
+                                        resolve();
+                                    };
+                                    timeoutId = setTimeout(() => {
+                                        if (settled) return;
+                                        settled = true;
+                                        newComment.removeListener("error", onError);
+                                        resolve();
+                                    }, 10_000);
+                                    newComment.on("error", onError);
+                                });
 
-                                    newComment.removeListener("update", failIfUpdated);
+                                newComment.removeListener("update", failIfUpdated);
 
-                                    expect(newComment.raw.commentUpdate).to.be.undefined;
-                                    expect(newComment.raw.comment).to.be.undefined;
-                                    expect(newComment.signature).to.be.undefined;
-                                    expect(newComment.updatedAt).to.be.undefined;
-                                    errors.forEach((err) =>
-                                        expect(err.code).to.be.oneOf([
-                                            "ERR_FETCH_CID_P2P_TIMEOUT",
-                                            "ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS"
-                                        ])
-                                    );
-                                    await newComment.stop();
-                                } finally {
-                                    await remotePlebbit.destroy();
-                                }
+                                expect(newComment.raw.commentUpdate).to.be.undefined;
+                                expect(newComment.raw.comment).to.be.undefined;
+                                expect(newComment.signature).to.be.undefined;
+                                expect(newComment.updatedAt).to.be.undefined;
+                                errors.forEach((err) =>
+                                    expect(err.code).to.be.oneOf([
+                                        "ERR_FETCH_CID_P2P_TIMEOUT",
+                                        "ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS"
+                                    ])
+                                );
+                                await newComment.stop();
+                            } finally {
+                                await remotePlebbit.destroy();
                             }
-                        );
+                        });
 
-                        it.sequential(
-                            `Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its CommentUpdate - Plebbit Config ${remotePlebbitConfig.name}`,
-                            async () => {
-                                // this is failing
-                                // is it not timing out properly?
-                                const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
-                                remotePlebbit._timeouts["comment-update-ipfs"] = 1000;
-                                try {
-                                    const newComment = await remotePlebbit.createComment(commentToBeRejected);
-                                    expect(newComment.raw.comment).to.be.ok;
+                        it(`Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its CommentUpdate - Plebbit Config ${remotePlebbitConfig.name}`, async () => {
+                            // this is failing
+                            // is it not timing out properly?
+                            const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                            remotePlebbit._timeouts["comment-update-ipfs"] = 1000;
+                            try {
+                                const newComment = await remotePlebbit.createComment(commentToBeRejected);
+                                expect(newComment.raw.comment).to.be.ok;
 
-                                    const errors = [];
-                                    const failIfUpdated = () =>
-                                        newComment.raw.commentUpdate &&
-                                        expect.fail("Rejected comment unexpectedly emitted an update event with CommentUpdate");
-                                    newComment.on("update", failIfUpdated);
-                                    newComment.on("error", (err) => errors.push(err));
-                                    await newComment.update();
+                                const errors = [];
+                                const failIfUpdated = () =>
+                                    newComment.raw.commentUpdate &&
+                                    expect.fail("Rejected comment unexpectedly emitted an update event with CommentUpdate");
+                                newComment.on("update", failIfUpdated);
+                                newComment.on("error", (err) => errors.push(err));
+                                await newComment.update();
 
-                                    // Wait until an error arrives or 10s pass so the test can proceed
-                                    await new Promise((resolve) => {
-                                        let settled = false;
-                                        let timeoutId;
-                                        const onError = () => {
-                                            if (settled) return;
-                                            settled = true;
-                                            clearTimeout(timeoutId);
-                                            newComment.removeListener("error", onError);
-                                            resolve();
-                                        };
-                                        timeoutId = setTimeout(() => {
-                                            if (settled) return;
-                                            settled = true;
-                                            newComment.removeListener("error", onError);
-                                            resolve();
-                                        }, 10_000);
-                                        newComment.on("error", onError);
-                                    });
+                                // Wait until an error arrives or 10s pass so the test can proceed
+                                await new Promise((resolve) => {
+                                    let settled = false;
+                                    let timeoutId;
+                                    const onError = () => {
+                                        if (settled) return;
+                                        settled = true;
+                                        clearTimeout(timeoutId);
+                                        newComment.removeListener("error", onError);
+                                        resolve();
+                                    };
+                                    timeoutId = setTimeout(() => {
+                                        if (settled) return;
+                                        settled = true;
+                                        newComment.removeListener("error", onError);
+                                        resolve();
+                                    }, 10_000);
+                                    newComment.on("error", onError);
+                                });
 
-                                    newComment.removeListener("update", failIfUpdated);
+                                newComment.removeListener("update", failIfUpdated);
 
-                                    expect(newComment.raw.commentUpdate).to.be.undefined;
-                                    expect(newComment.updatedAt).to.be.undefined;
-                                    if (errors.length > 0)
-                                        expect(errors[0].code).to.be.oneOf([
-                                            "ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES",
-                                            "ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS"
-                                        ]);
-                                    await newComment.stop();
-                                } finally {
-                                    await remotePlebbit.destroy();
-                                }
+                                expect(newComment.raw.commentUpdate).to.be.undefined;
+                                expect(newComment.updatedAt).to.be.undefined;
+                                if (errors.length > 0)
+                                    expect(errors[0].code).to.be.oneOf([
+                                        "ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES",
+                                        "ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS",
+                                        "ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES"
+                                    ]);
+                                await newComment.stop();
+                            } finally {
+                                await remotePlebbit.destroy();
                             }
-                        );
+                        });
                     }
 
                     if (!shouldCommentBePurged) {
@@ -437,14 +354,51 @@ for (const commentMod of commentModProps) {
                         // have CommentIpfs but want to load commentUpdate
                         // have neither CommentUpdate or CommentIpfs
 
-                        it.sequential(
-                            `Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update as long as we have its CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`,
-                            async () => {
-                                const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                        it(`Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update as long as we have its CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`, async () => {
+                            const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
 
+                            try {
+                                const newComment = await remotePlebbit.createComment(commentToBeRejected);
+                                expect(newComment.raw.comment).to.be.ok;
+
+                                await newComment.update();
+                                await resolveWhenConditionIsTrue({ toUpdate: newComment, predicate: () => newComment.updatedAt });
+
+                                // will test for approved, removed, reason, etc
+                                for (const commentModKey of Object.keys(commentMod)) {
+                                    expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
+                                    expect(newComment.raw.commentUpdate[commentModKey]).to.equal(commentMod[commentModKey]);
+                                }
+
+                                expect(newComment.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
+                                expect(newComment.upvoteCount).to.equal(0);
+                                expect(newComment.replyCount).to.equal(0);
+                                expect(newComment.childCount).to.equal(0);
+                                // `Publishing approved:false adds removed:true automatically to comment update
+                                expect(newComment.removed).to.be.true;
+
+                                expect(newComment.raw.commentUpdate.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
+                                expect(newComment.raw.commentUpdate.upvoteCount).to.equal(0);
+                                expect(newComment.raw.commentUpdate.replyCount).to.equal(0);
+                                expect(newComment.raw.commentUpdate.childCount).to.equal(0);
+
+                                expect(newComment.raw.commentUpdate.removed).to.be.true;
+
+                                await newComment.stop();
+                            } finally {
+                                await remotePlebbit.destroy();
+                            }
+                        });
+
+                        if (shouldCommentBeInPostsOrRepliesPages) {
+                            it(`Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve both CommentIpfs and CommentUpdate - Plebbit Config ${remotePlebbitConfig.name}`, async () => {
+                                const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                                remotePlebbit._timeouts["comment-ipfs"] = 500; // speed up the test
                                 try {
-                                    const newComment = await remotePlebbit.createComment(commentToBeRejected);
-                                    expect(newComment.raw.comment).to.be.ok;
+                                    const newComment = await remotePlebbit.createComment({
+                                        cid: commentToBeRejected.cid,
+                                        subplebbitAddress: commentToBeRejected.subplebbitAddress
+                                    });
 
                                     await newComment.update();
                                     await resolveWhenConditionIsTrue({ toUpdate: newComment, predicate: () => newComment.updatedAt });
@@ -468,76 +422,52 @@ for (const commentMod of commentModProps) {
                                     expect(newComment.raw.commentUpdate.childCount).to.equal(0);
 
                                     expect(newComment.raw.commentUpdate.removed).to.be.true;
+                                    expect(newComment.pendingApproval).to.be.false;
+
+                                    expect(newComment.raw.comment).to.be.ok;
+                                    expect(newComment.signature).to.be.ok;
 
                                     await newComment.stop();
                                 } finally {
                                     await remotePlebbit.destroy();
                                 }
-                            }
-                        );
-
-                        if (shouldCommentBeInPostsOrRepliesPages) {
-                            it.sequential(
-                                `Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve both CommentIpfs and CommentUpdate - Plebbit Config ${remotePlebbitConfig.name}`,
-                                async () => {
-                                    const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
-                                    remotePlebbit._timeouts["comment-ipfs"] = 500; // speed up the test
-                                    try {
-                                        const newComment = await remotePlebbit.createComment({
-                                            cid: commentToBeRejected.cid,
-                                            subplebbitAddress: commentToBeRejected.subplebbitAddress
-                                        });
-
-                                        await newComment.update();
-                                        await resolveWhenConditionIsTrue({ toUpdate: newComment, predicate: () => newComment.updatedAt });
-
-                                        // will test for approved, removed, reason, etc
-                                        for (const commentModKey of Object.keys(commentMod)) {
-                                            expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
-                                            expect(newComment.raw.commentUpdate[commentModKey]).to.equal(commentMod[commentModKey]);
-                                        }
-
-                                        expect(newComment.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
-                                        expect(newComment.upvoteCount).to.equal(0);
-                                        expect(newComment.replyCount).to.equal(0);
-                                        expect(newComment.childCount).to.equal(0);
-                                        // `Publishing approved:false adds removed:true automatically to comment update
-                                        expect(newComment.removed).to.be.true;
-
-                                        expect(newComment.raw.commentUpdate.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
-                                        expect(newComment.raw.commentUpdate.upvoteCount).to.equal(0);
-                                        expect(newComment.raw.commentUpdate.replyCount).to.equal(0);
-                                        expect(newComment.raw.commentUpdate.childCount).to.equal(0);
-
-                                        expect(newComment.raw.commentUpdate.removed).to.be.true;
-                                        expect(newComment.pendingApproval).to.be.false;
-
-                                        expect(newComment.raw.comment).to.be.ok;
-                                        expect(newComment.signature).to.be.ok;
-
-                                        await newComment.stop();
-                                    } finally {
-                                        await remotePlebbit.destroy();
-                                    }
-                                }
-                            );
+                            });
                         }
 
                         // if only {approved:false} then we're not getting an update
-                        it.sequential(
-                            `A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)} if it already had its CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`,
-                            async () => {
+                        it(`A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)} if it already had its CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`, async () => {
+                            // TODO let's add a test to load with local plebbit rpc (plebbit instance)
+                            const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                            remotePlebbit._timeouts["comment-ipfs"] = 500; // it's gonna fail to load CID so this will make test run faster
+
+                            try {
+                                const remoteCommentToBeRejected = await remotePlebbit.createComment({
+                                    cid: commentToBeRejected.cid,
+                                    raw: { comment: commentToBeRejected.raw.comment }
+                                });
+                                expect(remoteCommentToBeRejected.raw.comment).to.be.ok;
+                                // should be able to load our CommentUpdate as long as CommentIpfs is already loaded
+                                await remoteCommentToBeRejected.update();
+                                await resolveWhenConditionIsTrue({
+                                    toUpdate: remoteCommentToBeRejected,
+                                    predicate: () => remoteCommentToBeRejected.pendingApproval === false
+                                });
+                                expect(remoteCommentToBeRejected.pendingApproval).to.be.false;
+                            } finally {
+                                await remotePlebbit.destroy();
+                            }
+                        });
+
+                        if (shouldCommentBeInPostsOrRepliesPages)
+                            it(`A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)} without CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`, async () => {
                                 // TODO let's add a test to load with local plebbit rpc (plebbit instance)
                                 const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
-                                remotePlebbit._timeouts["comment-ipfs"] = 500; // it's gonna fail to load CID so this will make test run faster
-
                                 try {
+                                    remotePlebbit._timeouts["comment-ipfs"] = 500; // it's gonna fail to load CID so this will make test run faster
                                     const remoteCommentToBeRejected = await remotePlebbit.createComment({
                                         cid: commentToBeRejected.cid,
-                                        raw: { comment: commentToBeRejected.raw.comment }
+                                        subplebbitAddress: commentToBeRejected.subplebbitAddress
                                     });
-                                    expect(remoteCommentToBeRejected.raw.comment).to.be.ok;
-                                    // should be able to load our CommentUpdate as long as CommentIpfs is already loaded
                                     await remoteCommentToBeRejected.update();
                                     await resolveWhenConditionIsTrue({
                                         toUpdate: remoteCommentToBeRejected,
@@ -547,32 +477,7 @@ for (const commentMod of commentModProps) {
                                 } finally {
                                     await remotePlebbit.destroy();
                                 }
-                            }
-                        );
-
-                        if (shouldCommentBeInPostsOrRepliesPages)
-                            it.sequential(
-                                `A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)} without CommentIpfs - Plebbit Config ${remotePlebbitConfig.name}`,
-                                async () => {
-                                    // TODO let's add a test to load with local plebbit rpc (plebbit instance)
-                                    const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
-                                    try {
-                                        remotePlebbit._timeouts["comment-ipfs"] = 500; // it's gonna fail to load CID so this will make test run faster
-                                        const remoteCommentToBeRejected = await remotePlebbit.createComment({
-                                            cid: commentToBeRejected.cid,
-                                            subplebbitAddress: commentToBeRejected.subplebbitAddress
-                                        });
-                                        await remoteCommentToBeRejected.update();
-                                        await resolveWhenConditionIsTrue({
-                                            toUpdate: remoteCommentToBeRejected,
-                                            predicate: () => remoteCommentToBeRejected.pendingApproval === false
-                                        });
-                                        expect(remoteCommentToBeRejected.pendingApproval).to.be.false;
-                                    } finally {
-                                        await remotePlebbit.destroy();
-                                    }
-                                }
-                            );
+                            });
                     }
                 });
 
@@ -665,4 +570,77 @@ for (const commentMod of commentModProps) {
             }
         );
     }
+}
+
+async function capturePostsGeneration(subplebbit, preloadedSortName, preloadedPageSizeBytes) {
+    return captureSortChunks({
+        subplebbit,
+        matchParentCid: null,
+        matchSortName: preloadedSortName,
+        generate: () => subplebbit._pageGenerator.generateSubplebbitPosts(preloadedSortName, preloadedPageSizeBytes)
+    });
+}
+
+async function captureRepliesGeneration({ subplebbit, parentCid, parentDepth, preloadedSortName, preloadedPageSizeBytes }) {
+    const generator =
+        parentDepth === 0
+            ? () => subplebbit._pageGenerator.generatePostPages({ cid: parentCid }, preloadedSortName, preloadedPageSizeBytes)
+            : () =>
+                  subplebbit._pageGenerator.generateReplyPages(
+                      { cid: parentCid, depth: parentDepth },
+                      preloadedSortName,
+                      preloadedPageSizeBytes
+                  );
+
+    return captureSortChunks({
+        subplebbit,
+        matchParentCid: parentCid,
+        matchSortName: preloadedSortName,
+        generate: generator
+    });
+}
+
+async function captureSortChunks({ subplebbit, matchParentCid, matchSortName, generate }) {
+    const capturedChunks = [];
+    const originalSortAndChunk = subplebbit._pageGenerator.sortAndChunkComments.bind(subplebbit._pageGenerator);
+    const sortSpy = vi.spyOn(subplebbit._pageGenerator, "sortAndChunkComments").mockImplementation(async (...args) => {
+        const result = await originalSortAndChunk(...args);
+        const [, sortName, options] = args;
+        if (sortName === matchSortName && (options?.parentCid ?? null) === (matchParentCid ?? null)) {
+            capturedChunks.push(...result);
+        }
+        return result;
+    });
+
+    try {
+        const generated = await generate();
+        return { generated, capturedChunks };
+    } finally {
+        sortSpy.mockRestore();
+    }
+}
+
+function cidExistsInChunks(chunks, targetCid) {
+    for (const chunk of chunks) {
+        for (const comment of chunk) {
+            if (commentContainsCid(comment, targetCid)) return true;
+        }
+    }
+    return false;
+}
+
+function commentContainsCid(comment, targetCid) {
+    if (extractCidFromChunkItem(comment) === targetCid) return true;
+    const replies = comment?.commentUpdate?.replies ?? comment?.replies;
+    const bestReplies = replies?.pages?.best?.comments;
+    if (Array.isArray(bestReplies)) {
+        for (const reply of bestReplies) {
+            if (commentContainsCid(reply, targetCid)) return true;
+        }
+    }
+    return false;
+}
+
+function extractCidFromChunkItem(comment) {
+    return comment?.commentUpdate?.cid ?? comment?.cid ?? comment?.comment?.cid;
 }
