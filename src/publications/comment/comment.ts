@@ -760,7 +760,13 @@ export class Comment
         if (!rpcUrl) throw Error("Failed to get rpc url");
         if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
         try {
-            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.commentUpdateSubscribe({ cid: this.cid });
+            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.commentUpdateSubscribe({
+                cid: this.cid,
+                raw: this.raw,
+                subplebbitAddress: this.subplebbitAddress,
+                parentCid: this.parentCid,
+                postCid: this.postCid
+            });
         } catch (e) {
             log.error("Failed to receive commentUpdate from RPC due to error", e);
             await this._stopUpdateLoop();
