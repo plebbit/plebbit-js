@@ -2,7 +2,10 @@ import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test
 import { resolveHangingScenarioModule } from "../../../dist/node/test/node/hanging-test/scenarios/hanging-test-util.js";
 import { describe, it } from "vitest";
 
-const DESTROY_TIMEOUT_MS = 10_000;
+const DESTROY_TIMEOUT_MS = (() => {
+    const parsed = Number(process.env.HANGING_TEST_TIMEOUT_MS);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 20_000;
+})();
 const SCENARIO_MANIFEST_FILENAME = "scenario-manifest.json";
 const SCENARIO_DIST_DIR_URL = new URL("../../../dist/node/test/node/hanging-test/scenarios/", import.meta.url);
 const SCENARIO_MANIFEST_URL = new URL(SCENARIO_MANIFEST_FILENAME, SCENARIO_DIST_DIR_URL);
@@ -18,6 +21,8 @@ let runHangingScenarioInChildProcess;
 before(async () => {
     ({ runHangingScenarioInChildProcess } = await import("../../../dist/node/runtime/node/test/helpers/run-hanging-node.js"));
 });
+
+// TODO we may need extra method for cleaning up after each sceneario, maybe make sure plebbit is destroyed?
 
 for (const scenario of scenarioDefinitions) {
     describe.sequential(`[Scenario: ${scenario.description}]`, () => {

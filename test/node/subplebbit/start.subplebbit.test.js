@@ -435,7 +435,7 @@ describe(`Publish loop resiliency`, async () => {
 
         await waitTillPostInSubplebbitPages(mockPost, remotePlebbit);
 
-        const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
+        const loadedSub = await remotePlebbit.getSubplebbit({address: subplebbit.address}); // If it can load, then it has a valid signature
 
         const loadedPost = await iterateThroughPagesToFindCommentInParentPagesInstance(mockPost.cid, loadedSub.posts);
 
@@ -505,7 +505,7 @@ describe(`Publish loop resiliency`, async () => {
             const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({
                 plebbitOptions: { resolveAuthorAddresses, validatePages: true }
             }); // we need to enable validatePages so subplebbit.posts can be validated and override author.address
-            const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+            const loadedSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
             const mockPostInPage = loadedSub.posts.pages.hot.comments.find((comment) => comment.cid === mockPost.cid);
             // if we're resolving author address, plebbit-js should pick up that it's pointing to the wrong signer address
             // once it does that plebbit-js override author.address to point to signer.address

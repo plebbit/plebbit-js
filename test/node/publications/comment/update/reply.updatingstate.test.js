@@ -28,7 +28,7 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
             });
 
             plebbitConfigs.forEach((config) => {
-                it.concurrent(
+                it.sequential(
                     `loads reply updates from parent pageCIDs and emits expected state transitions - ${config.name}`,
                     async () => {
                         if (!context) throw new Error("Test context was not initialized");

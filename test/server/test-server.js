@@ -291,11 +291,11 @@ const setUpMockGateways = async () => {
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else if (req.url.includes("/ipns")) {
             const subAddress = convertBase32ToBase58btc(req.url.split("/")[2]);
-            const sub = await plebbit.getSubplebbit(subAddress);
+            const sub = await plebbit.getSubplebbit({address: subAddress});
             res.setHeader("x-ipfs-roots", sub.updateCid);
             res.setHeader("etag", sub.updateCid);
             res.end(JSON.stringify(sub.toJSONIpfs()));
-        } else res.end(await plebbit.fetchCid(req.url));
+        } else res.end(await plebbit.fetchCid({cid: req.url}));
     })
         .listen(13415, hostName)
         .on("error", (err) => {
@@ -339,7 +339,7 @@ const setUpMockGateways = async () => {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const fetchLatestSubplebbit = async () => {
         try {
-            return await plebbit.getSubplebbit(signers[0].address);
+            return await plebbit.getSubplebbit({address: signers[0].address});
         } catch (e) {
             console.error("Error fetching latest subplebbit", e, e.details);
             throw e;

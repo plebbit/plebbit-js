@@ -103,7 +103,7 @@ describe("local subplebbit.posts pagination coverage", () => {
                 expect(pageCids.length).to.be.greaterThan(0);
 
                 for (const pageCid of pageCids) {
-                    const pageIpfs = JSON.parse(await plebbit.fetchCid(pageCid)); // will have PageIpfs type
+                    const pageIpfs = JSON.parse(await plebbit.fetchCid({cid: pageCid})); // will have PageIpfs type
 
                     for (const commentInPageIpfs of pageIpfs.comments) {
                         const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
@@ -140,7 +140,7 @@ async function createLocalSubplebbitWithPageCids(plebbitConfig) {
     });
 
     const plebbitFromConfig = await plebbitConfig.plebbitInstancePromise();
-    const subplebbit = await plebbitFromConfig.getSubplebbit(publisherSubplebbit.address);
+    const subplebbit = await plebbitFromConfig.getSubplebbit({address: publisherSubplebbit.address});
     await subplebbit.update();
     await resolveWhenConditionIsTrue({
         toUpdate: subplebbit,

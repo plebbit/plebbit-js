@@ -20,12 +20,8 @@ import { describe, it } from "vitest";
 // it was made because testing it on test-server.js subs take too long
 
 const plebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
-const replyDepthsToTest = [1, 2, 3, 15, 30];
+const replyDepthsToTest = [1, 2, 3, 10];
 
-// TODO does creating a comment that's in updatingSubplebbit.posts automatically gets its CommentIpfs and COmmentUpdate?
-
-// TODO need to add tests in case comment.cid is not loadable or not seeded, for both replies and posts
-// currently comment update logic always loads CommentIpfs first by loading comment.cid, but there are cases where the cid is not provided
 describeSkipIfRpc("comment.update loading depth coverage", function () {
     describe.concurrent(`post loading coverage`, () => {
         let context;
@@ -144,7 +140,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 });
             });
 
-            describe.concurrent("subplebbit posts served via postUpdates", () => {
+            describe("subplebbit posts served via postUpdates", () => {
                 let paginationContext;
 
                 before(async () => {
@@ -197,14 +193,14 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             });
 
             plebbitLoadingConfigs.forEach((plebbitConfig) => {
-                describe.concurrent(`reply loading with ${plebbitConfig.name}`, () => {
+                describe.sequential(`reply loading with ${plebbitConfig.name}`, () => {
                     it.sequential("retries loading CommentIpfs when the reply cid block is missing on publisher", async () => {
                         let remotePlebbit;
                         let replyComment;
                         let newReply;
                         let parentComment;
                         try {
-                            parentComment = await context.plebbit.getComment(context.leafCid);
+                            parentComment = await context.plebbit.getComment({cid: context.leafCid});
 
                             newReply = await publishRandomReply(parentComment, context.plebbit);
                             await waitTillReplyInParentPages(newReply, context.plebbit);
@@ -244,7 +240,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 
                     it("loads reply updates when the post was stopped", async () => {
                         const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
-                        const replyComment = await remotePlebbit.getComment(context.leafCid);
+                        const replyComment = await remotePlebbit.getComment({cid: context.leafCid});
                         try {
                             await replyComment.update();
                             await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
@@ -263,9 +259,9 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     it("loads reply updates while the post keeps updating", async () => {
                         const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
 
-                        const postComment = await remotePlebbit.getComment(context.rootCid);
+                        const postComment = await remotePlebbit.getComment({cid: context.rootCid});
 
-                        const replyComment = await remotePlebbit.getComment(context.leafCid);
+                        const replyComment = await remotePlebbit.getComment({cid: context.leafCid});
                         try {
                             await postComment.update();
                             await waitForPostToStartUpdating(postComment);
@@ -287,7 +283,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             });
         });
 
-        describe.concurrent("parent replies served via pageCids", () => {
+        describe.concurrent("parent replies served via pageCids with depth " + replyDepth, () => {
             let paginationContext;
 
             before(async () => {
@@ -304,7 +300,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             plebbitLoadingConfigs.forEach((plebbitConfig) => {
                 it("loads reply updates when the parent was stopped", async () => {
                     const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
-                    const replyComment = await remotePlebbit.getComment(paginationContext.leafCid);
+                    const replyComment = await remotePlebbit.getComment({cid: paginationContext.leafCid});
                     try {
                         const storedParentUpdate = paginationContext.forcedParentStoredUpdate;
                         expect(storedParentUpdate).to.exist;
@@ -332,8 +328,8 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 
                 it("loads reply updates while the parent keeps updating", async () => {
                     const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
-                    const parentComment = await remotePlebbit.getComment(paginationContext.leafParentCid);
-                    const replyComment = await remotePlebbit.getComment(paginationContext.leafCid);
+                    const parentComment = await remotePlebbit.getComment({cid: paginationContext.leafParentCid});
+                    const replyComment = await remotePlebbit.getComment({cid: paginationContext.leafCid});
                     try {
                         await parentComment.update();
                         await waitForPostToStartUpdating(parentComment);

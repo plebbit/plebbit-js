@@ -96,7 +96,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await waitTillPostInSubplebbitPages(commentWithExtraProps, plebbit);
             });
             it(`Can load CommentIpfs with extra props`, async () => {
-                const loadedCommentWithExtraProps = await plebbit.getComment(commentWithExtraProps.cid);
+                const loadedCommentWithExtraProps = await plebbit.getComment({cid: commentWithExtraProps.cid});
 
                 // we wanna make sure the extra prop exists on all shapes
                 const shapes = [
@@ -111,7 +111,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
 
             it(`Can load pages with comments that has extra props in them`, async () => {
-                const subplebbit = await plebbit.getSubplebbit(commentWithExtraProps.subplebbitAddress);
+                const subplebbit = await plebbit.getSubplebbit({address: commentWithExtraProps.subplebbitAddress});
 
                 const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(
                     commentWithExtraProps.cid,
@@ -181,7 +181,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await publishWithExpectedResult(postWithExtraAuthorProp, true);
             });
             it.sequential(`Can load a CommentIpfs with author.extraProp`, async () => {
-                const loadedPost = await plebbit.getComment(postWithExtraAuthorProp.cid);
+                const loadedPost = await plebbit.getComment({cid: postWithExtraAuthorProp.cid});
 
                 const loadedPostFromCreate = await plebbit.createComment({ cid: postWithExtraAuthorProp.cid });
                 await loadedPostFromCreate.update();
@@ -207,7 +207,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             it(`Can load a page with comment.author.extraProp`, async () => {
                 await waitTillPostInSubplebbitPages(postWithExtraAuthorProp, plebbit);
 
-                const subplebbit = await plebbit.getSubplebbit(postWithExtraAuthorProp.subplebbitAddress);
+                const subplebbit = await plebbit.getSubplebbit({address: postWithExtraAuthorProp.subplebbitAddress});
                 const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(
                     postWithExtraAuthorProp.cid,
                     subplebbit.posts

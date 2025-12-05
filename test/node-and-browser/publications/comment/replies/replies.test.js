@@ -50,7 +50,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            subplebbit = await plebbit.getSubplebbit(signers[0].address);
+            subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
             post = await publishRandomPost(subplebbit.address, plebbit);
             await post.update();
             await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
@@ -158,7 +158,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`reply.replies - ${config.name}`, async () => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
             const post = await publishRandomPost(subplebbitAddress, plebbit);
             reply = await publishRandomReply(post, plebbit);
             await reply.update();
@@ -256,14 +256,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 // Create a comment with a CID that doesn't exist or will time out
                 const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
 
-                const comment = await plebbit.getComment(post.cid);
+                const comment = await plebbit.getComment({cid: post.cid});
 
                 // Override the pageCid to use our non-existent CID
                 comment.replies.pageCids.new = nonExistentCid;
 
                 try {
                     // This should time out
-                    await comment.replies.getPage(nonExistentCid);
+                    await comment.replies.getPage({cid: nonExistentCid});
                     expect.fail("Should have timed out");
                 } catch (e) {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -301,11 +301,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
 
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
             pageWithInvalidComment.comments[0].raw.comment.content = "this is to invalidate signature";
 
-            const post = await plebbit.getComment(postWithReplies.cid);
+            const post = await plebbit.getComment({cid: postWithReplies.cid});
             try {
                 await post.replies.validatePage(pageWithInvalidComment);
                 expect.fail("Should have thrown");
@@ -320,11 +320,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
 
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
             pageWithInvalidComment.comments[0].raw.comment.postCid += "1"; // will be a different post cid
 
-            const post = await plebbit.getComment(postWithReplies.cid);
+            const post = await plebbit.getComment({cid: postWithReplies.cid});
             try {
                 await post.replies.validatePage(pageWithInvalidComment);
                 expect.fail("Should have thrown");
@@ -341,10 +341,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
 
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
-            const post = await plebbit.getComment(postWithReplies.cid);
+            const post = await plebbit.getComment({cid: postWithReplies.cid});
             delete post.postCid;
             try {
                 await post.replies.validatePage(pageWithInvalidComment);
@@ -359,7 +359,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             if (!postWithReplies.replies.pages.best.nextCid) return; // can only test flat pages when we have multiple pages
             // Get a flat page
             const flatSortName = Object.keys(REPLIES_SORT_TYPES).find((name) => REPLIES_SORT_TYPES[name].flat);
-            const flatPage = await postWithReplies.replies.getPage(postWithReplies.replies.pageCids[flatSortName]);
+            const flatPage = await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids[flatSortName]});
             // Verify that flat pages contain comments with different depths
             expect(flatPage.comments.some((comment) => comment.raw.comment.depth > 1)).to.be.true;
             expect(flatPage.comments.map((comment) => comment.raw.comment.depth)).to.not.deep.equal(
@@ -384,7 +384,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it("fails validation when a comment has invalid depth (not parent.depth + 1)", async () => {
             const invalidPage = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             invalidPage.comments[0].raw.comment.depth = 5;
@@ -400,7 +400,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it("fails validation when a comment has different subplebbitAddress", async () => {
             const invalidPage = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             invalidPage.comments[0].raw.comment.subplebbitAddress = "different-address";
@@ -417,7 +417,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it("fails validation when a reply has incorrect parentCid", async () => {
             const invalidPage = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             // Change the parentCid to an invalid value
@@ -434,7 +434,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it("fails validation when calculated CID doesn't match commentUpdate.cid", async () => {
             const invalidPage = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             // Modify the comment but keep the same commentUpdate.cid
@@ -453,7 +453,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it("validates empty pages (no comments)", async () => {
             // Create an empty page
             const validPage = postWithReplies.replies.pages.best.nextCid
-                ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
+                ? await postWithReplies.replies.getPage({cid: postWithReplies.replies.pageCids.new})
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
             const emptyPage = {
                 ...validPage,

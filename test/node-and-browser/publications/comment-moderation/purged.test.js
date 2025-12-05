@@ -40,7 +40,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             before(async () => {
                 plebbit = await config.plebbitInstancePromise();
                 remotePlebbitIpfs = await mockPlebbitNoDataPathWithOnlyKuboClientNoAdd(); // this instance is connected to the same IPFS node as the sub
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
                 const commentToPurgeTemp = await publishCommentWithDepth({ depth: commentDepth, subplebbit }); // reason why we publish in a different plebbit instance so it doesn't get added to local kubo node
                 commentToPurge = await plebbit.createComment({ cid: commentToPurgeTemp.cid });
                 await commentToPurge.update();
@@ -86,7 +86,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 }
 
                 // make sure comment to be purged is in pages of subplebbit
-                const sub = await plebbit.getSubplebbit(subplebbitAddress);
+                const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
                 const purgedCommentInPage = findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
                 expect(purgedCommentInPage).to.exist;
                 updateCidOfSubplebbitWithPurgedComment = sub.updateCid;
@@ -179,7 +179,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
 
             it(`Author of comment with depth ${commentDepth} can't purge their own comment`, async () => {
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
                 const commentToAttemptToPurge = await publishCommentWithDepth({ depth: commentDepth, subplebbit });
                 const purgeCommentModeration = await plebbit.createCommentModeration({
                     subplebbitAddress: commentToAttemptToPurge.subplebbitAddress,
@@ -236,7 +236,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             if (commentDepth === 0)
                 it(`Purged post should not appear in subplebbit.postUpdates`, async () => {
-                    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                    const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
                     if (!subplebbit.postUpdates) return; // sub has no post updates, good!
                     const postUpdatesTimes = Object.keys(subplebbit.postUpdates);
                     expect(postUpdatesTimes.length).to.equal(1);
@@ -271,7 +271,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
 
             it(`purged comment should not appear in subplebbit.lastCommentCid`, async () => {
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
                 expect(subplebbit.lastCommentCid).to.not.equal(commentToPurge.cid);
             });
 

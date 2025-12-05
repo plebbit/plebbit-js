@@ -11,7 +11,7 @@ describe.concurrent("Sign Vote", async () => {
     let plebbit, subplebbit, voteProps, voteSignature;
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
 
         voteProps = {
             author: { address: signers[7].address },

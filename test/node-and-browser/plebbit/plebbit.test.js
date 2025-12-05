@@ -94,7 +94,7 @@ describe("Plebbit options", async () => {
         const plebbit = await mockRpcRemotePlebbit({ plebbitOptions: { plebbitRpcClientsOptions: ["ws://localhost:39650"] } }); // Already has RPC config
         // plebbit.subplebbits will take 20s to timeout and throw this error
         try {
-            await plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"); // random cid
+            await plebbit.fetchCid({cid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"}); // random cid
             expect.fail("Should have thrown");
         } catch (e) {
             expect(e.code).to.equal("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"); // Use the rpc so it would detect it's not loading
@@ -231,7 +231,7 @@ describe("plebbit.createSigner", async () => {
 describe(`plebbit.destroy`, async () => {
     it("Should succeed if we have a comment and a subplebbit already updating", async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const subplebbit = await plebbit.getSubplebbit(fixtureSigner.address);
+        const subplebbit = await plebbit.getSubplebbit({address: fixtureSigner.address});
         const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
 
         const comment = await plebbit.createComment({ cid: commentCid });
@@ -247,7 +247,7 @@ describe(`plebbit.destroy`, async () => {
 
     it(`plebbit.destroy() should not fail if you stop reply and immedietly destroy plebbit after`, async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const subplebbit = await plebbit.getSubplebbit(fixtureSigner.address);
+        const subplebbit = await plebbit.getSubplebbit({address: fixtureSigner.address});
         const replyCid = subplebbit.posts.pages.hot.comments.find((post) => post.replies?.pages?.best?.comments?.length > 0).replies.pages
             .best.comments[0].cid;
 
@@ -265,7 +265,7 @@ describe(`plebbit.destroy`, async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         await plebbit.destroy();
         try {
-            await plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f");
+            await plebbit.fetchCid({cid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"});
             expect.fail("Should have thrown");
         } catch (e) {
             expect(e.code).to.equal("ERR_PLEBBIT_IS_DESTROYED");

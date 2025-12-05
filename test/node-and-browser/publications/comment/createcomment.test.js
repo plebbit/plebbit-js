@@ -88,7 +88,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can create a Comment instance with subplebbit.posts.pages.hot.comments[0]`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
             const commentFromPage = subplebbit.posts.pages.hot.comments[0];
             const commentClone = await plebbit.createComment(commentFromPage);
             const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
@@ -109,7 +109,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Creating comment instances from all subplebbit.pages comments doesn't mutate props`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
             const pages = subplebbit.posts.pages || {};
             expect(Object.keys(pages).length, "subplebbit.posts.pages should not be empty").to.be.greaterThan(0);
             let testedComments = 0;
@@ -154,7 +154,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
             const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies);
             expect(postWithReplyToCloneFromPage.replies).to.be.a("object");
             const commentCloneInstance = await plebbit.createComment(postWithReplyToCloneFromPage);
@@ -165,7 +165,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can recreate a stringified Comment instance with replies with plebbit.createComment`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
             const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies);
             expect(postWithReplyToCloneFromPage.replies).to.be.a("object");
             const commentCloneInstance = await plebbit.createComment(JSON.parse(JSON.stringify(postWithReplyToCloneFromPage)));
@@ -211,7 +211,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(postClone.postCid).to.equal(post.postCid);
 
             postClone.replies.pageCids.new = pageCid; // mock it to have pageCids
-            const page = await postClone.replies.getPage(pageCid);
+            const page = await postClone.replies.getPage({cid: pageCid});
             expect(page.comments.length).to.be.equal(1);
         });
 
@@ -221,7 +221,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(comment.author.shortAddress).to.be.a("string").and.not.equal("12345");
             await publishWithExpectedResult(comment, true);
 
-            const commentLoaded = await plebbit.getComment(comment.cid);
+            const commentLoaded = await plebbit.getComment({cid: comment.cid});
             expect(commentLoaded.author.shortAddress).to.be.a("string").and.not.equal("12345");
         });
 
@@ -231,7 +231,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(comment.author.subplebbit).to.be.undefined;
             await publishWithExpectedResult(comment, true);
 
-            const commentLoaded = await plebbit.getComment(comment.cid);
+            const commentLoaded = await plebbit.getComment({cid: comment.cid});
             expect(commentLoaded.author.subplebbit).to.be.undefined;
         });
 
@@ -331,7 +331,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     // TODO how do you guarantee reply with this depth will be there?
 
                     const parentComment = await findOrPublishCommentWithDepth({
-                        subplebbit: await plebbit.getSubplebbit(subplebbitAddress),
+                        subplebbit: await plebbit.getSubplebbit({address: subplebbitAddress}),
                         depth: replyDepth - 1
                     });
                     await parentComment.update();

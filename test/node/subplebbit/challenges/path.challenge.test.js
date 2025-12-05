@@ -43,7 +43,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
-        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
 
         expect(subplebbit.updatedAt).to.equal(remoteSub.updatedAt);
         for (const _subplebbit of [subplebbit, remoteSub]) {
@@ -132,7 +132,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
-        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
 
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges).to.have.length(2);

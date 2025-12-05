@@ -24,7 +24,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
         before(async () => {
             const plebbit = await config.plebbitInstancePromise();
-            sub = await plebbit.getSubplebbit(subplebbitAddress);
+            sub = await plebbit.getSubplebbit({address: subplebbitAddress});
 
             const replyWithDepth1Cid = await findOrPublishCommentWithDepth({ depth: 1, subplebbit: sub });
             const replyWithDepth2Cid = await findOrPublishCommentWithDepth({ depth: 2, subplebbit: sub });
@@ -96,7 +96,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 });
 
                 it(`A single ${replyPostConfig.commentType} instance fetched with plebbit.getComment should not keep plebbit._updatingComments[address]`, async () => {
-                    const comment = await plebbit.getComment(replyPostConfig.cid);
+                    const comment = await plebbit.getComment({cid: replyPostConfig.cid});
                     expect(comment.content).to.be.a("string");
                     expect(plebbit._updatingComments[comment.cid]).to.be.undefined;
                     expect(plebbit._updatingComments).to.deep.equal({});
@@ -195,14 +195,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     expect(plebbit._updatingComments[comment1.cid]).to.be.undefined;
                 });
 
-                it(`Calling plebbit.getComment(${replyPostConfig.commentType}Cid) should load both CommentIpfs and CommentUpdate if updating comment instance already has them`, async () => {
+                it(`Calling plebbit.getComment({cid: ${replyPostConfig.commentType}Cid}) should load both CommentIpfs and CommentUpdate if updating comment instance already has them`, async () => {
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment1.update();
                     await resolveWhenConditionIsTrue({ toUpdate: comment1, predicate: () => typeof comment1.updatedAt === "number" });
 
                     expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
 
-                    const comment2 = await plebbit.getComment(comment1.cid);
+                    const comment2 = await plebbit.getComment({cid: comment1.cid});
                     expect(comment2.content).to.be.a("string");
                     expect(comment2.updatedAt).to.be.a("number");
                     expect(comment2.state).to.equal("stopped");
@@ -215,7 +215,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
 
-                    const comment2 = await plebbit.getComment(comment1.cid);
+                    const comment2 = await plebbit.getComment({cid: comment1.cid});
                     await comment2.stop();
 
                     expect(plebbit._updatingComments[comment1.cid]).to.exist; // comment1 should still be updating
@@ -331,7 +331,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         itSkipIfRpc(
             `Updating a post should create a new entry in _updatingSubplebbits if we haven't been updating the sub already`,
             async () => {
-                const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+                const subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
                 const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
 
                 const comment = await plebbit.createComment({ cid: commentCid });
@@ -352,7 +352,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         );
 
         itSkipIfRpc(`Updating a post should use entry in _updatingSubplebbits if it's already updating`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+            const subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
             await subplebbit.update();
             const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
 

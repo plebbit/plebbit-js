@@ -27,7 +27,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let plebbit, postToBeLocked, replyUnderPostToBeLocked, modPost, sub;
         before(async () => {
             plebbit = await mockRemotePlebbit();
-            sub = await plebbit.getSubplebbit(subplebbitAddress);
+            sub = await plebbit.getSubplebbit({address: subplebbitAddress});
             await sub.update();
             postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit);
             modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
@@ -111,7 +111,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`locked=true for author post when it's locked by mod in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: postToBeLocked.subplebbitAddress});
             const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
             expect(postInSubplebbitPage.locked).to.be.true;
             expect(postInSubplebbitPage.reason).to.equal("To lock an author post");
@@ -137,7 +137,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`locked=true for mod post when it's locked by mod in getPage of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: modPost.subplebbitAddress});
             const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(postInSubplebbitPage.locked).to.be.true;
         });
@@ -182,7 +182,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`locked=false in getPage of subplebbit after the mod unlocks it`, async () => {
-            const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: postToBeLocked.subplebbitAddress});
             const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
             expect(postInSubplebbitPage.locked).to.be.false;
         });

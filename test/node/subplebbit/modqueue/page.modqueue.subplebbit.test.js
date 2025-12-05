@@ -8,6 +8,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { describe, expect } from "vitest";
 import { testCommentFieldsInModQueuePageJson } from "../../../node-and-browser/pages/pages-test-util.js";
+import { describe, it } from "vitest";
 
 const depthsToTest = [0, 1, 2, 3, 10, 15, 25, 35];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
@@ -56,12 +57,12 @@ describe.concurrent("Modqueue depths", () => {
                     toUpdate: subplebbit,
                     predicate: async () => {
                         if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
-                        const modQueuePage = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+                        const modQueuePage = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
                         return modQueuePage.comments.length === numOfComments;
                     }
                 });
 
-                const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+                const modQueuepageLoaded = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
 
                 expect(modQueuepageLoaded.comments.length).to.equal(numOfComments);
 
@@ -81,7 +82,7 @@ describe.concurrent("Modqueue depths", () => {
         });
     }
 
-    it("Should support modqueue pages with comments of different depths", async () => {
+    it.sequential("Should support modqueue pages with comments of different depths", async () => {
         const { plebbit, subplebbit, modSigner } = await setupSubplebbitWithModerator();
         // TODO: Create a mix of top-level posts and nested replies in pending approval
         // and verify modqueue page rendering/order handles varying depths correctly
@@ -107,12 +108,12 @@ describe.concurrent("Modqueue depths", () => {
                 toUpdate: subplebbit,
                 predicate: async () => {
                     if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
-                    const modQueuePage = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+                    const modQueuePage = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
                     return modQueuePage.comments.length === pendingComments.length;
                 }
             });
 
-            const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+            const modQueuepageLoaded = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
 
             expect(modQueuepageLoaded.comments.length).to.equal(pendingComments.length);
             for (let i = 0; i < pendingComments.length; i++) {

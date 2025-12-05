@@ -29,7 +29,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
 
             post = await publishRandomPost(subplebbit.address, plebbit);
             await post.update();
@@ -45,7 +45,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const invalidCommentUpdate = remeda.clone(post.raw.commentUpdate);
             Object.assign(invalidCommentUpdate, extraProps);
 
-            const postToUpdate = await plebbit.getComment(post.cid);
+            const postToUpdate = await plebbit.getComment({cid: post.cid});
             let updateEmitted = false;
             const errorPromise = new Promise((resolve) => postToUpdate.once("error", resolve));
 
@@ -89,7 +89,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signers[0]
             );
 
-            const postToUpdate = await plebbit.getComment(post.cid);
+            const postToUpdate = await plebbit.getComment({cid: post.cid});
 
             await postToUpdate.update();
             mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
@@ -122,7 +122,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signers[0]
             );
 
-            const postToUpdate = await plebbit.getComment(post.cid);
+            const postToUpdate = await plebbit.getComment({cid: post.cid});
 
             await postToUpdate.update();
             mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
@@ -164,7 +164,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             subplebbit.posts.pageCids.new = pageIpfsCid; // just so that it wouldn't throw
 
-            const fetchedPage = await subplebbit.posts.getPage(pageIpfsCid); // If this succeeds, it means signature has been verified and everything
+            const fetchedPage = await subplebbit.posts.getPage({cid: pageIpfsCid}); // If this succeeds, it means signature has been verified and everything
 
             const commentInPageJson = fetchedPage.comments[fetchedPage.comments.length - 1];
 
@@ -187,7 +187,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signers[0]
             );
 
-            const pageIpfs = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new));
+            const pageIpfs = JSON.parse(await plebbit.fetchCid({cid: subplebbit.posts.pageCids.new}));
 
             pageIpfs.comments.push({
                 comment: post.raw.comment,
@@ -197,7 +197,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const pageIpfsCid = await addStringToIpfs(JSON.stringify(pageIpfs));
             subplebbit.posts.pageCids.new = pageIpfsCid; // just so that it wouldn't throw
 
-            const fetchedPage = await subplebbit.posts.getPage(pageIpfsCid); // If this succeeds, it means signature has been verified and everything
+            const fetchedPage = await subplebbit.posts.getPage({cid: pageIpfsCid}); // If this succeeds, it means signature has been verified and everything
 
             const commentInPageJson = fetchedPage.comments[fetchedPage.comments.length - 1];
 

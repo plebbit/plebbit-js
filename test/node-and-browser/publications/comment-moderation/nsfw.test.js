@@ -51,7 +51,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`nsfw=true appears in pages of subplebibt`, async () => {
-            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: randomPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.true;
         });
@@ -77,7 +77,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`nsfw=false appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: randomPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.false;
         });

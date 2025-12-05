@@ -16,7 +16,7 @@ const subplebbitAddress = signers[9].address;
 describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
     it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
         const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false }, remotePlebbit: true });
-        const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
+        const mockSub = await plebbit.getSubplebbit({address: subplebbitAddress});
         expect(Object.keys(mockSub.clients.chainProviders).length).to.be.greaterThanOrEqual(1);
         for (const chain of Object.keys(mockSub.clients.chainProviders)) {
             expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);

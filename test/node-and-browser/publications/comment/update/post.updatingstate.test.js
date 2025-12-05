@@ -87,7 +87,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it.sequential(`Updating states is in correct upon updating a post that's included in preloaded pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
             const postCid = sub.posts.pages.hot.comments.find((comment) => !comment.author.address.includes(".")).cid;
             const mockPost = await plebbit.createComment({ cid: postCid });
             const recordedStates = [];
@@ -114,7 +114,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`updating states is in correct order upon updating a post with IPFS client using postUpdates`, async () => {
             const dedicatedPlebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await dedicatedPlebbit.getSubplebbit(subplebbitAddress);
+                const sub = await dedicatedPlebbit.getSubplebbit({address: subplebbitAddress});
                 const postCid = sub.posts.pages.hot.comments[0].cid;
                 const mockPost = await dedicatedPlebbit.createComment({ cid: postCid });
                 const expectedStates = [
@@ -141,7 +141,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it.sequential(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { resolveAuthorAddresses: false } }); // set resolve to false so it wouldn't show up in states
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
             const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
             const createdPost = await plebbit.createComment({
                 cid: sub.posts.pages.hot.comments[0].cid
@@ -185,7 +185,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`updating state is set to failed if we load an invalid CommentUpdate record from postUpdates`, async () => {
             const dedicatedPlebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await dedicatedPlebbit.getSubplebbit(subplebbitAddress);
+                const sub = await dedicatedPlebbit.getSubplebbit({address: subplebbitAddress});
                 const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(
                     sub.posts.pages.hot.comments[0].cid
                 );
@@ -263,7 +263,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
             const dedicatedPlebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await dedicatedPlebbit.getSubplebbit(subplebbitAddress);
+                const sub = await dedicatedPlebbit.getSubplebbit({address: subplebbitAddress});
                 const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; // override updatedAt which will give us an invalid signature
                 const createdPost = await dedicatedPlebbit.createComment({
                     cid: sub.posts.pages.hot.comments[0].cid
@@ -309,7 +309,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`updating state is set to failed if we load an invalid CommentUpdate record from postUpdates`, async () => {
             const dedicatedPlebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await dedicatedPlebbit.getSubplebbit(subplebbitAddress);
+                const sub = await dedicatedPlebbit.getSubplebbit({address: subplebbitAddress});
                 const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(
                     sub.posts.pages.hot.comments[0].cid
                 );
@@ -360,7 +360,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             }
         });
         it(`Updating states is in correct upon updating a post that's included in preloaded pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
             const postCid = sub.posts.pages.hot.comments[0].cid;
             const mockPost = await plebbit.createComment({ cid: postCid });
             const recordedStates = [];
@@ -386,7 +386,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`updating states is in correct order upon updating a post with gateway using postUpdates`, async () => {
             const dedicatedPlebbit = await config.plebbitInstancePromise();
             try {
-                const subplebbit = await dedicatedPlebbit.getSubplebbit(subplebbitAddress);
+                const subplebbit = await dedicatedPlebbit.getSubplebbit({address: subplebbitAddress});
                 const postCid = subplebbit.posts.pages.hot.comments[0].cid;
                 const mockPost = await dedicatedPlebbit.createComment({ cid: postCid });
                 const expectedStates = [
@@ -466,7 +466,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`the order of state-event-statechange is correct when we get a new update from post`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
             const postCid = sub.posts.pages.hot.comments[0].cid;
             const mockPost = await plebbit.createComment({ cid: postCid });
             expect(mockPost.updatedAt).to.be.undefined;

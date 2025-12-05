@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
         const fetchLatestSubplebbitJson = async () => {
             const plebbitRunningSubs = await config.plebbitInstancePromise({ plebbitOptions: { ipfsGatewayUrls: [normalGateway] } });
-            const subRecord = (await plebbitRunningSubs.getSubplebbit(subAddress)).toJSONIpfs();
+            const subRecord = (await plebbitRunningSubs.getSubplebbit({address: subAddress})).toJSONIpfs();
             await plebbitRunningSubs.destroy();
             return subRecord;
         };
@@ -47,7 +47,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const customPlebbit = await config.plebbitInstancePromise({ plebbitOptions: { ipfsGatewayUrls: [stallingGateway] } });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
             try {
-                await customPlebbit.getSubplebbit(subAddress);
+                await customPlebbit.getSubplebbit({address: subAddress});
                 expect.fail("Should not fulfill");
             } catch (e) {
                 expect(e.details.gatewayToError[stallingGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
@@ -61,7 +61,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
             // should succeed and return the result from normalGateway
-            const subFromGateway = await customPlebbit.getSubplebbit(subplebbitAddress);
+            const subFromGateway = await customPlebbit.getSubplebbit({address: subplebbitAddress});
             const latestSub = await fetchLatestSubplebbitJson();
             expect(subFromGateway.toJSONIpfs()).to.deep.equal(latestSub);
             await customPlebbit.destroy();
@@ -71,7 +71,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 plebbitOptions: { ipfsGatewayUrls: [normalGateway, errorGateway] }
             });
             // should succeed and return the result from normalGateway
-            const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(), customPlebbit.getSubplebbit(subplebbitAddress)]);
+            const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(), customPlebbit.getSubplebbit({address: subplebbitAddress})]);
             expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
             expect(sub.updatedAt).to.be.a("number");
             await customPlebbit.destroy();
@@ -84,7 +84,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
             try {
-                await customPlebbit.getSubplebbit(subAddress);
+                await customPlebbit.getSubplebbit({address: subAddress});
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
@@ -108,7 +108,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             const buffer = customPlebbit._timeouts["subplebbit-ipns"] * 5;
             const base = Math.round(Date.now() / 1000);
-            const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+            const sub = await customPlebbit.getSubplebbit({address: subplebbitAddress});
             expect(sub.updatedAt)
                 .to.be.lessThanOrEqual(base + buffer)
                 .greaterThanOrEqual(base - buffer);
@@ -121,7 +121,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const customPlebbit = await config.plebbitInstancePromise({
                 plebbitOptions: { ipfsGatewayUrls: [hourLateGateway, twoHoursLateGateway] }
             });
-            const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+            const sub = await customPlebbit.getSubplebbit({address: subplebbitAddress});
             await sub.update();
 
             // should go with the hour old, not the two hours
@@ -158,7 +158,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
             const [gatewaySub, latestSub] = await Promise.all([
-                customPlebbit.getSubplebbit(subplebbitAddress),
+                customPlebbit.getSubplebbit({address: subplebbitAddress}),
                 fetchLatestSubplebbitJson()
             ]);
             const diff = latestSub.updatedAt - gatewaySub.updatedAt;

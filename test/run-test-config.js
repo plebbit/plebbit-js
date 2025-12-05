@@ -311,7 +311,10 @@ const runNodeTests = () => {
     env.VITEST_MODE = "node";
 
     const vitestCli = path.join(projectRoot, "node_modules", "vitest", "vitest.mjs");
-    const vitestArgs = ["run", "--config", vitestConfigPath, "--allowOnly", "false"];
+    const allowOnlyFlag = getLastOption(options, "allowOnly");
+    const allowOnlyValue =
+        allowOnlyFlag === undefined ? "false" : allowOnlyFlag === true || allowOnlyFlag === "true" ? "true" : String(allowOnlyFlag);
+    const vitestArgs = ["run", "--config", vitestConfigPath, "--allowOnly", allowOnlyValue];
 
     const isParallelMode = options.has("parallel");
     const userProvidedBail = options.has("bail");

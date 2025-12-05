@@ -28,7 +28,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post it should appear on all pages
             await waitTillPostInSubplebbitPages(newPost, plebbit);
-            subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
         });
 
         after(async () => {
@@ -98,14 +98,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // Create a comment with a CID that doesn't exist or will time out
             const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
 
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
 
             // Override the pageCid to use our non-existent CID
             sub.posts.pageCids.hot = nonExistentCid;
 
             try {
                 // This should time out
-                await sub.posts.getPage(nonExistentCid);
+                await sub.posts.getPage({cid: nonExistentCid});
                 expect.fail("Should have timed out");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -120,7 +120,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`.getPage will throw if the first page is over 1mb`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
             const page = remeda.clone(subplebbit.raw.subplebbitIpfs.posts.pages.hot);
 
             // Make sure the page is over 1MB
@@ -138,7 +138,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             subplebbit.posts.pageCids.hot = pageCid;
 
             try {
-                await subplebbit.posts.getPage(subplebbit.posts.pageCids.hot);
+                await subplebbit.posts.getPage({cid: subplebbit.posts.pageCids.hot});
                 expect.fail("Should have thrown");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -157,7 +157,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 newPost = await publishRandomPost(subplebbitAddress, plebbit);
                 await publishRandomReply(newPost, plebbit);
                 await waitTillPostInSubplebbitPages(newPost, plebbit);
-                subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
                 validPageJson = remeda.clone(subplebbit.posts.pages.hot); // PageTypeJson, not PageIpfs
             });
 
@@ -277,7 +277,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             it("validates posts pages differently than replies pages", async () => {
                 // Get a post with replies
 
-                const post = await plebbit.getComment(newPost.cid);
+                const post = await plebbit.getComment({cid: newPost.cid});
                 await post.update();
                 await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replies.pages.best });
                 await post.stop();
@@ -314,7 +314,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`.getPage will throw if retrieved page has an invalid signature `, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
 
             const pageIpfs = { comments: sub.posts.pages.hot.comments.map((comment) => comment.raw) };
             expect(pageIpfs).to.exist;
@@ -326,7 +326,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.posts.getPage(invalidPageCid);
+                await sub.posts.getPage({cid: invalidPageCid});
                 expect.fail("should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
@@ -343,12 +343,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
             const plebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [gatewayUrl], validatePages: true } });
 
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
 
             const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
             sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
             try {
-                await sub.posts.getPage(invalidPageCid);
+                await sub.posts.getPage({cid: invalidPageCid});
                 expect.fail("Should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");

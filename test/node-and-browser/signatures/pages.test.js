@@ -44,7 +44,7 @@ describeSkipIfRpc(`verify pages`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
-        subplebbit = await plebbit.getSubplebbit(subAddress);
+        subplebbit = await plebbit.getSubplebbit({address: subAddress});
     });
 
     after(async () => {

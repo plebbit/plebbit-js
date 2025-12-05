@@ -50,7 +50,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=true appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: randomPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.true;
         });
@@ -76,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=false appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: randomPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.false;
         });

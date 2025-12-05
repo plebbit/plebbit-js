@@ -45,7 +45,7 @@ describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
         const listedSubs = plebbit.subplebbits;
         expect(listedSubs).to.include(newSubplebbit.address);
 
-        const remoteSub = await remotePlebbit.getSubplebbit(newSubplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit({address: newSubplebbit.address});
 
         const remoteSubJson = jsonifySubplebbitAndRemoveInternalProps(remoteSub);
 

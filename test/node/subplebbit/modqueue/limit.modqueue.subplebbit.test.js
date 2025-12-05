@@ -93,7 +93,7 @@ describe(`Modqueue limits`, () => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const currentPageCid = subplebbit.modQueue.pageCids.pendingApproval;
-        const page = await subplebbit.modQueue.getPage(currentPageCid);
+        const page = await subplebbit.modQueue.getPage({cid: currentPageCid});
         const pageCommentCids = page.comments.map((comment) => comment.cid);
 
         const expectedPendingCids = pendingComments

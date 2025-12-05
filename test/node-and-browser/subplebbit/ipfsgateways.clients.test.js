@@ -24,7 +24,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
-            const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+            const mockSub = await gatewayPlebbit.getSubplebbit({address: subplebbitAddress});
             expect(Object.keys(mockSub.clients.ipfsGateways).length).to.equal(1);
             expect(Object.values(mockSub.clients.ipfsGateways)[0].state).to.equal("stopped");
         });
@@ -47,8 +47,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
-            const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
+        it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.getSubplebbit({address: address})`, async () => {
+            const sub = await gatewayPlebbit.getSubplebbit({address: signers[0].address});
             await publishRandomPost(sub.address, gatewayPlebbit);
 
             const expectedStates = ["fetching-ipns", "stopped"];

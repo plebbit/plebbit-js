@@ -236,7 +236,7 @@ describeSkipIfRpc(`commentupdate`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
-        subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
     });
 
     after(async () => {
@@ -244,7 +244,7 @@ describeSkipIfRpc(`commentupdate`, async () => {
     });
 
     it(`Can validate live CommentUpdate`, async () => {
-        const comment = await plebbit.getComment(subplebbit.lastPostCid);
+        const comment = await plebbit.getComment({cid: subplebbit.lastPostCid});
         await comment.update();
         await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
         await comment.stop();

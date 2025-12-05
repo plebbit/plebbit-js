@@ -33,12 +33,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it(`subplebbit.updateCid is defined after plebbit.getSubplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(subAddress);
+            const sub = await plebbit.getSubplebbit({address: subAddress});
             expect(sub.updateCid).to.be.a("string");
         });
 
         it(`subplebbit.updateCid is part of subplebbit.toJSON()`, async () => {
-            const subJson = JSON.parse(JSON.stringify(await plebbit.getSubplebbit(subAddress)));
+            const subJson = JSON.parse(JSON.stringify(await plebbit.getSubplebbit({address: subAddress})));
             expect(subJson.updateCid).to.be.a("string");
         });
     })

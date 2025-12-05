@@ -81,7 +81,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
 
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
-        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges.length).to.equal(defaultSettingsChallenges.length);
             _subplebbit.challenges.forEach((challenge, index) => {
@@ -153,7 +153,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
-        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
 
         expect(subplebbit.updatedAt).to.equal(remoteSub.updatedAt);
         for (const _subplebbit of [subplebbit, remoteSub]) {
@@ -188,7 +188,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         expect(subplebbit.settings.challenges).to.deep.equal([]);
-        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
         for (const _subplebbit of [subplebbit, remoteSub]) expect(_subplebbit.challenges).to.deep.equal([]);
 
         await subplebbit.delete();

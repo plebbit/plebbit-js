@@ -18,14 +18,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`subplebbit.modQueue.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
             const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
             expect(Object.keys(sub.modQueue.clients.ipfsGateways.pendingApproval).length).to.equal(1);
             expect(sub.modQueue.clients.ipfsGateways.pendingApproval[gatewayUrl].state).to.equal("stopped");
         });
 
         it(`Correct state of 'pendingApproval' sort is updated after fetching from subplebbit.modQueue.pageCids.pendingApproval`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
             const page = cloneModQueuePage();
             const pageCid = await addStringToIpfs(JSON.stringify(page));
             sub.modQueue.pageCids.pendingApproval = pageCid;
@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 actualStates.push(newState);
             });
 
-            await sub.modQueue.getPage(sub.modQueue.pageCids.pendingApproval);
+            await sub.modQueue.getPage({cid: sub.modQueue.pageCids.pendingApproval});
             expect(actualStates).to.deep.equal(expectedStates);
         });
     });

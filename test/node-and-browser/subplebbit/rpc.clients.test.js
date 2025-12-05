@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
         it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with IPNS address`, async () => {
             const newIpns = await createNewIpns();
-            const actualSub = await plebbit.getSubplebbit(signers[0].address);
+            const actualSub = await plebbit.getSubplebbit({address: signers[0].address});
 
             const record = JSON.parse(JSON.stringify(actualSub.raw.subplebbitIpfs));
             record.address = newIpns.signer.address;

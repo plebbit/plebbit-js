@@ -22,7 +22,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 const plebbit = await config.plebbitInstancePromise();
                 const comment = await publishCommentWithDepth({
                     depth: depthToTest,
-                    subplebbit: await plebbit.getSubplebbit(subplebbitAddress)
+                    subplebbit: await plebbit.getSubplebbit({address: subplebbitAddress})
                 });
 
                 expect(comment.cid).to.be.a("string");

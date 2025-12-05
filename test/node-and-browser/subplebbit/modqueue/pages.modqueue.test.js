@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
             sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.modQueue.getPage({cid: invalidPageCid});
                 expect.fail("Should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
@@ -57,7 +57,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.modQueue.getPage({cid: invalidPageCid});
                 expect.fail("should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -80,7 +80,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.modQueue.getPage({cid: invalidPageCid});
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -102,7 +102,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.modQueue.getPage({cid: invalidPageCid});
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -129,7 +129,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.modQueue.getPage({cid: invalidPageCid});
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -157,7 +157,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.modQueue.getPage({cid: invalidPageCid});
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -188,7 +188,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             subplebbit.modQueue.pageCids.pendingApproval = pageCid;
 
             try {
-                await subplebbit.modQueue.getPage(pageCid);
+                await subplebbit.modQueue.getPage({cid: pageCid});
                 expect.fail("Should have thrown");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -216,7 +216,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             try {
                 // This should time out
-                await sub.modQueue.getPage(nonExistentCid);
+                await sub.modQueue.getPage({cid: nonExistentCid});
                 expect.fail("Should have timed out");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {

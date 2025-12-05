@@ -205,7 +205,7 @@ for (const commentMod of commentModProps) {
                     itSkipIfRpc.sequential(
                         `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`,
                         async () => {
-                            const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
+                            const parentComment = await plebbit.getComment({cid: commentToBeRejected.parentCid});
                             await parentComment.update();
                             await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
                             const expectedResult = !shouldCommentBePurged;
@@ -249,7 +249,7 @@ for (const commentMod of commentModProps) {
                     itSkipIfRpc.sequential(
                         `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`,
                         async () => {
-                            const postComment = await plebbit.getComment(commentToBeRejected.postCid);
+                            const postComment = await plebbit.getComment({cid: commentToBeRejected.postCid});
                             await postComment.update();
                             await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
                             const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({

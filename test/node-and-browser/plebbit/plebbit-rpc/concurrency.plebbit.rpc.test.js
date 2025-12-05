@@ -196,8 +196,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
             try {
                 const [subA, subB] = await Promise.all([
-                    plebbitA.getSubplebbit(subplebbitAddress),
-                    plebbitB.getSubplebbit(subplebbitAddress)
+                    plebbitA.getSubplebbit({address: subplebbitAddress}),
+                    plebbitB.getSubplebbit({address: subplebbitAddress})
                 ]);
                 await Promise.all([subA.update(), subB.update()]);
 
@@ -207,8 +207,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 );
 
                 const [fetchedByB, fetchedByA] = await Promise.all([
-                    plebbitB.getComment(postFromA.cid),
-                    plebbitA.getComment(postFromB.cid)
+                    plebbitB.getComment({cid: postFromA.cid}),
+                    plebbitA.getComment({cid: postFromB.cid})
                 ]);
 
                 expect(fetchedByB.cid).to.equal(postFromA.cid);
@@ -226,7 +226,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             const plebbitToKeep = await config.plebbitInstancePromise();
 
             try {
-                const subToKeep = await plebbitToKeep.getSubplebbit(subplebbitAddress);
+                const subToKeep = await plebbitToKeep.getSubplebbit({address: subplebbitAddress});
                 await subToKeep.update();
 
                 const publishPromise = publishRandomPost(subplebbitAddress, plebbitToKeep);
@@ -236,7 +236,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 const publishedPost = await publishPromise;
                 await subToKeep.update();
                 await waitTillPostInSubplebbitInstancePages(publishedPost, subToKeep);
-                const remotePost = await plebbitToKeep.getComment(publishedPost.cid);
+                const remotePost = await plebbitToKeep.getComment({cid: publishedPost.cid});
 
                 expect(remotePost.cid).to.equal(publishedPost.cid);
                 expect(plebbitToKeep._plebbitRpcClient?.state).to.equal("connected");
@@ -252,8 +252,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
             try {
                 const [subA, subB] = await Promise.all([
-                    plebbitA.getSubplebbit(subplebbitAddress),
-                    plebbitB.getSubplebbit(subplebbitAddress)
+                    plebbitA.getSubplebbit({address: subplebbitAddress}),
+                    plebbitB.getSubplebbit({address: subplebbitAddress})
                 ]);
                 await Promise.all([subA.update(), subB.update()]);
 
@@ -264,7 +264,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 await subA.update(); // trigger a fresh update on the surviving subscriber
                 await waitTillPostInSubplebbitInstancePages(newPost, subA);
 
-                const fetched = await plebbitA.getComment(newPost.cid);
+                const fetched = await plebbitA.getComment({cid: newPost.cid});
                 expect(fetched.cid).to.equal(newPost.cid);
                 expect(plebbitA._plebbitRpcClient?.state).to.equal("connected");
             } finally {
@@ -293,10 +293,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 await plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: updatedOptions });
                 await settingsChangeOnB;
 
-                const subB = await plebbitB.getSubplebbit(subplebbitAddress);
+                const subB = await plebbitB.getSubplebbit({address: subplebbitAddress});
                 await subB.update();
                 const post = await publishRandomPost(subplebbitAddress, plebbitB);
-                const fetched = await plebbitB.getComment(post.cid);
+                const fetched = await plebbitB.getComment({cid: post.cid});
                 expect(fetched.cid).to.equal(post.cid);
                 expect(plebbitB._plebbitRpcClient?.state).to.equal("connected");
             } finally {
@@ -337,7 +337,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                             await settingsPromise;
                             await createdSub.start();
                             const post = await publishRandomPost(createdSub.address, plebbitB);
-                            const fetched = await plebbitB.getComment(post.cid);
+                            const fetched = await plebbitB.getComment({cid: post.cid});
                             expect(fetched.cid).to.equal(post.cid);
                         })(),
                         { milliseconds: 55000, message: "Timed out during createSubplebbit/setSettings overlap" }
@@ -379,7 +379,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 const publishedPost = await publishPromise;
                 await settingsChangeOnB;
 
-                const fetched = await plebbitB.getComment(publishedPost.cid);
+                const fetched = await plebbitB.getComment({cid: publishedPost.cid});
                 expect(fetched.cid).to.equal(publishedPost.cid);
                 expect(plebbitB._plebbitRpcClient?.state).to.equal("connected");
             } finally {
@@ -435,7 +435,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 await secondSettingsChangeOnB;
 
                 const publishedPost = await publishPromise;
-                const fetched = await plebbitB.getComment(publishedPost.cid);
+                const fetched = await plebbitB.getComment({cid: publishedPost.cid});
 
                 expect(fetched.cid).to.equal(publishedPost.cid);
                 expect(plebbitB._plebbitRpcClient?.state).to.equal("connected");
@@ -451,7 +451,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             const plebbitB = await config.plebbitInstancePromise();
 
             try {
-                const subB = await plebbitB.getSubplebbit(subplebbitAddress);
+                const subB = await plebbitB.getSubplebbit({address: subplebbitAddress});
                 await subB.update();
 
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
@@ -478,7 +478,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
                 const post = await publishRandomPost(subplebbitAddress, plebbitB);
                 await waitTillPostInSubplebbitInstancePages(post, subB); // hangs here
-                const fetched = await plebbitB.getComment(post.cid);
+                const fetched = await plebbitB.getComment({cid: post.cid});
                 expect(fetched.cid).to.equal(post.cid);
             } finally {
                 if (!plebbitA.destroyed) await plebbitA.destroy();
@@ -560,7 +560,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 await settingsChangeOnB;
 
                 const publishedPost = await publishPromise;
-                const fetched = await plebbitB.getComment(publishedPost.cid);
+                const fetched = await plebbitB.getComment({cid: publishedPost.cid});
                 expect(fetched.cid).to.equal(publishedPost.cid);
             } finally {
                 if (!plebbitA.destroyed) await plebbitA.destroy();
@@ -603,7 +603,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
                 const sub = await createStartSubPromise;
                 const post = await publishRandomPost(sub.address, plebbitB);
-                const fetched = await plebbitB.getComment(post.cid);
+                const fetched = await plebbitB.getComment({cid: post.cid});
                 expect(fetched.cid).to.equal(post.cid);
             } finally {
                 if (!plebbitA.destroyed) await plebbitA.destroy();
@@ -616,7 +616,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             const plebbitB = await config.plebbitInstancePromise();
 
             try {
-                const subB = await plebbitB.getSubplebbit(subplebbitAddress);
+                const subB = await plebbitB.getSubplebbit({address: subplebbitAddress});
                 await subB.update();
 
                 const subplebbitUpdateSubscriptionId = await plebbitB._plebbitRpcClient.subplebbitUpdateSubscribe(subplebbitAddress);
@@ -683,7 +683,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
                 const subUpdateAfterSettings = pTimeout(
                     waitForSubscriptionEvent(plebbitB._plebbitRpcClient, subplebbitUpdateSubscriptionId, "update", async () =>
-                        (await plebbitB.getSubplebbit(freshAddress)).update()
+                        (await plebbitB.getSubplebbit({address: freshAddress})).update()
                     ),
                     { milliseconds: 50000, message: "subplebbitUpdate subscription died during setSettings+startSubplebbit" }
                 );
@@ -699,7 +699,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 });
 
                 const [publishedPost] = await Promise.all([publishPromise, nextStartUpdate, subUpdateAfterSettings, setSettingsPromise]);
-                const fetched = await plebbitB.getComment(publishedPost.cid);
+                const fetched = await plebbitB.getComment({cid: publishedPost.cid});
 
                 expect(fetched.cid).to.equal(publishedPost.cid);
             } finally {

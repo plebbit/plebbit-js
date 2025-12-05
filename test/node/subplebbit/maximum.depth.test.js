@@ -26,7 +26,7 @@ describe.skip(`Test for maximum depth of ${depth}`, () => {
             expect(lastReply.depth).to.equal(i + 1);
             console.log("Published reply with depth", lastReply.depth);
         }
-        const lastReplyRemote = await remotePlebbit.getComment(lastReply.cid);
+        const lastReplyRemote = await remotePlebbit.getComment({cid: lastReply.cid});
         await waitTillReplyInParentPages(lastReplyRemote, remotePlebbit);
         expect(lastReplyRemote.depth).to.equal(depth);
         await sub.delete();

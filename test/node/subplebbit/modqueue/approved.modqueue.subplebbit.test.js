@@ -165,7 +165,7 @@ for (const pendingCommentDepth of depthsToTest) {
 
         if (pendingCommentDepth > 0) {
             itSkipIfRpc(`Approved reply now shows up in parentComment.replies`, async () => {
-                const parentComment = await plebbit.getComment(approvedComment.parentCid);
+                const parentComment = await plebbit.getComment({cid: approvedComment.parentCid});
                 await parentComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.replies.pages.best?.comments });
                 let foundInReplies = false;
@@ -204,7 +204,7 @@ for (const pendingCommentDepth of depthsToTest) {
                 await parentComment.stop();
             });
             itSkipIfRpc(`Approved reply now shows up in its post's flat pages`, async () => {
-                const postComment = await plebbit.getComment(approvedComment.postCid);
+                const postComment = await plebbit.getComment({cid: approvedComment.postCid});
                 await postComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
                 const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({

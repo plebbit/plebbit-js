@@ -107,7 +107,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             mockSubplebbit.posts.pageCids = { ...mockSubplebbit.posts.pageCids, hot: firstPageCid };
 
             // Load the first page
-            const loadedFirstPage = await mockSubplebbit.posts.getPage(firstPageCid); // just to set the expectation for second page
+            const loadedFirstPage = await mockSubplebbit.posts.getPage({cid: firstPageCid}); // just to set the expectation for second page
 
             // Verify the size expectation for the second page is set correctly
             expect(mockSubplebbit._plebbit._memCaches.pagesMaxSize.get(sha256(mockSubplebbit.address + secondPageCid))).to.equal(
@@ -115,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             );
 
             // Load the second page
-            const loadedSecondPage = await mockSubplebbit.posts.getPage(secondPageCid);
+            const loadedSecondPage = await mockSubplebbit.posts.getPage({cid: secondPageCid});
 
             // Verify the size expectation for the third page is set correctly
             expect(mockSubplebbit._plebbit._memCaches.pagesMaxSize.get(sha256(mockSubplebbit.address + thirdPageCid))).to.equal(
@@ -123,7 +123,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             );
 
             // Load the third page
-            const loadedThirdPage = await mockSubplebbit.posts.getPage(thirdPageCid);
+            const loadedThirdPage = await mockSubplebbit.posts.getPage({cid: thirdPageCid});
 
             // Verify the third page has no nextCid
             expect(loadedThirdPage.nextCid).to.be.undefined;
@@ -150,7 +150,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             mockSubplebbit.posts.pageCids = { ...mockSubplebbit.posts.pageCids, hot: updatedFirstPageCid };
 
             // Load the first page to establish size expectations
-            await mockSubplebbit.posts.getPage(updatedFirstPageCid);
+            await mockSubplebbit.posts.getPage({cid: updatedFirstPageCid});
 
             // Verify the size expectation for the second page is set correctly
 
@@ -160,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             // Attempt to load the oversized second page - should throw an error
             try {
-                await mockSubplebbit.posts.getPage(oversizedSecondPageCid);
+                await mockSubplebbit.posts.getPage({cid: oversizedSecondPageCid});
                 expect.fail("Should have thrown an error for oversized page");
             } catch (error) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -183,7 +183,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             // Attempt to load the oversized first page - should throw an error
             try {
-                await mockSubplebbit.posts.getPage(oversizedFirstPageCid);
+                await mockSubplebbit.posts.getPage({cid: oversizedFirstPageCid});
                 expect.fail("Should have thrown an error for oversized first page");
             } catch (error) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {

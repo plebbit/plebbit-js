@@ -69,7 +69,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=true appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: authorPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(authorPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.true;
         });
@@ -129,7 +129,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=false appears pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: authorPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(authorPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.false;
         });
@@ -175,7 +175,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=true appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: modPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.true;
         });
@@ -206,7 +206,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=false appears pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const sub = await plebbit.getSubplebbit({address: modPost.subplebbitAddress});
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.false;
         });
