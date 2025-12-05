@@ -17,7 +17,7 @@ export enum messages {
     ERR_FAILED_TO_DIAL_ANY_PUBSUB_PEERS_FROM_DELEGATED_ROUTERS = "Failed to dial and connect to any IPNS-Over-Pubsub peers from delegated routers",
     ERR_FETCH_OVER_IPNS_OVER_PUBSUB_RETURNED_UNDEFINED = "libp2p Fetch over IPNS-Over-Pubsub returned undefined when requested from a peer",
     ERR_FAILED_TO_DIAL_ANY_PEERS_PROVIDING_CID = "Failed to dial and connect to any peers providing a CID",
-    ERR_GET_SUBPLEBBIT_TIMED_OUT = "plebbit.getSubplebbit() timed out",
+    ERR_GET_SUBPLEBBIT_TIMED_OUT = "plebbit.getSubplebbit({address}) timed out",
     ERR_TIMEOUT_WAITING_FOR_PUBSUB_TOPIC_PEERS = "Timeout waiting for propagation of pubsub topic peers",
     ERR_TIMED_OUT_RM_MFS_FILE = "Timed out removing MFS paths. We may need to nuke the whole MFS directory and republish everything",
     ERR_ABORTED_RESOLVING_TEXT_RECORD = "Aborted resolving text record on domain",

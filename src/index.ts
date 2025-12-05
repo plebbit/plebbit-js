@@ -9,6 +9,8 @@ import browserNativeFunctions from "./runtime/browser/native-functions.js";
 import { shortifyAddress, shortifyCid } from "./util.js";
 import { plebbitJsChallenges } from "./runtime/node/subplebbit/challenges/index.js";
 import { PlebbitWithRpcClient } from "./plebbit/plebbit-with-rpc-client.js";
+import type { AuthorAddressRpcParam, CidRpcParam } from "./clients/rpc-client/types.js";
+import { parseRpcAuthorAddressParam, parseRpcCidParam } from "./clients/rpc-client/rpc-schema-util.js";
 
 const Plebbit = async function Plebbit(plebbitOptions: InputPlebbitOptions = {}): Promise<PlebbitClass.Plebbit> {
     const plebbit = plebbitOptions.plebbitRpcClientsOptions
@@ -18,10 +20,19 @@ const Plebbit = async function Plebbit(plebbitOptions: InputPlebbitOptions = {})
     return plebbit;
 };
 
+const getShortAddressValue = (params: AuthorAddressRpcParam) => {
+    const parsed = parseRpcAuthorAddressParam(params);
+    return shortifyAddress(params.address);
+};
+const getShortCidValue = (params: CidRpcParam) => {
+    const parsed = parseRpcCidParam(params);
+    return shortifyCid(params.cid);
+};
+
 Plebbit.setNativeFunctions = utilSetNativeFunctions;
 Plebbit.nativeFunctions = { node: nodeNativeFunctions, browser: browserNativeFunctions };
-Plebbit.getShortCid = shortifyCid;
-Plebbit.getShortAddress = shortifyAddress;
+Plebbit.getShortCid = getShortCidValue;
+Plebbit.getShortAddress = getShortAddressValue;
 Plebbit.challenges = plebbitJsChallenges;
 export default Plebbit;
 export const setNativeFunctions = Plebbit.setNativeFunctions;

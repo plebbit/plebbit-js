@@ -134,6 +134,8 @@ import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { createLibp2pJsClientOrUseExistingOne } from "../helia/helia-for-plebbit.js";
 import { Libp2pJsClient } from "../helia/libp2pjsClient.js";
+import { AuthorAddressRpcParam, CidRpcParam, SubplebbitAddressRpcParam } from "../clients/rpc-client/types.js";
+import { parseRpcAuthorAddressParam, parseRpcCidParam, parseRpcSubplebbitAddressParam } from "../clients/rpc-client/rpc-schema-util.js";
 
 export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -399,9 +401,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         hideClassPrivateProps(this);
     }
 
-    async getSubplebbit(subplebbitAddress: z.infer<typeof SubplebbitAddressSchema>) {
-        const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const subplebbit = await this.createSubplebbit({ address: parsedAddress });
+    async getSubplebbit(getSubplebbitArgs: SubplebbitAddressRpcParam) {
+        const parsedArgs = parseRpcSubplebbitAddressParam(getSubplebbitArgs);
+        const subplebbit = await this.createSubplebbit(parsedArgs);
 
         if (typeof subplebbit.createdAt === "number") return <RpcLocalSubplebbit | LocalSubplebbit>subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         const timeoutMs = this._timeouts["subplebbit-ipns"];
@@ -410,11 +412,11 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         return subplebbit;
     }
 
-    async getComment(cid: z.infer<typeof CidStringSchema>): Promise<Comment> {
+    async getComment(cid: CidRpcParam): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:getComment");
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
+        const parsedGetCommentArgs = parseRpcCidParam(cid);
         // getComment is interested in loading CommentIpfs only
-        const comment = await this.createComment({ cid: parsedCid });
+        const comment = await this.createComment(parsedGetCommentArgs);
 
         let lastUpdateError: Error | undefined;
 
@@ -425,7 +427,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         try {
             await pTimeout(comment._attemptInfintelyToLoadCommentIpfs(), {
                 milliseconds: commentTimeout,
-                message: lastUpdateError || new TimeoutError(`plebbit.getComment(${cid}) timed out after ${commentTimeout}ms`)
+                message:
+                    lastUpdateError ||
+                    new TimeoutError(`plebbit.getComment({cid: ${parsedGetCommentArgs}}) timed out after ${commentTimeout}ms`)
             });
             if (!comment.signature) throw Error("Failed to load CommentIpfs");
             return comment;
@@ -874,11 +878,11 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         return createSigner(createSignerOptions);
     }
 
-    async fetchCid(cid: string): Promise<string> {
+    async fetchCid(fetchCidArgs: CidRpcParam): Promise<string> {
         // plebbit-with-rpc-client will handle if user is connected to rpc client
 
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
-        return this._clientsManager.fetchCid(parsedCid);
+        const parsedArgs = parseRpcCidParam(fetchCidArgs);
+        return this._clientsManager.fetchCid(parsedArgs.cid);
     }
 
     // Used to pre-subscribe so publishing on pubsub would be faster
@@ -897,9 +901,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         delete this._pubsubSubscriptions[parsedTopic];
     }
 
-    async resolveAuthorAddress(authorAddress: string) {
-        const parsedAddress = AuthorAddressSchema.parse(authorAddress);
-        const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(parsedAddress);
+    async resolveAuthorAddress(resolveAuthorAddressArgs: AuthorAddressRpcParam) {
+        const parsedArgs = parseRpcAuthorAddressParam(resolveAuthorAddressArgs);
+        const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(parsedArgs.address);
         return resolved;
     }
 

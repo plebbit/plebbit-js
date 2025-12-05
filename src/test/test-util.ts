@@ -186,10 +186,10 @@ export async function generateMockVote(
 
 export async function loadAllPages(pageCid: string, pagesInstance: PostsPages | RepliesPages) {
     if (!pageCid) throw Error("Can't load all pages with undefined pageCid");
-    let sortedCommentsPage = await pagesInstance.getPage(pageCid);
+    let sortedCommentsPage = await pagesInstance.getPage({cid: pageCid});
     let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
-        sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        sortedCommentsPage = await pagesInstance.getPage({cid: sortedCommentsPage.nextCid});
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
     return sortedComments;
@@ -200,10 +200,10 @@ export async function loadAllPagesBySortName(pageSortName: string, pagesInstance
     if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages && pagesInstance.pages[pageSortName])
         return pagesInstance.pages[pageSortName].comments;
     let sortedCommentsPage =
-        (pagesInstance.pages && pagesInstance.pages[pageSortName]) || (await pagesInstance.getPage(pagesInstance.pageCids[pageSortName]));
+        (pagesInstance.pages && pagesInstance.pages[pageSortName]) || (await pagesInstance.getPage({cid: pagesInstance.pageCids[pageSortName]}));
     let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
-        sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        sortedCommentsPage = await pagesInstance.getPage({cid: sortedCommentsPage.nextCid});
         //@ts-expect-error
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
@@ -776,7 +776,7 @@ export async function iterateThroughPageCidToFindComment(commentCid: string, pag
     if (!pageCid) throw Error("Can't find comment with undefined pageCid");
     let currentPageCid: string | undefined = remeda.clone(pageCid);
     while (currentPageCid) {
-        const loadedPage = (await pages.getPage(currentPageCid)) as PageTypeJson;
+        const loadedPage = (await pages.getPage({cid: currentPageCid})) as PageTypeJson;
         const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
         if (commentInPage) return commentInPage;
         currentPageCid = loadedPage.nextCid;
@@ -857,7 +857,7 @@ export async function waitTillPostInSubplebbitPages(
     post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>,
     plebbit: Plebbit
 ) {
-    const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+    const sub = await plebbit.getSubplebbit({address: post.subplebbitAddress});
 
     await sub.update();
     await waitTillPostInSubplebbitInstancePages(post, sub);
@@ -1439,7 +1439,7 @@ export async function createNewIpns() {
 
 export async function publishSubplebbitRecordWithExtraProp(opts?: { includeExtraPropInSignedPropertyNames: boolean; extraProps: Object }) {
     const ipnsObj = await createNewIpns();
-    const actualSub = await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
+    const actualSub = await ipnsObj.plebbit.getSubplebbit({address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z"});
     const subplebbitRecord = JSON.parse(JSON.stringify(actualSub.toJSONIpfs()));
     subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
     delete subplebbitRecord.posts;
@@ -1461,7 +1461,7 @@ export async function publishSubplebbitRecordWithExtraProp(opts?: { includeExtra
 export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalSubplebbitUserOptions) {
     const ipnsObj = await createNewIpns();
     const subplebbitRecord = <SubplebbitIpfsType>{
-        ...(await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z")).toJSONIpfs(),
+        ...(await ipnsObj.plebbit.getSubplebbit({address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z"})).toJSONIpfs(),
         posts: undefined,
         address: ipnsObj.signer.address,
         pubsubTopic: ipnsObj.signer.address,
@@ -1609,7 +1609,7 @@ export function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked: Commen
 export async function createCommentUpdateWithInvalidSignature(commentCid: string) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({});
 
-    const comment = await plebbit.getComment(commentCid);
+    const comment = await plebbit.getComment({cid: commentCid});
 
     await comment.update();
 
@@ -2146,7 +2146,7 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     );
 
     await waitTillPostInSubplebbitPages(lastPublishedPost as CommentIpfsWithCidDefined, subplebbit._plebbit);
-    const newSubplebbit = await subplebbit._plebbit.getSubplebbit(subplebbit.address);
+    const newSubplebbit = await subplebbit._plebbit.getSubplebbit({address: subplebbit.address});
     if (Object.keys(newSubplebbit.posts.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
 }
 
@@ -2214,7 +2214,7 @@ export async function mockCacheOfTextRecord(opts: { plebbit: Plebbit; domain: st
 }
 
 export async function getRandomPostCidFromSub(subplebbitAddress: string, plebbit: Plebbit) {
-    const sub = await plebbit.getSubplebbit(subplebbitAddress);
+    const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
     const lastPostCid = sub.lastPostCid;
     if (!lastPostCid) throw Error("Subplebbit should have a last post cid");
     return lastPostCid;

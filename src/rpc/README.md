@@ -81,24 +81,25 @@ class Subscription extends EventEmitter {
 
 // get comment
 const commentCid = 'Qm...'
-const comment = await webSocketClient.call('getComment', [commentCid])
+const comment = await webSocketClient.call('getComment', [{cid: commentCid}])
 console.log(comment)
 
 // get comment updates
-const subscriptionId = await webSocketClient.call('commentUpdateSubscribe', [comment.cid])
+const subscriptionId = await webSocketClient.call('commentUpdateSubscribe', [{cid: comment.cid}])
 new Subscription(subscriptionId).on('message', console.log)
 ```
 
 # JSON-RPC Websocket API
 
-- `method: getComment, params: [cid: string], result: Comment`
-- `method: getCommentPage, params: [pageCid: string, commentCid: string]`
-- `method: getSubplebbitPage, params: [pageCid: string, subplebbitAddress: string]`
+- `method: getComment, params: [{cid: string}], result: CommentIpfs`
+- `method: getCommentRepliesPage, params: [{cid: string, commentCid: string}]`
+- `method: getSubplebbitPostsPage, params: [{cid: string, subplebbitAddress: string}]`
+- `method: getSubplebbitModqueuePage, params: [{cid: string, subplebbitAddress: string}]`
 - `method: createSubplebbit, params: [createSubplebbitOptions: CreateSubplebbitOptions]`
-- `method: stopSubplebbit, params: [address: string]`
+- `method: stopSubplebbit, params: [{address: string}]`
 - `method: editSubplebbit, params: [address: string, subplebbitEditOptions: SubplebbitEditOptions]`
-- `method: deleteSubplebbit, params: [address: string]`
-- `method: fetchCid, params: [cid: string]`
+- `method: deleteSubplebbit, params: [{address: string}]`
+- `method: fetchCid, params: [{cid: string}]`
 - `method: setSettings, params: [plebbitRpcSettings: PlebbitRpcSettings]`
 - (below not implemented yet, probably make them subscriptions only)
 - `method: getDefaults, params: []`
@@ -107,14 +108,14 @@ new Subscription(subscriptionId).on('message', console.log)
 
 # JSON-RPC Pubsub Websocket API
 
-- [`method: commentUpdateSubscribe, params: [cid: string]`](#commentupdatesubscribe)
-- [`method: subplebbitUpdateSubscribe, params: [address: string]`](#subplebbitupdatesubscribe)
+- [`method: commentUpdateSubscribe, params: [{cid: string}]`](#commentupdatesubscribe)
+- [`method: subplebbitUpdateSubscribe, params: [{address: string}]`](#subplebbitupdatesubscribe)
 - [`method: publishComment, params: [{comment, challengeAnswers, challengeCommentCids}]`](#publishcomment)
 - `method: publishVote, params: [{vote, challengeAnswers, challengeCommentCids}]`
 - `method: publishCommentEdit, params: [{commentEdit, challengeAnswers, challengeCommentCids}]`
 - `method: publishCommentModeration, params: [{commentModeration, challengeAnswers, challengeCommentCids}]`
 - `method: publishChallengeAnswers, params: [subscriptionId: number, {challengeAnswers}]`
-- `method: startSubplebbit, params: [address: string]`
+- `method: startSubplebbit, params: [{address: string}]`
 - [`method: subplebbitsSubscribe, params: []`](#subplebbitssubscribe)
 - [`method: settingsSubscribe, params: []`](#settingssubscribe)
 - [`method: unsubscribe, params: [subscriptionId: number]`](#unsubscribe)
@@ -141,7 +142,9 @@ Subscribe to a comment update to receive notifications when the comment is updat
   "id": 1,
   "method": "commentUpdateSubscribe",
   "params": [
-    "Qm..."
+    {
+      "cid": "Qm..."
+    }
   ]
 }
 ```
@@ -212,7 +215,9 @@ Subscribe to a subplebbit update to receive notifications when the subplebbit is
   "id": 1,
   "method": "subplebbitUpdateSubscribe",
   "params": [
-    "memes.eth"
+    {
+      "address": "memes.eth"
+    }
   ]
 }
 ```

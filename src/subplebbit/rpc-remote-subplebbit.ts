@@ -171,7 +171,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_initRpcUpdateSubscription");
         this._setState("updating");
         try {
-            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.subplebbitUpdateSubscribe(this.address);
+            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.subplebbitUpdateSubscribe({ address: this.address });
         } catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
             this._setState("stopped");

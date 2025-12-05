@@ -16,10 +16,7 @@ import { SubscriptionIdSchema } from "./schema.js";
 import { SubplebbitAddressSchema } from "../../schema/schema.js";
 import type { DecryptedChallengeAnswer, DecryptedChallengeRequest } from "../../pubsub-messages/types.js";
 import type { PlebbitWsServerSettingsSerialized } from "../../rpc/src/types.js";
-import {
-    parseCidStringSchemaWithPlebbitErrorIfItFails,
-    parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails
-} from "../../schema/schema-util.js";
+import { parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import { ZodError } from "zod";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
 import { SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
@@ -28,6 +25,14 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import type { PlebbitRpcClientEvents } from "../../types.js";
 import type { RpcPublishResult } from "../../publications/types.js";
 import { messages } from "../../errors.js";
+import type { SubplebbitAddressRpcParam, CidRpcParam, CommentPageRpcParam, SubplebbitPageRpcParam } from "./types.js";
+import {
+    parseRpcSubplebbitAddressParam,
+    parseRpcAuthorAddressParam,
+    parseRpcCidParam,
+    parseRpcCommentRepliesPageParam,
+    parseRpcSubplebbitPageParam
+} from "./rpc-schema-util.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -281,34 +286,27 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         delete this._pendingSubscriptionMsgs[subscriptionId];
     }
 
-    async getComment(parsedCommentCid: string): Promise<CommentIpfsType> {
-        const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [parsedCommentCid]);
+    async getComment(commentCid: CidRpcParam): Promise<CommentIpfsType> {
+        const parsedGetCommentArgs = parseRpcCidParam(commentCid);
+        const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [parsedGetCommentArgs]);
         return commentProps;
     }
 
-    async getCommentRepliesPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {
-        const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
-        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = <PageIpfs>(
-            await this._webSocketClient.call("getCommentRepliesPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress])
-        );
+    async getCommentRepliesPage(page: CommentPageRpcParam): Promise<PageIpfs> {
+        const parsedGetCommentRepliesPageArgs = parseRpcCommentRepliesPageParam(page);
+        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentRepliesPage", [parsedGetCommentRepliesPageArgs]);
         return pageIpfs;
     }
 
-    async getSubplebbitPostsPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
-        const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPostsPage", [parsedPageCid, parsedSubplebbitAddress]);
+    async getSubplebbitPostsPage(page: SubplebbitPageRpcParam): Promise<PageIpfs> {
+        const parsedGetSubplebbitPostsPage = parseRpcSubplebbitPageParam(page);
+        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPostsPage", [parsedGetSubplebbitPostsPage]);
         return pageIpfs;
     }
 
-    async getSubplebbitModQueuePage(pageCid: string, subplebbitAddress: string): Promise<ModQueuePageIpfs> {
-        const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = <ModQueuePageIpfs>(
-            await this._webSocketClient.call("getSubplebbitModqueuePage", [parsedPageCid, parsedSubplebbitAddress])
-        );
+    async getSubplebbitModQueuePage(page: SubplebbitPageRpcParam): Promise<ModQueuePageIpfs> {
+        const parsedGetSubplebbitModQueuePage = parseRpcSubplebbitPageParam(page);
+        const pageIpfs = <ModQueuePageIpfs>await this._webSocketClient.call("getSubplebbitModqueuePage", [parsedGetSubplebbitModQueuePage]);
         return pageIpfs;
     }
 
@@ -327,17 +325,17 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         if (!this._pendingSubscriptionMsgs[subscriptionId]) this._pendingSubscriptionMsgs[subscriptionId] = [];
     }
 
-    async startSubplebbit(subplebbitAddress: string) {
-        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("startSubplebbit", [parsedSubplebbitAddress]));
+    async startSubplebbit(subplebbitAddress: SubplebbitAddressRpcParam) {
+        const parsedStartSubplebbitArgs = parseRpcSubplebbitAddressParam(subplebbitAddress);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("startSubplebbit", [parsedStartSubplebbitArgs]));
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
-    async stopSubplebbit(subplebbitAddress: string): Promise<void> {
-        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+    async stopSubplebbit(subplebbitAddress: SubplebbitAddressRpcParam): Promise<void> {
+        const parsedStopSubplebbitArgs = parseRpcSubplebbitAddressParam(subplebbitAddress);
 
-        const res = await this._webSocketClient.call("stopSubplebbit", [parsedSubplebbitAddress]);
+        const res = await this._webSocketClient.call("stopSubplebbit", [parsedStopSubplebbitArgs]);
         if (res !== true) throw Error("Calling RPC function should throw or return true");
     }
 
@@ -353,16 +351,16 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return rawRes;
     }
 
-    async deleteSubplebbit(subplebbitAddress: string) {
-        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const res = await this._webSocketClient.call("deleteSubplebbit", [parsedSubplebbitAddress]);
+    async deleteSubplebbit(subplebbitAddress: SubplebbitAddressRpcParam) {
+        const parsedDeleteSubplebbitArgs = parseRpcSubplebbitAddressParam(subplebbitAddress);
+        const res = await this._webSocketClient.call("deleteSubplebbit", [parsedDeleteSubplebbitArgs]);
         if (res !== true) throw Error("Calling RPC function deleteSubplebbit should either return true or throw");
     }
 
-    async subplebbitUpdateSubscribe(subplebbitAddress: string): Promise<number> {
-        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+    async subplebbitUpdateSubscribe(subplebbitAddress: SubplebbitAddressRpcParam): Promise<number> {
+        const parsedSubplebbitUpdateArgs = parseRpcSubplebbitAddressParam(subplebbitAddress);
         const subscriptionId = SubscriptionIdSchema.parse(
-            await this._webSocketClient.call("subplebbitUpdateSubscribe", [parsedSubplebbitAddress])
+            await this._webSocketClient.call("subplebbitUpdateSubscribe", [parsedSubplebbitUpdateArgs])
         );
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
@@ -398,9 +396,11 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return publishRes;
     }
 
-    async commentUpdateSubscribe(commentCid: string) {
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("commentUpdateSubscribe", [parsedCid]));
+    async commentUpdateSubscribe(commentCid: CidRpcParam) {
+        const parsedCommentUpdateArgs = parseRpcCidParam(commentCid);
+        const subscriptionId = SubscriptionIdSchema.parse(
+            await this._webSocketClient.call("commentUpdateSubscribe", [parsedCommentUpdateArgs])
+        );
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
@@ -412,8 +412,9 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return res;
     }
 
-    async resolveAuthorAddress(parsedAuthorAddress: string) {
-        const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [parsedAuthorAddress]);
+    async resolveAuthorAddress(parsedAuthorAddress: SubplebbitAddressRpcParam) {
+        const resolveAuthorAddressArgs = parseRpcAuthorAddressParam(parsedAuthorAddress);
+        const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [resolveAuthorAddressArgs]);
         if (typeof res !== "string" && res !== null)
             throw Error("RPC function resolveAuthorAddress should either respond with string or null");
         return res;
@@ -437,8 +438,9 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         this.emitAllPendingMessages(subscriptionId);
     }
 
-    async fetchCid(parsedCid: string): Promise<string> {
-        const res = <string>await this._webSocketClient.call("fetchCid", [parsedCid]);
+    async fetchCid(args: CidRpcParam): Promise<string> {
+        const parsedFetchCidArgs = parseRpcCidParam(args);
+        const res = <string>await this._webSocketClient.call("fetchCid", [parsedFetchCidArgs]);
         if (typeof res !== "string") throw Error("RPC function fetchCid did not respond with string");
         return res;
     }

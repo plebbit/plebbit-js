@@ -188,7 +188,7 @@ const shouldExcludeChallengeCommentCids = async (
         // comment is not cached, add to cache
         let comment: Comment | undefined;
         if (!cachedComment) {
-            comment = await plebbit.getComment(commentCid);
+            comment = await plebbit.getComment({cid: commentCid});
             // only cache useful values
             cachedComment = { subplebbitAddress: comment.subplebbitAddress, author: { address: comment.author.address } };
             commentCache.set(commentCid, cachedComment);

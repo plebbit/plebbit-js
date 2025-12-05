@@ -1,17 +1,15 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit.js";
 import type { InputPlebbitOptions } from "../types";
-import {
-    parseCidStringSchemaWithPlebbitErrorIfItFails,
-    parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails
-} from "../schema/schema-util.js";
-import { AuthorAddressSchema } from "../schema/schema.js";
+import { parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { CreateRpcSubplebbitFunctionArgumentSchema } from "../subplebbit/schema.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
 import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types";
 import { z } from "zod";
 import { PlebbitError } from "../plebbit-error.js";
+import type { CidRpcParam } from "../clients/rpc-client/types.js";
+import { parseRpcAuthorAddressParam, parseRpcCidParam } from "../clients/rpc-client/rpc-schema-util.js";
 
 // This is a helper class for separating RPC-client logic from main Plebbit
 // Not meant to be used with end users
@@ -50,14 +48,14 @@ export class PlebbitWithRpcClient extends Plebbit {
         // TODO should set up settingschange
     }
 
-    override async fetchCid(cid: string) {
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
-        return this._plebbitRpcClient.fetchCid(parsedCid);
+    override async fetchCid(cid: CidRpcParam) {
+        const parsedCid = parseRpcCidParam(cid).cid;
+        return this._plebbitRpcClient.fetchCid({ cid: parsedCid });
     }
 
-    override async resolveAuthorAddress(authorAddress: string) {
-        const parsedAddress = AuthorAddressSchema.parse(authorAddress);
-        return this._plebbitRpcClient.resolveAuthorAddress(parsedAddress);
+    override async resolveAuthorAddress(authorAddress: { address: string }) {
+        const parsedAddress = parseRpcAuthorAddressParam(authorAddress).address;
+        return this._plebbitRpcClient.resolveAuthorAddress({ address: parsedAddress });
     }
 
     override async destroy() {
@@ -68,10 +66,10 @@ export class PlebbitWithRpcClient extends Plebbit {
         await this._plebbitRpcClient.destroy();
     }
 
-    override async getComment(commentCid: string) {
-        const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
+    override async getComment(commentCid: CidRpcParam) {
+        const parsedCommentCid = parseRpcCidParam(commentCid).cid;
 
-        const commentIpfs = await this._plebbitRpcClient.getComment(parsedCommentCid);
+        const commentIpfs = await this._plebbitRpcClient.getComment({ cid: parsedCommentCid });
         return this.createComment({ ...commentIpfs, cid: parsedCommentCid });
     }
 

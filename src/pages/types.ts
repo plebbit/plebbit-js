@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { PageIpfsSchema, PostSortNameSchema, PostsPagesIpfsSchema, RepliesPagesIpfsSchema, ReplySortNameSchema } from "./schema";
+import {
+    GetPageParam,
+    PageIpfsSchema,
+    PostSortNameSchema,
+    PostsPagesIpfsSchema,
+    RepliesPagesIpfsSchema,
+    ReplySortNameSchema
+} from "./schema";
 import type {
     CommentIpfsType,
     CommentUpdateForChallengeVerification,
@@ -60,3 +67,7 @@ export type ModQueuePageTypeJson = {
     comments: CommentWithinModQueuePageJson[];
     nextCid?: string;
 };
+
+// GetPage param
+
+export type GetPageParam = z.infer<typeof GetPageParam>;

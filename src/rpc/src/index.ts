@@ -33,7 +33,7 @@ import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
 import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentRpcErrorToTransmit } from "../../publications/comment/types.js";
-import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
+import { SubplebbitAddressSchema } from "../../schema/schema.js";
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 import type {
     RpcInternalSubplebbitRecordAfterFirstUpdateType,
@@ -43,7 +43,6 @@ import type {
     SubplebbitRpcErrorToTransmit
 } from "../../subplebbit/types.js";
 import {
-    parseCidStringSchemaWithPlebbitErrorIfItFails,
     parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails,
     parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails,
     parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails,
@@ -65,6 +64,14 @@ import { PublicationRpcErrorToTransmit, RpcPublishResult } from "../../publicati
 import { TypedEmitter } from "tiny-typed-emitter";
 import { sanitizeRpcNotificationResult } from "./json-rpc-util.js";
 import type { ModQueuePageIpfs, PageIpfs } from "../../pages/types.js";
+import {
+    parseRpcSubplebbitAddressParam,
+    parseRpcAuthorAddressParam,
+    parseRpcCidParam,
+    parseRpcCommentRepliesPageParam,
+    parseRpcSubplebbitPageParam
+} from "../../clients/rpc-client/rpc-schema-util.js";
+import { SubplebbitAddressRpcParam } from "../../clients/rpc-client/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -293,28 +300,28 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async getComment(params: any): Promise<CommentIpfsType> {
-        const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
-        const comment = await (await this._getPlebbitInstance()).getComment(cid);
+        const getCommentArgs = parseRpcCidParam(params);
+        const comment = await (await this._getPlebbitInstance()).getComment(getCommentArgs);
+        // TODO may need to be changed later
         return comment.toJSONIpfs();
     }
 
     async getSubplebbitModQueuePage(params: any): Promise<ModQueuePageIpfs> {
-        const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
-        const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
+        const parsedArgs = parseRpcSubplebbitPageParam(params);
         const plebbit = await this._getPlebbitInstance();
 
+        const createSubplebbitArgs = { address: parsedArgs.subplebbitAddress, ...remeda.omit(parsedArgs, ["cid", "subplebbitAddress"]) };
         // Use started subplebbit to fetch the page if possible, to expediete the process
         const sub =
-            subplebbitAddress in this._startedSubplebbits
-                ? await this.getStartedSubplebbit(subplebbitAddress)
-                : <RemoteSubplebbit | LocalSubplebbit>await plebbit.createSubplebbit({ address: subplebbitAddress });
-        const page = await sub.modQueue._fetchAndVerifyPage(pageCid);
+            parsedArgs.subplebbitAddress in this._startedSubplebbits
+                ? await this.getStartedSubplebbit(parsedArgs.subplebbitAddress)
+                : <RemoteSubplebbit | LocalSubplebbit>await plebbit.createSubplebbit(createSubplebbitArgs);
+        const page = await sub.modQueue._fetchAndVerifyPage(parsedArgs.cid);
         return page;
     }
 
     async getSubplebbitPostsPage(params: any): Promise<PageIpfs> {
-        const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
-        const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
+        const { cid: pageCid, subplebbitAddress } = parseRpcSubplebbitPageParam(params);
         const plebbit = await this._getPlebbitInstance();
 
         // Use started subplebbit to fetch the page if possible, to expediete the process
@@ -327,9 +334,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async getCommentRepliesPage(params: any): Promise<PageIpfs> {
-        const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
-        const commentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[1]);
-        const subplebbitAddress = SubplebbitAddressSchema.parse(params[2]);
+        const { cid: pageCid, commentCid, subplebbitAddress } = parseRpcCommentRepliesPageParam(params);
         const plebbit = await this._getPlebbitInstance();
         const comment = await plebbit.createComment({ cid: commentCid, subplebbitAddress });
         const page = await comment.replies._fetchAndVerifyPage(pageCid);
@@ -439,7 +444,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async startSubplebbit(params: any, connectionId: string) {
-        const address = SubplebbitAddressSchema.parse(params[0]);
+        const { address } = parseRpcSubplebbitAddressParam(params);
         const plebbit = await this._getPlebbitInstance();
 
         const localSubs = plebbit.subplebbits;
@@ -495,7 +500,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async stopSubplebbit(params: any) {
-        const address = SubplebbitAddressSchema.parse(params[0]);
+        const { address } = parseRpcSubplebbitAddressParam(params);
         const plebbit = await this._getPlebbitInstance();
 
         const localSubs = plebbit.subplebbits;
@@ -557,7 +562,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async deleteSubplebbit(params: any) {
-        const address = SubplebbitAddressSchema.parse(params[0]);
+        const { address } = parseRpcSubplebbitAddressParam(params);
         const plebbit = await this._getPlebbitInstance();
 
         const addresses = plebbit.subplebbits;
@@ -602,9 +607,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async fetchCid(params: any) {
-        const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
+        const parsedArgs = parseRpcCidParam(params);
         const plebbit = await this._getPlebbitInstance();
-        const res = await plebbit.fetchCid(cid);
+        const res = await plebbit.fetchCid(parsedArgs);
         if (typeof res !== "string") throw Error("Result of fetchCid should be a string");
         return res;
     }
@@ -699,8 +704,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
     async commentUpdateSubscribe(params: any, connectionId: string) {
         const logUpdate = Logger("plebbit-js-rpc:plebbit-ws-server:commentUpdateSubscribe");
-        // TODO need to implement _onSettingsChange here
-        const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
+        const parsedCommentUpdateArgs = parseRpcCidParam(params);
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
@@ -714,7 +718,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         let sentCommentIpfsUpdateEvent = false;
         const plebbit = await this._getPlebbitInstance();
-        const comment = await plebbit.createComment({ cid });
+        const comment = await plebbit.createComment(parsedCommentUpdateArgs);
         const sendUpdate = () => {
             if (!sentCommentIpfsUpdateEvent && comment.raw.comment) {
                 sendEvent("update", comment.raw.comment);
@@ -775,16 +779,15 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async subplebbitUpdateSubscribe(params: any, connectionId: string) {
-        // TODO need to implement _onSettingsChange here
-        const address = SubplebbitAddressSchema.parse(params[0]);
+        const parsedSubplebbitUpdateArgs = parseRpcSubplebbitAddressParam(params);
         const subscriptionId = generateSubscriptionId();
 
-        await this._bindSubplebbitUpdateSubscription(address, connectionId, subscriptionId);
+        await this._bindSubplebbitUpdateSubscription(parsedSubplebbitUpdateArgs, connectionId, subscriptionId);
 
         return subscriptionId;
     }
 
-    private async _bindSubplebbitUpdateSubscription(address: string, connectionId: string, subscriptionId: number) {
+    private async _bindSubplebbitUpdateSubscription(parsedArgs: SubplebbitAddressRpcParam, connectionId: string, subscriptionId: number) {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({
                 method: "subplebbitUpdateNotification",
@@ -794,11 +797,11 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
                 connectionId
             });
 
-        const isSubStarted = address in this._startedSubplebbits;
+        const isSubStarted = parsedArgs.address in this._startedSubplebbits;
         const plebbit = await this._getPlebbitInstance();
         const subplebbit = isSubStarted
-            ? await this.getStartedSubplebbit(address)
-            : <LocalSubplebbit | RemoteSubplebbit>await plebbit.createSubplebbit({ address });
+            ? await this.getStartedSubplebbit(parsedArgs.address)
+            : <LocalSubplebbit | RemoteSubplebbit>await plebbit.createSubplebbit(parsedArgs);
 
         const sendSubJson = () => {
             let jsonToSend:
@@ -840,7 +843,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = async () => {
             log("Cleaning up subplebbit", subplebbit.address, "client subscription");
-            const isSubStarted = address in this._startedSubplebbits;
+            const isSubStarted = parsedArgs.address in this._startedSubplebbits;
             subplebbit.removeListener("update", updateListener);
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
@@ -853,7 +856,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = async ({ newPlebbit }: { newPlebbit: Plebbit }) => {
-            const isSubStarted = address in this._startedSubplebbits;
+            const isSubStarted = parsedArgs.address in this._startedSubplebbits;
 
             // TODO this may need changing
             if (!isSubStarted) {
@@ -1266,9 +1269,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async resolveAuthorAddress(params: any) {
-        const authorAddress = AuthorAddressSchema.parse(params[0]);
+        const parsedArgs = parseRpcAuthorAddressParam(params);
         const plebbit = await this._getPlebbitInstance();
-        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(authorAddress);
+        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(parsedArgs);
         return resolvedAuthorAddress;
     }
 

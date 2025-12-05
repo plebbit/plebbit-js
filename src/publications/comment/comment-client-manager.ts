@@ -737,7 +737,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         while (curPageCid && !newCommentUpdate) {
             let pageLoaded: PageTypeJson;
             try {
-                pageLoaded = await parentCommentInstance.replies.getPage(curPageCid);
+                pageLoaded = await parentCommentInstance.replies.getPage({cid: curPageCid});
             } catch (e) {
                 pageCidsSearchedForNewUpdate.push({ pageCid: curPageCid, error: e as Error });
                 break;

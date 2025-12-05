@@ -90,7 +90,7 @@ const verifyAuthorWalletAddress = async (props: {
     // Verify first if the signature and resolved address is correct, before running the smart contract
     if (isStringDomain(authorWallet.address)) {
         // resolve plebbit-author-address and check if it matches publication.signature.publicKey
-        const resolvedWalletAddress = await props.plebbit.resolveAuthorAddress(authorWallet.address); // plebbit address
+        const resolvedWalletAddress = await props.plebbit.resolveAuthorAddress({address: authorWallet.address}); // plebbit address
         const publicationSignatureAddress = await getPlebbitAddressFromPublicKey(props.publication.signature.publicKey);
         if (resolvedWalletAddress !== publicationSignatureAddress) {
             const failedMsg =

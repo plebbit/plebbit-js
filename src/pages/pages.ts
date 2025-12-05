@@ -1,5 +1,5 @@
 import { parseModQueuePageIpfs, parsePageIpfs } from "./util.js";
-import type { ModQueuePageIpfs, ModQueuePageTypeJson, PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
+import type { GetPageParam, ModQueuePageIpfs, ModQueuePageTypeJson, PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
 import { verifyModQueuePage, verifyPage } from "../signer/signatures.js";
 import {
     BasePagesClientsManager,
@@ -9,10 +9,10 @@ import {
 } from "./pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { hideClassPrivateProps } from "../util.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { Comment } from "../publications/comment/comment.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { Plebbit } from "../plebbit/plebbit.js";
+import { parsePageCidParams } from "./schema-util.js";
 
 type BaseProps = {
     subplebbit: Pick<RemoteSubplebbit, "address" | "signature">;
@@ -80,11 +80,11 @@ export class BasePages {
         throw Error("should be implemented");
     }
 
-    async getPage(pageCid: string): Promise<PageTypeJson | ModQueuePageTypeJson> {
+    async getPage(pageCid: GetPageParam): Promise<PageTypeJson | ModQueuePageTypeJson> {
         if (!this._subplebbit?.address) throw Error("Subplebbit address needs to be defined under page");
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
+        const parsedArgs = parsePageCidParams(pageCid);
 
-        const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
+        const pageIpfs = await this._fetchAndVerifyPage(parsedArgs.cid);
         return this._parseRawPageIpfs(pageIpfs);
     }
 
@@ -133,28 +133,28 @@ export class RepliesPages extends BasePages {
         return parsePageIpfs(pageIpfs);
     }
 
-    override async getPage(pageCid: string): Promise<PageTypeJson> {
+    override async getPage(args: GetPageParam): Promise<PageTypeJson> {
         if (!this._parentComment?.cid)
             throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID", {
-                pageCid,
+                getPageArgs: args,
                 parentComment: this._parentComment
             });
 
         if (typeof this._parentComment?.depth !== "number")
             throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH", {
                 parentComment: this._parentComment,
-                pageCid
+                getPageArgs: args
             });
 
         if (!this._parentComment?.postCid)
             throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID", {
-                pageCid,
+                getPageArgs: args,
                 parentComment: this._parentComment
             });
 
         // we need to make all updating comment instances do the getPage call to cache _loadedUniqueCommentFromGetPage in a centralized instance
 
-        return <PageTypeJson>await super.getPage(pageCid);
+        return <PageTypeJson>await super.getPage(args);
     }
 
     override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
@@ -236,10 +236,10 @@ export class PostsPages extends BasePages {
         return parsePageIpfs(pageIpfs);
     }
 
-    override async getPage(pageCid: string): Promise<PageTypeJson> {
+    override async getPage(getPageArgs: GetPageParam): Promise<PageTypeJson> {
         // we need to make all updating subplebbit instances do the getPage call to cache _loadedUniqueCommentFromGetPage
 
-        return <PageTypeJson>await super.getPage(pageCid);
+        return <PageTypeJson>await super.getPage(getPageArgs);
     }
 
     override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
@@ -296,8 +296,8 @@ export class ModQueuePages extends BasePages {
         return parseModQueuePageIpfs(pageIpfs);
     }
 
-    override async getPage(pageCid: string): Promise<ModQueuePageTypeJson> {
-        return <ModQueuePageTypeJson>await super.getPage(pageCid);
+    override async getPage(getPageArgs: GetPageParam): Promise<ModQueuePageTypeJson> {
+        return <ModQueuePageTypeJson>await super.getPage(getPageArgs);
     }
 
     override async _validatePage(pageIpfs: ModQueuePageIpfs, pageCid?: string) {

@@ -326,11 +326,11 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
         if (!this._pages._parentComment?.cid) throw Error("Parent comment cid is not defined");
     }
     protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
-        return this._plebbit._plebbitRpcClient!.getCommentRepliesPage(
-            pageCid,
-            this._pages._parentComment!.cid!,
-            this._pages._subplebbit.address
-        );
+        return this._plebbit._plebbitRpcClient!.getCommentRepliesPage({
+            cid: pageCid,
+            commentCid: this._pages._parentComment!.cid!,
+            subplebbitAddress: this._pages._subplebbit.address
+        });
     }
 }
 
@@ -353,7 +353,10 @@ export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager 
     }
 
     protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
-        return this._plebbit._plebbitRpcClient!.getSubplebbitPostsPage(pageCid, this._pages._subplebbit.address);
+        return this._plebbit._plebbitRpcClient!.getSubplebbitPostsPage({
+            cid: pageCid,
+            subplebbitAddress: this._pages._subplebbit.address
+        });
     }
 }
 
@@ -385,6 +388,9 @@ export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
     }
 
     protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<ModQueuePageIpfs> {
-        return this._plebbit._plebbitRpcClient!.getSubplebbitModQueuePage(pageCid, this._pages._subplebbit.address);
+        return this._plebbit._plebbitRpcClient!.getSubplebbitModQueuePage({
+            cid: pageCid,
+            subplebbitAddress: this._pages._subplebbit.address
+        });
     }
 }

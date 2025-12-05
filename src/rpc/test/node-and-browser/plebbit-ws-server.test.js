@@ -54,7 +54,7 @@ describe("plebbit-ws-server", () => {
 
     it("getComment", async () => {
         const commentCid = "comment cid";
-        const comment = await webSocketClientCall("getComment", [commentCid]);
+        const comment = await webSocketClientCall("getComment", [{ cid: commentCid }]);
         expect(comment?.cid).to.equal(commentCid);
         expect(typeof comment?.timestamp).to.equal("number");
         expect(comment?.updatedAt).to.equal(undefined);
@@ -63,7 +63,7 @@ describe("plebbit-ws-server", () => {
     it("getSubplebbitPage", async () => {
         const pageCid = "pageCid";
         const subplebbitAddress = "subplebbit address";
-        const page = await webSocketClientCall("getSubplebbitPage", [pageCid, subplebbitAddress]);
+        const page = await webSocketClientCall("getSubplebbitPage", [{ cid: pageCid, subplebbitAddress }]);
         expect(typeof page?.nextCid).to.equal("string");
         expect(page?.comments?.length).to.be.greaterThan(0);
     });
@@ -81,13 +81,13 @@ describe("plebbit-ws-server", () => {
 
     it("startSubplebbit", async () => {
         const subplebbitAddress = "subplebbit address " + Math.random();
-        const subscriptionId = await webSocketClientCall("startSubplebbit", [subplebbitAddress]);
+        const subscriptionId = await webSocketClientCall("startSubplebbit", [{ address: subplebbitAddress }]);
         expect(subscriptionId).to.be.a("number");
 
         // try to start the same sub again but fail
         let error;
         try {
-            await webSocketClientCall("startSubplebbit", [subplebbitAddress]);
+            await webSocketClientCall("startSubplebbit", [{ address: subplebbitAddress }]);
         } catch (e) {
             error = e;
         }
@@ -96,7 +96,7 @@ describe("plebbit-ws-server", () => {
 
     it("stopSubplebbit", async () => {
         const subplebbitAddress = "started subplebbit address";
-        const res = await webSocketClientCall("stopSubplebbit", [subplebbitAddress]);
+        const res = await webSocketClientCall("stopSubplebbit", [{ address: subplebbitAddress }]);
         expect(res).to.equal(true);
     });
 
@@ -132,7 +132,7 @@ describe("plebbit-ws-server", () => {
         expect(res.includes(subplebbit.address)).to.equal(true);
 
         // delete sub
-        res = await webSocketClientCall("deleteSubplebbit", [subplebbit.address]);
+        res = await webSocketClientCall("deleteSubplebbit", [{ address: subplebbit.address }]);
         expect(res).to.equal(true);
 
         // sub was deleted, is no longer in listSubplebbits
@@ -150,7 +150,7 @@ describe("plebbit-ws-server", () => {
 
         // try to delete a sub that doesn't exist
         try {
-            await webSocketClientCall("deleteSubplebbit", [`doesn't exist`]);
+            await webSocketClientCall("deleteSubplebbit", [{ address: `doesn't exist` }]);
         } catch (e) {
             error = e;
         }
@@ -170,7 +170,7 @@ describe("plebbit-ws-server", () => {
         expect(res).to.be.a("number");
 
         // delete sub
-        res = await webSocketClientCall("deleteSubplebbit", [subplebbit.address]);
+        res = await webSocketClientCall("deleteSubplebbit", [{ address: subplebbit.address }]);
         expect(res).to.equal(true);
 
         // sub was deleted, is no longer in listSubplebbits
@@ -186,7 +186,7 @@ describe("plebbit-ws-server", () => {
 
     it("fetchCid", async () => {
         const cid = "statscid";
-        const res = await webSocketClientCall("fetchCid", [cid]);
+        const res = await webSocketClientCall("fetchCid", [{ cid }]);
         expect(res).to.equal('{"hourActiveUserCount":1}');
     });
 
@@ -213,7 +213,7 @@ describe("plebbit-ws-server", () => {
 
     it("subplebbitUpdate", async () => {
         const subplebbitAddress = "subplebbit address";
-        const subscriptionId = await webSocketClientCall("subplebbitUpdate", [subplebbitAddress]);
+        const subscriptionId = await webSocketClientCall("subplebbitUpdate", [{ address: subplebbitAddress }]);
         expect(typeof subscriptionId).to.equal("number");
 
         // wait for all subscription messages to arrive
