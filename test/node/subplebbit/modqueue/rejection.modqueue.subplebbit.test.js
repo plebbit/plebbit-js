@@ -186,6 +186,10 @@ for (const commentMod of commentModProps) {
 
                         expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
 
+                        // TODO rewrite this to access PageGenerator directly instead of publishing all these posts and comments
+                        // publishing takes very long
+                        // we need a way to see if pageCids and preloaded pages do include this rejected comment
+                        // should we make two calls to generateSubplebbitPosts, one with very low preloaded page size (to force pageCids), and other with high preloaded page size (to have preloaded pages)
                         for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
                             const pageComments = await loadAllPages(pageCid, subplebbit.posts);
                             expect(pageComments.length).to.be.greaterThan(0);
@@ -205,7 +209,7 @@ for (const commentMod of commentModProps) {
                     itSkipIfRpc.sequential(
                         `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`,
                         async () => {
-                            const parentComment = await plebbit.getComment({cid: commentToBeRejected.parentCid});
+                            const parentComment = await plebbit.getComment({ cid: commentToBeRejected.parentCid });
                             await parentComment.update();
                             await resolveWhenConditionIsTrue({ toUpdate: parentComment, predicate: () => parentComment.updatedAt });
                             const expectedResult = !shouldCommentBePurged;
@@ -217,6 +221,8 @@ for (const commentMod of commentModProps) {
                                 }
                             });
                             expect(foundInReplies).to.equal(expectedResult);
+
+                            // TODO rewrite this to access PageGenerator directly instead of publishing all these posts and comments
 
                             const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
                                 subplebbit,
@@ -249,9 +255,11 @@ for (const commentMod of commentModProps) {
                     itSkipIfRpc.sequential(
                         `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`,
                         async () => {
-                            const postComment = await plebbit.getComment({cid: commentToBeRejected.postCid});
+                            const postComment = await plebbit.getComment({ cid: commentToBeRejected.postCid });
                             await postComment.update();
                             await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
+
+                            // TODO rewrite this to access PageGenerator directly instead of publishing all these posts and comments
                             const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
                                 subplebbit,
                                 parentComment: postComment,
@@ -610,6 +618,19 @@ for (const commentMod of commentModProps) {
                     // Collect all pinned CIDs
                     for await (const pin of kuboRpc.pin.ls()) {
                         expect(pin.cid.toString()).to.not.equal(commentToBeRejected.cid); // pending comment should not be pinned in kubo
+                    }
+                });
+
+                it(`Should not be able to fetch rejected comment with only its CID since it's not provided anymore`, async () => {
+                    const originalTimeout = JSON.parse(JSON.stringify(plebbit._timeouts["generic-ipfs"]));
+                    plebbit._timeouts["generic-ipfs"] = 1000;
+                    try {
+                        await plebbit.fetchCid({ cid: commentToBeRejected.cid });
+                        expect.fail("should fail");
+                    } catch (e) {
+                        expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
+                    } finally {
+                        plebbit._timeouts["generic-ipfs"] = originalTimeout;
                     }
                 });
 
