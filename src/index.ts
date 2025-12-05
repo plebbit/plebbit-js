@@ -22,11 +22,11 @@ const Plebbit = async function Plebbit(plebbitOptions: InputPlebbitOptions = {})
 
 const getShortAddressValue = (params: AuthorAddressRpcParam) => {
     const parsed = parseRpcAuthorAddressParam(params);
-    return shortifyAddress(params.address);
+    return shortifyAddress(parsed.address);
 };
 const getShortCidValue = (params: CidRpcParam) => {
     const parsed = parseRpcCidParam(params);
-    return shortifyCid(params.cid);
+    return shortifyCid(parsed.cid);
 };
 
 Plebbit.setNativeFunctions = utilSetNativeFunctions;
