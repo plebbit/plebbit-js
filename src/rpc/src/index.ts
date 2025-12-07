@@ -180,9 +180,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // register all JSON RPC methods
         this.rpcWebsocketsRegister("getComment", this.getComment.bind(this));
-        this.rpcWebsocketsRegister("getSubplebbitPostsPage", this.getSubplebbitPostsPage.bind(this));
-        this.rpcWebsocketsRegister("getSubplebbitModqueuePage", this.getSubplebbitModQueuePage.bind(this));
-        this.rpcWebsocketsRegister("getCommentRepliesPage", this.getCommentRepliesPage.bind(this));
+        this.rpcWebsocketsRegister("getSubplebbitPage", this.getSubplebbitPage.bind(this));
+        this.rpcWebsocketsRegister("getCommentPage", this.getCommentPage.bind(this));
         this.rpcWebsocketsRegister("createSubplebbit", this.createSubplebbit.bind(this));
         this.rpcWebsocketsRegister("startSubplebbit", this.startSubplebbit.bind(this));
         this.rpcWebsocketsRegister("stopSubplebbit", this.stopSubplebbit.bind(this));
@@ -306,22 +305,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         return comment.toJSONIpfs();
     }
 
-    async getSubplebbitModQueuePage(params: any): Promise<ModQueuePageIpfs> {
-        const parsedArgs = parseRpcSubplebbitPageParam(params[0]);
-        const plebbit = await this._getPlebbitInstance();
-
-        const createSubplebbitArgs = { address: parsedArgs.subplebbitAddress, ...remeda.omit(parsedArgs, ["cid", "subplebbitAddress"]) };
-        // Use started subplebbit to fetch the page if possible, to expediete the process
-        const sub =
-            parsedArgs.subplebbitAddress in this._startedSubplebbits
-                ? await this.getStartedSubplebbit(parsedArgs.subplebbitAddress)
-                : <RemoteSubplebbit | LocalSubplebbit>await plebbit.createSubplebbit(createSubplebbitArgs);
-        const page = await sub.modQueue._fetchAndVerifyPage(parsedArgs.cid);
-        return page;
-    }
-
-    async getSubplebbitPostsPage(params: any): Promise<PageIpfs> {
-        const { cid: pageCid, subplebbitAddress } = parseRpcSubplebbitPageParam(params[0]);
+    async getSubplebbitPage(params: any): Promise<PageIpfs | ModQueuePageIpfs> {
+        const { cid: pageCid, subplebbitAddress, type } = parseRpcSubplebbitPageParam(params[0]);
         const plebbit = await this._getPlebbitInstance();
 
         // Use started subplebbit to fetch the page if possible, to expediete the process
@@ -329,11 +314,11 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             subplebbitAddress in this._startedSubplebbits
                 ? await this.getStartedSubplebbit(subplebbitAddress)
                 : <RemoteSubplebbit | LocalSubplebbit>await plebbit.createSubplebbit({ address: subplebbitAddress });
-        const page = await sub.posts._fetchAndVerifyPage(pageCid);
+        const page = type === "posts" ? await sub.posts._fetchAndVerifyPage(pageCid) : await sub.modQueue._fetchAndVerifyPage(pageCid);
         return page;
     }
 
-    async getCommentRepliesPage(params: any): Promise<PageIpfs> {
+    async getCommentPage(params: any): Promise<PageIpfs> {
         const { cid: pageCid, commentCid, subplebbitAddress } = parseRpcCommentRepliesPageParam(params);
         const plebbit = await this._getPlebbitInstance();
         const comment = await plebbit.createComment({ cid: commentCid, subplebbitAddress });

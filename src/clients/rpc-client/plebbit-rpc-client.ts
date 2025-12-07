@@ -292,21 +292,15 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return commentProps;
     }
 
-    async getCommentRepliesPage(page: CommentPageRpcParam): Promise<PageIpfs> {
+    async getCommentPage(page: CommentPageRpcParam): Promise<PageIpfs> {
         const parsedGetCommentRepliesPageArgs = parseRpcCommentRepliesPageParam(page);
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentRepliesPage", [parsedGetCommentRepliesPageArgs]);
+        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentPage", [parsedGetCommentRepliesPageArgs]);
         return pageIpfs;
     }
 
-    async getSubplebbitPostsPage(page: SubplebbitPageRpcParam): Promise<PageIpfs> {
+    async getSubplebbitPage(page: SubplebbitPageRpcParam): Promise<PageIpfs | ModQueuePageIpfs> {
         const parsedGetSubplebbitPostsPage = parseRpcSubplebbitPageParam(page);
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPostsPage", [parsedGetSubplebbitPostsPage]);
-        return pageIpfs;
-    }
-
-    async getSubplebbitModQueuePage(page: SubplebbitPageRpcParam): Promise<ModQueuePageIpfs> {
-        const parsedGetSubplebbitModQueuePage = parseRpcSubplebbitPageParam(page);
-        const pageIpfs = <ModQueuePageIpfs>await this._webSocketClient.call("getSubplebbitModqueuePage", [parsedGetSubplebbitModQueuePage]);
+        const pageIpfs = <PageIpfs | ModQueuePageIpfs>await this._webSocketClient.call("getCommentPage", [parsedGetSubplebbitPostsPage]);
         return pageIpfs;
     }
 
