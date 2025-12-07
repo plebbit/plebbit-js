@@ -8,7 +8,7 @@ import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
 import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types";
 import { z } from "zod";
 import { PlebbitError } from "../plebbit-error.js";
-import type { CidRpcParam } from "../clients/rpc-client/types.js";
+import type { AuthorAddressRpcParam, CidRpcParam } from "../clients/rpc-client/types.js";
 import { parseRpcAuthorAddressParam, parseRpcCidParam } from "../clients/rpc-client/rpc-schema-util.js";
 
 // This is a helper class for separating RPC-client logic from main Plebbit
@@ -53,9 +53,9 @@ export class PlebbitWithRpcClient extends Plebbit {
         return this._plebbitRpcClient.fetchCid({ cid: parsedCid });
     }
 
-    override async resolveAuthorAddress(authorAddress: { address: string }) {
-        const parsedAddress = parseRpcAuthorAddressParam(authorAddress).address;
-        return this._plebbitRpcClient.resolveAuthorAddress({ address: parsedAddress });
+    override async resolveAuthorAddress(args: AuthorAddressRpcParam) {
+        const parsedArgs = parseRpcAuthorAddressParam(args);
+        return this._plebbitRpcClient.resolveAuthorAddress(parsedArgs);
     }
 
     override async destroy() {
@@ -67,10 +67,10 @@ export class PlebbitWithRpcClient extends Plebbit {
     }
 
     override async getComment(commentCid: CidRpcParam) {
-        const parsedCommentCid = parseRpcCidParam(commentCid).cid;
+        const parsedArgs = parseRpcCidParam(commentCid);
 
-        const commentIpfs = await this._plebbitRpcClient.getComment({ cid: parsedCommentCid });
-        return this.createComment({ ...commentIpfs, cid: parsedCommentCid });
+        const commentIpfs = await this._plebbitRpcClient.getComment(parsedArgs);
+        return this.createComment({ raw: { comment: commentIpfs }, cid: parsedArgs.cid });
     }
 
     override async createSubplebbit(
