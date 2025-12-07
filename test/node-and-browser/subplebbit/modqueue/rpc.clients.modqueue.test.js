@@ -19,14 +19,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         });
 
         it(`subplebbit.modQueue.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const rpcUrl = Object.keys(sub.clients.plebbitRpcClients)[0];
             expect(Object.keys(sub.modQueue.clients.plebbitRpcClients.pendingApproval).length).to.equal(1);
             expect(sub.modQueue.clients.plebbitRpcClients.pendingApproval[rpcUrl].state).to.equal("stopped");
         });
 
         it(`Correct state of 'pendingApproval' sort is updated after fetching from subplebbit.modQueue.pageCids.pendingApproval`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const page = cloneModQueuePage();
             const pageCid = await addStringToIpfs(JSON.stringify(page));
             sub.modQueue.pageCids.pendingApproval = pageCid;
@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 actualStates.push(newState);
             });
 
-            await sub.modQueue.getPage({cid: sub.modQueue.pageCids.pendingApproval});
+            await sub.modQueue.getPage({ cid: sub.modQueue.pageCids.pendingApproval });
             expect(actualStates).to.deep.equal(expectedStates);
         });
     });

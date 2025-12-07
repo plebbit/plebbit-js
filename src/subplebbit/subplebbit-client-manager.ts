@@ -281,7 +281,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipns");
             let subRes: ResultOfFetchingSubplebbit;
             const areWeConnectedToKuboOrHelia =
-                Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0;
+                Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
+                Object.keys(this._plebbit.clients.libp2pJsClients).length > 0;
             if (areWeConnectedToKuboOrHelia) {
                 const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
                 // we're connected to kubo or helia

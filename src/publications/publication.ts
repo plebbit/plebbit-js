@@ -613,7 +613,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             if (!this._plebbit._memCaches.subplebbitForPublishing.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
                 this._plebbit
-                    .getSubplebbit({address: this.subplebbitAddress})
+                    .getSubplebbit({ address: this.subplebbitAddress })
                     .catch((e) => log.error("Failed to update cache of subplebbit", this.subplebbitAddress, e)); // will update cache in background, will not update current comment states
             }
             return cachedSubplebbit;

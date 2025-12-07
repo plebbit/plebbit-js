@@ -47,7 +47,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         const resolvedSubAddress = await remotePlebbit._clientsManager.resolveSubplebbitAddressIfNeeded(ethAddress);
         expect(resolvedSubAddress).to.equal(subplebbit.signer.address);
 
-        await plebbit.resolveAuthorAddress({address: "esteban.eth"});
+        await plebbit.resolveAuthorAddress({ address: "esteban.eth" });
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         await publishRandomPost(subplebbit.address, plebbit);
@@ -64,9 +64,12 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
                 const [keyToEdit, newValue] = Object.entries(editArgs)[0];
                 await subplebbit.edit(editArgs);
                 expect(subplebbit[keyToEdit]).to.equal(newValue);
-                const updatingRemoteSubplebbit = await remotePlebbit.getSubplebbit({address: subplebbit.address});
+                const updatingRemoteSubplebbit = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
                 await updatingRemoteSubplebbit.update();
-                await resolveWhenConditionIsTrue({ toUpdate: updatingRemoteSubplebbit, predicate: () => updatingRemoteSubplebbit[keyToEdit] === newValue });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: updatingRemoteSubplebbit,
+                    predicate: () => updatingRemoteSubplebbit[keyToEdit] === newValue
+                });
                 await updatingRemoteSubplebbit.stop();
                 expect(updatingRemoteSubplebbit[keyToEdit]).to.equal(newValue);
                 expect(updatingRemoteSubplebbit.raw.subplebbitIpfs).to.deep.equal(subplebbit.raw.subplebbitIpfs);
@@ -101,13 +104,11 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     });
 
     it(`plebbit.subplebbits includes the new ENS address, and not the old address`, async () => {
-        await resolveWhenConditionIsTrue(
-            {
-                toUpdate: plebbit,
-                predicate: () => plebbit.subplebbits.includes(ethAddress) && !plebbit.subplebbits.includes(subplebbit.signer.address),
-                eventName: "subplebbitschange",
-            }
-        );
+        await resolveWhenConditionIsTrue({
+            toUpdate: plebbit,
+            predicate: () => plebbit.subplebbits.includes(ethAddress) && !plebbit.subplebbits.includes(subplebbit.signer.address),
+            eventName: "subplebbitschange"
+        });
         const subs = plebbit.subplebbits;
         expect(subs).to.include(ethAddress);
         expect(subs).to.not.include(subplebbit.signer.address);
@@ -126,13 +127,13 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     });
 
     it(`Can load a subplebbit with ENS domain as address`, async () => {
-        const loadedSubplebbit = await remotePlebbit.getSubplebbit({address: ethAddress});
+        const loadedSubplebbit = await remotePlebbit.getSubplebbit({ address: ethAddress });
         expect(loadedSubplebbit.address).to.equal(ethAddress);
         expect(loadedSubplebbit.raw.subplebbitIpfs).to.deep.equal(subplebbit.raw.subplebbitIpfs);
     });
 
     it(`remote subplebbit.posts is reset after changing address`, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit({address: ethAddress});
+        const loadedSubplebbit = await plebbit.getSubplebbit({ address: ethAddress });
         // subplebbit.posts should omit all comments that referenced the old subplebbit address
         // So in essence it be undefined
         expect(loadedSubplebbit.posts.pages).to.deep.equal({});
@@ -144,9 +145,10 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     });
 
     it(`Posts submitted to new sub address are shown in subplebbit.posts`, async () => {
-        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () =>
-            subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid) }
-        );
+        await resolveWhenConditionIsTrue({
+            toUpdate: subplebbit,
+            predicate: () => subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid)
+        });
         expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal([]); // empty array because it's a single preloaded page
     });
 
@@ -446,7 +448,7 @@ describe(`Editing subplebbit.roles`, async () => {
 
         await new Promise((resolve) => sub.once("update", resolve));
 
-        let remoteSub = await remotePlebbit.getSubplebbit({address: sub.address});
+        let remoteSub = await remotePlebbit.getSubplebbit({ address: sub.address });
         expect(remoteSub.roles[authorAddress].role).to.equal("admin");
         expect(remoteSub.roles[secondAuthorAddress].role).to.equal("moderator");
 
@@ -456,7 +458,7 @@ describe(`Editing subplebbit.roles`, async () => {
 
         await new Promise((resolve) => sub.once("update", resolve));
 
-        remoteSub = await remotePlebbit.getSubplebbit({address: sub.address});
+        remoteSub = await remotePlebbit.getSubplebbit({ address: sub.address });
         expect(remoteSub.roles[authorAddress]).to.be.undefined;
         expect(remoteSub.roles[secondAuthorAddress].role).to.equal("moderator");
 
@@ -467,7 +469,7 @@ describe(`Editing subplebbit.roles`, async () => {
         await new Promise((resolve) => sub.once("update", resolve));
         expect(sub.roles).to.be.undefined;
 
-        remoteSub = await remotePlebbit.getSubplebbit({address: sub.address});
+        remoteSub = await remotePlebbit.getSubplebbit({ address: sub.address });
         expect(remoteSub.roles).to.be.undefined;
     });
 
@@ -476,7 +478,7 @@ describe(`Editing subplebbit.roles`, async () => {
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await resolveWhenConditionIsTrue({ toUpdate: newSub, predicate: () => newSub.updatedAt }); // wait until it publishes an ipns record
-        await remotePlebbit.getSubplebbit({address: newSub.address}); // no problem with signature
+        await remotePlebbit.getSubplebbit({ address: newSub.address }); // no problem with signature
 
         const newRoles = { "author-address.eth": { role: null }, "author-address2.eth": { role: "admin" } };
         await newSub.edit({ roles: newRoles });
@@ -485,7 +487,7 @@ describe(`Editing subplebbit.roles`, async () => {
         await new Promise((resolve) => newSub.once("update", resolve));
         expect(newSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
 
-        const remoteSub = await remotePlebbit.getSubplebbit({address: newSub.address}); // no issues with signature
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: newSub.address }); // no issues with signature
         expect(remoteSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
 
         await newSub.delete();

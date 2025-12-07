@@ -21,7 +21,11 @@ describe(`subplebbit.delete`, async () => {
         expect(subs).to.include(sub.address);
         const subRecreated = await plebbit.createSubplebbit({ address: sub.address });
         await subRecreated.delete();
-        await resolveWhenConditionIsTrue({ toUpdate: plebbit, predicate: () => !plebbit.subplebbits.includes(sub.address), eventName: "subplebbitschange" });
+        await resolveWhenConditionIsTrue({
+            toUpdate: plebbit,
+            predicate: () => !plebbit.subplebbits.includes(sub.address),
+            eventName: "subplebbitschange"
+        });
         const subsAfterDeletion = plebbit.subplebbits;
         expect(subsAfterDeletion).to.not.include(sub.address);
     });

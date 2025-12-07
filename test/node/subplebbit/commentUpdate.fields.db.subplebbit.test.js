@@ -6,7 +6,6 @@ import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 const PROTOCOL_VERSION = "1.0.0";
 
 describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
-
     let dbHandler;
     let subplebbitAddress;
     let cidCounter = 0;
@@ -46,8 +45,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
             depth,
             postCid: resolvedPostCid,
             parentCid: depth === 0 ? null : parentCid,
-            signature: overrides["signature"] ??
-                { type: "ed25519", signature: "sig", publicKey: "pk", signedPropertyNames: [] },
+            signature: overrides["signature"] ?? { type: "ed25519", signature: "sig", publicKey: "pk", signedPropertyNames: [] },
             protocolVersion: PROTOCOL_VERSION,
             pendingApproval: overrides["pendingApproval"] ?? null,
             insertedAt: overrides["insertedAt"] ?? timestamp,

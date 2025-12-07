@@ -24,7 +24,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
-            const mockSub = await gatewayPlebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await gatewayPlebbit.getSubplebbit({ address: subplebbitAddress });
             expect(Object.keys(mockSub.clients.ipfsGateways).length).to.equal(1);
             expect(Object.values(mockSub.clients.ipfsGateways)[0].state).to.equal("stopped");
         });
@@ -48,7 +48,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.getSubplebbit({address: address})`, async () => {
-            const sub = await gatewayPlebbit.getSubplebbit({address: signers[0].address});
+            const sub = await gatewayPlebbit.getSubplebbit({ address: signers[0].address });
             await publishRandomPost(sub.address, gatewayPlebbit);
 
             const expectedStates = ["fetching-ipns", "stopped"];
@@ -89,7 +89,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, JSON.parse(JSON.stringify(sub.toJSONIpfs())));
 
             const expectedWaitingRetryCount = 3;
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => waitingRetryCount === expectedWaitingRetryCount, eventName: "updatingstatechange" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: () => waitingRetryCount === expectedWaitingRetryCount,
+                eventName: "updatingstatechange"
+            });
 
             await sub.stop();
 

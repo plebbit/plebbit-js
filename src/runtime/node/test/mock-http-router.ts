@@ -464,9 +464,7 @@ export class MockHttpRouter {
         const payloadAddrs = Array.isArray(provider?.Payload?.Addrs) ? provider.Payload.Addrs : [];
         const rootAddrs = Array.isArray(provider?.Addrs) ? provider.Addrs : [];
         const all = [...payloadAddrs, ...rootAddrs];
-        const normalized = all
-            .map((addr) => (typeof addr === "string" ? addr : null))
-            .filter((addr): addr is string => Boolean(addr));
+        const normalized = all.map((addr) => (typeof addr === "string" ? addr : null)).filter((addr): addr is string => Boolean(addr));
         return normalized.filter((addr, index) => normalized.indexOf(addr) === index);
     }
 

@@ -622,14 +622,7 @@ function isJsonLike(schema: ZodType): boolean {
     return false;
 }
 
-const jsonTypeNames = new Set([
-    "object",
-    "array",
-    "tuple",
-    "record",
-    "map",
-    "set"
-]);
+const jsonTypeNames = new Set(["object", "array", "tuple", "record", "map", "set"]);
 
 function isNullish(schema: ZodType): boolean {
     const base = unwrapSchema(schema);

@@ -91,7 +91,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         let replyCid;
         before(async () => {
             const tempPlebbit = await config.plebbitInstancePromise();
-            const sub = await tempPlebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await tempPlebbit.getSubplebbit({ address: subplebbitAddress });
             const post = sub.posts.pages.hot.comments[0];
             const reply = await publishRandomReply(post, tempPlebbit);
             replyCid = reply.cid;
@@ -101,7 +101,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it.sequential(`Updating states is in correct upon updating a reply that's included in preloaded pages of its parent`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
                 // we don't want domain name in author addrses so its resolving doesn't get included in expected states
                 const postWithMostReplies = sub.posts.pages.hot.comments.reduce((current, post) => {
                     if (!post.replies) {
@@ -149,7 +149,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
                 const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
 
                 const mockReply = await plebbit.createComment({ cid: replyCid });
@@ -195,7 +195,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`updating state of reply is in correct order upon updating a reply that's included in preloaded pages of its parent`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
                 // we don't want domain name in author addrses so its resolving doesn't get included in expected states
                 const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies && !post.author.address.includes(".")).replies
                     .pages.best.comments[0].cid;
@@ -227,7 +227,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it.sequential(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
                 const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
 
                 const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
@@ -282,7 +282,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`the order of state-event-statechange is correct when we get a new update from reply`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
             const mockReply = await plebbit.createComment({ cid: replyCid });
             expect(mockReply.updatedAt).to.be.undefined;

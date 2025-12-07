@@ -28,7 +28,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
         });
 
         it(`Can fetch subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({address: mathCliNoMockedPubsubSubplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: mathCliNoMockedPubsubSubplebbitAddress });
             expect(sub.updatedAt).to.be.a("number");
             expect(sub.settings).to.be.undefined; // make sure it's not loading local subplebbit
         });
@@ -41,14 +41,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
         it(`Can fetch Comment IPFS`, async () => {
             const commentCid = publishedPost.cid;
             expect(commentCid).to.be.a("string");
-            const comment = await plebbit.getComment({cid: commentCid});
+            const comment = await plebbit.getComment({ cid: commentCid });
             expect(comment.signature).to.be.a("object");
         });
 
         it(`Can fetch comment update`, async () => {
             const commentCid = publishedPost.cid;
             expect(commentCid).to.be.a("string");
-            const comment = await plebbit.getComment({cid: commentCid});
+            const comment = await plebbit.getComment({ cid: commentCid });
             expect(comment.signature).to.be.a("object");
 
             await comment.update();
@@ -138,7 +138,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
 
             const newContentCid = await addStringToIpfs("test");
 
-            const contentLoadedByHelia = await testPlebbit.fetchCid({cid: newContentCid});
+            const contentLoadedByHelia = await testPlebbit.fetchCid({ cid: newContentCid });
             expect(contentLoadedByHelia).to.equal("test");
 
             const numOfPeersAfterFetching = Object.values(testPlebbit.clients.libp2pJsClients)[0]._helia.libp2p.getConnections().length;

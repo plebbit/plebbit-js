@@ -16,7 +16,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         });
 
         it(`subplebbit.posts.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
-            const mockSub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const rpcUrl = Object.keys(mockSub.clients.plebbitRpcClients)[0];
             // add tests here
             expect(Object.keys(mockSub.posts.clients.plebbitRpcClients["new"]).length).to.equal(1);
@@ -24,7 +24,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         });
 
         it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
-            const mockSub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const firstPageMocked = {
                 comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.raw)
             };
@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 actualStates.push(newState);
             });
 
-            await mockSub.posts.getPage({cid: mockSub.posts.pageCids.new});
+            await mockSub.posts.getPage({ cid: mockSub.posts.pageCids.new });
             expect(actualStates).to.deep.equal(expectedStates);
         });
     });

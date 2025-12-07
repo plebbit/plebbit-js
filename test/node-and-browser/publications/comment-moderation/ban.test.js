@@ -66,7 +66,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`author.banExpires is included in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({address: commentToBeBanned.subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: commentToBeBanned.subplebbitAddress });
             const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(commentToBeBanned.cid, sub.posts);
             expect(postInSubplebbitPage.author.subplebbit.banExpiresAt).to.be.a("number");
         });

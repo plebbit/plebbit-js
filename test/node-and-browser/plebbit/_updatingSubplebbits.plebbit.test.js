@@ -109,7 +109,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A single instance fetched with plebbit.getSubplebbit should not keep plebbit._updatingSubplebbits[address]`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             await new Promise((resolve) => setTimeout(resolve, 100));
             expect(sub.updatedAt).to.be.a("number");
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
@@ -118,7 +118,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         itSkipIfRpc(
             `Comment instance can fetch updates from plebbit._updatingSubplebbits. Calling comment.stop will clean subscriptions and remove plebbit._updatingSubplebbits`,
             async () => {
-                const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
                 await new Promise((resolve) => setTimeout(resolve, 100));
                 expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
 
@@ -145,7 +145,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             `Multiple comment instances of the same sub updating. Calling stop on all of them should clean all subscriptions and remove plebbit._updatingSubplebbits`,
             async () => {
                 expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
-                const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
                 await new Promise((resolve) => setTimeout(resolve, 100));
                 expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
 
@@ -255,7 +255,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
 
             // plebbit._updatingSubplebbits[subplebbitAddress] should be defined now
-            const sub2 = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub2 = await plebbit.getSubplebbit({ address: subplebbitAddress });
             expect(sub2.state).to.equal("stopped");
 
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
@@ -329,7 +329,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         itIfRpc(`Updating a comment over RPC should not populate _updatingSubplebbits`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const postCid = sub.posts.pages.hot.comments[0].cid;
             const comment = await plebbit.createComment({ cid: postCid });
 

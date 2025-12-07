@@ -84,7 +84,7 @@ const shouldExcludePublication = (
 const shouldExcludeChallengeSuccess = (
     subplebbitChallenge: NonNullable<SubplebbitSettings["challenges"]>[0],
     subplebbitChallengeIndex: number,
-    challengeResults: (Challenge | ChallengeResult)[],
+    challengeResults: (Challenge | ChallengeResult)[]
 ) => {
     if (!subplebbitChallenge) {
         throw Error(`shouldExcludeChallengeSuccess invalid subplebbitChallenge argument '${subplebbitChallenge}'`);
@@ -98,11 +98,11 @@ const shouldExcludeChallengeSuccess = (
         return false;
     }
 
-    const challengeToExclude = challengeResults[subplebbitChallengeIndex]
+    const challengeToExclude = challengeResults[subplebbitChallengeIndex];
     if (!challengeToExclude) {
         throw Error(`shouldExcludeChallengeSuccess invalid subplebbitChallengeIndex '${subplebbitChallengeIndex}'`);
     }
-    const challengeToExcludeIsPending = "challenge" in challengeToExclude
+    const challengeToExcludeIsPending = "challenge" in challengeToExclude;
 
     // if match any of the exclude array, should exclude
     for (const excludeItem of subplebbitChallenge.exclude) {
@@ -188,7 +188,7 @@ const shouldExcludeChallengeCommentCids = async (
         // comment is not cached, add to cache
         let comment: Comment | undefined;
         if (!cachedComment) {
-            comment = await plebbit.getComment({cid: commentCid});
+            comment = await plebbit.getComment({ cid: commentCid });
             // only cache useful values
             cachedComment = { subplebbitAddress: comment.subplebbitAddress, author: { address: comment.author.address } };
             commentCache.set(commentCid, cachedComment);

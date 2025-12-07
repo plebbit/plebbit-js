@@ -24,7 +24,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             await sub.update();
         });
 
@@ -72,7 +72,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const publishedPostIpfs = JSON.stringify(publishedPostWithEmojiContent.toJSONIpfs());
                     expect(await calculateIpfsHash(publishedPostIpfs)).to.equal(publishedPostWithEmojiContent.cid);
 
-                    const remotePost = await plebbit.getComment({cid: publishedPostWithEmojiContent.cid});
+                    const remotePost = await plebbit.getComment({ cid: publishedPostWithEmojiContent.cid });
                     const remotePostIpfs = JSON.stringify(remotePost.toJSONIpfs());
                     expect(await calculateIpfsHash(remotePostIpfs)).to.equal(publishedPostWithEmojiContent.cid);
 
@@ -148,7 +148,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     await publishWithExpectedResult(post, true);
                     expect(post.spoiler).to.equal(spoilerValue);
-                    const remotePostFromCid = await plebbit.getComment({cid: post.cid});
+                    const remotePostFromCid = await plebbit.getComment({ cid: post.cid });
                     expect(remotePostFromCid.spoiler).to.equal(spoilerValue);
                     await waitTillPostInSubplebbitInstancePages(post, sub);
                     const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(post.cid, sub.posts);
@@ -169,7 +169,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     await publishWithExpectedResult(post, true);
                     expect(post.nsfw).to.equal(nsfwValue);
-                    const remotePostFromCid = await plebbit.getComment({cid: post.cid});
+                    const remotePostFromCid = await plebbit.getComment({ cid: post.cid });
                     expect(remotePostFromCid.nsfw).to.equal(nsfwValue);
                     await waitTillPostInSubplebbitInstancePages(post, sub);
                     const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(post.cid, sub.posts);
@@ -223,7 +223,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(post.linkHtmlTagName).to.equal("img");
             expect(post.link).to.equal("https://google.com");
 
-            const remotePost = await plebbit.getComment({cid: post.cid});
+            const remotePost = await plebbit.getComment({ cid: post.cid });
             expect(remotePost.linkHtmlTagName).to.equal("img");
             expect(remotePost.link).to.equal("https://google.com");
         });
@@ -239,7 +239,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(post.cid, sub.posts);
             expect(postInPage.author.wallets).to.be.undefined;
 
-            const loadedPost = await plebbit.getComment({cid: post.cid}); // should fail if signature is incorrect
+            const loadedPost = await plebbit.getComment({ cid: post.cid }); // should fail if signature is incorrect
             expect(loadedPost.author.wallets).to.be.undefined;
         });
 
@@ -316,11 +316,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         [2, 3, 10, 30].map((depth) =>
             it(`Can publish reply with depth = ${depth}`, async () => {
-                const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
                 const reply = await publishCommentWithDepth({ depth, subplebbit });
                 expect(reply.depth).to.be.equal(depth);
 
-                const parentComment = await plebbit.getComment({cid: reply.parentCid});
+                const parentComment = await plebbit.getComment({ cid: reply.parentCid });
                 await parentComment.update();
 
                 await waitTillReplyInParentPagesInstance(reply, parentComment);

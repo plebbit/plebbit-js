@@ -44,7 +44,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`Correct order of ${clientFieldName} state when updating a post that was created with plebbit.createComment({cid})`, async () => {
-            const sub = await plebbit.getSubplebbit({address: signers[0].address});
+            const sub = await plebbit.getSubplebbit({ address: signers[0].address });
 
             const mockPost = await plebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
@@ -75,7 +75,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`Correct order of ${clientFieldName} state when updating a reply that was created with plebbit.createComment({cid}) and the post has a single preloaded page`, async () => {
             const plebbit = await config.plebbitInstancePromise();
-            const sub = await plebbit.getSubplebbit({address: signers[0].address});
+            const sub = await plebbit.getSubplebbit({ address: signers[0].address });
             const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
             const reply = await plebbit.createComment({ cid: replyCid });
 
@@ -109,9 +109,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         );
 
         it(`Correct order of ${clientFieldName} state when updating a post that was created with plebbit.getComment({cid: cid})`, async () => {
-            const sub = await plebbit.getSubplebbit({address: signers[0].address});
+            const sub = await plebbit.getSubplebbit({ address: signers[0].address });
 
-            const mockPost = await plebbit.getComment({cid: sub.posts.pages.hot.comments[0].cid});
+            const mockPost = await plebbit.getComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
             const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped", "fetching-update-ipfs", "stopped"];
 
@@ -217,7 +217,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`Correct order of ${clientFieldName} when we update a post but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
             const plebbit = await config.plebbitInstancePromise();
 
-            const sub = await plebbit.getSubplebbit({address: signers[0].address});
+            const sub = await plebbit.getSubplebbit({ address: signers[0].address });
 
             const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(
                 sub.posts.pages.hot.comments[0].cid

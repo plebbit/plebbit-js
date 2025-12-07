@@ -58,15 +58,10 @@ export function defineHangingScenario(definition: HangingScenarioDefinition): Ha
 
 export function resolveHangingScenarioModule(moduleNamespace: unknown, moduleId: string): HangingScenarioDefinition {
     const candidate =
-        (moduleNamespace as any)?.default ??
-        (moduleNamespace as any)?.scenario ??
-        (moduleNamespace as any)?.hangingScenario ??
-        null;
+        (moduleNamespace as any)?.default ?? (moduleNamespace as any)?.scenario ?? (moduleNamespace as any)?.hangingScenario ?? null;
 
     if (!candidate) {
-        throw new Error(
-            `Hanging scenario module "${moduleId}" does not export a default, "scenario", or "hangingScenario" definition`
-        );
+        throw new Error(`Hanging scenario module "${moduleId}" does not export a default, "scenario", or "hangingScenario" definition`);
     }
 
     return defineHangingScenario(candidate as HangingScenarioDefinition);

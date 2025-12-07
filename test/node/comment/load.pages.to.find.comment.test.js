@@ -138,10 +138,14 @@ async function createTestContext({
             const secondPage = { comments: [postComment] };
             secondPageCid = await registerPostPage(secondPage);
         }
-        const firstPage = targetOnSecondPostPage ? { comments: firstPageComments, nextCid: secondPageCid } : { comments: firstPageComments };
+        const firstPage = targetOnSecondPostPage
+            ? { comments: firstPageComments, nextCid: secondPageCid }
+            : { comments: firstPageComments };
         postsPages = { hot: firstPage };
     } else {
-        const firstPage = targetOnSecondPostPage ? { comments: [...extraPostsComments] } : { comments: [postComment, ...extraPostsComments] };
+        const firstPage = targetOnSecondPostPage
+            ? { comments: [...extraPostsComments] }
+            : { comments: [postComment, ...extraPostsComments] };
         const firstPageCid = await registerPostPage(firstPage);
         if (targetOnSecondPostPage) {
             const secondPage = { comments: [postComment] };

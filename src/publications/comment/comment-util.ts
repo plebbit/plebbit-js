@@ -30,7 +30,7 @@ export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
     const getParentCommentInstance = (parentCid: string) => {
         let existing = parentCommentCache.get(parentCid);
         if (!existing) {
-            existing = subplebbit._plebbit.getComment({cid: parentCid});
+            existing = subplebbit._plebbit.getComment({ cid: parentCid });
             parentCommentCache.set(parentCid, existing);
         }
         return existing;
@@ -71,7 +71,7 @@ export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
         throwIfAborted();
         if (source === "posts") {
             try {
-                return await subplebbit.posts.getPage({cid: cid});
+                return await subplebbit.posts.getPage({ cid: cid });
             } catch (err) {
                 log.trace("posts.getPage failed", { cid, err });
                 return undefined;
@@ -80,7 +80,7 @@ export async function loadAllPagesUnderSubplebbitToFindComment(opts: {
             if (!parentCommentCid) return undefined;
             try {
                 const parentCommentInstance = await getParentCommentInstance(parentCommentCid);
-                return await parentCommentInstance.replies.getPage({cid: cid});
+                return await parentCommentInstance.replies.getPage({ cid: cid });
             } catch (err) {
                 log.trace("replies.getPage failed", { cid, parentCommentCid, err });
                 return undefined;

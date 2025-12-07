@@ -14,7 +14,7 @@ import {
     mockPostToReturnSpecificCommentUpdate,
     isPlebbitFetchingUsingGateways,
     itSkipIfRpc,
-    waitTillReplyInParentPagesInstance,
+    waitTillReplyInParentPagesInstance
 } from "../../../../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing } from "../../../../../dist/node/signer/signatures.js";
 
@@ -58,13 +58,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it.sequential(
             `plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`,
             async () => {
-                const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+                const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
                 const postCid =
                     subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0 && !post.locked && !post.removed)?.cid ||
                     subplebbit.lastPostCid;
 
-                const reply = await publishRandomReply(await plebbit.getComment({cid: postCid}), plebbit);
+                const reply = await publishRandomReply(await plebbit.getComment({ cid: postCid }), plebbit);
 
                 const recreatedReply = await plebbit.createComment({ cid: reply.cid });
 
@@ -86,7 +86,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         );
 
         it.sequential(`comment.stop() stops loading of comment updates (before update)`, async () => {
-            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
             await comment.update();
@@ -100,7 +100,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it.sequential(`comment.stop() stops loading of comment updates (after update)`, async () => {
-            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
             await comment.update();
@@ -118,7 +118,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`comment.update() is working as expected after calling comment.stop()`, async () => {
             const plebbit = await config.plebbitInstancePromise();
-            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const postToStop = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
 
             await postToStop.update();
@@ -156,9 +156,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
 const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+    const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
-    const postIpfs = cleanUpBeforePublishing((await plebbit.getComment({cid: subplebbit.posts.pages.hot.comments[0].cid})).toJSONIpfs());
+    const postIpfs = cleanUpBeforePublishing((await plebbit.getComment({ cid: subplebbit.posts.pages.hot.comments[0].cid })).toJSONIpfs());
 
     postIpfs.title += "1234"; // Invalidate signature
     const postWithInvalidSignatureCid = addStringToIpfs(JSON.stringify(postIpfs));
@@ -170,9 +170,9 @@ const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
 
 const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+    const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
-    const postIpfs = (await plebbit.getComment({cid: subplebbit.posts.pages.hot.comments[0].cid})).toJSONIpfs();
+    const postIpfs = (await plebbit.getComment({ cid: subplebbit.posts.pages.hot.comments[0].cid })).toJSONIpfs();
 
     postIpfs.content = 1234; // Content is supposed to be a string, this will make the schema invalid
 
@@ -199,7 +199,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             invalidCommentIpfsCid = await addCommentIpfsWithInvalidSignatureToIpfs();
             cidOfInvalidJson = await addInvalidJsonToIpfs();
             cidOfCommentIpfsWithInvalidSchema = await addCommentIpfsWithInvalidSchemaToIpfs();
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
         });
 
@@ -399,10 +399,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         itSkipIfRpc(`postCommentInstance.update() emits error when post fails to load from postUpdates`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const postCid = sub.posts.pages.hot.comments[0].cid;
 
-            const post = await plebbit.getComment({cid: postCid});
+            const post = await plebbit.getComment({ cid: postCid });
             const errors = [];
             post.on("error", (err) => errors.push(err));
             await post.update();
@@ -420,10 +420,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         itSkipIfRpc.sequential(`postCommentInstance.update() emits error when subplebbit has no postUpdates`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const postCid = sub.posts.pages.hot.comments[0].cid;
 
-            const post = await plebbit.getComment({cid: postCid});
+            const post = await plebbit.getComment({ cid: postCid });
             const errors = [];
             post.on("error", (err) => errors.push(err));
             await post.update();

@@ -200,7 +200,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         let newReply;
                         let parentComment;
                         try {
-                            parentComment = await context.plebbit.getComment({cid: context.leafCid});
+                            parentComment = await context.plebbit.getComment({ cid: context.leafCid });
 
                             newReply = await publishRandomReply(parentComment, context.plebbit);
                             await waitTillReplyInParentPages(newReply, context.plebbit);
@@ -240,7 +240,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 
                     it("loads reply updates when the post was stopped", async () => {
                         const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
-                        const replyComment = await remotePlebbit.getComment({cid: context.leafCid});
+                        const replyComment = await remotePlebbit.getComment({ cid: context.leafCid });
                         try {
                             await replyComment.update();
                             await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
@@ -259,9 +259,9 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     it("loads reply updates while the post keeps updating", async () => {
                         const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
 
-                        const postComment = await remotePlebbit.getComment({cid: context.rootCid});
+                        const postComment = await remotePlebbit.getComment({ cid: context.rootCid });
 
-                        const replyComment = await remotePlebbit.getComment({cid: context.leafCid});
+                        const replyComment = await remotePlebbit.getComment({ cid: context.leafCid });
                         try {
                             await postComment.update();
                             await waitForPostToStartUpdating(postComment);
@@ -300,7 +300,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             plebbitLoadingConfigs.forEach((plebbitConfig) => {
                 it("loads reply updates when the parent was stopped", async () => {
                     const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
-                    const replyComment = await remotePlebbit.getComment({cid: paginationContext.leafCid});
+                    const replyComment = await remotePlebbit.getComment({ cid: paginationContext.leafCid });
                     try {
                         const storedParentUpdate = paginationContext.forcedParentStoredUpdate;
                         expect(storedParentUpdate).to.exist;
@@ -328,8 +328,8 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 
                 it("loads reply updates while the parent keeps updating", async () => {
                     const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
-                    const parentComment = await remotePlebbit.getComment({cid: paginationContext.leafParentCid});
-                    const replyComment = await remotePlebbit.getComment({cid: paginationContext.leafCid});
+                    const parentComment = await remotePlebbit.getComment({ cid: paginationContext.leafParentCid });
+                    const replyComment = await remotePlebbit.getComment({ cid: paginationContext.leafCid });
                     try {
                         await parentComment.update();
                         await waitForPostToStartUpdating(parentComment);

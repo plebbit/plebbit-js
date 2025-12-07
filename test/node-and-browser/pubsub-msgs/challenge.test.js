@@ -18,7 +18,7 @@ describe.skip(`Stress test challenge exchange`, async () => {
 
     before(async () => {
         plebbit = await mockRemotePlebbit();
-        subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+        subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
     });
 
     after(async () => {

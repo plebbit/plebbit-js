@@ -99,7 +99,7 @@ describe("createSchemaRowParser", () => {
         });
 
         expect(data.cid).to.equal("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f");
-        expect(extras).to.deep.equal({ extraProps: "{\"foo\":\"bar\"}", legacy: "legacy" });
+        expect(extras).to.deep.equal({ extraProps: '{"foo":"bar"}', legacy: "legacy" });
     });
 
     it("throws with helpful metadata when JSON parsing fails", () => {
@@ -163,8 +163,7 @@ describe("createSchemaRowParser", () => {
 describeSkipIfRpc(`parseDbResponses`, () => {
     it(`parses JSON strings into objects`, () => {
         const raw = {
-            author:
-                '{"address":"12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR","displayName":"Mock Author - 1676110849.7439198"}'
+            author: '{"address":"12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR","displayName":"Mock Author - 1676110849.7439198"}'
         };
         const parsed = parseDbResponses(raw);
         expect(parsed.author).to.deep.equal({

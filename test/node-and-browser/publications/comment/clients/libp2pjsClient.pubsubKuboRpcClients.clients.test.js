@@ -58,7 +58,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             for (const pubsubUrl of Object.keys(expectedStates))
                 mockPost.clients[clientFieldName][pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
-            const subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+            const subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
             mockPost._getSubplebbitCache = () => subplebbit.raw.subplebbitIpfs; // so libp2pjs client state won't include fetching subplebbit states
             await publishWithExpectedResult(mockPost, true);
 

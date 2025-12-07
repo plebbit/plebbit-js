@@ -29,7 +29,7 @@ describeSkipIfRpc.concurrent("Sign subplebbit", async () => {
         expect(signature.type).to.equal(subFixture.signature.type);
     });
     it(`Can sign and validate live subplebbit correctly`, async () => {
-        const subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+        const subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
         const subjsonIpfs = subplebbit.toJSONIpfs();
         const subplebbitToSign = { ...cleanUpBeforePublishing(subjsonIpfs), posts: removeUndefinedValuesRecursively(subjsonIpfs.posts) };
         delete subplebbitToSign["signature"];
@@ -62,7 +62,7 @@ describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
     });
 
     it(`Can validate live subplebbit`, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+        const loadedSubplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
         expect(
             await verifySubplebbit({
                 subplebbit: loadedSubplebbit.toJSONIpfs(),
@@ -94,7 +94,7 @@ describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
         const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded = (address) =>
             address === "plebbit.eth" ? signers[4].address : address;
-        const sub = await plebbit.getSubplebbit({address: "plebbit.eth"});
+        const sub = await plebbit.getSubplebbit({ address: "plebbit.eth" });
         const verification = await verifySubplebbit({
             subplebbit: sub.toJSONIpfs(),
             subplebbitIpnsName: signers[4].address,
@@ -110,7 +110,7 @@ describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
     });
 
     it(`subplebbit signature is invalid if subplebbit.posts has an invalid comment signature `, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+        const loadedSubplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
 
         const subJson = remeda.clone(loadedSubplebbit.toJSONIpfs());
         expect(

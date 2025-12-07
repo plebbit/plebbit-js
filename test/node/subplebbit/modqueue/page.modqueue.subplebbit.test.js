@@ -57,12 +57,12 @@ describe.concurrent("Modqueue depths", () => {
                     toUpdate: subplebbit,
                     predicate: async () => {
                         if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
-                        const modQueuePage = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
+                        const modQueuePage = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
                         return modQueuePage.comments.length === numOfComments;
                     }
                 });
 
-                const modQueuepageLoaded = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
+                const modQueuepageLoaded = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
 
                 expect(modQueuepageLoaded.comments.length).to.equal(numOfComments);
 
@@ -108,12 +108,12 @@ describe.concurrent("Modqueue depths", () => {
                 toUpdate: subplebbit,
                 predicate: async () => {
                     if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
-                    const modQueuePage = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
+                    const modQueuePage = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
                     return modQueuePage.comments.length === pendingComments.length;
                 }
             });
 
-            const modQueuepageLoaded = await subplebbit.modQueue.getPage({cid: subplebbit.modQueue.pageCids.pendingApproval});
+            const modQueuepageLoaded = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
 
             expect(modQueuepageLoaded.comments.length).to.equal(pendingComments.length);
             for (let i = 0; i < pendingComments.length; i++) {

@@ -4,7 +4,6 @@ import assert from "assert";
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
-
     let dbHandler;
     let subplebbitAddress;
     let cidCounter = 0;
@@ -692,10 +691,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         });
 
         const cids = commentCidsNeedingUpdate();
-        expect(cids).to.include(
-            parent.cid,
-            "parent comment should be enqueued because a child present in replies has been marked removed"
-        );
+        expect(cids).to.include(parent.cid, "parent comment should be enqueued because a child present in replies has been marked removed");
     });
 
     it("requeues parent when child comment is deleted via edit but replies still include it", async () => {
@@ -764,10 +760,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         });
 
         const cids = commentCidsNeedingUpdate();
-        expect(cids).to.include(
-            parent.cid,
-            "parent comment should be enqueued because a child present in replies has been deleted"
-        );
+        expect(cids).to.include(parent.cid, "parent comment should be enqueued because a child present in replies has been deleted");
     });
 
     it("requeues parent when replies JSON includes a pending-approval child", async () => {

@@ -343,9 +343,7 @@ const getChallengeVerification = async (
     // - requester passes every challenge and at least one non-excluded challenge has pendingApproval -> send to pending approval
 
     const shouldSendToPendingApproval =
-        Boolean(challengeRequestMessage.comment) &&
-        challengeVerification.challengeSuccess === true &&
-        pendingApprovalSuccess;
+        Boolean(challengeRequestMessage.comment) && challengeVerification.challengeSuccess === true && pendingApprovalSuccess;
 
     if (shouldSendToPendingApproval) {
         return { ...challengeVerification, pendingApproval: true };

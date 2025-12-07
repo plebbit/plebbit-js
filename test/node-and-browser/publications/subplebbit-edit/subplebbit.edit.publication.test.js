@@ -209,7 +209,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`sub owner should be able to modify address`, async () => {
             const ownerSigner = await plebbit.createSigner(roles[0].signer);
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const subplebbitEdit = await plebbit.createSubplebbitEdit({
                 subplebbitEdit: { address: sub.address }, // we're not changing the address because it's a sub used by other tests as well. But if the test pass it means {address} was passed over to sub.edit which is enough for our testing
                 subplebbitAddress,

@@ -36,7 +36,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`state changes to updating after calling .update()`, async () => {
             const tempComment = await plebbit.createComment({
-                cid: (await plebbit.getSubplebbit({address: signers[0].address})).posts.pages.hot.comments[0].cid
+                cid: (await plebbit.getSubplebbit({ address: signers[0].address })).posts.pages.hot.comments[0].cid
             });
             await tempComment.update();
             expect(tempComment.state).to.equal("updating");

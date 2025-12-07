@@ -8,7 +8,7 @@ import tcpPortUsed from "tcp-port-used";
 
 function _mergeRouterConfigs(existingConfig: any, newConfig: any) {
     if (!existingConfig?.Routers) return newConfig;
-    
+
     const existingRoutersByEndpoint = new Map();
     Object.entries(existingConfig.Routers).forEach(([routerName, router]: [string, any]) => {
         if (router.Parameters?.Endpoint) {
@@ -17,7 +17,7 @@ function _mergeRouterConfigs(existingConfig: any, newConfig: any) {
     });
 
     const mergedRouters = { ...newConfig.Routers };
-    
+
     Object.entries(newConfig.Routers).forEach(([newRouterName, newRouter]: [string, any]) => {
         if (newRouter.Parameters?.Endpoint) {
             const existing = existingRoutersByEndpoint.get(newRouter.Parameters.Endpoint);

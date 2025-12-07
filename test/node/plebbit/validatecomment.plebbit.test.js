@@ -39,7 +39,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
         before(async () => {
             publisherEnv = await createValidateCommentTestEnvironment();
             remotePlebbit = await config.plebbitInstancePromise();
-            subplebbit = await remotePlebbit.getSubplebbit({address: publisherEnv.subplebbitAddress});
+            subplebbit = await remotePlebbit.getSubplebbit({ address: publisherEnv.subplebbitAddress });
             await subplebbit.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: subplebbit,
@@ -52,7 +52,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
                     )
             });
 
-            postCommentInstance = await remotePlebbit.getComment({cid: publisherEnv.postCid});
+            postCommentInstance = await remotePlebbit.getComment({ cid: publisherEnv.postCid });
             await postCommentInstance.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: postCommentInstance,
@@ -62,7 +62,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
             postPageComment = subplebbit.posts.pages.hot.comments.find((c) => c.cid === postCommentInstance.cid);
             expect(postPageComment, "Failed to find the post comment in the page").to.exist;
 
-            postWithRepliesInstance = await remotePlebbit.getComment({cid: publisherEnv.repliesPostCid});
+            postWithRepliesInstance = await remotePlebbit.getComment({ cid: publisherEnv.repliesPostCid });
             await postWithRepliesInstance.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: postWithRepliesInstance,
@@ -71,7 +71,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
 
             const flatPageCid = postWithRepliesInstance.replies.pageCids?.newFlat;
             expect(flatPageCid, "Post must expose a flat replies page").to.be.a("string");
-            const flatPage = await postWithRepliesInstance.replies.getPage({cid: flatPageCid});
+            const flatPage = await postWithRepliesInstance.replies.getPage({ cid: flatPageCid });
             expect(flatPage.comments.length).to.be.greaterThan(0, "Flat page must contain comments");
             replyFromFlatPage = flatPage.comments[0];
             expect(replyFromFlatPage, "Failed to get a reply from the flat page").to.exist;
@@ -81,7 +81,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
             if (!bestPage?.comments?.length) {
                 const bestPageCid = postWithRepliesInstance.replies.pageCids?.best;
                 expect(bestPageCid, "Post must expose a best replies page").to.be.a("string");
-                bestPage = await postWithRepliesInstance.replies.getPage({cid: bestPageCid});
+                bestPage = await postWithRepliesInstance.replies.getPage({ cid: bestPageCid });
             }
             expect(bestPage?.comments?.length, "Post must have replies on 'best' page for test").to.be.greaterThan(0);
             replyFromBestPage = bestPage.comments[0];
@@ -204,9 +204,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
             let sourcePostCommentInstance; // Need a valid instance for cloning/copying tests
             beforeEach(async () => {
                 plebbit = await mockRemotePlebbit();
-                const sub = await plebbit.getSubplebbit({address: signers[0].address});
+                const sub = await plebbit.getSubplebbit({ address: signers[0].address });
                 await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.lastPostCid === "string" });
-                sourcePostCommentInstance = await plebbit.getComment({cid: sub.lastPostCid});
+                sourcePostCommentInstance = await plebbit.getComment({ cid: sub.lastPostCid });
                 await sourcePostCommentInstance.update();
                 await resolveWhenConditionIsTrue({
                     toUpdate: sourcePostCommentInstance,
@@ -487,11 +487,11 @@ async function ensureCommentHasPaginatedReplies({ subplebbit, comment }) {
 
     const flatPageCid = comment.replies.pageCids?.newFlat;
     if (!flatPageCid) throw new Error("Failed to generate flat replies page for validateComment test");
-    const flatPage = await comment.replies.getPage({cid: flatPageCid});
+    const flatPage = await comment.replies.getPage({ cid: flatPageCid });
     if (!flatPage.comments?.length) throw new Error("Flat replies page is empty");
 
     const bestPageCid = comment.replies.pageCids?.best;
     if (!bestPageCid) throw new Error("Failed to generate best replies page for validateComment test");
-    const bestPage = await comment.replies.getPage({cid: bestPageCid});
+    const bestPage = await comment.replies.getPage({ cid: bestPageCid });
     if (!bestPage.comments?.length) throw new Error("Best replies page is empty");
 }

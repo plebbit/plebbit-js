@@ -1410,7 +1410,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         if (this._plebbit.resolveAuthorAddresses) {
             const resolvedSignerAddress = isStringDomain(publication.author.address)
-                ? await this._plebbit.resolveAuthorAddress({address: publication.author.address})
+                ? await this._plebbit.resolveAuthorAddress({ address: publication.author.address })
                 : publication.author.address;
             if (resolvedSignerAddress !== signerAddress) return false;
             if (rolesToCheckAgainst.includes(this.roles[publication.author.address]?.role as SubplebbitRoleNameUnion)) return true;

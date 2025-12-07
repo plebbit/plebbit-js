@@ -448,14 +448,14 @@ export function calculateInlineRepliesBudget({
 }: InlineRepliesBudgetOptions): number {
     const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdateWithoutReplies), "utf8");
     const repliesAvailableSize =
-        maxCommentUpdateBytes - commentUpdateSize - calculateExpectedSignatureSize(commentUpdateWithoutReplies) - commentUpdateHeadroomBytes;
+        maxCommentUpdateBytes -
+        commentUpdateSize -
+        calculateExpectedSignatureSize(commentUpdateWithoutReplies) -
+        commentUpdateHeadroomBytes;
 
     const depthBufferBytes = depthBufferBaseBytes + comment.depth * depthBufferPerDepthBytes;
     const desiredPreloadedPageBudget = repliesAvailableSize - depthBufferBytes;
-    const clampedPreloadedPageBudget = Math.min(
-        Math.max(desiredPreloadedPageBudget, minInlineRepliesBytes),
-        hardInlineRepliesLimitBytes
-    );
+    const clampedPreloadedPageBudget = Math.min(Math.max(desiredPreloadedPageBudget, minInlineRepliesBytes), hardInlineRepliesLimitBytes);
     const inlineBudgetFromComment = Math.max(0, Math.min(clampedPreloadedPageBudget, repliesAvailableSize));
 
     const commentEntryWithoutReplies = {

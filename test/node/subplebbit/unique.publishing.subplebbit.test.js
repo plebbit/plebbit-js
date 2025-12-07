@@ -103,7 +103,6 @@ class InMemoryDbHandlerMock {
 }
 
 describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", function () {
-
     let plebbit;
     let subplebbit;
     let dbMock;

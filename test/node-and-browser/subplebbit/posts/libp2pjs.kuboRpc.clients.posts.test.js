@@ -1,7 +1,12 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 
-import { describeSkipIfRpc, mockGatewayPlebbit, getAvailablePlebbitConfigsToTestAgainst, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
+import {
+    describeSkipIfRpc,
+    mockGatewayPlebbit,
+    getAvailablePlebbitConfigsToTestAgainst,
+    addStringToIpfs
+} from "../../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 
@@ -25,7 +30,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`subplebbit.posts.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
-            const mockSub = await gatewayPlebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await gatewayPlebbit.getSubplebbit({ address: subplebbitAddress });
             const sortTypes = Object.keys(mockSub.posts.clients[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
             for (const sortType of sortTypes) expect(mockSub.posts.clients[clientFieldName][sortType]).to.deep.equal({});
@@ -33,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`subplebbit.posts.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
-            const mockSub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const key = Object.keys(mockSub.clients[clientFieldName])[0];
             // add tests here
             expect(Object.keys(mockSub.posts.clients[clientFieldName]["new"]).length).to.equal(1);
@@ -41,7 +46,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
-            const mockSub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const firstPageMocked = {
                 comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.raw)
             };
@@ -58,12 +63,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 actualStates.push(newState);
             });
 
-            await mockSub.posts.getPage({cid: mockSub.posts.pageCids.new});
+            await mockSub.posts.getPage({ cid: mockSub.posts.pageCids.new });
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
         it("Correct state of 'new' sort is updated after fetching second page of 'new' pages", async () => {
-            const mockSub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const clientKey = Object.keys(mockSub.clients[clientFieldName])[0];
 
             const secondPageMocked = { comments: mockSub.posts.pages.hot.comments.slice(1, 5).map((comment) => comment.raw) }; // create a slightly different page
@@ -84,16 +89,16 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 actualStates.push(newState);
             });
 
-            const newFirstPage = await mockSub.posts.getPage({cid: mockSub.posts.pageCids.new});
+            const newFirstPage = await mockSub.posts.getPage({ cid: mockSub.posts.pageCids.new });
             expect(newFirstPage.nextCid).to.be.a("string");
-            await mockSub.posts.getPage({cid: newFirstPage.nextCid});
+            await mockSub.posts.getPage({ cid: newFirstPage.nextCid });
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
         it(`Correct state of 'new' sort is updated after fetching with a subplebbit created with plebbit.createSubplebbit({address, pageCids})`, async () => {
             const remotePlebbit = await config.plebbitInstancePromise();
-            const mockSub = await remotePlebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await remotePlebbit.getSubplebbit({ address: subplebbitAddress });
 
             const firstPageMocked = {
                 comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.raw)
@@ -115,7 +120,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 actualStates.push(newState);
             });
 
-            await fetchSub.posts.getPage({cid: fetchSub.posts.pageCids.new});
+            await fetchSub.posts.getPage({ cid: fetchSub.posts.pageCids.new });
             expect(actualStates).to.deep.equal(expectedStates);
             await remotePlebbit.destroy();
         });

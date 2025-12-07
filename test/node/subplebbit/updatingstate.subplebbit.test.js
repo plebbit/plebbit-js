@@ -22,7 +22,7 @@ describe.concurrent(`subplebbit.updatingState from a local subplebbit`, async ()
         const createdSubplebbit = await plebbit.createSubplebbit();
         await createdSubplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: createdSubplebbit, predicate: () => typeof createdSubplebbit.updatedAt === "number" });
-        const subplebbit = await plebbit.getSubplebbit({address: createdSubplebbit.address});
+        const subplebbit = await plebbit.getSubplebbit({ address: createdSubplebbit.address });
         expect(subplebbit.updatingState).to.equal("stopped");
     });
 

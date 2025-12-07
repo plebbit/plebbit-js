@@ -59,7 +59,7 @@ export class AddressRewriterDatabase {
 
             // Initialize SQLite database
             this._db = new Database(this._dbPath);
-            
+
             // Create request logs table - logs HTTP requests through the proxy
             this._db.exec(`
                 CREATE TABLE IF NOT EXISTS request_logs (
@@ -160,25 +160,19 @@ export class AddressRewriterDatabase {
             INSERT INTO reprovide_logs (key, timestamp, success, error, block_not_local)
             VALUES (?, ?, ?, ?, ?)
         `);
-        
-        insertStmt.run(
-            key,
-            Date.now(),
-            success ? 1 : 0,
-            error || null,
-            blockNotLocal ? 1 : 0
-        );
+
+        insertStmt.run(key, Date.now(), success ? 1 : 0, error || null, blockNotLocal ? 1 : 0);
     }
 
     loadFailedKeys(): string[] {
         if (!this._db) {
             return [];
         }
-        
+
         try {
-            const stmt = this._db.prepare('SELECT key FROM failed_keys');
+            const stmt = this._db.prepare("SELECT key FROM failed_keys");
             const rows = stmt.all() as { key: string }[];
-            return rows.map(row => row.key);
+            return rows.map((row) => row.key);
         } catch (error) {
             debug.error("Failed to load failed keys from database:", error);
             return [];
@@ -189,20 +183,20 @@ export class AddressRewriterDatabase {
         if (!this._db) {
             throw new Error("Database not initialized");
         }
-        
+
         // Clear existing failed keys and insert current ones
         const transaction = this._db.transaction(() => {
-            this._db!.exec('DELETE FROM failed_keys');
-            
+            this._db!.exec("DELETE FROM failed_keys");
+
             if (keys.length > 0) {
-                const insertStmt = this._db!.prepare('INSERT INTO failed_keys (key, added_at) VALUES (?, ?)');
+                const insertStmt = this._db!.prepare("INSERT INTO failed_keys (key, added_at) VALUES (?, ?)");
                 const now = Date.now();
                 for (const key of keys) {
                     insertStmt.run(key, now);
                 }
             }
         });
-        
+
         transaction();
     }
 }

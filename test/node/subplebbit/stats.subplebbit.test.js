@@ -282,8 +282,7 @@ describe(`subplebbit.statsCid`, function () {
         const cid = nextCid();
         const resolvedDepth = typeof depth === "number" ? depth : parent ? (parent.depth ?? 0) + 1 : 0;
         const resolvedParentCid = resolvedDepth === 0 ? null : parentCid ?? parent?.cid ?? null;
-        const resolvedPostCid =
-            resolvedDepth === 0 ? postCid ?? cid : postCid ?? parent?.postCid ?? resolvedParentCid ?? cid;
+        const resolvedPostCid = resolvedDepth === 0 ? postCid ?? cid : postCid ?? parent?.postCid ?? resolvedParentCid ?? cid;
         const resolvedAuthorSignerAddress = authorSignerAddress ?? `12D3KooAuthor${cid}`;
         const resolvedAuthor = overrides.author ?? { address: resolvedAuthorSignerAddress };
 
@@ -399,7 +398,6 @@ describe(`subplebbit.statsCid`, function () {
             }
         ]);
     }
-
 
     function nextCid(prefix = "QmTest") {
         return `${prefix}${(cidCounter++).toString().padStart(4, "0")}`;

@@ -865,10 +865,6 @@ export class BaseClientsManager {
         subAddress: string,
         fetcher: () => Promise<ResultOfFetchingSubplebbit>
     ): Promise<ResultOfFetchingSubplebbit> {
-        return this._plebbit._inflightFetchManager.withResource(
-            InflightResourceTypes.SUBPLEBBIT_IPNS,
-            subAddress,
-            fetcher
-        );
+        return this._plebbit._inflightFetchManager.withResource(InflightResourceTypes.SUBPLEBBIT_IPNS, subAddress, fetcher);
     }
 }

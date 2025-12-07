@@ -87,12 +87,20 @@ describe(`subplebbit.start`, async () => {
             throw Error("Mocking a failure in getting db internal state in tests");
         };
         publishRandomPost(sub.address, plebbit);
-        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState === "failed", eventName: "startedstatechange" });
+        await resolveWhenConditionIsTrue({
+            toUpdate: sub,
+            predicate: () => sub.startedState === "failed",
+            eventName: "startedstatechange"
+        });
         expect(sub.startedState).to.equal("failed");
 
         sub._getDbInternalState = originalFunc;
 
-        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState !== "failed", eventName: "startedstatechange" });
+        await resolveWhenConditionIsTrue({
+            toUpdate: sub,
+            predicate: () => sub.startedState !== "failed",
+            eventName: "startedstatechange"
+        });
         const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
@@ -110,12 +118,20 @@ describe(`subplebbit.start`, async () => {
         };
         publishRandomPost(sub.address, plebbit);
 
-        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState === "failed", eventName: "startedstatechange" });
+        await resolveWhenConditionIsTrue({
+            toUpdate: sub,
+            predicate: () => sub.startedState === "failed",
+            eventName: "startedstatechange"
+        });
         expect(sub.startedState).to.equal("failed");
 
         ipfsClient.files.write = originalFunc;
 
-        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => sub.startedState !== "failed", eventName: "startedstatechange" });
+        await resolveWhenConditionIsTrue({
+            toUpdate: sub,
+            predicate: () => sub.startedState !== "failed",
+            eventName: "startedstatechange"
+        });
         const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
@@ -435,7 +451,7 @@ describe(`Publish loop resiliency`, async () => {
 
         await waitTillPostInSubplebbitPages(mockPost, remotePlebbit);
 
-        const loadedSub = await remotePlebbit.getSubplebbit({address: subplebbit.address}); // If it can load, then it has a valid signature
+        const loadedSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address }); // If it can load, then it has a valid signature
 
         const loadedPost = await iterateThroughPagesToFindCommentInParentPagesInstance(mockPost.cid, loadedSub.posts);
 
@@ -505,7 +521,7 @@ describe(`Publish loop resiliency`, async () => {
             const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({
                 plebbitOptions: { resolveAuthorAddresses, validatePages: true }
             }); // we need to enable validatePages so subplebbit.posts can be validated and override author.address
-            const loadedSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
+            const loadedSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
             const mockPostInPage = loadedSub.posts.pages.hot.comments.find((comment) => comment.cid === mockPost.cid);
             // if we're resolving author address, plebbit-js should pick up that it's pointing to the wrong signer address
             // once it does that plebbit-js override author.address to point to signer.address

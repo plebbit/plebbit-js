@@ -48,7 +48,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         const populateSub = async (subplebbit) => {
             const subplebbitPage = subplebbit.posts.pageCids.new
-                ? await subplebbit.posts.getPage({cid: subplebbit.posts.pageCids.new})
+                ? await subplebbit.posts.getPage({ cid: subplebbit.posts.pageCids.new })
                 : subplebbit.posts.pages.hot;
             if (!subplebbitPage || subplebbitPage.comments.length < 10) {
                 await Promise.all(
@@ -62,7 +62,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         };
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             await populateSub(sub);
             await sub.update();
 
@@ -72,14 +72,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await postToPin.update();
             await secondPostToPin.update();
             await waitTillPostInSubplebbitInstancePages(secondPostToPin, sub);
-            const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage({cid: sub.posts.pageCids.new}) : sub.posts.pages.hot;
+            const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage({ cid: sub.posts.pageCids.new }) : sub.posts.pages.hot;
             const posts = firstPage.comments;
             await removeAllPins(posts, plebbit);
             // wait until all posts are unpinned
             await resolveWhenConditionIsTrue({
                 toUpdate: sub,
                 predicate: async () => {
-                    const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage({cid: sub.posts.pageCids.new}) : sub.posts.pages.hot;
+                    const firstPage = sub.posts.pageCids.new
+                        ? await sub.posts.getPage({ cid: sub.posts.pageCids.new })
+                        : sub.posts.pages.hot;
                     const posts = firstPage.comments;
                     return posts.every((comment) => !comment.pinned);
                 }
@@ -128,7 +130,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`pinned=true appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({address: postToPin.subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: postToPin.subplebbitAddress });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
             expect(commentInPage.pinned).to.be.true;
         });
@@ -147,7 +149,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(Object.keys(sub.posts.pageCids).every((key) => Object.keys(POSTS_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
             await sub.stop();
             for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
-                const pageComments = (await sub.posts.getPage({cid: pageCid})).comments; // Get 50 comments, pinned posts should always be on top
+                const pageComments = (await sub.posts.getPage({ cid: pageCid })).comments; // Get 50 comments, pinned posts should always be on top
                 const postInPage = pageComments.find((comment) => comment.cid === postToPin.cid);
                 expect(postInPage).to.exist;
                 expect(postInPage.pinned).to.be.true;
@@ -224,7 +226,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`pinned=true appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({address: secondPostToPin.subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: secondPostToPin.subplebbitAddress });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
             expect(commentInPage.pinned).to.be.false;
         });
@@ -286,7 +288,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         };
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
             const allPosts = sub.posts.pageCids.new ? await loadAllPages(sub.posts.pageCids.new, sub.posts) : sub.posts.pages.hot.comments;
             post = await plebbit.createComment(remeda.maxBy(allPosts, (c) => c.replyCount));

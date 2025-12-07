@@ -35,7 +35,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLink: true } });
         expect(subplebbit.features.requirePostLink).to.be.true;
 
-        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
         await remoteSub.update();
         await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.requirePostLink });
 
@@ -79,7 +79,7 @@ describe.concurrent(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLinkIsMedia: true } });
 
         expect(subplebbit.features.requirePostLinkIsMedia).to.be.true;
-        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
         await remoteSub.update();
         await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.requirePostLinkIsMedia });
         expect(remoteSub.features.requirePostLinkIsMedia).to.be.true;
@@ -126,7 +126,7 @@ describe.concurrent(`subplebbit.features.noUpvotes`, async () => {
 
         await subplebbit.edit({ features: { ...subplebbit.features, noUpvotes: true } });
         expect(subplebbit.features.noUpvotes).to.be.true;
-        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
         await remoteSub.update();
         await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.noUpvotes }); // that means we published a new update
 
@@ -170,7 +170,7 @@ describe.concurrent(`subplebbit.features.noDownvotes`, async () => {
         expect(subplebbit.features).to.be.undefined;
         await subplebbit.edit({ features: { ...subplebbit.features, noDownvotes: true } });
         expect(subplebbit.features.noDownvotes).to.be.true;
-        const remoteSub = await remotePlebbit.getSubplebbit({address: subplebbit.address});
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
         await remoteSub.update();
         await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: () => remoteSub.features?.noDownvotes }); // that means we published a new update
 

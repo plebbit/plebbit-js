@@ -666,7 +666,7 @@ describe("shouldExcludeChallengeSuccess", () => {
         const subplebbitChallenge = {
             exclude: [{ challenges: [1] }]
         };
-        const challengeResults = [{ success: false }, { challenge: 'What is the password?' }]
+        const challengeResults = [{ success: false }, { challenge: "What is the password?" }];
 
         expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.equal(true);
         expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 1, challengeResults)).to.equal(false);
@@ -676,7 +676,7 @@ describe("shouldExcludeChallengeSuccess", () => {
         const subplebbitChallenge = {
             exclude: [{ challenges: [1] }]
         };
-        const challengeResults = [{ challenge: 'What is the password?' }, { challenge: 'What is the other password?' }]
+        const challengeResults = [{ challenge: "What is the password?" }, { challenge: "What is the other password?" }];
 
         expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.equal(false);
         expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 1, challengeResults)).to.equal(false);

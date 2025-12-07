@@ -10,7 +10,7 @@ describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;
     before(async () => {
         plebbit = await mockRemotePlebbit();
-        subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+        subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
         editProps = {
             author: { address: signers[7].address },
             subplebbitAddress: subplebbit.address,

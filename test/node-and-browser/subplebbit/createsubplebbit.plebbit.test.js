@@ -30,7 +30,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
             const createdSubplebbitJson = jsonifySubplebbitAndRemoveInternalProps(createdSubplebbit);
             const loadedSubplebbitJson = jsonifySubplebbitAndRemoveInternalProps(loadedSubplebbit);
@@ -39,7 +39,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const spread = { ...loadedSubplebbit };
             const createdFromSpreadSubplebbit = await plebbit.createSubplebbit(spread);
             for (const key of Object.keys(loadedSubplebbit)) {
@@ -58,7 +58,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
             const loadedSubJson = JSON.parse(JSON.stringify(loadedSubplebbit));
             const createdSubJson = JSON.parse(JSON.stringify(createdSubplebbit));
@@ -93,7 +93,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it("Remote subplebbit instance created with only address prop can call getPage", async () => {
-            const actualSub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const actualSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             expect(actualSub.createdAt).to.be.a("number");
 
             expect(actualSub.posts.pages.hot).to.be.a("object");
@@ -102,7 +102,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
             const newSubplebbit = await plebbit.createSubplebbit({ address: actualSub.address });
             expect(newSubplebbit.createdAt).to.be.undefined;
 
-            const page = await newSubplebbit.posts.getPage({cid: pageCid});
+            const page = await newSubplebbit.posts.getPage({ cid: pageCid });
             expect(page.comments.length).to.be.greaterThan(0);
         });
     })

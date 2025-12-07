@@ -33,7 +33,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it.sequential(
             `Correct order of ipfsGateways state when updating a comment that was created with plebbit.createComment({cid})`,
             async () => {
-                const sub = await plebbit.getSubplebbit({address: signers[0].address});
+                const sub = await plebbit.getSubplebbit({ address: signers[0].address });
 
                 const mockPost = await plebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
                 const expectedStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"];
@@ -54,9 +54,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         );
 
         it(`Correct order of ipfsGateways state when updating a comment that was created with plebbit.getComment({cid: cid})`, async () => {
-            const sub = await plebbit.getSubplebbit({address: signers[0].address});
+            const sub = await plebbit.getSubplebbit({ address: signers[0].address });
 
-            const mockPost = await plebbit.getComment({cid: sub.posts.pages.hot.comments[0].cid});
+            const mockPost = await plebbit.getComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
             const expectedStates = ["fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"];
 
@@ -154,7 +154,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`Correct order of ipfs gateway states when we update a comment but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
             const plebbit = await config.plebbitInstancePromise();
 
-            const sub = await plebbit.getSubplebbit({address: signers[0].address});
+            const sub = await plebbit.getSubplebbit({ address: signers[0].address });
 
             const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(
                 sub.posts.pages.hot.comments[0].cid

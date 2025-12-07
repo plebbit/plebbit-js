@@ -23,7 +23,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         it(`Correct order of comment.clients.plebbitRpcClients states when publishing to a sub with challenge`, async () => {
             const mathCliSubplebbitAddress = signers[1].address;
 
-            await plebbit.getSubplebbit({address: mathCliSubplebbitAddress}); // Do this to cache subplebbit so we won't get fetching-subplebbit-ipns
+            await plebbit.getSubplebbit({ address: mathCliSubplebbitAddress }); // Do this to cache subplebbit so we won't get fetching-subplebbit-ipns
 
             const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
             const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit);

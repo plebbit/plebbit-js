@@ -369,18 +369,18 @@ const questionOrWhitelistChallengeSubplebbit = {
     settings: {
         challenges: [
             {
-                name: 'question',
+                name: "question",
                 options: {
-                    question: 'What is the password?',
-                    answer: 'password'
+                    question: "What is the password?",
+                    answer: "password"
                 },
                 // excluding the question challenge if subplebbit.challenges[1] (the whitelist)
                 // passes creates a question OR whitelist condition
                 exclude: [{ challenges: [1] }]
             },
             {
-                name: 'whitelist',
-                options: { addresses: 'high-karma.eth' },
+                name: "whitelist",
+                options: { addresses: "high-karma.eth" },
                 // excluding the whitelist challenge if subplebbit.challenges[0] (the question)
                 // passes creates a question OR whitelist condition
                 exclude: [{ challenges: [0] }]
@@ -576,7 +576,7 @@ results[questionOrWhitelistChallengeSubplebbit.title] = {
     "low-karma.eth": {
         pendingChallenges: [{ challenge: "What is the password?", type: "text/plain" }]
     }
-}
+};
 
 // add mock plebbit to add the mock subplebbit instances
 for (const subplebbit of subplebbits) {

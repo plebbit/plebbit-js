@@ -7,8 +7,7 @@ import { readFileSync } from "node:fs";
 
 const SAFETY_MARGIN_BYTES = 1024;
 const NEXT_CID_PLACEHOLDER = "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx";
-const OBJECT_WRAPPER_WITH_CID_BYTES =
-    Buffer.byteLength(JSON.stringify({ comments: [], nextCid: NEXT_CID_PLACEHOLDER }), "utf8") - 2;
+const OBJECT_WRAPPER_WITH_CID_BYTES = Buffer.byteLength(JSON.stringify({ comments: [], nextCid: NEXT_CID_PLACEHOLDER }), "utf8") - 2;
 const MAX_COMMENT_CONTENT_BYTES = 40 * 1024;
 const BASE_COMMENT_IPFS = loadFixture("../../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json");
 const BASE_COMMENT_UPDATE = loadFixture("../../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json");
@@ -161,7 +160,7 @@ describeSkipIfRpc("page-generator _chunkComments", () => {
     });
 });
 
-async function  chunkComments(pageGenerator, comments, firstPageSizeBytes) {
+async function chunkComments(pageGenerator, comments, firstPageSizeBytes) {
     return pageGenerator._chunkComments({ comments, firstPageSizeBytes });
 }
 

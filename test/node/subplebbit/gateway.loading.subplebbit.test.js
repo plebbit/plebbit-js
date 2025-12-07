@@ -160,20 +160,20 @@ describe.concurrent("Gateway loading of local subplebbit IPNS", async () => {
 
     it("Can load the CID using gatewayPlebbit.fetchCid after it's published", async () => {
         console.log("Starting test: Can load the CID using gatewayPlebbit.fetchCid after it's published");
-        const rawRecord = await gatewayPlebbit.fetchCid({cid: latestUpdateCid});
+        const rawRecord = await gatewayPlebbit.fetchCid({ cid: latestUpdateCid });
         const record = JSON.parse(rawRecord);
         expect(record.updatedAt).to.equal(subplebbit.updatedAt);
     });
 
     it("Can load the IPNS record from gateway Plebbit after it's published", async () => {
         console.log("Starting test: Can load the IPNS record from gateway after it's published");
-        const remoteSub = await gatewayPlebbit.getSubplebbit({address: subplebbit.address});
+        const remoteSub = await gatewayPlebbit.getSubplebbit({ address: subplebbit.address });
         expect(remoteSub.updatedAt).to.equal(subplebbit.updatedAt);
     });
 
     it("Can load the IPNS record from kubo after it's published", async () => {
         console.log("Starting test: Can load the IPNS record from kubo after it's published");
-        const remoteSub = await kuboPlebbit.getSubplebbit({address: subplebbit.address});
+        const remoteSub = await kuboPlebbit.getSubplebbit({ address: subplebbit.address });
         expect(remoteSub.updatedAt).to.equal(subplebbit.updatedAt);
     });
 });

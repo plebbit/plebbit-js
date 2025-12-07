@@ -25,7 +25,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await plebbit.destroy();
         });
         it(`comment.publishingState stays as stopped after calling comment.update() - IPFS client`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const commentCid = sub.posts.pages.hot.comments[0].cid;
             const comment = await plebbit.createComment({ cid: commentCid });
             expect(comment.publishingState).to.equal("stopped");
@@ -71,7 +71,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             ];
             const recordedStates = [];
             const mathCliSubplebbitAddress = signers[1].address;
-            await plebbit.getSubplebbit({address: mathCliSubplebbitAddress}); // address of math cli, we fetch it here to make sure it's cached
+            await plebbit.getSubplebbit({ address: mathCliSubplebbitAddress }); // address of math cli, we fetch it here to make sure it's cached
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
             mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
@@ -148,7 +148,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`comment.publishingState stays as stopped after calling comment.update() - IPFS Gateway`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const commentCid = sub.posts.pages.hot.comments[0].cid;
             const comment = await plebbit.createComment({ cid: commentCid });
             expect(comment.publishingState).to.equal("stopped");
@@ -171,7 +171,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 "succeeded"
             ];
             const recordedStates = [];
-            await plebbit.getSubplebbit({address: mathCliSubplebbitAddress}); // Make sure it's cached
+            await plebbit.getSubplebbit({ address: mathCliSubplebbitAddress }); // Make sure it's cached
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
             mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));

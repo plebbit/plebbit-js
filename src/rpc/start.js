@@ -1,3 +1,3 @@
-import Plebbit from '@plebbit/plebbit-js'
+import Plebbit from "@plebbit/plebbit-js";
 
-const plebbit = await Plebbit()
+const plebbit = await Plebbit();

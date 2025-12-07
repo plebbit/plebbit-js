@@ -105,9 +105,10 @@ const getChallenge = async (
     }
 
     const redeemedVouchers = await loadRedeemedVouchers(subplebbit);
-    
+
     const invalidVoucherError = subplebbitChallengeSettings?.options?.invalidVoucherError || "Invalid voucher code.";
-    const alreadyRedeemedError = subplebbitChallengeSettings?.options?.alreadyRedeemedError || "This voucher has already been redeemed by another author.";
+    const alreadyRedeemedError =
+        subplebbitChallengeSettings?.options?.alreadyRedeemedError || "This voucher has already been redeemed by another author.";
 
     const getAuthorAddress = (): string | undefined => {
         return (

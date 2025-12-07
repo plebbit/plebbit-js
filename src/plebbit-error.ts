@@ -94,9 +94,7 @@ export class PlebbitError extends CustomError {
         const [firstLine, ...rest] = stack.split("\n");
         const detailsLines = formattedDetails.split("\n");
         const detailsBlock =
-            detailsLines.length === 1
-                ? `Details: ${detailsLines[0]}`
-                : `Details:\n${detailsLines.map((line) => `  ${line}`).join("\n")}`;
+            detailsLines.length === 1 ? `Details: ${detailsLines[0]}` : `Details:\n${detailsLines.map((line) => `  ${line}`).join("\n")}`;
         return [firstLine, detailsBlock, ...rest].join("\n");
     }
 

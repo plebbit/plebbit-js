@@ -30,13 +30,13 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`subplebbit.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
-            const mockSub = await gatewayPlebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await gatewayPlebbit.getSubplebbit({ address: subplebbitAddress });
             expect(mockSub.clients[clientFieldName]).to.be.undefined;
             await gatewayPlebbit.destroy();
         });
 
         it(`subplebbit.clients.${clientFieldName}[url] is stopped by default`, async () => {
-            const mockSub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             expect(Object.keys(mockSub.clients[clientFieldName]).length).to.equal(1);
             expect(Object.values(mockSub.clients[clientFieldName])[0].state).to.equal("stopped");
         });
@@ -61,7 +61,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`Correct order of ${clientFieldName} state when updating a subplebbit that was created with plebbit.getSubplebbit({address: address})`, async () => {
-            const sub = await plebbit.getSubplebbit({address: signers[0].address});
+            const sub = await plebbit.getSubplebbit({ address: signers[0].address });
             delete sub.raw.subplebbitIpfs;
             delete sub.updateCid;
             const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];

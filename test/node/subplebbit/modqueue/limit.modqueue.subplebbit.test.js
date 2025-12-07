@@ -29,13 +29,14 @@ describe(`Modqueue limits`, () => {
     });
 
     it("Should default maxPendingApprovalCount to 500", async function () {
-
-        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.settings?.maxPendingApprovalCount === "number" });
+        await resolveWhenConditionIsTrue({
+            toUpdate: subplebbit,
+            predicate: () => typeof subplebbit.settings?.maxPendingApprovalCount === "number"
+        });
         expect(subplebbit.settings?.maxPendingApprovalCount).to.equal(500);
     });
 
     it("Should allow comments to be published to pending approvals over maxPendingApprovalCount ", async function () {
-
         const limit = 2;
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.edit({
@@ -68,7 +69,10 @@ describe(`Modqueue limits`, () => {
 
     itSkipIfRpc("Should remove old pending comments from DB when hitting maxPendingApprovalCount limit", async function () {
         const limit = subplebbit.settings.maxPendingApprovalCount;
-        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => subplebbit._dbHandler.queryCommentsPendingApproval().length === limit });
+        await resolveWhenConditionIsTrue({
+            toUpdate: subplebbit,
+            predicate: async () => subplebbit._dbHandler.queryCommentsPendingApproval().length === limit
+        });
 
         const pendingRows = subplebbit._dbHandler.queryCommentsPendingApproval();
         expect(pendingRows).to.have.length(limit);
@@ -93,7 +97,7 @@ describe(`Modqueue limits`, () => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const currentPageCid = subplebbit.modQueue.pageCids.pendingApproval;
-        const page = await subplebbit.modQueue.getPage({cid: currentPageCid});
+        const page = await subplebbit.modQueue.getPage({ cid: currentPageCid });
         const pageCommentCids = page.comments.map((comment) => comment.cid);
 
         const expectedPendingCids = pendingComments

@@ -43,10 +43,10 @@ describe.sequential(`Client side verification`, async () => {
 
     itSkipIfRpc.sequential(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockRemotePlebbit();
-        const invalidSubRecord = (await customPlebbit.getSubplebbit({address: subplebbitAddress})).toJSONIpfs();
+        const invalidSubRecord = (await customPlebbit.getSubplebbit({ address: subplebbitAddress })).toJSONIpfs();
         invalidSubRecord.updatedAt += 1; // should invalidate the signature
 
-        const updatingSub = await customPlebbit.getSubplebbit({address: subplebbitAddress});
+        const updatingSub = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
         await updatingSub.update();
         await new Promise((resolve) => setTimeout(resolve, 1000));
         await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, subplebbitAddress, invalidSubRecord);

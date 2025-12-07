@@ -32,7 +32,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`subplebbit.modQueue.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
-            const sub = await gatewayPlebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await gatewayPlebbit.getSubplebbit({ address: subplebbitAddress });
             const sortTypes = Object.keys(sub.modQueue.clients[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
             for (const sortType of sortTypes) expect(sub.modQueue.clients[clientFieldName][sortType]).to.deep.equal({});
@@ -40,14 +40,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`subplebbit.modQueue.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const key = Object.keys(sub.clients[clientFieldName])[0];
             expect(Object.keys(sub.modQueue.clients[clientFieldName].pendingApproval).length).to.equal(1);
             expect(sub.modQueue.clients[clientFieldName].pendingApproval[key].state).to.equal("stopped");
         });
 
         it(`Correct state of 'pendingApproval' sort is updated after fetching from subplebbit.modQueue.pageCids.pendingApproval`, async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const firstPage = cloneModQueuePage();
 
             const firstPageCid = await addStringToIpfs(JSON.stringify(firstPage));
@@ -62,12 +62,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 actualStates.push(newState);
             });
 
-            await sub.modQueue.getPage({cid: sub.modQueue.pageCids.pendingApproval});
+            await sub.modQueue.getPage({ cid: sub.modQueue.pageCids.pendingApproval });
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
         it("Correct state of 'pendingApproval' sort is updated after fetching second page of 'pendingApproval' pages", async () => {
-            const sub = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const clientKey = Object.keys(sub.clients[clientFieldName])[0];
 
             const secondPage = cloneModQueuePage();
@@ -86,16 +86,16 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 actualStates.push(newState);
             });
 
-            const pendingFirstPage = await sub.modQueue.getPage({cid: sub.modQueue.pageCids.pendingApproval});
+            const pendingFirstPage = await sub.modQueue.getPage({ cid: sub.modQueue.pageCids.pendingApproval });
             expect(pendingFirstPage.nextCid).to.be.a("string");
-            await sub.modQueue.getPage({cid: pendingFirstPage.nextCid});
+            await sub.modQueue.getPage({ cid: pendingFirstPage.nextCid });
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
         it(`Correct state of 'pendingApproval' sort is updated after fetching with a subplebbit created with plebbit.createSubplebbit({address, modQueue})`, async () => {
             const remotePlebbit = await config.plebbitInstancePromise();
-            const sub = await remotePlebbit.getSubplebbit({address: subplebbitAddress});
+            const sub = await remotePlebbit.getSubplebbit({ address: subplebbitAddress });
 
             const firstPage = cloneModQueuePage();
 
@@ -115,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 actualStates.push(newState);
             });
 
-            await fetchSub.modQueue.getPage({cid: fetchSub.modQueue.pageCids.pendingApproval});
+            await fetchSub.modQueue.getPage({ cid: fetchSub.modQueue.pageCids.pendingApproval });
             expect(actualStates).to.deep.equal(expectedStates);
             await remotePlebbit.destroy();
         });

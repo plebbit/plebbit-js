@@ -29,7 +29,10 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         const plebbit = await mockPlebbit();
         subBeforeMigration = await createSubWithNoChallenge({}, plebbit);
         await subBeforeMigration.start();
-        await resolveWhenConditionIsTrue({ toUpdate: subBeforeMigration, predicate: () => typeof subBeforeMigration.updatedAt === "number" });
+        await resolveWhenConditionIsTrue({
+            toUpdate: subBeforeMigration,
+            predicate: () => typeof subBeforeMigration.updatedAt === "number"
+        });
         const post = await publishRandomPost(subBeforeMigration.address, plebbit);
         await publishRandomReply(post, plebbit);
         // publish a post with extra prop here
@@ -47,7 +50,10 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         subAfterMigration = await createSubWithNoChallenge({ address: subBeforeMigration.address }, plebbitDifferentIpfs);
         expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);
         await subAfterMigration.start(); // should migrate everything here
-        await resolveWhenConditionIsTrue({ toUpdate: subAfterMigration, predicate: () => subAfterMigration.updatedAt > subBeforeMigration.updatedAt });
+        await resolveWhenConditionIsTrue({
+            toUpdate: subAfterMigration,
+            predicate: () => subAfterMigration.updatedAt > subBeforeMigration.updatedAt
+        });
 
         expect(subAfterMigration.lastPostCid).to.equal(postWithExtraProps.cid);
         expect(subAfterMigration.lastCommentCid).to.equal(replyOfPostWithExtraProps.cid);
@@ -58,7 +64,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         });
         // remote plebbit is connected to the old ipfs repo and has the old IPNS record, not sure how to force it to load the new one
 
-        const remoteSubplebbit = await remotePlebbit.getSubplebbit({address: subAfterMigration.address});
+        const remoteSubplebbit = await remotePlebbit.getSubplebbit({ address: subAfterMigration.address });
         expect(remoteSubplebbit.lastPostCid).to.equal(postWithExtraProps.cid);
         expect(remoteSubplebbit.lastCommentCid).to.equal(replyOfPostWithExtraProps.cid);
         await waitTillPostInSubplebbitPages(postWithExtraProps, remotePlebbit);
@@ -72,38 +78,38 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
     });
 
     it(`Subplebbit IPNS is republished`, async () => {
-        const subLoaded = await remotePlebbit.getSubplebbit({address: subAfterMigration.address});
+        const subLoaded = await remotePlebbit.getSubplebbit({ address: subAfterMigration.address });
         expect(subLoaded).to.be.a("object");
         expect(subLoaded.posts).to.be.a("object");
         // If we can load the subplebbit IPNS that means it has been republished by the new IPFS repo
     });
 
     it(`Posts' IPFS are repinned`, async () => {
-        const subLoaded = await remotePlebbit.getSubplebbit({address: subAfterMigration.address});
+        const subLoaded = await remotePlebbit.getSubplebbit({ address: subAfterMigration.address });
         const postFromPage = subLoaded.posts.pages.hot.comments[0];
-        const postIpfs = JSON.parse(await remotePlebbit.fetchCid({cid: postFromPage.cid}));
+        const postIpfs = JSON.parse(await remotePlebbit.fetchCid({ cid: postFromPage.cid }));
         expect(postIpfs.subplebbitAddress).to.equal(subAfterMigration.address); // Make sure it was loaded correctly
     });
 
     it(`Post with extra prop can be fetched from its cid`, async () => {
-        const loadedPost = await remotePlebbit.getComment({cid: postWithExtraProps.cid});
+        const loadedPost = await remotePlebbit.getComment({ cid: postWithExtraProps.cid });
         expect(loadedPost.extraProp).to.equal("1234");
     });
 
     it(`Post with extra prop retains its extra prop in pages`, async () => {
-        const loadedSub = await remotePlebbit.getSubplebbit({address: postWithExtraProps.subplebbitAddress});
+        const loadedSub = await remotePlebbit.getSubplebbit({ address: postWithExtraProps.subplebbitAddress });
         const loadedPost = await iterateThroughPagesToFindCommentInParentPagesInstance(postWithExtraProps.cid, loadedSub.posts);
         expect(loadedPost.extraProp).to.equal("1234");
     });
 
     it(`Comments' IPFS are repinned`, async () => {
-        const subLoaded = await remotePlebbit.getSubplebbit({address: subAfterMigration.address});
+        const subLoaded = await remotePlebbit.getSubplebbit({ address: subAfterMigration.address });
         const postFromPage = subLoaded.posts.pages.hot.comments[0];
-        const commentIpfs = JSON.parse(await remotePlebbit.fetchCid({cid: postFromPage.replies.pages.best.comments[0].cid}));
+        const commentIpfs = JSON.parse(await remotePlebbit.fetchCid({ cid: postFromPage.replies.pages.best.comments[0].cid }));
         expect(commentIpfs.subplebbitAddress).to.equal(subAfterMigration.address); // Make sure it was loaded correctly
     });
     it(`Comments' CommentUpdate are republished`, async () => {
-        const subLoaded = await remotePlebbit.getSubplebbit({address: subAfterMigration.address});
+        const subLoaded = await remotePlebbit.getSubplebbit({ address: subAfterMigration.address });
         const postFromPage = subLoaded.posts.pages.hot.comments[0];
 
         const postWithRemotePlebbit = await remotePlebbit.createComment({ cid: postFromPage.cid });
