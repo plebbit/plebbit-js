@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { describe, it, beforeAll, afterAll } from "vitest";
-import { getAvailablePlebbitConfigsToTestAgainst, isRpcFlagOn, isRunningInBrowser } from "../../../dist/node/test/test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst, isRpcFlagOn, isRunningInBrowser, itIfRpc } from "../../../dist/node/test/test-util.js";
 
 const DEFAULT_IPFS_GATEWAYS = ["https://ipfsgateway.xyz", "https://gateway.plebpubsub.xyz", "https://gateway.forumindex.com"];
 const DEFAULT_LOCAL_KUBO_RPC_URL = "http://localhost:15001/api/v0";
@@ -16,7 +16,7 @@ describe.concurrent("getAvailablePlebbitConfigsToTestAgainst", () => {
             ? ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
             : ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"];
 
-        if (!isRunningInBrowser() && isRpcFlagOn()) expectedCodes.push("remote-plebbit-rpc");
+        if (isRpcFlagOn()) expectedCodes.push("remote-plebbit-rpc");
 
         const actualCodes = configs.map((config) => config.testConfigCode).sort();
         expect(actualCodes).to.deep.equal(expectedCodes.sort());
@@ -38,26 +38,16 @@ describe.concurrent("getAvailablePlebbitConfigsToTestAgainst", () => {
                 switch (config.testConfigCode) {
                     case "local-kubo-rpc": {
                         expect(plebbit.plebbitRpcClientsOptions).to.be.undefined;
-                        if (isRpcFlagOn()) {
-                            expect(plebbit.kuboRpcClientsOptions).to.be.undefined;
-                            expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal(DEFAULT_REMOTE_PUBSUB_URLS.map((url) => ({ url })));
-                        } else {
-                            expect(plebbit.kuboRpcClientsOptions).to.deep.equal([{ url: DEFAULT_LOCAL_KUBO_RPC_URL }]);
-                            expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal(DEFAULT_LOCAL_PUBSUB_URLS.map((url) => ({ url })));
-                        }
+                        expect(plebbit.kuboRpcClientsOptions).to.deep.equal([{ url: DEFAULT_LOCAL_KUBO_RPC_URL }]);
+                        expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal(DEFAULT_LOCAL_PUBSUB_URLS.map((url) => ({ url })));
                         expect(plebbit.ipfsGatewayUrls).to.deep.equal(DEFAULT_IPFS_GATEWAYS);
                         expect(plebbit.libp2pJsClientsOptions).to.be.undefined;
                         expect(plebbit.dataPath).to.be.a("string");
                         expect(plebbit.dataPath).to.match(/\.plebbit$/);
 
                         expect(Object.keys(plebbit.clients.plebbitRpcClients)).to.deep.equal([]);
-                        if (isRpcFlagOn()) {
-                            expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal([]);
-                            expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.have.members(DEFAULT_REMOTE_PUBSUB_URLS);
-                        } else {
-                            expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal([DEFAULT_LOCAL_KUBO_RPC_URL]);
-                            expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.have.members(DEFAULT_LOCAL_PUBSUB_URLS);
-                        }
+                        expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal([DEFAULT_LOCAL_KUBO_RPC_URL]);
+                        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.have.members(DEFAULT_LOCAL_PUBSUB_URLS);
                         expect(Object.keys(plebbit.clients.libp2pJsClients)).to.deep.equal([]);
                         expect(Object.keys(plebbit.clients.ipfsGateways)).to.have.members(DEFAULT_IPFS_GATEWAYS);
                         break;
@@ -140,6 +130,17 @@ describe.concurrent("getAvailablePlebbitConfigsToTestAgainst", () => {
                     }
                 }
             });
+
+            if (config.testConfigCode === "local-kubo-rpc") {
+                itIfRpc("keeps kubo clients configured when USE_RPC flag is on", () => {
+                    expect(plebbit.kuboRpcClientsOptions).to.deep.equal([{ url: DEFAULT_LOCAL_KUBO_RPC_URL }]);
+                    expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal(DEFAULT_LOCAL_PUBSUB_URLS.map((url) => ({ url })));
+                    expect(plebbit.ipfsGatewayUrls).to.deep.equal(DEFAULT_IPFS_GATEWAYS);
+
+                    expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal([DEFAULT_LOCAL_KUBO_RPC_URL]);
+                    expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.have.members(DEFAULT_LOCAL_PUBSUB_URLS);
+                });
+            }
         });
     });
 });

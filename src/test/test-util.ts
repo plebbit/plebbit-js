@@ -933,7 +933,12 @@ export function isRpcFlagOn(): boolean {
 }
 
 export function isRunningInBrowser(): boolean {
-    return Boolean(globalThis["window"]);
+    const hasWindow = typeof globalThis["window"] !== "undefined";
+    const hasDocument = typeof (globalThis as any)["window"]?.["document"] !== "undefined";
+    const isNodeProcess = typeof globalThis["process"] !== "undefined" && Boolean((globalThis as any)["process"]?.versions?.node);
+    const isJsDom = typeof globalThis["navigator"]?.userAgent === "string" && globalThis["navigator"]!.userAgent.includes("jsdom");
+
+    return hasWindow && hasDocument && !isNodeProcess && !isJsDom;
 }
 
 export type ResolveWhenConditionIsTrueOptions = {
@@ -1322,7 +1327,15 @@ const testConfigCodeToPlebbitInstanceWithHumanName: Record<PlebbitTestConfigCode
     },
     "local-kubo-rpc": {
         plebbitInstancePromise: (args?: MockPlebbitOptions) =>
-            mockPlebbitV2({ ...args, plebbitOptions: { ...args?.plebbitOptions, plebbitRpcClientsOptions: undefined } }),
+            mockPlebbitV2({
+                ...args,
+                plebbitOptions: {
+                    ...args?.plebbitOptions,
+                    plebbitRpcClientsOptions: undefined,
+                    kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+                    ipfsGatewayUrls: undefined
+                }
+            }),
         name: "Kubo node with datapath (local)",
         testConfigCode: "local-kubo-rpc"
     },
