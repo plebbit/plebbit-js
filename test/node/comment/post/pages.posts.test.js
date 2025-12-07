@@ -16,70 +16,86 @@ import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { describe, it } from "vitest";
 
-const plebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
+const remotePlebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 describe("local subplebbit.posts pagination coverage", () => {
-    plebbitLoadingConfigs.forEach((plebbitConfig) => {
-        describe.sequential(`with ${plebbitConfig.name}`, () => {
-            let plebbit, subplebbit, newPost, cleanup;
-            let subPostsBySortName;
+    let plebbit, publisherSubplebbit, newPost, cleanup;
 
+    before(async () => {
+        ({ plebbit, publisherSubplebbit, newPost, cleanup } = await createLocalSubplebbitWithPageCids());
+    });
+
+    after(async () => {
+        await cleanup();
+    });
+
+    remotePlebbitLoadingConfigs.forEach((remotePlebbitConfig) => {
+        describe(`local subplebbit.posts pagination coverage with plebbit config ${remotePlebbitConfig.name}`, async () => {
+            let remotePlebbit;
+            let remoteSubplebbit;
             before(async () => {
-                ({ plebbit, subplebbit, newPost, cleanup } = await createLocalSubplebbitWithPageCids(plebbitConfig));
-                subPostsBySortName = {};
-
-                for (const sortName of Object.keys(POSTS_SORT_TYPES)) {
-                    subPostsBySortName[sortName] = await loadAllPagesBySortName(sortName, subplebbit.posts);
-                }
+                remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
+                remoteSubplebbit = await remotePlebbit.getSubplebbit({ address: publisherSubplebbit.address });
+                await remoteSubplebbit.update();
+                await resolveWhenConditionIsTrue({
+                    toUpdate: remoteSubplebbit,
+                    predicate: () =>
+                        Object.keys(remoteSubplebbit.posts.pageCids).length > 0 &&
+                        Boolean(remoteSubplebbit.posts.pages.hot?.comments?.length)
+                });
             });
-
             after(async () => {
-                if (cleanup) await cleanup();
-                else {
-                    await subplebbit?.stop?.().catch(() => {});
-                    await plebbit?.destroy?.().catch(() => {});
-                }
+                await remotePlebbit.destroy();
             });
-
             it(`Newly published post appears on all pages`, async () => {
-                expect(Object.keys(subplebbit.posts.pageCids)).to.not.be.empty;
+                expect(Object.keys(remoteSubplebbit.posts.pageCids)).to.not.be.empty;
 
-                for (const preloadedPageSortName of Object.keys(subplebbit.posts.pages)) {
-                    const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts);
+                for (const preloadedPageSortName of Object.keys(remoteSubplebbit.posts.pages)) {
+                    const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, remoteSubplebbit.posts);
                     const postInPreloadedPage = allPostsUnderPreloadedSortName.find((postInPage) => postInPage.cid === newPost.cid);
                     expect(postInPreloadedPage).to.exist;
                 }
 
-                for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                    const postInPage = await iterateThroughPageCidToFindComment(newPost.cid, pageCid, subplebbit.posts);
+                for (const pageCid of Object.values(remoteSubplebbit.posts.pageCids)) {
+                    const postInPage = await iterateThroughPageCidToFindComment(newPost.cid, pageCid, remoteSubplebbit.posts);
                     expect(postInPage).to.exist;
                 }
             });
 
             it(`All pageCids exists except preloaded`, () => {
-                expect(Object.keys(subplebbit.posts.pageCids)).to.not.be.empty;
-                const preloadedSorts = Object.keys(subplebbit.posts.pages);
+                expect(Object.keys(remoteSubplebbit.posts.pageCids)).to.not.be.empty;
+                const preloadedSorts = Object.keys(remoteSubplebbit.posts.pages);
 
-                const pageCidsWithoutPreloaded = Object.keys(subplebbit.posts.pageCids).filter(
+                const pageCidsWithoutPreloaded = Object.keys(remoteSubplebbit.posts.pageCids).filter(
                     (pageCid) => !preloadedSorts.includes(pageCid)
                 );
                 expect(pageCidsWithoutPreloaded.length).to.be.greaterThan(0);
-                expect(pageCidsWithoutPreloaded.sort()).to.deep.equal(Object.keys(subplebbit.posts.pageCids).sort());
+                expect(pageCidsWithoutPreloaded.sort()).to.deep.equal(Object.keys(remoteSubplebbit.posts.pageCids).sort());
 
                 const allSortsWithoutPreloaded = Object.keys(POSTS_SORT_TYPES).filter((sortName) => !preloadedSorts.includes(sortName));
                 expect(allSortsWithoutPreloaded.length).to.be.greaterThan(0);
-                expect(allSortsWithoutPreloaded.sort()).to.deep.equal(Object.keys(subplebbit.posts.pageCids).sort());
+                expect(allSortsWithoutPreloaded.sort()).to.deep.equal(Object.keys(remoteSubplebbit.posts.pageCids).sort());
             });
 
-            Object.keys(POSTS_SORT_TYPES).map((sortName) =>
+            Object.keys(POSTS_SORT_TYPES).map(async (sortName) =>
                 it(`${sortName} pages are sorted correctly if there's more than a single page`, async () => {
+                    const subPostsBySortName = {};
+
+                    for (const sortName of Object.keys(POSTS_SORT_TYPES)) {
+                        subPostsBySortName[sortName] = await loadAllPagesBySortName(sortName, remoteSubplebbit.posts);
+                    }
                     const posts = subPostsBySortName[sortName];
 
-                    await testPageCommentsIfSortedCorrectly(posts, sortName, subplebbit);
+                    await testPageCommentsIfSortedCorrectly(posts, sortName, remoteSubplebbit);
                 })
             );
 
-            it(`posts are the same within all pages`, () => {
+            it(`posts are the same within all pages`, async () => {
+                const subPostsBySortName = {};
+
+                for (const sortName of Object.keys(POSTS_SORT_TYPES)) {
+                    subPostsBySortName[sortName] = await loadAllPagesBySortName(sortName, remoteSubplebbit.posts);
+                }
                 expect(Object.keys(subPostsBySortName)).to.not.be.empty;
                 const pagesByTimeframe = remeda.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
 
@@ -99,7 +115,7 @@ describe("local subplebbit.posts pagination coverage", () => {
             });
 
             it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
-                const pageCids = Object.values(subplebbit.posts.pageCids);
+                const pageCids = Object.values(remoteSubplebbit.posts.pageCids);
                 expect(pageCids.length).to.be.greaterThan(0);
 
                 for (const pageCid of pageCids) {
@@ -130,7 +146,7 @@ async function createLocalSubplebbitWithPageCids(plebbitConfig) {
     await forcePagesToUsePageCidsOnly({
         subplebbit: publisherSubplebbit,
         forcedPreloadedPageSizeBytes: 1,
-        subplebbitPostsCommentProps: { content: `local pagination coverage ${plebbitConfig.name}` }
+        subplebbitPostsCommentProps: { content: `local pagination coverage` }
     });
 
     await resolveWhenConditionIsTrue({
@@ -139,22 +155,11 @@ async function createLocalSubplebbitWithPageCids(plebbitConfig) {
             Object.keys(publisherSubplebbit.posts.pageCids).length > 0 && Boolean(publisherSubplebbit.posts.pages.hot?.comments?.length)
     });
 
-    const plebbitFromConfig = await plebbitConfig.plebbitInstancePromise();
-    const subplebbit = await plebbitFromConfig.getSubplebbit({ address: publisherSubplebbit.address });
-    await subplebbit.update();
-    await resolveWhenConditionIsTrue({
-        toUpdate: subplebbit,
-        predicate: () => Object.keys(subplebbit.posts.pageCids).length > 0 && Boolean(subplebbit.posts.pages.hot?.comments?.length)
-    });
-
     const cleanup = async () => {
-        await subplebbit?.stop?.().catch(() => {});
-        await publisherSubplebbit?.stop?.().catch(() => {});
-        await publisherSubplebbit?.delete?.().catch(() => {});
+        await publisherSubplebbit.delete();
 
-        const plebbitsToDestroy = new Set([plebbitFromConfig, publisherPlebbit]);
-        for (const instance of plebbitsToDestroy) await instance?.destroy?.().catch(() => {});
+        await publisherPlebbit.destroy();
     };
 
-    return { plebbit: plebbitFromConfig, subplebbit, newPost: latestPost, cleanup };
+    return { plebbit: publisherPlebbit, publisherSubplebbit, newPost: latestPost, cleanup };
 }
