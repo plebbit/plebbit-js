@@ -838,9 +838,9 @@ export class Comment
                 this.emit("update", this);
             }
         } else {
-            const ancestorCids = [this.postCid, this.parentCid];
-            ancestorCids.forEach((ancestorCid) => {
-                if (!ancestorCid) return;
+            const ancestorAndUpdatingCids = [this.postCid, this.parentCid, ...Object.keys(this._plebbit._updatingComments)];
+            for (const ancestorCid of ancestorAndUpdatingCids) {
+                if (!ancestorCid) continue;
                 const updatingCommentInstanceOfAncestor = this._plebbit._updatingComments[ancestorCid];
                 if (updatingCommentInstanceOfAncestor) {
                     const commentInAncestor = findCommentInPageInstanceRecursively(updatingCommentInstanceOfAncestor.replies, this.cid!);
@@ -856,9 +856,10 @@ export class Comment
                             );
                             this.emit("update", this);
                         }
+                        break; // if we found it once we won't be finding it in other comments
                     }
                 }
-            });
+            }
         }
     }
 
