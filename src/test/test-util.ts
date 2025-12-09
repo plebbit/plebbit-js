@@ -1557,6 +1557,45 @@ export function mockRpcServerForTests(plebbitWs: any) {
     }
 }
 
+export function disablePreloadPagesOnSub({ subplebbit }: { subplebbit: LocalSubplebbit }) {
+    if (!(subplebbit instanceof LocalSubplebbit)) throw Error("You need to provide LocalSubplebbit instance");
+
+    //@ts-expect-error
+    const pageGenerator = subplebbit._pageGenerator;
+
+    const originalSubplebbitPostsFunc = pageGenerator.generateSubplebbitPosts.bind(pageGenerator);
+    const originalPostRepliesFunc = pageGenerator.generatePostPages.bind(pageGenerator);
+    const originalReplyRepliesFunc = pageGenerator.generateReplyPages.bind(pageGenerator);
+    const originalChunkComments = pageGenerator._chunkComments.bind(pageGenerator);
+
+    pageGenerator.generateSubplebbitPosts = async (preloadedPageSortName, preloadedPageSize) => {
+        return originalSubplebbitPostsFunc(preloadedPageSortName, preloadedPageSize); // should force sub to publish to pageCids
+    };
+
+    pageGenerator.generatePostPages = async (comment, preloadedPageSortName, preloadedPageSize) => {
+        return originalPostRepliesFunc(comment, preloadedPageSortName, preloadedPageSize); // should force sub to publish to pageCids
+    };
+
+    pageGenerator.generateReplyPages = async (comment, preloadedPageSortName, preloadedPageSize) => {
+        return originalReplyRepliesFunc(comment, preloadedPageSortName, preloadedPageSize);
+    };
+
+    //@ts-expect-error
+    pageGenerator._chunkComments = async (opts: any) => {
+        const res = await originalChunkComments(opts);
+        return [[], ...res];
+    };
+
+    const cleanup = () => {
+        pageGenerator.generateSubplebbitPosts = originalSubplebbitPostsFunc;
+        pageGenerator.generatePostPages = originalPostRepliesFunc;
+        pageGenerator.generateReplyPages = originalReplyRepliesFunc;
+        pageGenerator._chunkComments = originalChunkComments;
+    };
+
+    return { cleanup };
+}
+
 export function mockPostToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string) {
     const updatingPostComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid!];
     if (!updatingPostComment) throw Error("Post should be updating before starting to mock");

@@ -2,10 +2,10 @@ import { expect } from "chai";
 import {
     createSubWithNoChallenge,
     describeSkipIfRpc,
-    forcePagesToUsePageCidsOnly,
     getAvailablePlebbitConfigsToTestAgainst,
     mockPlebbit,
-    publishRandomPost,
+    publishCommentWithDepth,
+    disablePreloadPagesOnSub,
     publishRandomReply,
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
@@ -69,6 +69,7 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
                             const updatingMockReply = plebbit._updatingComments[reply.cid];
                             expect(updatingMockReply).to.exist;
                             const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
+                            expect(numOfUpdates).to.be.greaterThan(0);
                             expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(
                                 numOfUpdates
                             );
@@ -136,71 +137,46 @@ async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
 
     const publisherPlebbit = await mockPlebbit();
     const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit);
-    const commentsToCleanup = new Set();
 
     try {
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
 
-        const post = await publishRandomPost(subplebbit.address, publisherPlebbit);
-        const rootComment = await publisherPlebbit.createComment({ cid: post.cid });
-        commentsToCleanup.add(rootComment);
-        await rootComment.update();
-        await resolveWhenConditionIsTrue({ toUpdate: rootComment, predicate: () => typeof rootComment.updatedAt === "number" });
-
-        let currentParent = rootComment;
-        let replyUnderTest;
-        for (let depth = 1; depth <= replyDepth; depth++) {
-            replyUnderTest = await publishRandomReply(currentParent, publisherPlebbit);
-
-            if (depth < replyDepth) {
-                currentParent = await publisherPlebbit.createComment({ cid: replyUnderTest.cid });
-                commentsToCleanup.add(currentParent);
-                await currentParent.update();
-                await resolveWhenConditionIsTrue({
-                    toUpdate: currentParent,
-                    predicate: () => typeof currentParent.updatedAt === "number"
-                });
-            }
-        }
-
-        const parentComment = currentParent;
-        commentsToCleanup.add(parentComment);
+        const reply = await publishCommentWithDepth({ depth: replyDepth, subplebbit });
+        const parentComment = await publisherPlebbit.getComment({ cid: reply.parentCid });
 
         await parentComment.update();
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,
-            predicate: () => (parentComment.replyCount ?? 0) >= 1
+            predicate: () => parentComment.updatedAt
         });
 
-        await forcePagesToUsePageCidsOnly({ subplebbit, parentComment });
-        await parentComment.update();
+        const { cleanup: preloadCleanup } = await disablePreloadPagesOnSub({ subplebbit });
+
+        // await forcePagesToUsePageCidsOnly({ subplebbit, parentComment });
+
+        await publishRandomReply(parentComment, publisherPlebbit); // to force an update
+        // below could timeout
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,
             predicate: () => Object.keys(parentComment.replies.pageCids).length > 0
         });
-
-        if (!replyUnderTest?.cid) throw new Error("reply cid should be defined");
+        expect(subplebbit.posts.pages.hot.comments.length).to.equal(0);
 
         const cleanup = async () => {
-            for (const comment of commentsToCleanup) {
-                await comment?.stop?.().catch(() => {});
-            }
-            await subplebbit.delete().catch(() => {});
-            await publisherPlebbit.destroy().catch(() => {});
+            preloadCleanup();
+            await subplebbit.delete();
+            await publisherPlebbit.destroy();
         };
 
         return {
             publisherPlebbit,
-            replyCid: replyUnderTest.cid,
+            replyCid: reply.cid,
             cleanup
         };
     } catch (error) {
-        for (const comment of commentsToCleanup) {
-            await comment?.stop?.().catch(() => {});
-        }
-        await subplebbit.delete().catch(() => {});
-        await publisherPlebbit.destroy().catch(() => {});
+        await subplebbit.delete();
+        await publisherPlebbit.destroy();
         throw error;
     }
 }
