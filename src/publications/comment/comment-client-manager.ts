@@ -115,24 +115,6 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._setUpdatingStateWithEmissionIfNewState("resolving-author-address"); // Resolving for CommentIpfs and author.address is a domain
     }
 
-    _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, commentCidToLookFor: string) {
-        if (!subIpns.posts?.pages?.hot) return undefined; // try to use preloaded pages if possible
-        const findInCommentAndChildren = (pageComment: PageIpfs["comments"][0]): PageIpfs["comments"][number] | undefined => {
-            if (pageComment.commentUpdate.cid === commentCidToLookFor) return pageComment;
-            if (!pageComment.commentUpdate.replies?.pages?.best) return undefined;
-            for (const childComment of pageComment.commentUpdate.replies.pages.best.comments) {
-                const commentInChild = findInCommentAndChildren(childComment);
-                if (commentInChild) return commentInChild;
-            }
-            return undefined;
-        };
-        for (const post of subIpns.posts.pages.hot.comments) {
-            const commentInChild = findInCommentAndChildren(post);
-            if (commentInChild) return commentInChild;
-        }
-        return undefined;
-    }
-
     _calculatePathForPostCommentUpdate(folderCid: string, postCid: string) {
         return `${folderCid}/` + postCid + "/update";
     }
