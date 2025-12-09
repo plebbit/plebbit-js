@@ -1333,6 +1333,7 @@ const testConfigCodeToPlebbitInstanceWithHumanName: Record<PlebbitTestConfigCode
                     ...args?.plebbitOptions,
                     plebbitRpcClientsOptions: undefined,
                     kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+                    pubsubKuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
                     ipfsGatewayUrls: undefined
                 }
             }),
