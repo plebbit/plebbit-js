@@ -319,7 +319,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async getCommentPage(params: any): Promise<PageIpfs> {
-        const { cid: pageCid, commentCid, subplebbitAddress } = parseRpcCommentRepliesPageParam(params);
+        const { cid: pageCid, commentCid, subplebbitAddress } = parseRpcCommentRepliesPageParam(params[0]);
         const plebbit = await this._getPlebbitInstance();
         const comment = await plebbit.createComment({ cid: commentCid, subplebbitAddress });
         const page = await comment.replies._fetchAndVerifyPage(pageCid);

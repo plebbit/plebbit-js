@@ -300,7 +300,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
 
     async getSubplebbitPage(page: SubplebbitPageRpcParam): Promise<PageIpfs | ModQueuePageIpfs> {
         const parsedGetSubplebbitPostsPage = parseRpcSubplebbitPageParam(page);
-        const pageIpfs = <PageIpfs | ModQueuePageIpfs>await this._webSocketClient.call("getCommentPage", [parsedGetSubplebbitPostsPage]);
+        const pageIpfs = <PageIpfs | ModQueuePageIpfs>await this._webSocketClient.call("getSubplebbitPage", [parsedGetSubplebbitPostsPage]);
         return pageIpfs;
     }
 
