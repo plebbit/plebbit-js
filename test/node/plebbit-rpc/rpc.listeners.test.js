@@ -94,7 +94,7 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
         };
 
         try {
-            const subscriptionId = await rpcServer.startSubplebbit([address], connectionId);
+            const subscriptionId = await rpcServer.startSubplebbit([{ address }], connectionId);
             expect(subscriptionId).to.be.a("number");
             expect(capturedSubplebbit).to.exist;
 
@@ -113,7 +113,7 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
 
             const trackedSnapshot = cloneTrackedListeners(tracked);
 
-            await rpcServer.stopSubplebbit([address]);
+            await rpcServer.stopSubplebbit([{ address }]);
 
             expect(rpcServer._trackedSubplebbitListeners.get(capturedSubplebbit)).to.equal(
                 undefined,
@@ -150,14 +150,14 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
         };
 
         try {
-            await rpcServer.startSubplebbit([address], connectionId);
+            await rpcServer.startSubplebbit([{ address }], connectionId);
             expect(capturedSubplebbit).to.exist;
 
             const tracked = rpcServer._trackedSubplebbitListeners.get(capturedSubplebbit);
             expect(tracked).to.exist;
             const trackedSnapshot = cloneTrackedListeners(tracked);
 
-            const deleteResult = await rpcServer.deleteSubplebbit([address]);
+            const deleteResult = await rpcServer.deleteSubplebbit([{ address }]);
             expect(deleteResult).to.equal(true);
 
             expect(rpcServer._trackedSubplebbitListeners.get(capturedSubplebbit)).to.equal(
