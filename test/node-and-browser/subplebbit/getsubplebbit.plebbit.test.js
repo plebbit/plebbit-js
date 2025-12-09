@@ -26,7 +26,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        itSkipIfRpc("calling plebbit.getSubplebbit({address: ) in parallel of the same subplebbit resolves IPNS only once", async (}) => {
+        itSkipIfRpc("calling plebbit.getSubplebbit({address: ) in parallel of the same subplebbit resolves IPNS only once", async () => {
             const localPlebbit = await config.plebbitInstancePromise();
             const randomSub = await createMockedSubplebbitIpns({});
             let fetchSpy;
@@ -57,7 +57,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const subInstances = await Promise.all(
                     new Array(stressCount).fill(null).map(async () => {
-                        return localPlebbit.getSubplebbit({address: randomSub.subplebbitRecord.address});
+                        return localPlebbit.getSubplebbit({ address: randomSub.subplebbitRecord.address });
                     })
                 );
 
@@ -82,7 +82,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it("Can load subplebbit via IPNS address", async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({address: subplebbitSigner.address});
+            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
             const _subplebbitIpns = loadedSubplebbit.toJSONIpfs();
             expect(_subplebbitIpns.lastPostCid).to.be.a.string;
             expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
@@ -99,14 +99,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
-            const subplebbit = await plebbit.getSubplebbit({address: ensSubplebbitAddress});
+            const subplebbit = await plebbit.getSubplebbit({ address: ensSubplebbitAddress });
             expect(subplebbit.address).to.equal(ensSubplebbitAddress);
             expect(subplebbit.updatedAt).to.be.a("number");
         });
 
         it(`plebbit.getSubplebbit fails to fetch a sub with ENS address if it has capital letter`, async () => {
             try {
-                await plebbit.getSubplebbit({address: "testSub.eth"});
+                await plebbit.getSubplebbit({ address: "testSub.eth" });
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER");
@@ -114,7 +114,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`plebbit.getSubplebbit is not fetching subplebbit updates in background after fulfilling its promise`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({address: subplebbitSigner.address});
+            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
             let updatedHasBeenCalled = false;
             loadedSubplebbit._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
@@ -128,7 +128,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await ipnsObj.publishToIpns("<html>hello this is not a valid json</html>");
 
             try {
-                await plebbit.getSubplebbit({address: ipnsObj.signer.address});
+                await plebbit.getSubplebbit({ address: ipnsObj.signer.address });
                 expect.fail("should not succeed");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -140,12 +140,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`plebbit.getSubplebbit should throw immedietly if it loads a record with invalid signature`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({address: subplebbitSigner.address});
+            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
             const ipnsObj = await createNewIpns();
             await ipnsObj.publishToIpns(JSON.stringify({ ...loadedSubplebbit.raw.subplebbitIpfs, updatedAt: 12345 })); // publish invalid signature
 
             try {
-                await plebbit.getSubplebbit({address: ipnsObj.signer.address});
+                await plebbit.getSubplebbit({ address: ipnsObj.signer.address });
                 expect.fail("should not succeed");
             } catch (e) {
                 expect([
@@ -162,7 +162,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             customPlebbit._timeouts["subplebbit-ipns"] = 1 * 1000; // change timeout from 5min to 1s
 
             try {
-                await customPlebbit.getSubplebbit({address: doesNotExistSubplebbitAddress});
+                await customPlebbit.getSubplebbit({ address: doesNotExistSubplebbitAddress });
                 expect.fail("should not succeed");
             } catch (e) {
                 expect([

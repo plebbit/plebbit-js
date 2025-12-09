@@ -33,8 +33,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         });
 
-        it(`subplebbit.updatingState is in correct order upon updating with IPFS client and plebbit.getSubplebbit({address: ) with subplebbit address not an ENS`, async (}) => {
-            const subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+        it(`subplebbit.updatingState is in correct order upon updating with IPFS client and plebbit.getSubplebbit({address) with subplebbit address not an ENS`, async () => {
+            const subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
             const oldUpdatedAt = Number(subplebbit.updatedAt);
             const recordedStates = [];
             const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
@@ -150,8 +150,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(subplebbit.updatingState).to.equal("stopped");
         });
 
-        it(`subplebbit.updatingState defaults to stopped after plebbit.getSubplebbit({address: )`, async (}) => {
-            const subplebbit = await plebbit.getSubplebbit({address: signers[0].address});
+        it(`subplebbit.updatingState defaults to stopped after plebbit.getSubplebbit({address})`, async () => {
+            const subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
             expect(subplebbit.updatingState).to.equal("stopped");
         });
 

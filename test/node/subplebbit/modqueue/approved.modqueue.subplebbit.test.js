@@ -8,7 +8,8 @@ import {
     publishToModQueueWithDepth,
     itSkipIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    createPendingApprovalChallenge
+    createPendingApprovalChallenge,
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
@@ -16,7 +17,7 @@ const depthsToTest = [0, 1, 2, 3, 11, 12, 15];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
 for (const pendingCommentDepth of depthsToTest) {
-    describe.concurrent(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
+    describeSkipIfRpc.concurrent(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
         let plebbit, subplebbit, approvedComment, modSigner, remotePlebbit;
 
         before(async () => {

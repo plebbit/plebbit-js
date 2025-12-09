@@ -27,7 +27,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`comment.replies.clients.${clientFieldName} is {} for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
-            const comment = await gatewayPlebbit.getComment({cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit}));
+            const comment = await gatewayPlebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             const sortTypes = Object.keys(comment.replies.clients[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
 
@@ -35,14 +35,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await gatewayPlebbit.destroy();
         });
         it(`comment.replies.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
-            const comment = await plebbit.getComment({cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit}));
+            const comment = await plebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             const ipfsUrl = Object.keys(comment.clients[clientFieldName])[0];
             expect(Object.keys(comment.replies.clients[clientFieldName]["new"]).length).to.equal(1);
             expect(comment.replies.clients[clientFieldName]["new"][ipfsUrl].state).to.equal("stopped");
         });
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
-            const comment = await plebbit.getComment({cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit}));
+            const comment = await plebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             comment.replies.pageCids.new = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D"; // random cid
             const ipfsUrl = Object.keys(comment.clients[clientFieldName])[0];
 
@@ -55,7 +55,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const originalTimeout = plebbit._timeouts["page-ipfs"];
             plebbit._timeouts["page-ipfs"] = 100;
             try {
-                await comment.replies.getPage({cid: comment.replies.pageCids.new}); // it will fail because it's not a real page
+                await comment.replies.getPage({ cid: comment.replies.pageCids.new }); // it will fail because it's not a real page
             } catch {}
             expect(actualStates).to.deep.equal(expectedStates);
             plebbit._timeouts["page-ipfs"] = originalTimeout; // Reset timeout
@@ -74,7 +74,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             await plebbit.destroy();
         });
         it(`comment.replies.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
-            const comment = await plebbit.getComment({cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit}));
+            const comment = await plebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
             // add tests here
             expect(Object.keys(comment.replies.clients.ipfsGateways["new"]).length).to.equal(1);
@@ -82,7 +82,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
-            const comment = await plebbit.getComment({cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit}));
+            const comment = await plebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             comment.replies.pageCids.new = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D"; // random cid
 
             const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
@@ -96,7 +96,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const originalTimeout = plebbit._timeouts["page-ipfs"];
             plebbit._timeouts["page-ipfs"] = 100;
             try {
-                await comment.replies.getPage({cid: comment.replies.pageCids.new});
+                await comment.replies.getPage({ cid: comment.replies.pageCids.new });
             } catch {}
             expect(actualStates).to.deep.equal(expectedStates);
             plebbit._timeouts["page-ipfs"] = originalTimeout; // Reset timeout
@@ -116,7 +116,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 }
             });
 
-            const comment = await multipleGatewayPlebbit.getComment({cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit}));
+            const comment = await multipleGatewayPlebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             await comment.update();
             await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
             const mockedPageIpfs = await addStringToIpfs(JSON.stringify({ comments: [comment.raw] })); // wrong schema, but goal is to test for states
@@ -142,7 +142,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             multipleGatewayPlebbit._timeouts["page-ipfs"] = 2 * 1000; // Change timeout to 2s
             const timeBefore = Date.now();
             try {
-                await comment.replies.getPage({cid: comment.replies.pageCids.new});
+                await comment.replies.getPage({ cid: comment.replies.pageCids.new });
             } catch {}
             const timeItTookInMs = Date.now() - timeBefore;
             expect(timeItTookInMs).to.be.lessThan(9000);
@@ -158,7 +158,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         let commentCid;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            const subplebbit = await plebbit.getSubplebbit({address: subplebbitAddress});
+            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
             commentCid = subplebbit.posts.pages.hot.comments[0].cid;
             expect(commentCid).to.be.a("string");
         });
@@ -168,7 +168,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         });
 
         it(`comment.replies.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
-            const comment = await plebbit.getComment({cid: commentCid});
+            const comment = await plebbit.getComment({ cid: commentCid });
             const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
             // add tests here
             expect(Object.keys(comment.replies.clients.plebbitRpcClients["new"]).length).to.equal(1);
@@ -176,7 +176,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         });
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
-            const comment = await plebbit.getComment({cid: commentCid});
+            const comment = await plebbit.getComment({ cid: commentCid });
             await comment.update();
             await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: () => typeof comment.updatedAt === "number" });
 
@@ -190,7 +190,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
             comment.replies.pageCids.new = await addStringToIpfs("12345");
             try {
-                await comment.replies.getPage({cid: comment.replies.pageCids.new}); // it will fail because it's not a real page
+                await comment.replies.getPage({ cid: comment.replies.pageCids.new }); // it will fail because it's not a real page
             } catch {}
             await comment.stop();
             expect(actualStates).to.deep.equal(expectedStates);

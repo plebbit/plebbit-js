@@ -23,67 +23,70 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         // sequential because we're spying on global fetch here which may affect other tests
-        itSkipIfRpc.sequential("calling plebbit.getSubplebbit({address: ) in parallel of the same subplebbit resolves IPNS only once", async (}) => {
-            const localPlebbit = await config.plebbitInstancePromise();
-            const randomCid = (await plebbit.getSubplebbit({address: subplebbitSigner.address})).lastPostCid;
-            expect(randomCid).to.be.a("string");
-            const randomCidInGatewayUrl = CID.parse(randomCid).toV1().toString();
-            let fetchSpy;
-            let catSpy;
-            try {
-                const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
-                const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
-                const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
+        itSkipIfRpc.sequential(
+            "calling plebbit.getSubplebbit({address: ) in parallel of the same subplebbit resolves IPNS only once",
+            async () => {
+                const localPlebbit = await config.plebbitInstancePromise();
+                const randomCid = (await plebbit.getSubplebbit({ address: subplebbitSigner.address })).lastPostCid;
+                expect(randomCid).to.be.a("string");
+                const randomCidInGatewayUrl = CID.parse(randomCid).toV1().toString();
+                let fetchSpy;
+                let catSpy;
+                try {
+                    const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
+                    const isRemoteIpfsGatewayConfig = isPlebbitFetchingUsingGateways(localPlebbit);
+                    const shouldMockFetchForIpns = isRemoteIpfsGatewayConfig && typeof globalThis.fetch === "function";
 
-                const stressCount = 100;
+                    const stressCount = 100;
 
-                if (!usesGateways) {
-                    const p2pClient =
-                        Object.keys(localPlebbit.clients.kuboRpcClients).length > 0
-                            ? Object.values(localPlebbit.clients.kuboRpcClients)[0]._client
-                            : Object.keys(localPlebbit.clients.libp2pJsClients).length > 0
-                              ? Object.values(localPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions
-                              : undefined;
-                    if (!p2pClient?.cat) {
-                        throw new Error("Expected p2p client like kubo or helia RPC client with cat for this test");
+                    if (!usesGateways) {
+                        const p2pClient =
+                            Object.keys(localPlebbit.clients.kuboRpcClients).length > 0
+                                ? Object.values(localPlebbit.clients.kuboRpcClients)[0]._client
+                                : Object.keys(localPlebbit.clients.libp2pJsClients).length > 0
+                                  ? Object.values(localPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions
+                                  : undefined;
+                        if (!p2pClient?.cat) {
+                            throw new Error("Expected p2p client like kubo or helia RPC client with cat for this test");
+                        }
+                        catSpy = vi.spyOn(p2pClient, "cat");
+                    } else if (shouldMockFetchForIpns) {
+                        fetchSpy = vi.spyOn(globalThis, "fetch");
                     }
-                    catSpy = vi.spyOn(p2pClient, "cat");
-                } else if (shouldMockFetchForIpns) {
-                    fetchSpy = vi.spyOn(globalThis, "fetch");
+                    expect(localPlebbit._updatingComments).to.deep.equal({});
+
+                    const commentInstances = await Promise.all(
+                        new Array(stressCount).fill(null).map(async () => {
+                            return localPlebbit.getComment({ cid: randomCid });
+                        })
+                    );
+
+                    expect(localPlebbit._updatingComments).to.deep.equal({});
+
+                    const catOrFetchCallsCount = fetchSpy
+                        ? fetchSpy.mock.calls.filter(([input]) => {
+                              const url = typeof input === "string" ? input : input?.url;
+                              return typeof url === "string" && url.includes("/ipfs/" + randomCidInGatewayUrl);
+                          }).length
+                        : catSpy?.mock.calls.length;
+
+                    expect(catOrFetchCallsCount).to.equal(
+                        1,
+                        "calling getComment() on many comment instances with the same cid in parallel should only fetch CID once"
+                    );
+                } finally {
+                    if (catSpy) catSpy.mockRestore();
+                    if (fetchSpy) fetchSpy.mockRestore();
+                    await localPlebbit.destroy();
                 }
-                expect(localPlebbit._updatingComments).to.deep.equal({});
-
-                const commentInstances = await Promise.all(
-                    new Array(stressCount).fill(null).map(async () => {
-                        return localPlebbit.getComment({cid: randomCid});
-                    })
-                );
-
-                expect(localPlebbit._updatingComments).to.deep.equal({});
-
-                const catOrFetchCallsCount = fetchSpy
-                    ? fetchSpy.mock.calls.filter(([input]) => {
-                          const url = typeof input === "string" ? input : input?.url;
-                          return typeof url === "string" && url.includes("/ipfs/" + randomCidInGatewayUrl);
-                      }).length
-                    : catSpy?.mock.calls.length;
-
-                expect(catOrFetchCallsCount).to.equal(
-                    1,
-                    "calling getComment() on many comment instances with the same cid in parallel should only fetch CID once"
-                );
-            } finally {
-                if (catSpy) catSpy.mockRestore();
-                if (fetchSpy) fetchSpy.mockRestore();
-                await localPlebbit.destroy();
             }
-        });
+        );
 
         it("post props are loaded correctly", async () => {
-            const subplebbit = await plebbit.getSubplebbit({address: subplebbitSigner.address});
+            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
             expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
-            const expectedPostProps = JSON.parse(await plebbit.fetchCid({cid: subplebbit.lastPostCid}));
-            const loadedPost = await plebbit.getComment({cid: subplebbit.lastPostCid});
+            const expectedPostProps = JSON.parse(await plebbit.fetchCid({ cid: subplebbit.lastPostCid }));
+            const loadedPost = await plebbit.getComment({ cid: subplebbit.lastPostCid });
             expect(loadedPost.author.subplebbit).to.be.undefined;
 
             // make sure these generated props are the same as the instance one
@@ -95,10 +98,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it("reply props are loaded correctly", async () => {
-            const subplebbit = await plebbit.getSubplebbit({address: subplebbitSigner.address});
+            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
             const reply = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies).replies.pages.best.comments[0];
             expect(reply).to.exist;
-            const expectedReplyProps = JSON.parse(await plebbit.fetchCid({cid: reply.cid}));
+            const expectedReplyProps = JSON.parse(await plebbit.fetchCid({ cid: reply.cid }));
             expect(expectedReplyProps.postCid).to.be.a("string");
             expect(expectedReplyProps.postCid).to.equal(expectedReplyProps.parentCid);
             expect(expectedReplyProps.protocolVersion).to.be.a("string");
@@ -115,7 +118,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expectedReplyProps.author.shortAddress = expectedReplyProps.author.address.slice(8).slice(0, 12);
             else expectedReplyProps.author.shortAddress = expectedReplyProps.author.address;
 
-            const loadedReply = await plebbit.getComment({cid: reply.cid});
+            const loadedReply = await plebbit.getComment({ cid: reply.cid });
             expect(loadedReply.constructor.name).to.equal("Comment");
             if (loadedReply.author.subplebbit) delete loadedReply.author.subplebbit; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
             for (const key of Object.keys(expectedReplyProps))
@@ -123,8 +126,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`plebbit.getComment is not fetching comment updates in background after fulfilling its promise`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({address: subplebbitSigner.address});
-            const comment = await plebbit.getComment({cid: loadedSubplebbit.posts.pages.hot.comments[0].cid});
+            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
+            const comment = await plebbit.getComment({ cid: loadedSubplebbit.posts.pages.hot.comments[0].cid });
             let updatedHasBeenCalled = false;
             comment.updateOnce = comment._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
@@ -134,15 +137,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`plebbit.getComment should throw immeditely if it finds a non retriable error`, async () => {
-            const subplebbit = await plebbit.getSubplebbit({address: subplebbitSigner.address});
+            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
 
-            const commentIpfsOfInvalidSignature = JSON.parse(await plebbit.fetchCid({cid: subplebbit.posts.pages.hot.comments[0].cid})); // comment ipfs
+            const commentIpfsOfInvalidSignature = JSON.parse(await plebbit.fetchCid({ cid: subplebbit.posts.pages.hot.comments[0].cid })); // comment ipfs
 
             commentIpfsOfInvalidSignature.content += "1234"; // make signature invalid
             const commentIpfsInvalidSignatureCid = await addStringToIpfs(JSON.stringify(commentIpfsOfInvalidSignature));
 
             try {
-                await plebbit.getComment({cid: commentIpfsInvalidSignatureCid});
+                await plebbit.getComment({ cid: commentIpfsInvalidSignatureCid });
                 expect.fail("should not succeed");
             } catch (e) {
                 expect(e.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
@@ -154,7 +157,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const customPlebbit = await config.plebbitInstancePromise();
             customPlebbit._timeouts["comment-ipfs"] = 100;
             try {
-                await customPlebbit.getComment({cid: commentCid});
+                await customPlebbit.getComment({ cid: commentCid });
                 expect.fail("should not succeed");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(customPlebbit)) {

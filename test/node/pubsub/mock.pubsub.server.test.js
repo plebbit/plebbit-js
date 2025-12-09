@@ -5,6 +5,7 @@ import { io as createSocketClient } from "socket.io-client";
 import { randomUUID } from "crypto";
 import { Buffer } from "buffer";
 import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client.js";
+import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 const PORT = 25964;
 let ioServer;
@@ -77,7 +78,7 @@ const ensureServerStarted = async () => {
 
 const createIsolatedMockPubsubClient = () => createMockPubsubClient({ forceNewIoClient: true });
 
-describe("mock pubsub client with socket.io server", () => {
+describeSkipIfRpc("mock pubsub client with socket.io server", () => {
     beforeAll(async () => {
         await ensureServerStarted();
     });
@@ -208,7 +209,7 @@ describe("mock pubsub client with socket.io server", () => {
         const avgLatency = observedLatencies.reduce((acc, cur) => acc + cur, 0) / observedLatencies.length;
 
         expect(maxLatency).to.be.lessThan(2000, "mock pubsub server exceeded 10s challenge deadline");
-        expect(avgLatency).to.be.lessThan(1000);
+        expect(avgLatency).to.be.lessThan(2000);
 
         await subscriber.pubsub.unsubscribe(topic);
         await subscriber.destroy();

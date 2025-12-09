@@ -14,7 +14,9 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it, vi } from "vitest";
 
-const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
+const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true }).filter(
+    (config) => config.testConfigCode !== "remote-plebbit-rpc" // we're filtering RPC out because we can't reduce its timeout so tests take forever
+);
 
 const depthsToTest = [0, 1, 2, 15];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
@@ -401,6 +403,7 @@ for (const commentMod of commentModProps) {
                             itSequentialIfRpc(
                                 `Can update a rejected comment with ${JSON.stringify(commentMod)} and retrieve both CommentIpfs and CommentUpdate - Plebbit Config ${remotePlebbitConfig.name}`,
                                 async () => {
+                                    // times out in RPC
                                     const remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
                                     remotePlebbit._timeouts["comment-ipfs"] = 500; // speed up the test
                                     try {

@@ -18,7 +18,6 @@ import { describe, it } from "vitest";
 import { calculateIpfsCidV0 } from "../../../../dist/node/util.js";
 const subplebbitAddress = signers[0].address;
 
-// TODO these comments below should iterate over all comments under subplebbit.posts and execute the test against them
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.createComment - Remote (${config.name})`, async () => {
         let plebbit;

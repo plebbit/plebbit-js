@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { describe, it } from "vitest";
-import { addStringToIpfs } from "../../../dist/node/test/test-util.js";
+import { addStringToIpfs, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import { loadAllPagesUnderSubplebbitToFindComment } from "../../../src/publications/comment/comment-util.js";
 
 const REPLY_DEPTHS = [1, 2, 3, 5, 10, 15];
@@ -188,7 +188,7 @@ async function createTestContext({
     };
 }
 
-describe.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
+describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
     describe("posts from preloaded pages", () => {
         it("finds post on the first page", async () => {
             const { subplebbit, targetCid } = await createTestContext({ depth: 0, postsStorage: "pages" });

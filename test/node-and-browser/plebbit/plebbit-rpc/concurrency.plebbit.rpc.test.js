@@ -304,7 +304,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             }
         }, 70000);
 
-        it("createSubplebbit survives setSettings overlap (no ERR_PLEBBIT_IS_DESTROYED)", async () => {
+        it.sequential("createSubplebbit survives setSettings overlap (no ERR_PLEBBIT_IS_DESTROYED)", async () => {
             const plebbitA = await config.plebbitInstancePromise();
             const plebbitB = await config.plebbitInstancePromise();
 
@@ -492,7 +492,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             try {
                 const freshSub = await createSubWithNoChallenge({ title: "temp sub " + Date.now(), description: "tmp" }, plebbitB);
                 const freshAddress = freshSub.address;
-                const startSubId = await plebbitB._plebbitRpcClient._webSocketClient.call("startSubplebbit", [freshAddress]);
+                const startSubId = await plebbitB._plebbitRpcClient._webSocketClient.call("startSubplebbit", [{ address: freshAddress }]);
 
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
@@ -515,7 +515,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                         sub.once("update", (res) => resolve(res.params?.result));
                         // trigger sub update to provoke an event
                         plebbitB._plebbitRpcClient._webSocketClient
-                            .call("subplebbitUpdateSubscribe", [freshAddress])
+                            .call("subplebbitUpdateSubscribe", [{ address: freshAddress }])
                             .catch((err) => reject(err));
                     }),
                     { milliseconds: 45000, message: "Timed out waiting for started sub update after setSettings" }
@@ -618,7 +618,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 const subB = await plebbitB.getSubplebbit({ address: subplebbitAddress });
                 await subB.update();
 
-                const subplebbitUpdateSubscriptionId = await plebbitB._plebbitRpcClient.subplebbitUpdateSubscribe(subplebbitAddress);
+                const subplebbitUpdateSubscriptionId = await plebbitB._plebbitRpcClient.subplebbitUpdateSubscribe({
+                    address: subplebbitAddress
+                });
 
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
@@ -661,13 +663,15 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 );
                 const freshAddress = freshSub.address;
 
-                const startSubplebbitSubscriptionId = await plebbitB._plebbitRpcClient.startSubplebbit(freshAddress);
+                const startSubplebbitSubscriptionId = await plebbitB._plebbitRpcClient.startSubplebbit({ address: freshAddress });
                 await pTimeout(waitForSubscriptionEvent(plebbitB._plebbitRpcClient, startSubplebbitSubscriptionId, "update"), {
                     milliseconds: 45000,
                     message: "startSubplebbit failed to emit initial update"
                 });
 
-                const subplebbitUpdateSubscriptionId = await plebbitB._plebbitRpcClient.subplebbitUpdateSubscribe(freshAddress);
+                const subplebbitUpdateSubscriptionId = await plebbitB._plebbitRpcClient.subplebbitUpdateSubscribe({
+                    address: freshAddress
+                });
 
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
