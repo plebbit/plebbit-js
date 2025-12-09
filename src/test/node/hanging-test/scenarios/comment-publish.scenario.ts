@@ -9,7 +9,7 @@ import { createScenarioContext, defineHangingScenario } from "./hanging-test-uti
  */
 export default defineHangingScenario({
     id: "comment-publish",
-    description: "publish a comment and destroy plebbit",
+    description: "Finish publishing a comment and destroy plebbit",
     run: async ({ configCode }) => {
         const subplebbitAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
         const { plebbit, config } = await createScenarioContext(configCode);

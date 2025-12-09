@@ -1,8 +1,11 @@
 import { resolveHangingScenarioModule } from "../../../../test/node/hanging-test/scenarios/hanging-test-util.js";
 import type { HangingScenarioDefinition } from "../../../../test/node/hanging-test/scenarios/hanging-test-util.js";
 
-const WAIT_TIMEOUT_MS = Number(process.env.HANGING_RUNNER_WAIT ?? 1000);
-const WAIT_POLL_MS = Number(process.env.HANGING_RUNNER_POLL ?? 25);
+const DEFAULT_WAIT_TIMEOUT_MS = 5000;
+const parsedWaitMs = Number(process.env.HANGING_RUNNER_WAIT);
+const WAIT_TIMEOUT_MS = Number.isFinite(parsedWaitMs) && parsedWaitMs > 0 ? parsedWaitMs : DEFAULT_WAIT_TIMEOUT_MS;
+const parsedPollMs = Number(process.env.HANGING_RUNNER_POLL);
+const WAIT_POLL_MS = Number.isFinite(parsedPollMs) && parsedPollMs > 0 ? parsedPollMs : 25;
 const nodeProcess = process as NodeJS.Process & {
     _getActiveHandles: () => unknown[];
     _getActiveRequests: () => unknown[];
@@ -39,17 +42,17 @@ async function run(): Promise<void> {
         if (!configCodesEnv) {
             throw new Error("hanging-runner: PLEBBIT_CONFIGS environment variable is required");
         }
-        const [configCode] = configCodesEnv.split(",").map((code) => code.trim()).filter(Boolean);
+        const [configCode] = configCodesEnv
+            .split(",")
+            .map((code) => code.trim())
+            .filter(Boolean);
         if (!configCode) {
             throw new Error(`hanging-runner: failed to read config code from PLEBBIT_CONFIGS="${configCodesEnv}"`);
         }
 
         const scenarioModuleUrl = new URL(`../../../../test/node/hanging-test/scenarios/${scenarioModuleBaseName}`, import.meta.url);
         const scenarioModule = await import(scenarioModuleUrl.href);
-        const scenarioDefinition: HangingScenarioDefinition = resolveHangingScenarioModule(
-            scenarioModule,
-            scenarioModuleBaseName
-        );
+        const scenarioDefinition: HangingScenarioDefinition = resolveHangingScenarioModule(scenarioModule, scenarioModuleBaseName);
 
         await scenarioDefinition.run({ configCode });
 
@@ -173,5 +176,6 @@ async function waitForCleanup() {
         await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
         report = collectActiveResources();
     }
-    return report;
+    const waitedMs = WAIT_TIMEOUT_MS - Math.max(0, deadline - Date.now());
+    return { ...report, waitedMs, waitTimeoutMs: WAIT_TIMEOUT_MS };
 }

@@ -75,7 +75,7 @@ export async function createScenarioContext(configCode: string): Promise<Hanging
         throw new Error(`Unknown Plebbit config code "${configCode}". Available configs: ${available}`);
     }
 
-    const plebbit = await config.plebbitInstancePromise();
+    const plebbit = await config.plebbitInstancePromise({ forceMockPubsub: true });
     return {
         plebbit,
         config: {
