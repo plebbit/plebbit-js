@@ -706,7 +706,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const comment = await plebbit.createComment(parsedCommentUpdateArgs);
         const sendUpdate = () => {
             if (!sentCommentIpfsUpdateEvent && comment.raw.comment) {
-                sendEvent("update", comment.raw.comment);
+                sendEvent("comment", comment.raw.comment);
                 sentCommentIpfsUpdateEvent = true;
             }
             if (comment.raw.commentUpdate) {

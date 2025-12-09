@@ -25,6 +25,7 @@ import type {
     CommentUpdatingState,
     CommentWithinRepliesPostsPageJson,
     CreateCommentOptions,
+    RpcCommentResultType,
     RpcCommentUpdateResultType
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
@@ -35,7 +36,10 @@ import {
     CommentUpdateSchema,
     OriginalCommentFieldsBeforeCommentUpdateSchema
 } from "./schema.js";
-import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import {
+    parseRpcCommentEventWithPlebbitErrorIfItFails,
+    parseRpcCommentUpdateEventWithPlebbitErrorIfItFails
+} from "../../schema/schema-util.js";
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
@@ -705,25 +709,37 @@ export class Comment
         else return this._isCommentIpfsErrorRetriable(err);
     }
 
+    private _handleCommentEventFromRpc(args: any) {
+        const log = Logger("plebbit-js:comment:_handleCommentEventFromRpc");
+        let newComment: RpcCommentResultType;
+        try {
+            newComment = parseRpcCommentEventWithPlebbitErrorIfItFails(args.params.result) as RpcCommentResultType;
+        } catch (e) {
+            log.error("Failed to parse the rpc comment event of", this.cid, e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        log(`Received new CommentIpfs (${this.cid}) from RPC`);
+
+        this.emit("update", this);
+    }
+
     private _handleUpdateEventFromRpc(args: any) {
         const log = Logger("plebbit-js:comment:_handleUpdateEventFromRpc");
         let newUpdate: RpcCommentUpdateResultType;
         try {
-            newUpdate = parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(args.params.result);
+            newUpdate = parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(args.params.result) as RpcCommentUpdateResultType;
         } catch (e) {
             log.error("Failed to parse the rpc update event of", this.cid, e);
             this.emit("error", <PlebbitError>e);
             throw e;
         }
-        if ("subplebbitAddress" in newUpdate) {
-            log(`Received new CommentIpfs (${this.cid})`);
-            this._initIpfsProps(newUpdate);
-        } else {
-            log(`Received new CommentUpdate (${this.cid})`);
-            this._initCommentUpdate(newUpdate);
-        }
+        if ((this.updatedAt || 0) <= newUpdate.updatedAt) {
+            log(`Received new CommentUpdate (${this.cid}) from RPC`);
+            this._initCommentUpdate(newUpdate as any);
 
-        this.emit("update", this);
+            this.emit("update", this);
+        }
     }
 
     private _handleUpdatingStateChangeFromRpc(args: any) {
@@ -779,6 +795,7 @@ export class Comment
         this._plebbit
             ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._handleUpdateEventFromRpc.bind(this))
+            .on("comment", this._handleCommentEventFromRpc.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
             .on("statechange", this._handleStateChangeFromRpc.bind(this))
             .on("error", this._handleErrorEventFromRpc.bind(this));

@@ -15,7 +15,7 @@ import {
     OriginalCommentFieldsBeforeCommentUpdateSchema
 } from "./schema.js";
 import { SubplebbitAuthorSchema } from "../../schema/schema.js";
-import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
+import { RpcCommentEventResultSchema, RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
 import type { RepliesPagesTypeJson } from "../../pages/types.js";
@@ -44,6 +44,7 @@ export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallengeRequestToEncryptSchema>;
 
 export type RpcCommentUpdateResultType = z.infer<typeof RpcCommentUpdateResultSchema>;
+export type RpcCommentResultType = z.infer<typeof RpcCommentEventResultSchema>;
 
 type CommentOriginalField = z.infer<typeof OriginalCommentFieldsBeforeCommentUpdateSchema>;
 

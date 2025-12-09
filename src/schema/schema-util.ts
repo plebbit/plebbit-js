@@ -34,7 +34,7 @@ import type {
 import type { DecryptedChallenge, DecryptedChallengeAnswer, DecryptedChallengeVerification } from "../pubsub-messages/types.js";
 import { throwWithErrorCode } from "../util.js";
 import { CidStringSchema } from "./schema.js";
-import { RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
+import { RpcCommentEventResultSchema, RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
 import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema } from "../rpc/src/schema.js";
 import type { CreatePlebbitWsServerOptions, SetNewSettingsPlebbitWsServer } from "../rpc/src/types.js";
 import type { CommentModerationChallengeRequestToEncrypt } from "../publications/comment-moderation/types.js";
@@ -163,10 +163,20 @@ export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: z.infer
 
 export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(
     updateResult: z.infer<typeof RpcCommentUpdateResultSchema>
-): CommentIpfsType | CommentUpdateType {
+): CommentUpdateType {
     const parseRes = RpcCommentUpdateResultSchema.safeParse(updateResult);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATE_SCHEMA", {
+            zodError: parseRes.error,
+            updateResult
+        });
+    else return updateResult;
+}
+
+export function parseRpcCommentEventWithPlebbitErrorIfItFails(updateResult: z.infer<typeof RpcCommentEventResultSchema>): CommentIpfsType {
+    const parseRes = RpcCommentEventResultSchema.safeParse(updateResult);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_RPC_COMMENT_SCHEMA", {
             zodError: parseRes.error,
             updateResult
         });
