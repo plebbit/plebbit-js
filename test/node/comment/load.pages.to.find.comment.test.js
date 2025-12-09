@@ -76,6 +76,13 @@ async function createTestContext({
         }
     };
 
+    const expectCidParamObject = (cidParam, context) => {
+        if (!cidParam || typeof cidParam !== "object" || typeof cidParam.cid !== "string") {
+            throw Error(`${context} expected argument { cid: string }`);
+        }
+        return cidParam.cid;
+    };
+
     for (let i = 0; i < depth; i++) {
         const parent = commentsChain[i];
         const child = commentsChain[i + 1];
@@ -85,7 +92,8 @@ async function createTestContext({
             cid: parent.commentUpdate.cid,
             replies: {
                 ...replies,
-                getPage: async (cid) => {
+                getPage: async (cidParam) => {
+                    const cid = expectCidParamObject(cidParam, "replies.getPage");
                     counters.replyPageCalls++;
                     counters.replyPageParents.push(parent.commentUpdate.cid);
                     const map = replyPagesByParent.get(parent.commentUpdate.cid) || {};
@@ -111,7 +119,8 @@ async function createTestContext({
             cid: extraPost.commentUpdate.cid,
             replies: {
                 ...replies,
-                getPage: async (cid) => {
+                getPage: async (cidParam) => {
+                    const cid = expectCidParamObject(cidParam, "replies.getPage");
                     counters.replyPageCalls++;
                     counters.replyPageParents.push(extraPostCid);
                     const map = replyPagesByParent.get(extraPost.commentUpdate.cid) || {};
@@ -157,7 +166,8 @@ async function createTestContext({
     }
 
     const plebbitMock = {
-        getComment: async (cid) => {
+        getComment: async (cidParam) => {
+            const cid = expectCidParamObject(cidParam, "getComment");
             const instance = commentInstances.get(cid);
             if (!instance) throw Error(`Mocked comment instance for ${cid} not found`);
             return instance;
@@ -170,7 +180,8 @@ async function createTestContext({
         posts: {
             pages: postsPages,
             pageCids: postsPageCids,
-            getPage: async (cid) => {
+            getPage: async (cidParam) => {
+                const cid = expectCidParamObject(cidParam, "posts.getPage");
                 counters.postPageCalls++;
                 counters.postPageCids.push(cid);
                 return postPagesByCid[cid];
