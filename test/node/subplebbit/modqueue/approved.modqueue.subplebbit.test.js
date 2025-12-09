@@ -97,14 +97,14 @@ for (const pendingCommentDepth of depthsToTest) {
                 expect(subplebbit.lastPostCid).to.equal(approvedComment.cid);
             });
 
-        it(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
+        it.sequential(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.lastCommentCid === approvedComment.cid });
 
             expect(subplebbit.lastCommentCid).to.equal(approvedComment.cid);
         });
 
         if (pendingCommentDepth > 0) {
-            it(`Approved reply show up in parentComment.replyCount`, async () => {
+            it.sequential(`Approved reply show up in parentComment.replyCount`, async () => {
                 expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).replyCount).to.equal(1);
             });
             it(`Approved reply show up in parentComment.childCount`, async () => {
