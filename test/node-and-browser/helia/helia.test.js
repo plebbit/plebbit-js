@@ -175,4 +175,45 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
             await testPlebbit.destroy();
         });
     });
+
+    describe(`Helia parallel lifecycle - ${config.name}`, () => {
+        it("reuses a shared libp2pjs client across parallel creations and tears it down only after the last destroy", async () => {
+            const parallelClients = 20;
+            const sharedKey = `helia-parallel-${Date.now()}`;
+            const plebbitFactory = () =>
+                config.plebbitInstancePromise({
+                    forceMockPubsub: true,
+                    plebbitOptions: {
+                        libp2pJsClientsOptions: [
+                            {
+                                key: sharedKey,
+                                libp2pOptions: { connectionGater: { denyDialMultiaddr: async () => false } }
+                            }
+                        ]
+                    }
+                });
+            const plebbits = await Promise.all(Array.from({ length: parallelClients }, () => plebbitFactory()));
+
+            const sharedClients = plebbits.map((plebbitInstance) => {
+                const clients = Object.values(plebbitInstance.clients.libp2pJsClients);
+                expect(clients.length).to.be.greaterThan(0);
+                return clients[0];
+            });
+
+            const referenceClient = sharedClients[0];
+            sharedClients.forEach((client) => expect(client).to.equal(referenceClient));
+            expect(referenceClient.countOfUsesOfInstance).to.equal(parallelClients);
+
+            const midway = Math.floor(parallelClients / 2);
+            await Promise.all(plebbits.slice(0, midway).map((plebbitInstance) => plebbitInstance.destroy()));
+
+            expect(referenceClient.countOfUsesOfInstance).to.equal(parallelClients - midway);
+            expect(referenceClient._helia.libp2p.status).to.not.equal("stopped");
+
+            await Promise.all(plebbits.slice(midway).map((plebbitInstance) => plebbitInstance.destroy()));
+
+            expect(referenceClient.countOfUsesOfInstance).to.equal(0);
+            expect(referenceClient._helia.libp2p.status).to.equal("stopped");
+        }, 30000);
+    });
 });
