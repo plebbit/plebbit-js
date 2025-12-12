@@ -118,19 +118,22 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`comment.update() is working as expected after calling comment.stop()`, async () => {
             const plebbit = await config.plebbitInstancePromise();
-            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
-            const postToStop = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
+            try {
+                const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
+                const postToStop = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
 
-            await postToStop.update();
-            await resolveWhenConditionIsTrue({ toUpdate: postToStop, predicate: () => typeof postToStop.updatedAt === "number" }); // CommentIpfs and CommentUpdate should be defined now
-            await postToStop.stop();
+                await postToStop.update();
+                await resolveWhenConditionIsTrue({ toUpdate: postToStop, predicate: () => typeof postToStop.updatedAt === "number" }); // CommentIpfs and CommentUpdate should be defined now
+                await postToStop.stop();
 
-            await postToStop.update();
+                await postToStop.update();
 
-            const reply = await publishRandomReply(postToStop, plebbit);
-            await waitTillReplyInParentPagesInstance(reply, postToStop);
-            await postToStop.stop();
-            await plebbit.destroy();
+                const reply = await publishRandomReply(postToStop, plebbit);
+                await waitTillReplyInParentPagesInstance(reply, postToStop);
+                await postToStop.stop();
+            } finally {
+                await plebbit.destroy();
+            }
         });
 
         it(`comment.update() is working as expected after comment.publish()`, async () => {
@@ -321,43 +324,49 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await createdComment.stop();
         });
 
-        itSkipIfRpc.sequential(`comment.update() emits error if CommentUpdate is an invalid json`, async () => {
+        itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid json`, async () => {
+            // this test times out sometimes
             // Should emit an error and keep on updating
+            const plebbit = await config.plebbitInstancePromise();
 
-            const invalidCommentUpdateJson = "<html>something</html>";
-            // Should emit an error as well but stay subscribed to sub updates
+            try {
+                const invalidCommentUpdateJson = "<html>something</html>";
+                // Should emit an error as well but stay subscribed to sub updates
 
-            const createdComment = await plebbit.createComment({
-                cid: commentUpdateWithInvalidSignatureJson.cid
-            });
+                const createdComment = await plebbit.createComment({
+                    cid: commentUpdateWithInvalidSignatureJson.cid
+                });
 
-            const errors = [];
+                const errors = [];
 
-            createdComment.on("error", (err) => errors.push(err));
+                createdComment.on("error", (err) => errors.push(err));
 
-            await createdComment.update();
-            await mockPostToReturnSpecificCommentUpdate(createdComment, invalidCommentUpdateJson);
+                await createdComment.update();
+                await mockPostToReturnSpecificCommentUpdate(createdComment, invalidCommentUpdateJson);
 
-            await Promise.all([
-                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length === 2, eventName: "error" }),
-                publishRandomPost(subplebbitAddress, plebbit) // force sub to publish a new update
-            ]);
+                await Promise.all([
+                    resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length === 2, eventName: "error" }),
+                    publishRandomPost(subplebbitAddress, plebbit) // force sub to publish a new update
+                ]);
 
-            expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
-            expect(createdComment.state).to.equal("updating");
-            expect(errors.length).to.equal(2);
-            expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.size).to.equal(errors.length); // it should mark the path as invalid
+                expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
+                expect(createdComment.state).to.equal("updating");
+                expect(errors.length).to.equal(2);
+                expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.size).to.equal(errors.length); // it should mark the path as invalid
 
-            for (const error of errors) {
-                if (isPlebbitFetchingUsingGateways(plebbit)) {
-                    expect(error.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS");
-                    for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways)) {
-                        expect(error.details.gatewayToError[gatewayUrl].code).to.equal("ERR_INVALID_JSON");
-                    }
-                } else expect(error.code).to.equal("ERR_INVALID_JSON");
+                for (const error of errors) {
+                    if (isPlebbitFetchingUsingGateways(plebbit)) {
+                        expect(error.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS");
+                        for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways)) {
+                            expect(error.details.gatewayToError[gatewayUrl].code).to.equal("ERR_INVALID_JSON");
+                        }
+                    } else expect(error.code).to.equal("ERR_INVALID_JSON");
+                }
+
+                await createdComment.stop();
+            } finally {
+                await plebbit.destroy();
             }
-
-            await createdComment.stop();
         });
 
         itSkipIfRpc.sequential(`comment.update() emits error if CommentUpdate is an invalid schema`, async () => {
@@ -398,7 +407,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await createdComment.stop();
         });
 
-        itSkipIfRpc(`postCommentInstance.update() emits error when post fails to load from postUpdates`, async () => {
+        itSkipIfRpc.sequential(`postCommentInstance.update() emits error when post fails to load from postUpdates`, async () => {
             const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const postCid = sub.posts.pages.hot.comments[0].cid;
 

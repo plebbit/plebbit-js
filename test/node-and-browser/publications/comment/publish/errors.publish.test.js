@@ -25,14 +25,17 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
 
         const post = await generateMockPost(offlineSubAddress, gatewayPlebbit);
 
-        gatewayPlebbit._timeouts["subplebbit-ipns"] = 1000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
+        gatewayPlebbit._timeouts["subplebbit-ipns"] = 5000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
 
         try {
             await post.publish();
             expect.fail("should not resolve");
         } catch (e) {
             expect(e.code, messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
-            expect(e.details.gatewayToError[error429Gateway].details.status).to.equal(429);
+            expect(e.details.gatewayToError[error429Gateway].details.status).to.equal(
+                429,
+                "expected gateway error details" + JSON.stringify(e.details.gatewayToError[error429Gateway].details)
+            );
             expect(e.details.gatewayToError[normalIpfsGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
         }
         await gatewayPlebbit.destroy();

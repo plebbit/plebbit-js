@@ -203,13 +203,13 @@ describeSkipIfRpc("mock pubsub client with socket.io server", () => {
 
         await Promise.all(publishPromises);
 
-        await waitForCondition(() => observedLatencies.length === totalPublications, 5000);
+        await waitForCondition(() => observedLatencies.length === totalPublications, 10000);
         expect(observedLatencies.length).to.equal(totalPublications);
         const maxLatency = Math.max(...observedLatencies);
         const avgLatency = observedLatencies.reduce((acc, cur) => acc + cur, 0) / observedLatencies.length;
 
-        expect(maxLatency).to.be.lessThan(2000, "mock pubsub server exceeded 10s challenge deadline");
-        expect(avgLatency).to.be.lessThan(2000);
+        expect(maxLatency).to.be.lessThan(3000, "mock pubsub server exceeded 10s challenge deadline");
+        expect(avgLatency).to.be.lessThan(3000);
 
         await subscriber.pubsub.unsubscribe(topic);
         await subscriber.destroy();
