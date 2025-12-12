@@ -8,10 +8,9 @@ import {
     processAllCommentsRecursively,
     resolveWhenConditionIsTrue,
     loadAllPages,
-    forceParentRepliesToAlwaysGenerateMultipleChunks,
     getCommentWithCommentUpdateProps,
     mockGatewayPlebbit,
-    forcePagesToUsePageCidsOnly,
+    forceLocalSubPagesToAlwaysGenerateMultipleChunks,
     publishToModQueueWithDepth,
     generateMockVote,
     generateMockComment,
@@ -179,7 +178,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             });
             expect(foundInPosts).to.be.false;
 
-            await forcePagesToUsePageCidsOnly({
+            await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
                 subplebbit,
                 subplebbitPostsCommentProps: { signer: modSigner }
             }); // the goal of this is to force the subplebbit.posts to have all pages and page.cids
@@ -214,7 +213,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 });
                 expect(foundInReplies).to.be.false;
 
-                const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                const { cleanup } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
                     subplebbit,
                     parentComment,
                     parentCommentReplyProps: { signer: modSigner }
@@ -244,7 +243,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 const postComment = await plebbit.getComment({ cid: commentInPendingApproval.postCid });
                 await postComment.update();
                 await resolveWhenConditionIsTrue({ toUpdate: postComment, predicate: () => postComment.updatedAt });
-                const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+                const { cleanup } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
                     subplebbit,
                     parentComment: postComment,
                     parentCommentReplyProps: { signer: modSigner }

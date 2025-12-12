@@ -1,9 +1,6 @@
 import { expect } from "chai";
 import {
     mockPlebbit,
-    mockReplyToUseParentPagesForUpdates,
-    processAllCommentsRecursively,
-    findOrPublishCommentWithDepth,
     publishRandomPost,
     createSubWithNoChallenge,
     publishRandomReply,
@@ -12,7 +9,7 @@ import {
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitPages,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    forceParentRepliesToAlwaysGenerateMultipleChunks,
+    forceLocalSubPagesToAlwaysGenerateMultipleChunks,
     publishCommentWithDepth
 } from "../../../dist/node/test/test-util.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -70,7 +67,6 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     depthsToTest.map((depth) => {
         it(`Can publish a reply with depth = ${depth} to a post and fetch updates from its post's pages`, async () => {
             const log = Logger("plebbit-js:test:subplebbit:postUpdates:publishReplyWithDepth");
-            // This test is flaky
 
             // is it possibly only failing when reply is fetched using pages?
             const parentCommentInstance = await publishCommentWithDepth({ depth: depth - 1, subplebbit });
@@ -84,7 +80,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             await parentCommentInstance.stop(); // seems like this line fixes the flakiness
 
             const reply = await publishRandomReply(parentCommentInstance, remotePlebbit);
-            const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+            const { cleanup } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
                 subplebbit,
                 parentComment: parentCommentInstance
             });

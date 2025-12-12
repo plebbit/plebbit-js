@@ -2,7 +2,7 @@ import { expect } from "chai";
 import {
     createSubWithNoChallenge,
     describeSkipIfRpc,
-    forcePagesToUsePageCidsOnly,
+    forceLocalSubPagesToAlwaysGenerateMultipleChunks,
     getAvailablePlebbitConfigsToTestAgainst,
     mockCommentToNotUsePagesForUpdates,
     mockPlebbit,
@@ -374,7 +374,7 @@ async function createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids = f
             toUpdate: subplebbit,
             predicate: () => typeof subplebbit.updatedAt === "number"
         });
-        await forcePagesToUsePageCidsOnly({ subplebbit });
+        await forceLocalSubPagesToAlwaysGenerateMultipleChunks({ subplebbit });
         await resolveWhenConditionIsTrue({
             toUpdate: subplebbit,
             predicate: () => typeof subplebbit.updatedAt === "number"
@@ -394,8 +394,8 @@ async function createPostDepthTestEnvironment({ forceSubplebbitPostsPageCids = f
         expectedPostUpdate: storedPostUpdate,
         forcedSubplebbitStoredUpdate,
         cleanup: async () => {
-            await subplebbit.delete().catch(() => {});
-            await publisherPlebbit.destroy().catch(() => {});
+            await subplebbit.delete();
+            await publisherPlebbit.destroy();
         }
     };
 }
@@ -419,10 +419,10 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
                 predicate: () => typeof parentComment.updatedAt === "number"
             });
             if (!parentComment.cid) throw new Error("parent comment cid should be defined after forcing page generation");
-            await forcePagesToUsePageCidsOnly({ subplebbit, parentComment });
+            await forceLocalSubPagesToAlwaysGenerateMultipleChunks({ subplebbit, parentComment });
             forcedParentStoredUpdate = await waitForStoredParentPageCids(subplebbit, parentComment.cid);
         } finally {
-            await parentComment.stop().catch(() => {});
+            await parentComment.stop();
         }
     }
 
@@ -436,8 +436,8 @@ async function createReplyDepthTestEnvironment({ replyDepth, forceParentRepliesP
         expectedLeafUpdate: chain.expectedLeafUpdate,
         forcedParentStoredUpdate,
         cleanup: async () => {
-            await subplebbit.delete().catch(() => {});
-            await publisherPlebbit.destroy().catch(() => {});
+            await subplebbit.delete();
+            await publisherPlebbit.destroy();
         }
     };
 }

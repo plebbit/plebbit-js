@@ -1790,10 +1790,10 @@ export async function forceLocalSubPagesToAlwaysGenerateMultipleChunks({
     forcedPreloadedPageSizeBytes?: number;
     parentCommentReplyProps?: Partial<CreateCommentOptions>;
     subplebbitPostsCommentProps?: CreateCommentOptions;
-}): Promise<() => void> {
+}): Promise<{ cleanup: () => void }> {
     if (!parentComment) {
         await forceSubplebbitToGenerateAllPostsPages(subplebbit as RemoteSubplebbit, subplebbitPostsCommentProps);
-        return () => {};
+        return { cleanup: () => {} };
     }
 
     ensureLocalSubplebbitForForcedChunking(subplebbit);
@@ -1857,7 +1857,7 @@ export async function forceLocalSubPagesToAlwaysGenerateMultipleChunks({
         throw err;
     }
 
-    return cleanup;
+    return { cleanup };
 }
 
 async function ensureParentCommentHasPageCidsForChunking(

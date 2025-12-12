@@ -7,7 +7,7 @@ import {
     mockPlebbit,
     createSubWithNoChallenge,
     publishRandomPost,
-    forceParentRepliesToAlwaysGenerateMultipleChunks
+    forceLocalSubPagesToAlwaysGenerateMultipleChunks
 } from "../../../dist/node/test/test-util.js";
 import { PlebbitError } from "../../../dist/node/plebbit-error.js";
 import signers from "../../fixtures/signers.js";
@@ -466,7 +466,7 @@ async function createValidateCommentTestEnvironment() {
 }
 
 async function ensureCommentHasPaginatedReplies({ subplebbit, comment }) {
-    const cleanupForcedChunking = await forceParentRepliesToAlwaysGenerateMultipleChunks({
+    const { cleanup: cleanupForcedChunking } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
         subplebbit,
         parentComment: comment,
         forcedPreloadedPageSizeBytes: 512

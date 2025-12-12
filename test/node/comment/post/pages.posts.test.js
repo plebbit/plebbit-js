@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import {
     createSubWithNoChallenge,
-    forcePagesToUsePageCidsOnly,
+    forceLocalSubPagesToAlwaysGenerateMultipleChunks,
     getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPageCidToFindComment,
     loadAllPagesBySortName,
@@ -143,7 +143,7 @@ async function createLocalSubplebbitWithPageCids(plebbitConfig) {
     const latestPost = await publishRandomPost(publisherSubplebbit.address, publisherPlebbit);
     await waitTillPostInSubplebbitPages(latestPost, publisherPlebbit);
 
-    await forcePagesToUsePageCidsOnly({
+    await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
         subplebbit: publisherSubplebbit,
         forcedPreloadedPageSizeBytes: 1,
         subplebbitPostsCommentProps: { content: `local pagination coverage` }

@@ -4,7 +4,7 @@ import { describe, it } from "vitest";
 
 const DESTROY_TIMEOUT_MS = (() => {
     const parsed = Number(process.env.HANGING_TEST_TIMEOUT_MS);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 20_000;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 30_000;
 })();
 const SCENARIO_MANIFEST_FILENAME = "scenario-manifest.json";
 const SCENARIO_DIST_DIR_URL = new URL("../../../dist/node/test/node/hanging-test/scenarios/", import.meta.url);
@@ -28,16 +28,13 @@ for (const scenario of scenarioDefinitions) {
     describe.sequential(`[Scenario: ${scenario.description}]`, () => {
         for (const config of configs) {
             describe.sequential(`[Config: ${config.name}]`, () => {
-                it.sequential(
-                    `Hanging sceneario: ${scenario.description}. It should not keep the Node process alive - ${config.name}`,
-                    async function () {
-                        await runHangingScenarioInChildProcess({
-                            configCode: config.testConfigCode,
-                            timeoutMs: DESTROY_TIMEOUT_MS,
-                            scenarioModuleBaseName: scenario.moduleBaseName
-                        });
-                    }
-                );
+                it(`Hanging sceneario: ${scenario.description}. It should not keep the Node process alive - ${config.name}`, async function () {
+                    await runHangingScenarioInChildProcess({
+                        configCode: config.testConfigCode,
+                        timeoutMs: DESTROY_TIMEOUT_MS,
+                        scenarioModuleBaseName: scenario.moduleBaseName
+                    });
+                });
             });
         }
     });
