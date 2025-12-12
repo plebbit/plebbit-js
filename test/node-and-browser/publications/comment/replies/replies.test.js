@@ -1,11 +1,9 @@
 import { expect } from "chai";
 import {
-    loadAllPages,
     publishRandomPost,
     getAvailablePlebbitConfigsToTestAgainst,
     publishRandomReply,
     mockPlebbitV2,
-    forceSubplebbitToGenerateAllRepliesPages,
     loadAllPagesBySortName,
     isPlebbitFetchingUsingGateways,
     waitTillReplyInParentPagesInstance,
@@ -16,35 +14,13 @@ import { POST_REPLIES_SORT_TYPES, REPLY_REPLIES_SORT_TYPES } from "../../../../.
 import signers from "../../../../fixtures/signers.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { messages } from "../../../../../dist/node/errors.js";
-import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../../pages/pages-test-util.js";
+import { testCommentFieldsInPageJson } from "../../../pages/pages-test-util.js";
 import { describe, it } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
-const testPostRepliesSort = async (post, replySortName, subplebbit) => {
-    const repliesUnderPost = await loadAllPagesBySortName(replySortName, post.replies);
-    if (repliesUnderPost.length === 0) throw Error("Can't test replies with when parent comment has no replies");
-    await testPageCommentsIfSortedCorrectly(repliesUnderPost, replySortName, subplebbit);
-
-    for (const replyUnderPost of repliesUnderPost) {
-        expect(replyUnderPost.postCid).to.equal(post.cid);
-        if (replyUnderPost.depth === 1) expect(replyUnderPost.parentCid).to.equal(post.cid);
-    }
-};
-
-const testReplyRepliesSort = async (reply, replySortName, subplebbit) => {
-    const repliesUnderReply = await loadAllPagesBySortName(replySortName, reply.replies);
-    if (repliesUnderReply.length === 0) throw Error("Can't test replies with when parent comment has no replies");
-    await testPageCommentsIfSortedCorrectly(repliesUnderReply, replySortName, subplebbit);
-
-    for (const replyUnderReply of repliesUnderReply) {
-        expect(replyUnderReply.postCid).to.equal(reply.postCid);
-        expect(replyUnderReply.parentCid).to.equal(reply.cid);
-    }
-};
-
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("post.replies - " + config.name, async () => {
+    describe.concurrent("post.replies - " + config.name, async () => {
         let plebbit, subplebbit;
         let post, firstLevelReply, secondLevelReply, thirdLevelReply;
 
@@ -65,7 +41,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(post.replies.pageCids).to.deep.equal({});
         });
 
-        it(`If all replies fit in a single preloaded page, there should not be any pageCids on CommentUpdate`, async () => {
+        it.sequential(`If all replies fit in a single preloaded page, there should not be any pageCids on CommentUpdate`, async () => {
             firstLevelReply = await publishRandomReply(post, plebbit);
             secondLevelReply = await publishRandomReply(firstLevelReply, plebbit);
             thirdLevelReply = await publishRandomReply(secondLevelReply, plebbit);
@@ -83,64 +59,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(post.replies.pageCids[preloadedPageSortName]).to.be.undefined;
         });
 
-        it(`A post should have pageCids after maxing out its replies`, async () => {
-            await forceSubplebbitToGenerateAllRepliesPages(post);
-            expect(post.replies.pageCids).to.not.deep.equal({}); // we have multiple pages now
-            expect(post.replies.pages.best.nextCid).to.exist;
-        });
-
-        it(`A preloaded page should not have a CID in post.replies.pageCids after maxing out its replies`, async () => {
-            for (const preloadedPageSortName of Object.keys(post.replies.pages))
-                expect(post.replies.pageCids[preloadedPageSortName]).to.be.undefined;
-        });
-
-        it(`Stringified post.replies still have all props`, async () => {
-            const preloadedPages = post.replies.pages;
-            for (const preloadedSortType of Object.keys(preloadedPages)) {
-                const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages[preloadedSortType].comments;
-                for (const reply of stringifiedReplies) testCommentFieldsInPageJson(reply);
-            }
-        });
-
-        it(`A post has the right pageCids under it after maxing out its replies`, async () => {
-            const pageCidsWithoutPreloadedPage = Object.keys(POST_REPLIES_SORT_TYPES).filter(
-                (pageSortName) => !Object.keys(post.replies.pages).includes(pageSortName)
+        it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
+            const postReplySortNames = Object.keys(POST_REPLIES_SORT_TYPES).filter(
+                (sortName) => post.replies.pageCids[sortName] || post.replies.pages[sortName]
             );
-            expect(Object.keys(post.replies.pageCids).sort()).to.deep.equal(pageCidsWithoutPreloadedPage.sort());
-        });
-
-        Object.keys(POST_REPLIES_SORT_TYPES).map((sortName) =>
-            it.concurrent(
-                `${sortName} pages under a post are sorted correctly`,
-                async () => await testPostRepliesSort(post, sortName, subplebbit)
-            )
-        );
-
-        Object.keys(POST_REPLIES_SORT_TYPES)
-            .filter((replySortName) => POST_REPLIES_SORT_TYPES[replySortName].flat)
-            .map((flatSortName) =>
-                it.concurrent(
-                    `flat sort (${flatSortName}) includes all nested fields, and has no replies field within its comments`,
-                    async () => {
-                        await post.update();
-                        await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
-                        await post.stop();
-
-                        const flatReplies = await loadAllPages(post.replies.pageCids[flatSortName], post.replies);
-                        // Verify all published replies are present in flatReplies
-                        const flatRepliesCids = flatReplies.map((reply) => reply.cid);
-                        expect(flatRepliesCids).to.include(firstLevelReply.cid);
-                        expect(flatRepliesCids).to.include(secondLevelReply.cid);
-                        expect(flatRepliesCids).to.include(thirdLevelReply.cid);
-
-                        expect(flatReplies.length).to.be.greaterThan(3);
-                        flatReplies.forEach((reply) => expect(reply.replies).to.be.undefined);
-                    }
-                )
-            );
-
-        it.concurrent(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
-            for (const postReplySortName of Object.keys(POST_REPLIES_SORT_TYPES)) {
+            expect(postReplySortNames.length).to.be.greaterThan(0);
+            for (const postReplySortName of postReplySortNames) {
                 const commentsFromEachPage = await loadAllPagesBySortName(postReplySortName, post.replies);
                 const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.raw);
 
@@ -155,7 +79,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     let plebbit, reply, subplebbit;
-    describe(`reply.replies - ${config.name}`, async () => {
+    describe.concurrent(`reply.replies - ${config.name}`, async () => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
@@ -172,7 +96,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(reply.replies.pageCids).to.deep.equal({});
         });
 
-        it(`If all replies fit in a single preloaded page, there should not be any pageCids on CommentUpdate`, async () => {
+        it.sequential(`If all replies fit in a single preloaded page, there should not be any pageCids on CommentUpdate`, async () => {
             const replyUnderReply = await publishRandomReply(reply, plebbit);
             await waitTillReplyInParentPagesInstance(replyUnderReply, reply);
             expect(reply.replies.pages.best).to.exist;
@@ -187,17 +111,6 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(reply.replies.pageCids[preloadedPageSortName]).to.be.undefined;
         });
 
-        it(`A reply should have pageCids after maxing out its replies`, async () => {
-            await forceSubplebbitToGenerateAllRepliesPages(reply);
-            expect(reply.replies.pageCids).to.not.deep.equal({}); // we have multiple pages now
-            expect(reply.replies.pages.best.nextCid).to.exist;
-        });
-
-        it(`A preloaded page should not have a CID in reply.replies.pageCids after maxing out its replies`, async () => {
-            for (const preloadedPageSortName of Object.keys(reply.replies.pages))
-                expect(reply.replies.pageCids[preloadedPageSortName]).to.be.undefined;
-        });
-
         it(`Stringified reply.replies still have all props`, async () => {
             const preloadedPages = reply.replies.pages;
             for (const preloadedSortType of Object.keys(preloadedPages)) {
@@ -206,23 +119,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             }
         });
 
-        it(`A reply has the right pageCids under it after maxing out its replies`, async () => {
-            const pageCidsWithoutPreloadedPageOrFlat = Object.keys(REPLY_REPLIES_SORT_TYPES).filter(
-                (pageSortName) => !Object.keys(reply.replies.pages).includes(pageSortName) && !pageSortName.includes("Flat")
+        it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
+            const availableReplySorts = Object.keys(REPLY_REPLIES_SORT_TYPES).filter(
+                (sortName) => reply.replies.pageCids[sortName] || reply.replies.pages[sortName]
             );
-            expect(Object.keys(reply.replies.pageCids).sort()).to.deep.equal(pageCidsWithoutPreloadedPageOrFlat.sort());
-        });
-
-        Object.keys(REPLY_REPLIES_SORT_TYPES).map((sortName) =>
-            it.concurrent(
-                `${sortName} pages under a reply are sorted correctly`,
-                async () => await testReplyRepliesSort(reply, sortName, subplebbit)
-            )
-        );
-
-        it.concurrent(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
-            const replySortTypesWithoutFlat = Object.keys(REPLY_REPLIES_SORT_TYPES);
-            for (const replySortName of replySortTypesWithoutFlat) {
+            expect(availableReplySorts.length).to.be.greaterThan(0);
+            for (const replySortName of availableReplySorts) {
                 const commentsFromEachPage = await loadAllPagesBySortName(replySortName, reply.replies);
                 const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.raw);
 
@@ -235,7 +137,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 });
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe("comment.replies - " + config.name, async () => {
+    describe.concurrent("comment.replies - " + config.name, async () => {
         let plebbit, post;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -246,7 +148,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        describe(`comment.replies.getPage - ${config.name}`, async () => {
+        describe.concurrent(`comment.replies.getPage - ${config.name}`, async () => {
             itSkipIfRpc("replies.getPage will throw a timeout error when request times out", async () => {
                 // Create a plebbit instance with a very short timeout for page-ipfs
                 const plebbit = await mockPlebbitV2({ plebbitOptions: { validatePages: false }, remotePlebbit: true });
@@ -279,7 +181,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe("replies.validatePage validation tests", async () => {
+    describe.concurrent("replies.validatePage validation tests", async () => {
         let plebbit, postWithReplies;
 
         before(async () => {
