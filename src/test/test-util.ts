@@ -1769,82 +1769,7 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
 
-const FORCE_PAGE_GENERATION_PAGE_SAFETY_MARGIN_BYTES = 1024;
-const FORCE_PAGE_GENERATION_MAX_REPLY_CONTENT_BYTES = 30 * 1024; // keep publication comfortably under 40kb cap
-const FORCE_PAGE_GENERATION_ESTIMATED_REPLY_GROWTH_BYTES = 24 * 1024;
-const FORCE_PAGE_GENERATION_EXTRA_MARGIN_BYTES = 4 * 1024;
-const FORCE_PAGE_GENERATION_MAX_REPLIES_TO_PUBLISH = 80;
 const FORCE_SUBPLEBBIT_MIN_POST_CONTENT_BYTES = 30 * 1024;
-
-// This may not be needed
-
-export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment, commentProps?: CreateCommentOptions) {
-    await comment.update();
-    const rawCommentUpdateRecord = comment.raw.commentUpdate;
-    if (!rawCommentUpdateRecord) throw Error("Comment should be updating before forcing to generate all pages");
-    if (Object.keys(comment.replies.pageCids).length > 0) return;
-
-    const log = Logger("plebbit-js:test-util:forceSubplebbitToGenerateAllRepliesPages");
-    const targetUpdateSize = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - FORCE_PAGE_GENERATION_PAGE_SAFETY_MARGIN_BYTES;
-    const getCommentUpdateSize = async () => {
-        if (!comment.raw.commentUpdate) throw Error("Comment should be updating while measuring commentUpdate size");
-        return calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(comment.raw.commentUpdate));
-    };
-
-    let currentUpdateSize = await getCommentUpdateSize();
-    const initialReplyCount = comment.replyCount ?? 0;
-    let repliesPublished = 0;
-    let lastPublishedReply: Comment | undefined;
-
-    if (Object.keys(comment.replies.pageCids).length === 0) {
-        const bytesRemaining = Math.max(0, targetUpdateSize - currentUpdateSize);
-        const repliesToPublish = Math.max(
-            1,
-            Math.min(
-                FORCE_PAGE_GENERATION_MAX_REPLIES_TO_PUBLISH,
-                Math.ceil((bytesRemaining + FORCE_PAGE_GENERATION_EXTRA_MARGIN_BYTES) / FORCE_PAGE_GENERATION_ESTIMATED_REPLY_GROWTH_BYTES)
-            )
-        );
-        const replyContentSize = Math.min(
-            FORCE_PAGE_GENERATION_MAX_REPLY_CONTENT_BYTES,
-            bytesRemaining + FORCE_PAGE_GENERATION_EXTRA_MARGIN_BYTES
-        );
-        const replyContent = "x".repeat(replyContentSize);
-
-        const publishedReplies = await Promise.all(
-            Array.from({ length: repliesToPublish }, async () =>
-                publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, {
-                    ...commentProps,
-                    content: replyContent
-                })
-            )
-        );
-
-        repliesPublished += publishedReplies.length;
-        lastPublishedReply = publishedReplies[publishedReplies.length - 1];
-
-        await comment.update();
-        await waitTillReplyInParentPagesInstance(
-            lastPublishedReply as Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>,
-            comment
-        );
-        currentUpdateSize = await getCommentUpdateSize();
-        log(
-            "Published",
-            publishedReplies.length,
-            "replies under comment",
-            comment.cid,
-            "to force page generation. Current commentUpdate size",
-            currentUpdateSize,
-            "target",
-            targetUpdateSize
-        );
-    }
-
-    if (Object.keys(comment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
-    if (comment.replyCount && comment.replyCount < repliesPublished)
-        throw Error("Reply count is less than the number of comments published");
-}
 
 function ensureLocalSubplebbitForForcedChunking(
     subplebbit?: LocalSubplebbit | RpcLocalSubplebbit | RemoteSubplebbit
@@ -1853,7 +1778,7 @@ function ensureLocalSubplebbitForForcedChunking(
     if (!(subplebbit instanceof LocalSubplebbit)) throw Error("Forcing reply page chunking is only supported when using a LocalSubplebbit");
 }
 
-export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
+export async function forceLocalSubPagesToAlwaysGenerateMultipleChunks({
     subplebbit,
     parentComment,
     forcedPreloadedPageSizeBytes = 1,
@@ -1933,33 +1858,6 @@ export async function forceParentRepliesToAlwaysGenerateMultipleChunks({
     }
 
     return cleanup;
-}
-
-export async function forcePagesToUsePageCidsOnly({
-    subplebbit,
-    parentComment,
-    forcedPreloadedPageSizeBytes = 1,
-    parentCommentReplyProps,
-    subplebbitPostsCommentProps
-}: {
-    subplebbit: LocalSubplebbit | RemoteSubplebbit;
-    parentComment?: Comment;
-    forcedPreloadedPageSizeBytes?: number;
-    parentCommentReplyProps?: Partial<CreateCommentOptions>;
-    subplebbitPostsCommentProps?: CreateCommentOptions;
-}) {
-    const cleanup = await forceParentRepliesToAlwaysGenerateMultipleChunks({
-        subplebbit,
-        parentComment,
-        forcedPreloadedPageSizeBytes,
-        parentCommentReplyProps,
-        subplebbitPostsCommentProps
-    });
-    try {
-        if (parentComment) await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-    } finally {
-        cleanup();
-    }
 }
 
 async function ensureParentCommentHasPageCidsForChunking(
