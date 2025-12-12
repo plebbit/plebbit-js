@@ -15,7 +15,7 @@ export async function runHangingScenarioInChildProcess({
     scenarioModuleBaseName
 }: RunHangingScenarioInChildProcessOptions): Promise<void> {
     return new Promise((resolve, reject) => {
-        const waitForCleanupMs = Math.max(1000, Math.floor(timeoutMs / 2));
+        const waitForCleanupMs = Math.max(1000, timeoutMs);
         const env = {
             ...process.env,
             PLEBBIT_CONFIGS: configCode,

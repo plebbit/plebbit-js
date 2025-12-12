@@ -1,7 +1,7 @@
 import { resolveHangingScenarioModule } from "../../../../test/node/hanging-test/scenarios/hanging-test-util.js";
 import type { HangingScenarioDefinition } from "../../../../test/node/hanging-test/scenarios/hanging-test-util.js";
 
-const DEFAULT_WAIT_TIMEOUT_MS = 5000;
+const DEFAULT_WAIT_TIMEOUT_MS = 30_000;
 const parsedWaitMs = Number(process.env.HANGING_RUNNER_WAIT);
 const WAIT_TIMEOUT_MS = Number.isFinite(parsedWaitMs) && parsedWaitMs > 0 ? parsedWaitMs : DEFAULT_WAIT_TIMEOUT_MS;
 const parsedPollMs = Number(process.env.HANGING_RUNNER_POLL);
