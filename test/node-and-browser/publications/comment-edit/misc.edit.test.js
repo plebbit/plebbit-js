@@ -79,7 +79,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(deterministicStringify(localEdit)).to.equal(deterministicStringify(recreatedLocalEdit));
         });
 
-        it(`Can publish a CommentEdit that was created from jsonfied CommentEdit instance`, async () => {
+        it.sequential(`Can publish a CommentEdit that was created from jsonfied CommentEdit instance`, async () => {
             const props = {
                 subplebbitAddress: subplebbitAddress,
                 commentCid: commentToEdit.cid,
@@ -100,7 +100,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe.concurrent(`Changing multiple fields simultaneously in one CommentEdit - ` + config.name, async () => {
+    describe.sequential(`Changing multiple fields simultaneously in one CommentEdit - ` + config.name, async () => {
         let plebbit;
 
         before(async () => {
