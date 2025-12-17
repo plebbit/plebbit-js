@@ -2,6 +2,9 @@
     "name": "@plebbit/plebbit-js",
     "version": "0.0.7",
     "type": "module",
+    "resolutions": {
+        "@peculiar/x509": "1.14.0"
+    },
     "scripts": {
         "build": "npm run clean && run-s build:node build:browser",
         "build:node": "tsc --project config/tsconfig.json",
@@ -185,8 +188,5 @@
     "homepage": "https://github.com/plebbit/plebbit-js#readme",
     "engines": {
         "node": ">=20.18.0"
-    },
-    "resolutions": {
-        "@peculiar/x509": "1.14.0"
     }
 }
