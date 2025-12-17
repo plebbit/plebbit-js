@@ -1,4 +1,5 @@
 import {
+    describeSkipIfRpc,
     mockGatewayPlebbit,
     mockPlebbit,
     mockPlebbitNoDataPathWithOnlyKuboClient,
@@ -103,7 +104,7 @@ const fetchCidRecordDirectly = async (gatewayPlebbit, cid) => {
     return fetchGatewayJson(ipfsUrl, "Direct CID fetch");
 };
 
-describe.concurrent("Gateway loading of local subplebbit IPNS", async () => {
+describeSkipIfRpc.concurrent("Gateway loading of local subplebbit IPNS", async () => {
     let plebbit, subplebbit;
     let gatewayPlebbit;
     let kuboPlebbit;

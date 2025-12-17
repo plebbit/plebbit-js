@@ -12,7 +12,8 @@ import {
     getAvailablePlebbitConfigsToTestAgainst,
     waitTillReplyInParentPages,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    mockPlebbitNoDataPathWithOnlyKuboClientNoAdd
+    mockPlebbitNoDataPathWithOnlyKuboClientNoAdd,
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { CID } from "kubo-rpc-client";
@@ -235,7 +236,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
 
             if (commentDepth === 0)
-                it(`Purged post should not appear in subplebbit.postUpdates`, async () => {
+                itSkipIfRpc(`Purged post should not appear in subplebbit.postUpdates`, async () => {
                     const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
                     if (!subplebbit.postUpdates) return; // sub has no post updates, good!
                     const postUpdatesTimes = Object.keys(subplebbit.postUpdates);

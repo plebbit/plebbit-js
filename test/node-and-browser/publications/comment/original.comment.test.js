@@ -20,7 +20,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`comment.original after publishing a comment successfully`, async () => {
-            const post = await publishRandomPost(signers[0].address, plebbit, {}, false);
+            const post = await publishRandomPost(signers[0].address, plebbit);
             expect(post.original.author.address).to.equal(post.author.address);
             expect(post.original.author.subplebbit).to.be.undefined;
             expect(post.original.content).to.equal(post.content);
