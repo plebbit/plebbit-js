@@ -25,7 +25,8 @@ const depthsToTest = [0, 1, 2, 3, 10];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } }; // this should get comment to be successful with challenge, thus sending it to modqueue
 
 for (const commentInPendingApprovalDepth of depthsToTest) {
-    describeSkipIfRpc.concurrent(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
+    // made it sequential because maybe it can stop failing in CI
+    describeSkipIfRpc.sequential(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
         let plebbit;
         let remotePlebbit;
         let commentInPendingApproval;
