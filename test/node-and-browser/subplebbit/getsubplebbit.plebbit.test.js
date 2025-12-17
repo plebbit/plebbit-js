@@ -135,8 +135,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                     expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal("ERR_INVALID_JSON");
                 } else expect(e.code).to.equal("ERR_INVALID_JSON");
+            } finally {
+                await ipnsObj.plebbit.destroy();
             }
-            await ipnsObj.plebbit.destroy();
         });
 
         it(`plebbit.getSubplebbit should throw immedietly if it loads a record with invalid signature`, async () => {
@@ -152,8 +153,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS",
                     "ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED"
                 ]).to.include(e.code);
+            } finally {
+                await ipnsObj.plebbit.destroy();
             }
-            await ipnsObj.plebbit.destroy();
         });
 
         it(`plebbit.getSubplebbit times out if subplebbit does not load`, async () => {
@@ -171,9 +173,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P",
                     "ERR_IPNS_RESOLUTION_P2P_TIMEOUT",
                     "ERR_GET_SUBPLEBBIT_TIMED_OUT"
-                ]).to.include(e.code);
+                ]).to.include(e.code, "Error is not as expected:" + JSON.stringify(e));
+            } finally {
+                await customPlebbit.destroy();
             }
-            await customPlebbit.destroy();
         });
     });
 });
