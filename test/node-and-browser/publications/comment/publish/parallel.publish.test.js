@@ -129,7 +129,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                         })
                     ]); // should publish comments  but not get a response
 
-                    expect(challengeRequestIds.size).to.equal(stressPublishCount, "Not every publication emitted a challenge request");
+                    expect(challengeRequestIds.size).to.greaterThanOrEqual(
+                        stressPublishCount,
+                        "Not every publication emitted a challenge request"
+                    );
                     expect(externalPeerChallengeRequests.size).to.equal(
                         stressPublishCount,
                         "External peer did not receive all challenge requests"

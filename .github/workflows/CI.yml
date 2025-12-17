@@ -48,7 +48,7 @@ jobs:
               run: npm run test:mocked:challenges
             - name: Run node tests (local config)
               id: run_node_tests_local
-              run: DEBUG="plebbit*" node test/run-test-config.js --parallel --environment node --mocha-spec test/node --run-timeout-ms 1740000 --log-prefix test_node_local
+              run: DEBUG="plebbit*" PLEBBIT_CONFIGS=local-kubo-rpc node test/run-test-config.js --parallel --environment node --mocha-spec test/node --run-timeout-ms 1740000 --log-prefix test_node_local
               shell: bash
             - name: Upload Vitest reports (node local)
               if: ${{ failure() && steps.run_node_tests_local.outcome == 'failure' }}
@@ -153,7 +153,7 @@ jobs:
             # Setup tests for plebbit-js using rpc here
             - run: DEBUG="plebbit*" npm run test:server:node:rpc 2>&1 | tee test_server.log & npm run test:server:wait-on
             - id: run_rpc_tests
-              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
+              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:rpc
             - name: Upload Vitest reports (rpc)
               if: ${{ failure() && steps.run_rpc_tests.outcome == 'failure' }}
               uses: actions/upload-artifact@v4

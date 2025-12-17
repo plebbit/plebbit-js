@@ -9,14 +9,11 @@ import {
     resolveWhenConditionIsTrue,
     getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPagesToFindCommentInParentPagesInstance,
-    iterateThroughPageCidToFindComment,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
-    getCommentWithCommentUpdateProps
+    iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { describe, it } from "vitest";
-import remeda from "remeda";
 
 const subplebbitAddress = signers[7].address;
 const roles = [

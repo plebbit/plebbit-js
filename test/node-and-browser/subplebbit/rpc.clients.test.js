@@ -1,12 +1,7 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
-import {
-    createNewIpns,
-    resolveWhenConditionIsTrue,
-    getAvailablePlebbitConfigsToTestAgainst,
-    resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util.js";
+import { createNewIpns, resolveWhenConditionIsTrue, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 
 import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
 

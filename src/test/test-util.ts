@@ -1386,16 +1386,16 @@ export function getAvailablePlebbitConfigsToTestAgainst(opts?: {
     if (opts?.includeAllPossibleConfigOnEnv) {
         // if node, ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"], also 'remote-plebbit-rpc' if isRpcFlagOn()
         // if browser, ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
-        const isNode = Boolean(globalThis["process"]);
-        const plebbitConfigCodes: PlebbitTestConfigCode[] = isNode
-            ? ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
-            : ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"];
-        if (isNode && isRpcFlagOn()) plebbitConfigCodes.push("remote-plebbit-rpc");
-        if (opts.includeOnlyTheseTests?.length)
-            Object.values(
-                remeda.pick(remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes), opts.includeOnlyTheseTests)
-            );
-        else return Object.values(remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes));
+        const isBrowser = isRunningInBrowser();
+        const plebbitConfigCodes: PlebbitTestConfigCode[] = isBrowser
+            ? ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
+            : ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"];
+        if (!isBrowser && isRpcFlagOn()) plebbitConfigCodes.push("remote-plebbit-rpc");
+        const availableConfigs = remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes);
+        if (opts.includeOnlyTheseTests?.length) {
+            return Object.values(remeda.pick(availableConfigs, opts.includeOnlyTheseTests));
+        }
+        return Object.values(availableConfigs);
     }
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;

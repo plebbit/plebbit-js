@@ -1,17 +1,10 @@
 import { describe, it, expect } from "vitest";
-import pTimeout from "p-timeout";
 import signers from "../../../fixtures/signers.js";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
-    createSubWithNoChallenge,
     resolveWhenConditionIsTrue,
-    publishRandomPost,
-    waitTillPostInSubplebbitInstancePages,
-    publishCommentWithDepth,
-    resolveWhenConditionIsTrue
+    publishCommentWithDepth
 } from "../../../../dist/node/test/test-util.js";
-
-import { describe, it } from "vitest";
 
 const depthsToTest = [0, 1, 2, 3, 10, 15];
 const subplebbitAddress = signers[0].address;
