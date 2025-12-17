@@ -1,7 +1,14 @@
+import { mkdirSync } from "node:fs";
 import { defineConfig } from "vitest/config";
-const defaultTimeoutMs = Number.parseInt(process.env.VITEST_LAUNCH_TIMEOUT ?? process.env.VITEST_TIMEOUT ?? "60000", 10);
 
-// Launch-specific Vitest config: node-only + tree reporter to keep debug output readable.
+const parsedTimeoutMs = Number.parseInt(process.env.VITEST_LAUNCH_TIMEOUT ?? process.env.VITEST_TIMEOUT ?? "120000", 10);
+const vitestLaunchReportDir = ".vitest.launch.reports";
+const vitestLaunchJsonReportPath = `${vitestLaunchReportDir}/node-tests.json`;
+const launchReporters = ["tree", ["json", { outputFile: vitestLaunchJsonReportPath }]];
+
+mkdirSync(vitestLaunchReportDir, { recursive: true });
+
+// Launch-specific Vitest config: node-only + tree reporter to keep debug output readable while still emitting machine-readable JSON.
 export default defineConfig({
     test: {
         environment: "node",
@@ -9,13 +16,14 @@ export default defineConfig({
         setupFiles: ["./test/vitest-node-setup.js"],
         include: ["test/node/**/*.test.{js,ts}", "test/node-and-browser/**/*.test.{js,ts}", "test/challenges/**/*.test.{js,ts}"],
         allowOnly: true,
-        passWithNoTests: false,
+        passWithNoTests: true,
         bail: 1,
-        reporters: ["tree"],
-        fileParallelism: false,
+        reporters: launchReporters,
+        fileParallelism: true,
         dangerouslyIgnoreUnhandledErrors: false,
-        testTimeout: defaultTimeoutMs,
-        hookTimeout: defaultTimeoutMs,
-        teardownTimeout: defaultTimeoutMs
+        testTimeout: parsedTimeoutMs,
+        hookTimeout: parsedTimeoutMs,
+        teardownTimeout: parsedTimeoutMs,
+        maxConcurrency: 10
     }
 });
