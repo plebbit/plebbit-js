@@ -6,6 +6,7 @@
         "target": "ES2021",
         "lib": ["ES2021"],
         "moduleResolution": "Bundler",
+        "customConditions": ["node"],
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
         "sourceMap": true,
