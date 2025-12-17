@@ -8,6 +8,7 @@ import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 const PORT = 25964;
+const MOCK_SERVER_URL = `ws://localhost:${PORT}`;
 let ioServer;
 let startedLocalServer = false;
 
@@ -76,7 +77,7 @@ const ensureServerStarted = async () => {
     startedLocalServer = true;
 };
 
-const createIsolatedMockPubsubClient = () => createMockPubsubClient({ forceNewIoClient: true });
+const createIsolatedMockPubsubClient = () => createMockPubsubClient({ forceNewIoClient: true, serverUrl: MOCK_SERVER_URL });
 
 describeSkipIfRpc("mock pubsub client with socket.io server", () => {
     beforeAll(async () => {

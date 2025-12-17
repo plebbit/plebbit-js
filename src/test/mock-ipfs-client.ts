@@ -4,7 +4,9 @@ import { v4 as uuidV4 } from "uuid";
 import { Buffer } from "buffer";
 import { hideClassPrivateProps } from "../util.js";
 
-const port = 25963;
+const DEFAULT_PORT = 25963;
+const defaultServerUrl = `ws://localhost:${DEFAULT_PORT}`;
+const sharedConnectionStates: Map<string, ConnectionState> = new Map();
 
 type PendingConnectionHandlers = {
     onConnect: () => void;
@@ -17,11 +19,6 @@ type ConnectionState = {
     pendingConnectionHandlers?: PendingConnectionHandlers;
     users: number;
     shouldCleanupWindowIo: boolean;
-};
-
-const sharedConnectionState: ConnectionState = {
-    users: 0,
-    shouldCleanupWindowIo: false
 };
 
 const cleanupPendingConnectionWait = (state: ConnectionState) => {
@@ -172,10 +169,9 @@ class MockPubsubHttpClient {
             }
             await this._connectionState.ioClient?.disconnect();
             this._connectionState.ioClient = undefined;
-            //@ts-expect-error
-            if (this._connectionState.shouldCleanupWindowIo && globalThis["window"] && globalThis["window"]["io"]) {
-                //@ts-expect-error
-                delete globalThis["window"]["io"];
+            const globalWindow = (globalThis as { window?: { io?: Socket } }).window;
+            if (this._connectionState.shouldCleanupWindowIo && globalWindow?.io) {
+                delete globalWindow.io;
             }
             this._connectionState.shouldCleanupWindowIo = false;
         }
@@ -188,42 +184,75 @@ class MockPubsubHttpClient {
     }
 }
 
-export const waitForMockPubsubConnection = async () => {
-    if (!sharedConnectionState.ioClient) throw new Error("MockPubsubHttpClient has not been instantiated");
-    await waitForSocketConnection(sharedConnectionState);
-};
-
 type CreateMockPubsubClientOptions = {
     dropRate?: number;
     forceNewIoClient?: boolean;
+    serverUrl?: string;
 };
 
-export const createMockPubsubClient = ({ dropRate, forceNewIoClient }: CreateMockPubsubClientOptions = {}): MockPubsubHttpClient => {
+const createIoClient = (serverUrl: string) => io(serverUrl);
+
+const createConnectionState = (serverUrl: string, shouldCleanupWindowIo = false): ConnectionState => ({
+    ioClient: createIoClient(serverUrl),
+    pendingConnectionWait: undefined,
+    pendingConnectionHandlers: undefined,
+    users: 0,
+    shouldCleanupWindowIo
+});
+
+const getOrCreateSharedConnectionState = (serverUrl: string): ConnectionState => {
+    const existingState = sharedConnectionStates.get(serverUrl);
+
+    if (existingState?.ioClient) return existingState;
+
+    let createdWindowIo = false;
+    let ioClient;
+
+    const globalWindow = (globalThis as { window?: { io?: Socket } }).window;
+
+    if (globalWindow && serverUrl === defaultServerUrl) {
+        if (!globalWindow.io) {
+            globalWindow.io = createIoClient(serverUrl);
+            createdWindowIo = true;
+        }
+        ioClient = globalWindow.io;
+    } else {
+        ioClient = createIoClient(serverUrl);
+    }
+
+    const newState: ConnectionState = existingState || {
+        pendingConnectionWait: undefined,
+        pendingConnectionHandlers: undefined,
+        users: 0,
+        shouldCleanupWindowIo: createdWindowIo
+    };
+    newState.ioClient = ioClient;
+    newState.shouldCleanupWindowIo = createdWindowIo;
+    sharedConnectionStates.set(serverUrl, newState);
+    return newState;
+};
+
+export const createMockPubsubClient = ({
+    dropRate,
+    forceNewIoClient,
+    serverUrl
+}: CreateMockPubsubClientOptions = {}): MockPubsubHttpClient => {
+    const resolvedServerUrl = serverUrl ?? defaultServerUrl;
+
     if (forceNewIoClient) {
-        const dedicatedConnectionState: ConnectionState = {
-            ioClient: io(`ws://localhost:${port}`),
-            pendingConnectionWait: undefined,
-            pendingConnectionHandlers: undefined,
-            users: 0,
-            shouldCleanupWindowIo: false
-        };
+        const dedicatedConnectionState = createConnectionState(resolvedServerUrl);
         dedicatedConnectionState.users++;
         return new MockPubsubHttpClient(dedicatedConnectionState, dropRate);
     }
 
-    if (!sharedConnectionState.ioClient) {
-        let createdWindowIo = false;
-        //@ts-expect-error
-        if (globalThis["window"] && !globalThis["window"]["io"]) {
-            //@ts-expect-error
-            globalThis["window"]["io"] = io(`ws://localhost:${port}`);
-            createdWindowIo = true;
-        }
-        //@ts-expect-error
-        sharedConnectionState.ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
-        sharedConnectionState.shouldCleanupWindowIo = createdWindowIo;
-    }
+    const sharedConnectionState = getOrCreateSharedConnectionState(resolvedServerUrl);
     sharedConnectionState.users++;
 
     return new MockPubsubHttpClient(sharedConnectionState, dropRate);
+};
+
+export const waitForMockPubsubConnection = async (serverUrl = defaultServerUrl) => {
+    const connectionState = sharedConnectionStates.get(serverUrl);
+    if (!connectionState?.ioClient) throw new Error("MockPubsubHttpClient has not been instantiated");
+    await waitForSocketConnection(connectionState);
 };
