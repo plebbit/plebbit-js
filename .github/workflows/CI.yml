@@ -126,7 +126,7 @@ jobs:
             # Run tests based on environment and config
             - name: Run browser tests with config
               id: run_browser_tests
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }} test/browser test/node-and-browser
 
             - name: Print failed browser tests
               if: ${{ failure() && steps.run_browser_tests.outcome == 'failure' }}
