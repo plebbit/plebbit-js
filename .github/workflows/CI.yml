@@ -48,7 +48,7 @@ jobs:
               run: npm run test:mocked:challenges
             - name: Run node tests (local config)
               id: run_node_tests_local
-              run: DEBUG="plebbit*" PLEBBIT_CONFIGS=local-kubo-rpc node test/run-test-config.js --parallel --environment node --mocha-spec test/node --run-timeout-ms 1740000 --log-prefix test_node_local
+              run: DEBUG="plebbit*" PLEBBIT_CONFIGS=local-kubo-rpc node test/run-test-config.js --parallel --environment node --run-timeout-ms 1740000 --log-prefix test_node_local test/node
               shell: bash
             - name: Upload Vitest reports (node local)
               if: ${{ failure() && steps.run_node_tests_local.outcome == 'failure' }}
