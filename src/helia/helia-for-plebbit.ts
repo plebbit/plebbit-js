@@ -131,7 +131,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
                             return;
                         } catch (err) {
                             const error = <Error>err;
-                            if (error.name === "NotFoundError")
+                            if (error.name === "NotFoundError" || error.name === "RecordNotFoundError")
                                 throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", {
                                     heliaError: err,
                                     ipnsName,
