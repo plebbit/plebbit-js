@@ -44,7 +44,7 @@ for (const commentMod of commentModProps) {
         // but if a reply is rejected, then it will be included in pages only if shouldCommentBePurged = false
         const shouldCommentBeInPostsOrRepliesPages = pendingCommentDepth === 0 ? false : !shouldCommentBePurged; // if it's a reply then it will be nested within another commment and will appear in subplebbit.post
 
-        describe.concurrent(
+        describe.sequential(
             `Comment moderation rejection of pending comment with depth ` +
                 pendingCommentDepth +
                 " and commentModeration=" +

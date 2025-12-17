@@ -87,7 +87,7 @@ describe(`Plebbit.challenges`, async () => {
     });
 });
 
-describe.sequential(`plebbit.destroy()`, async () => {
+describe.concurrent(`plebbit.destroy()`, async () => {
     itSkipIfRpc(`plebbit.destroy() should stop running local sub`, async () => {
         const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);
@@ -121,10 +121,9 @@ describe.sequential(`plebbit.destroy()`, async () => {
         const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         expect(sub.state).to.equal("started");
         await plebbit.destroy();
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const post = await publishRandomPost(sub.address, remotePlebbit); // if we can publish a post, the sub is running
