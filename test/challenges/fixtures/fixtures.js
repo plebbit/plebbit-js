@@ -61,9 +61,10 @@ Comment.prototype.stop = function () {
 
 // mock plebbit sync
 const createPlebbit = () => {
+    const getCidFromArg = (arg) => (typeof arg === "string" ? arg : arg?.cid);
     return {
-        getComment: (cid) => new Comment(cid),
-        createComment: (cid) => new Comment(cid)
+        getComment: (cid) => new Comment(getCidFromArg(cid)),
+        createComment: (cid) => new Comment(getCidFromArg(cid))
     };
 };
 // mock Plebbit async
