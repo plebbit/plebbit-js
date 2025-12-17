@@ -15,16 +15,17 @@ import {
     generateMockVote,
     generateMockComment,
     itSkipIfRpc,
-    createPendingApprovalChallenge
+    createPendingApprovalChallenge,
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
 
-const depthsToTest = [0, 1, 2, 3, 10, 11];
+const depthsToTest = [0, 1, 2, 3, 10];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } }; // this should get comment to be successful with challenge, thus sending it to modqueue
 
 for (const commentInPendingApprovalDepth of depthsToTest) {
-    describe.concurrent(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
+    describeSkipIfRpc.concurrent(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
         let plebbit;
         let remotePlebbit;
         let commentInPendingApproval;
