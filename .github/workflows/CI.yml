@@ -83,7 +83,7 @@ jobs:
             - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
             - name: Run tests with config
               id: run_node_tests_remote
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment node
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment node test/node-and-browser
             - name: Print failed node tests
               if: ${{ failure() && steps.run_node_tests_remote.outcome == 'failure' }}
               run: node .github/workflows/print-vitest-failures.cjs
