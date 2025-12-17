@@ -8,12 +8,10 @@ const isFirefox = process.env.VITEST_BROWSER === "firefox";
 const isGithubActions = Boolean(process.env.GITHUB_ACTIONS);
 const vitestReportDir = ".vitest-reports";
 const vitestJsonReportPath = `${vitestReportDir}/browser-tests.json`;
-const vitestHtmlReportPath = `${vitestReportDir}/browser-tests/index.html`;
 const stderrJsonReporterPath = "./config/vitest-stderr-json-reporter.js";
 const baseReporters = [
     "verbose",
-    [stderrJsonReporterPath, { outputFile: vitestJsonReportPath }],
-    ["html", { outputFile: vitestHtmlReportPath }]
+    [stderrJsonReporterPath, { outputFile: vitestJsonReportPath }]
 ];
 const sharedReporters = isGithubActions ? [...baseReporters, "github-actions"] : baseReporters;
 
