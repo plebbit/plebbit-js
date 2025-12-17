@@ -15,14 +15,13 @@ import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { describe, it } from "vitest";
 
-const subplebbitAddress = signers[7].address;
+const subplebbitAddress = signers[7].address; // this sub is dedicated for removing
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
     { role: "mod", signer: signers[3] }
 ];
 
-// TODO need to replicate this env in concurrency.plebbit.rpc.test.js to reproduce the bug
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Removing post - ${config.name}`, async () => {
         let plebbit, postToRemove, postReply;

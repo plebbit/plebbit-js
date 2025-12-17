@@ -33,7 +33,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
         });
 
         after(async () => {
-            await context?.cleanup();
+            await context.cleanup();
         });
 
         it.sequential("loads post updates when the sub was stopped", async () => {
@@ -140,7 +140,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 });
             });
 
-            describe("subplebbit posts served via postUpdates", () => {
+            describe.sequential("subplebbit posts served via postUpdates", () => {
                 let paginationContext;
 
                 before(async () => {
@@ -165,16 +165,19 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 
                     const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
 
-                    const postComment = await remotePlebbit.createComment({ cid: paginationContext.rootCid });
+                    try {
+                        const postComment = await remotePlebbit.createComment({ cid: paginationContext.rootCid });
 
-                    await postComment.update();
-                    await mockCommentToNotUsePagesForUpdates(postComment);
-                    await waitForReplyToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
-                    expect(postComment.updatedAt).to.equal(paginationContext.expectedPostUpdate.updatedAt);
+                        await postComment.update();
+                        await mockCommentToNotUsePagesForUpdates(postComment);
+                        await waitForReplyToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
+                        expect(postComment.updatedAt).to.equal(paginationContext.expectedPostUpdate.updatedAt);
 
-                    const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
-                    expect(updatingPost._commentUpdateIpfsPath).to.be.a("string"); // post shouldn't find itself in pages, rather it needs to use postUpdates
-                    await remotePlebbit.destroy();
+                        const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
+                        expect(updatingPost._commentUpdateIpfsPath).to.be.a("string"); // post shouldn't find itself in pages, rather it needs to use postUpdates
+                    } finally {
+                        await remotePlebbit.destroy();
+                    }
                 });
             });
         });
@@ -253,6 +256,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                             expect(updatingReply.depth).to.equal(replyDepth);
                         } finally {
                             await replyComment.stop();
+                            await remotePlebbit.destroy();
                         }
                     });
 
@@ -277,6 +281,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         } finally {
                             await replyComment.stop();
                             await postComment.stop();
+                            await remotePlebbit.destroy();
                         }
                     });
                 });
