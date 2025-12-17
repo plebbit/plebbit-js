@@ -50,6 +50,9 @@ jobs:
               id: run_node_tests_local
               run: DEBUG="plebbit*" PLEBBIT_CONFIGS=local-kubo-rpc node test/run-test-config.js --parallel --environment node --run-timeout-ms 1740000 --log-prefix test_node_local test/node
               shell: bash
+            - name: Print failed node tests (local)
+              if: ${{ failure() && steps.run_node_tests_local.outcome == 'failure' }}
+              run: node .github/workflows/print-vitest-failures.cjs
             - name: Upload Vitest reports (node local)
               if: ${{ failure() && steps.run_node_tests_local.outcome == 'failure' }}
               uses: actions/upload-artifact@v4
@@ -161,6 +164,9 @@ jobs:
             - run: DEBUG="plebbit*" npm run test:server:node:rpc 2>&1 | tee test_server.log & npm run test:server:wait-on
             - id: run_rpc_tests
               run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:rpc
+            - name: Print failed rpc tests
+              if: ${{ failure() && steps.run_rpc_tests.outcome == 'failure' }}
+              run: node .github/workflows/print-vitest-failures.cjs
             - name: Upload Vitest reports (rpc)
               if: ${{ failure() && steps.run_rpc_tests.outcome == 'failure' }}
               uses: actions/upload-artifact@v4
