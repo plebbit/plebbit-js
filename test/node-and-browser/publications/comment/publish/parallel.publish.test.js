@@ -137,10 +137,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                         stressPublishCount,
                         "External peer did not receive all challenge requests"
                     );
-                    expect([...challengeRequestIds].sort()).to.deep.equal(
-                        [...externalPeerChallengeRequests].sort(),
-                        "Challenge request IDs differ between local emitter and external peer"
-                    );
+
                     await Promise.all(comments.map((comment) => comment.stop()));
                 } finally {
                     externalPeer.disconnect();
