@@ -7,7 +7,7 @@ import {
     mockGatewayPlebbit,
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
-import { describe } from "vitest";
+import { describe, it } from "vitest";
 const fixtureSigner = signers[0];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
@@ -41,7 +41,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(e.name).to.equal("ZodError");
             }
         });
-        it("plebbit.fetchCid({cid: ) loads an ipfs file under 1mb as JSON correctly", async () => {
+        it.sequential("plebbit.fetchCid({cid: ) loads an ipfs file under 1mb as JSON correctly", async () => {
             const jsonFileTest = { 123: "123" };
             const cid = await addStringToIpfs(JSON.stringify(jsonFileTest));
             expect(cid).to.equal("QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo");
@@ -110,10 +110,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 dataPath: undefined
             });
 
-            const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
+            const jsonFileTest = { 123: "123" };
+            const cid = await addStringToIpfs(JSON.stringify(jsonFileTest)); // should be "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"
 
             const timeBefore = Date.now();
-            const content = await multipleGatewayPlebbit.fetchCid({ cid: cid });
+            const content = await multipleGatewayPlebbit.fetchCid({ cid });
             expect(content).to.be.a("string");
             const timeItTookInMs = Date.now() - timeBefore;
             expect(timeItTookInMs).to.be.lessThan(9000);

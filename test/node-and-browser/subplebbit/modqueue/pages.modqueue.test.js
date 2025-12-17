@@ -26,18 +26,19 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
             const plebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [gatewayUrl], validatePages: true } });
 
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-
-            const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
             try {
+                const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+                const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
+                sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
                 await sub.modQueue.getPage({ cid: invalidPageCid });
                 expect.fail("Should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
                 expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
+            } finally {
+                await plebbit.destroy();
             }
-            await plebbit.destroy();
         });
     });
 });
@@ -47,23 +48,24 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         itSkipIfRpc(`subplebbit.modQueue.getPage will throw if retrieved page has a comment with an signature `, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-
-            const fixtureToInvalidate = JSON.parse(JSON.stringify(validModQueuePage));
-
-            fixtureToInvalidate.comments[0].comment.content += "invalidate signature";
-
-            const invalidPageCid = await addStringToIpfs(JSON.stringify(fixtureToInvalidate));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
-
             try {
+                const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+                const fixtureToInvalidate = JSON.parse(JSON.stringify(validModQueuePage));
+
+                fixtureToInvalidate.comments[0].comment.content += "invalidate signature";
+
+                const invalidPageCid = await addStringToIpfs(JSON.stringify(fixtureToInvalidate));
+                sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+
                 await sub.modQueue.getPage({ cid: invalidPageCid });
                 expect.fail("should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
                 expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+            } finally {
+                await plebbit.destroy();
             }
-            await plebbit.destroy();
         });
 
         itSkipIfRpc("Should fail getPage if a modqueue comment belongs to a different sub", async () => {
@@ -71,123 +73,126 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // and that the operation fails or rejects with an appropriate error
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-
-            const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
-            invalidPage.comments[0].comment.subplebbitAddress = "different-address";
-
-            const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
-
             try {
+                const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+                const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
+                invalidPage.comments[0].comment.subplebbitAddress = "different-address";
+
+                const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
+                sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+
                 await sub.modQueue.getPage({ cid: invalidPageCid });
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
                 expect(e.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB);
+            } finally {
+                await plebbit.destroy();
             }
-            await plebbit.destroy();
         });
 
         itSkipIfRpc("fails validation when calculated CID of CommentIpfs doesn't match commentUpdate.cid", async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-
-            const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
-            // Modify the comment but keep the same commentUpdate.cid
-            invalidPage.comments[0].commentUpdate.cid = invalidPage.comments[1].commentUpdate.cid;
-
-            const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
-
             try {
+                const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+                const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
+                // Modify the comment but keep the same commentUpdate.cid
+                invalidPage.comments[0].commentUpdate.cid = invalidPage.comments[1].commentUpdate.cid;
+
+                const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
+                sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
                 await sub.modQueue.getPage({ cid: invalidPageCid });
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
                 expect(e.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT);
+            } finally {
+                await plebbit.destroy();
             }
-            await plebbit.destroy();
         });
 
         itSkipIfRpc("fails validation when a post has parentCid defined", async () => {
-            const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-
-            invalidPage.comments.find((comment) => comment.comment.depth === 0).comment.parentCid =
-                "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
-
-            // Update the commentUpdate.cid to match the modified comment
-            invalidPage.comments.find((comment) => comment.comment.depth === 0).commentUpdate.cid = await calculateIpfsHash(
-                JSON.stringify(invalidPage.comments.find((comment) => comment.comment.depth === 0).comment)
-            );
-
-            const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
-
             try {
+                const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
+
+                const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+                invalidPage.comments.find((comment) => comment.comment.depth === 0).comment.parentCid =
+                    "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
+
+                // Update the commentUpdate.cid to match the modified comment
+                invalidPage.comments.find((comment) => comment.comment.depth === 0).commentUpdate.cid = await calculateIpfsHash(
+                    JSON.stringify(invalidPage.comments.find((comment) => comment.comment.depth === 0).comment)
+                );
+
+                const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
+                sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+
                 await sub.modQueue.getPage({ cid: invalidPageCid });
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
                 expect(e.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT);
+            } finally {
+                await plebbit.destroy();
             }
-
-            await plebbit.destroy();
         });
 
         itSkipIfRpc(`Fails validation when pending posts have postCid defined`, async () => {
-            const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-
-            const indexOfPost = invalidPage.comments.findIndex((comment) => comment.comment.depth === 0);
-            expect(indexOfPost).to.be.greaterThanOrEqual(0);
-            invalidPage.comments[indexOfPost].comment.postCid = "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
-
-            // Update the commentUpdate.cid to match the modified comment
-            invalidPage.comments[indexOfPost].commentUpdate.cid = await calculateIpfsHash(
-                deterministicStringify(invalidPage.comments[indexOfPost].comment)
-            );
-            const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
-
             try {
+                const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
+
+                const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+                const indexOfPost = invalidPage.comments.findIndex((comment) => comment.comment.depth === 0);
+                expect(indexOfPost).to.be.greaterThanOrEqual(0);
+                invalidPage.comments[indexOfPost].comment.postCid = "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
+
+                // Update the commentUpdate.cid to match the modified comment
+                invalidPage.comments[indexOfPost].commentUpdate.cid = await calculateIpfsHash(
+                    deterministicStringify(invalidPage.comments[indexOfPost].comment)
+                );
+                const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
+                sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+
                 await sub.modQueue.getPage({ cid: invalidPageCid });
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
                 expect(e.details.signatureValidity.reason).to.equal(messages.ERR_PAGE_COMMENT_POST_HAS_POST_CID_DEFINED_WITH_DEPTH_0);
+            } finally {
+                await plebbit.destroy();
             }
-
-            await plebbit.destroy();
         });
 
         itSkipIfRpc(`modQueue.getPage will throw if the first page is over 1mb`, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
-            const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-            const page = JSON.parse(JSON.stringify(validModQueuePage));
-
-            // Make sure the page is over 1MB
-            // Keep adding comments until the page exceeds 1MB
-            while (Buffer.byteLength(JSON.stringify(page)) <= 1024 * 1024) {
-                page.comments.push(...page.comments);
-            }
-
-            // Verify the page is actually over 1MB
-            const pageSizeInMB = Buffer.byteLength(JSON.stringify(page)) / (1024 * 1024);
-            console.log(`Page size: ${pageSizeInMB.toFixed(2)}MB`);
-            expect(pageSizeInMB).to.be.greaterThan(1, "Page should be larger than 1MB for this test");
-            const pageCid = await addStringToIpfs(JSON.stringify(page));
-
-            subplebbit.modQueue.pageCids.pendingApproval = pageCid;
-
             try {
+                const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+                const page = JSON.parse(JSON.stringify(validModQueuePage));
+
+                // Make sure the page is over 1MB
+                // Keep adding comments until the page exceeds 1MB
+                while (Buffer.byteLength(JSON.stringify(page)) <= 1024 * 1024) {
+                    page.comments.push(...page.comments);
+                }
+
+                // Verify the page is actually over 1MB
+                const pageSizeInMB = Buffer.byteLength(JSON.stringify(page)) / (1024 * 1024);
+                console.log(`Page size: ${pageSizeInMB.toFixed(2)}MB`);
+                expect(pageSizeInMB).to.be.greaterThan(1, "Page should be larger than 1MB for this test");
+                const pageCid = await addStringToIpfs(JSON.stringify(page));
+
+                subplebbit.modQueue.pageCids.pendingApproval = pageCid;
+
                 await subplebbit.modQueue.getPage({ cid: pageCid });
                 expect.fail("Should have thrown");
             } catch (e) {
@@ -196,25 +201,25 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
                         expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
                 } else expect(e.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+            } finally {
+                await plebbit.destroy();
             }
-            await plebbit.destroy();
         });
 
         itSkipIfRpc("modQueue.getPage will throw a timeout error when request times out", async () => {
             // Create a plebbit instance with a very short timeout for page-ipfs
             const plebbit = await config.plebbitInstancePromise();
 
-            plebbit._timeouts["page-ipfs"] = 100;
-
-            // Create a comment with a CID that doesn't exist or will time out
-            const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
-
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
-
-            // Override the pageCid to use our non-existent CID
-            sub.modQueue.pageCids.pendingApproval = nonExistentCid;
-
             try {
+                plebbit._timeouts["page-ipfs"] = 100;
+
+                // Create a comment with a CID that doesn't exist or will time out
+                const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
+
+                const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+                // Override the pageCid to use our non-existent CID
+                sub.modQueue.pageCids.pendingApproval = nonExistentCid;
                 // This should time out
                 await sub.modQueue.getPage({ cid: nonExistentCid });
                 expect.fail("Should have timed out");
@@ -226,8 +231,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 } else {
                     expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
                 }
+            } finally {
+                await plebbit.destroy();
             }
-            await plebbit.destroy();
         });
     });
 });

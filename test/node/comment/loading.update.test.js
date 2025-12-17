@@ -81,7 +81,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     let postComment;
                     let publisherPlebbit;
                     try {
-                        publisherPlebbit = await mockPlebbit({});
+                        publisherPlebbit = await mockPlebbit();
                         const sub = await createSubWithNoChallenge({}, publisherPlebbit);
                         await sub.start();
                         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
@@ -241,7 +241,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         }
                     });
 
-                    it("loads reply updates when the post was stopped", async () => {
+                    it.sequential("loads reply updates when the post was stopped", async () => {
                         const remotePlebbit = await plebbitConfig.plebbitInstancePromise();
                         const replyComment = await remotePlebbit.getComment({ cid: context.leafCid });
                         try {
