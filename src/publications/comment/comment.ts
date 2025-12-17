@@ -720,6 +720,7 @@ export class Comment
             throw e;
         }
         log(`Received new CommentIpfs (${this.cid}) from RPC`);
+        this._initIpfsProps(newComment);
 
         this.emit("update", this);
     }
