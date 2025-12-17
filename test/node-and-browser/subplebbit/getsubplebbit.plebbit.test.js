@@ -123,7 +123,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(updatedHasBeenCalled).to.be.false;
         });
 
-        it(`plebbit.getSubplebbit should throw if it loads a record with invalid json`, async () => {
+        it.sequential(`plebbit.getSubplebbit should throw if it loads a record with invalid json`, async () => {
+            // this test fails sometimes
             const ipnsObj = await createNewIpns();
             await ipnsObj.publishToIpns("<html>hello this is not a valid json</html>");
 
