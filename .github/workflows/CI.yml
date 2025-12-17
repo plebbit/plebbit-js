@@ -84,6 +84,9 @@ jobs:
             - name: Run tests with config
               id: run_node_tests_remote
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment node
+            - name: Print failed node tests
+              if: ${{ failure() && steps.run_node_tests_remote.outcome == 'failure' }}
+              run: node .github/workflows/print-vitest-failures.js
             - name: Upload Vitest reports (node remote)
               if: ${{ failure() && steps.run_node_tests_remote.outcome == 'failure' }}
               uses: actions/upload-artifact@v4
@@ -124,6 +127,10 @@ jobs:
             - name: Run browser tests with config
               id: run_browser_tests
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
+
+            - name: Print failed browser tests
+              if: ${{ failure() && steps.run_browser_tests.outcome == 'failure' }}
+              run: node .github/workflows/print-vitest-failures.js
 
             - name: Upload Vitest browser reports
               if: ${{ failure() && steps.run_browser_tests.outcome == 'failure' }}
