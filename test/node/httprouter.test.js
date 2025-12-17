@@ -5,7 +5,6 @@ import { MockHttpRouter } from "../../dist/node/runtime/node/test/mock-http-rout
 
 import tcpPortUsed from "tcp-port-used";
 
-// TODO calling plebbit.destroy() should stop the address rewriter proxy
 describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () => {
     const kuboNodeForHttpRouter = "http://localhost:15006/api/v0";
     let mockHttpRouter;
