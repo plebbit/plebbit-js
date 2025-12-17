@@ -50,7 +50,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await plebbit.destroy();
         });
 
-        it(`subplebbit.update() emits emits error if resolving subplebbit IPNS times out`, async () => {
+        it.sequential(`subplebbit.update() emits emits error if resolving subplebbit IPNS times out`, async () => {
             const nonExistentIpns = "12D3KooWHS5A6Ey4V8fLWD64jpPn2EKi4r4btGN6FfkNgMTnfqVa"; // Random non-existent IPNS
             const originalTimeOutIpns = JSON.parse(JSON.stringify(plebbit._timeouts["subplebbit-ipns"]));
             plebbit._timeouts["subplebbit-ipns"] = 100; // mocking maximum timeout for subplebbit record loading
@@ -71,7 +71,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             // Check that the errors are as expected
             for (const err of waitingRetryErrs) {
                 if (config.testConfigCode === "remote-kubo-rpc") expect(err.code).to.equal("ERR_IPNS_RESOLUTION_P2P_TIMEOUT");
-                else expect(err.code).to.be.oneOf(["ERR_IPNS_RESOLUTION_P2P_TIMEOUT", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]);
+                else
+                    expect(err.code).to.be.oneOf(
+                        ["ERR_IPNS_RESOLUTION_P2P_TIMEOUT", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"],
+                        "Error is not as expected: " + JSON.stringify(err)
+                    );
             }
         });
 
