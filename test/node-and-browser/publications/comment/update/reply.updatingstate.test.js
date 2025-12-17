@@ -5,7 +5,8 @@ import {
     resolveWhenConditionIsTrue,
     publishRandomReply,
     describeSkipIfRpc,
-    getAvailablePlebbitConfigsToTestAgainst
+    getAvailablePlebbitConfigsToTestAgainst,
+    publishRandomPost
 } from "../../../../../dist/node/test/test-util.js";
 import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
@@ -85,14 +86,13 @@ const cleanupStateArray = (states) => {
     return filteredStates;
 };
 
-// for(let i =0;i<50;i++)
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc.concurrent(`reply.updatingState - ${config.name}`, async () => {
         let replyCid;
         before(async () => {
             const tempPlebbit = await config.plebbitInstancePromise();
             const sub = await tempPlebbit.getSubplebbit({ address: subplebbitAddress });
-            const post = sub.posts.pages.hot.comments[0];
+            const post = await publishRandomPost(sub.address, tempPlebbit);
             const reply = await publishRandomReply(post, tempPlebbit);
             replyCid = reply.cid;
             await tempPlebbit.destroy();
