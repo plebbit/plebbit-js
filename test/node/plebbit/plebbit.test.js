@@ -87,7 +87,7 @@ describe(`Plebbit.challenges`, async () => {
     });
 });
 
-describe.concurrent(`plebbit.destroy()`, async () => {
+describe.sequential(`plebbit.destroy()`, async () => {
     itSkipIfRpc(`plebbit.destroy() should stop running local sub`, async () => {
         const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);
