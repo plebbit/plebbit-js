@@ -102,13 +102,27 @@ export default class JsonWithStderrReporter {
                 const stderrLogs = taskLogs.stderr;
                 const stdoutLogs = taskLogs.stdout;
                 const includeStderr = (t.result?.state === "fail" || stderrLogs.length > 0) && stderrLogs.length > 0;
+                const failureMessages =
+                    t.result?.errors
+                        ?.map((error) => {
+                            if (!error) {
+                                return "";
+                            }
+                            const message = typeof error.message === "string" ? error.message : "";
+                            const stack = typeof error.stack === "string" ? error.stack : "";
+                            if (message && stack && !stack.includes(message)) {
+                                return `${message}\n${stack}`;
+                            }
+                            return stack || message;
+                        })
+                        .filter(Boolean) || [];
                 const base = {
                     ancestorTitles,
                     fullName: t.name ? [...ancestorTitles, t.name].join(" ") : ancestorTitles.join(" "),
                     status: StatusMap[t.result?.state || t.mode] || "skipped",
                     title: t.name,
                     duration: t.result?.duration,
-                    failureMessages: t.result?.errors?.map((e) => e.stack || e.message) || [],
+                    failureMessages,
                     location: t.location,
                     meta: t.meta
                 };
