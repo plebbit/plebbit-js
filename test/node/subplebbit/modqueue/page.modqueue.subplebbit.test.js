@@ -31,7 +31,7 @@ const setupSubplebbitWithModerator = async () => {
     return { plebbit, subplebbit, modSigner };
 };
 
-describe.concurrent("Modqueue depths", () => {
+describe("Modqueue depths", () => {
     // should be a for loop that iterates over all depths
     for (const depth of depthsToTest) {
         it(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
@@ -53,26 +53,28 @@ describe.concurrent("Modqueue depths", () => {
                     )
                 );
 
+                let modQueuePage;
+
                 await resolveWhenConditionIsTrue({
                     toUpdate: subplebbit,
                     predicate: async () => {
                         if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
-                        const modQueuePage = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
+                        modQueuePage = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
                         return modQueuePage.comments.length === numOfComments;
                     }
                 });
 
-                const modQueuepageLoaded = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
+                expect(modQueuePage).to.be.ok;
 
-                expect(modQueuepageLoaded.comments.length).to.equal(numOfComments);
+                expect(modQueuePage.comments.length).to.equal(numOfComments);
 
                 for (let i = 0; i < pendingComments.length; i++) {
                     // this will test both order and that all depths do exist in the page
                     // order of mod queue is newest first, so it's the reverse of pendingComments
                     expect(pendingComments[i].comment.depth).to.equal(depth);
-                    expect(modQueuepageLoaded.comments[i].depth).to.equal(depth);
+                    expect(modQueuePage.comments[i].depth).to.equal(depth);
 
-                    testCommentFieldsInModQueuePageJson(modQueuepageLoaded.comments[i], subplebbit.address);
+                    testCommentFieldsInModQueuePageJson(modQueuePage.comments[i], subplebbit.address);
                 }
             } finally {
                 await remotePlebbit.destroy();
@@ -104,21 +106,21 @@ describe.concurrent("Modqueue depths", () => {
 
             // different depths should show up in mod queue
 
+            let modQueuePage;
+
             await resolveWhenConditionIsTrue({
                 toUpdate: subplebbit,
                 predicate: async () => {
                     if (!subplebbit.modQueue.pageCids.pendingApproval) return false;
-                    const modQueuePage = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
+                    modQueuePage = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
                     return modQueuePage.comments.length === pendingComments.length;
                 }
             });
 
-            const modQueuepageLoaded = await subplebbit.modQueue.getPage({ cid: subplebbit.modQueue.pageCids.pendingApproval });
-
-            expect(modQueuepageLoaded.comments.length).to.equal(pendingComments.length);
+            expect(modQueuePage.comments.length).to.equal(pendingComments.length);
             for (let i = 0; i < pendingComments.length; i++) {
                 // this will test both order and that all depths do exist in the page
-                const pendingInPage = modQueuepageLoaded.comments.find((c) => c.cid === pendingComments[i].comment.cid);
+                const pendingInPage = modQueuePage.comments.find((c) => c.cid === pendingComments[i].comment.cid);
 
                 expect(pendingComments[i].comment.depth).to.equal(pendingInPage.depth);
 
