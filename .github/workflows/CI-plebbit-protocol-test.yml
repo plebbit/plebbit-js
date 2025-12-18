@@ -29,16 +29,16 @@ jobs:
       - run: cd plebbit-js && npm run build
       - run: rm -fr plebbit-js/node_modules
       # install plebbit-protocol-test
-      - run: yarn install --frozen-lockfile
+      - run: npm ci
       # install latest plebbit-js using add ./plebbit-js (local folder module)
-      - run: yarn remove @plebbit/plebbit-js
-      - run: yarn add ./plebbit-js
+      - run: npm remove @plebbit/plebbit-js
+      - run: npm i ./plebbit-js
       # install playwright browsers
-      - run: yarn playwright install --with-deps chromium firefox
+      - run: npx playwright install --with-deps chromium firefox
       # disable hosts we shouldn't use
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # test
       - run: DEBUG="plebbit-js:*" TESTING=1 yarn test:server & yarn test:server:wait-on
-      - run: DEBUG="plebbit-js:*" yarn test
-      - run: DEBUG="plebbit-js:*" yarn test:browser
+      - run: DEBUG="plebbit-js:*" npm run test
+      - run: DEBUG="plebbit-js:*" npm run test:browser
