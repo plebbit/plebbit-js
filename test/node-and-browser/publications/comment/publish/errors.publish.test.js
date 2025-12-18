@@ -37,8 +37,9 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
                 "expected gateway error details" + JSON.stringify(e.details.gatewayToError[error429Gateway].details)
             );
             expect(e.details.gatewayToError[normalIpfsGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+        } finally {
+            await gatewayPlebbit.destroy();
         }
-        await gatewayPlebbit.destroy();
     });
     it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit({
@@ -112,12 +113,14 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         for (const pubsubUrl of Object.keys(expectedStates))
             mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(mockPost.publishingState).to.equal("succeeded");
-        expect(actualStates).to.deep.equal(expectedStates);
-        await mockPost.stop();
-        await plebbit.destroy();
+        try {
+            await publishWithExpectedResult(mockPost, true);
+            expect(mockPost.publishingState).to.equal("succeeded");
+            expect(actualStates).to.deep.equal(expectedStates);
+        } finally {
+            await mockPost.stop();
+            await plebbit.destroy();
+        }
     });
     it(`comment emits and throws errors if all providers fail to publish`, async () => {
         const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
@@ -133,6 +136,8 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             expect.fail("Should have thrown");
         } catch (e) {
             expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
+        } finally {
+            await offlinePubsubPlebbit.destroy();
         }
         const emittedError = await errorPromise;
         expect(emittedError.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
@@ -140,7 +145,6 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         expect(mockPost.publishingState).to.equal("failed");
         expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrls[0]].state).to.equal("stopped");
         expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrls[1]].state).to.equal("stopped");
-        await offlinePubsubPlebbit.destroy();
     });
     it(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
         // First provider waits, second provider fails to subscribe
