@@ -1,10 +1,7 @@
 {
     "name": "@plebbit/plebbit-js",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "type": "module",
-    "resolutions": {
-        "@peculiar/x509": "1.14.0"
-    },
     "scripts": {
         "build": "npm run clean && run-s build:node build:browser",
         "build:node": "tsc --project config/tsconfig.json",
