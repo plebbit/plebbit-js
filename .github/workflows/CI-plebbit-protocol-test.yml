@@ -29,7 +29,7 @@ jobs:
       - run: cd plebbit-js && npm run build
       - run: rm -fr plebbit-js/node_modules
       # install plebbit-protocol-test
-      - run: npm ci
+      - run: npm i
       # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: npm remove @plebbit/plebbit-js
       - run: npm i ./plebbit-js
