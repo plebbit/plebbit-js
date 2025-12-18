@@ -10,8 +10,8 @@ import {
     publishRandomPost,
     generateMockVote,
     publishRandomReply
-} from "../../../dist/node/test/test-util.js";
-import { messages } from "../../../dist/node/errors.js";
+} from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
 import { describe, it } from "vitest";
 
 describe(`subplebbit.features.requirePostLink`, async () => {
