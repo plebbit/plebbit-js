@@ -42,6 +42,7 @@ describe.sequential(`Client side verification`, async () => {
     });
 
     itSkipIfRpc.sequential(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
+        // this test is flaky in CI for some reason
         const customPlebbit = await mockRemotePlebbit();
         const invalidSubRecord = (await customPlebbit.getSubplebbit({ address: subplebbitAddress })).toJSONIpfs();
         invalidSubRecord.updatedAt += 1; // should invalidate the signature
@@ -57,9 +58,10 @@ describe.sequential(`Client side verification`, async () => {
             await mockPost.publish();
             expect.fail("should fail");
         } catch (e) {
-            expect(e.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+            expect(e.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", "Got a different error than expected: " + JSON.stringify(e));
         } finally {
             await updatingSub.stop();
+            await customPlebbit.destroy();
         }
     });
 });
@@ -68,7 +70,7 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
     let plebbit, post;
     before(async () => {
         plebbit = await mockRemotePlebbit();
-        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        post = await publishRandomPost(subplebbitAddress, plebbit);
     });
 
     after(async () => {
