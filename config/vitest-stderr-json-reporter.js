@@ -57,7 +57,7 @@ export default class JsonWithStderrReporter {
         this.logsByTask.set(key, entry);
     }
 
-    async onTestRunEnd(testModules) {
+    async onTestRunEnd(testModules, unhandledErrors = []) {
         const files = testModules.map((testModule) => testModule.task);
         const suites = getSuites(files);
         const numTotalTestSuites = suites.length;
@@ -159,9 +159,30 @@ export default class JsonWithStderrReporter {
             startTime: this.start,
             success,
             testResults,
-            coverageMap: this.coverageMap
+            coverageMap: this.coverageMap,
+            unhandledErrors: this.normalizeUnhandledErrors(unhandledErrors)
         };
         await this.writeReport(JSON.stringify(result));
+    }
+
+    normalizeUnhandledErrors(errors) {
+        if (!Array.isArray(errors) || errors.length === 0) {
+            return [];
+        }
+        return errors.map((error) => {
+            if (!error || typeof error !== "object") {
+                return { message: String(error) };
+            }
+            const message = typeof error.message === "string" ? error.message : String(error);
+            return {
+                name: error.name,
+                message,
+                stack: error.stack,
+                file: error.file,
+                testName: error.testName,
+                type: error.type
+            };
+        });
     }
 
     async writeReport(report) {
