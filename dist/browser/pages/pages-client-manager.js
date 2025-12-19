@@ -272,7 +272,11 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
             throw Error("Parent comment cid is not defined");
     }
     async _requestPageFromRPC(pageCid, log, sortTypes) {
-        return this._plebbit._plebbitRpcClient.getCommentRepliesPage(pageCid, this._pages._parentComment.cid, this._pages._subplebbit.address);
+        return this._plebbit._plebbitRpcClient.getCommentPage({
+            cid: pageCid,
+            commentCid: this._pages._parentComment.cid,
+            subplebbitAddress: this._pages._subplebbit.address
+        });
     }
 }
 export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager {
@@ -286,7 +290,11 @@ export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager 
             throw Error("Subplebbit address is not defined");
     }
     async _requestPageFromRPC(pageCid, log, sortTypes) {
-        return this._plebbit._plebbitRpcClient.getSubplebbitPostsPage(pageCid, this._pages._subplebbit.address);
+        return this._plebbit._plebbitRpcClient.getSubplebbitPage({
+            cid: pageCid,
+            subplebbitAddress: this._pages._subplebbit.address,
+            type: "posts"
+        });
     }
 }
 export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
@@ -307,7 +315,11 @@ export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
         return parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(json);
     }
     async _requestPageFromRPC(pageCid, log, sortTypes) {
-        return this._plebbit._plebbitRpcClient.getSubplebbitModQueuePage(pageCid, this._pages._subplebbit.address);
+        return this._plebbit._plebbitRpcClient.getSubplebbitPage({
+            type: "modqueue",
+            cid: pageCid,
+            subplebbitAddress: this._pages._subplebbit.address
+        });
     }
 }
 //# sourceMappingURL=pages-client-manager.js.map

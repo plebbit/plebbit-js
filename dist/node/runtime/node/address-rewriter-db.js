@@ -116,9 +116,9 @@ export class AddressRewriterDatabase {
             return [];
         }
         try {
-            const stmt = this._db.prepare('SELECT key FROM failed_keys');
+            const stmt = this._db.prepare("SELECT key FROM failed_keys");
             const rows = stmt.all();
-            return rows.map(row => row.key);
+            return rows.map((row) => row.key);
         }
         catch (error) {
             debug.error("Failed to load failed keys from database:", error);
@@ -131,9 +131,9 @@ export class AddressRewriterDatabase {
         }
         // Clear existing failed keys and insert current ones
         const transaction = this._db.transaction(() => {
-            this._db.exec('DELETE FROM failed_keys');
+            this._db.exec("DELETE FROM failed_keys");
             if (keys.length > 0) {
-                const insertStmt = this._db.prepare('INSERT INTO failed_keys (key, added_at) VALUES (?, ?)');
+                const insertStmt = this._db.prepare("INSERT INTO failed_keys (key, added_at) VALUES (?, ?)");
                 const now = Date.now();
                 for (const key of keys) {
                     insertStmt.run(key, now);

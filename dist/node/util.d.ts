@@ -88,4 +88,5 @@ export declare function removeMfsFilesSafely({ kuboRpcClient, paths, log, inputN
     rmOptions?: FilesRmOptions;
 }): Promise<void>;
 export declare function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient, ipnsName: string): Promise<import("ipns").IPNSRecord>;
+export declare function calculateStringSizeSameAsIpfsAddCidV0(content: string): Promise<number>;
 export {};

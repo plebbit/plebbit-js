@@ -68,6 +68,8 @@ export declare const PageIpfsSchema: z.ZodObject<{
             downvoteCount: z.ZodNumber;
             replyCount: z.ZodNumber;
             childCount: z.ZodOptional<z.ZodNumber>;
+            number: z.ZodOptional<z.ZodNumber>;
+            postNumber: z.ZodOptional<z.ZodNumber>;
             edit: z.ZodOptional<z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
@@ -276,6 +278,8 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                 downvoteCount: z.ZodNumber;
                 replyCount: z.ZodNumber;
                 childCount: z.ZodOptional<z.ZodNumber>;
+                number: z.ZodOptional<z.ZodNumber>;
+                postNumber: z.ZodOptional<z.ZodNumber>;
                 edit: z.ZodOptional<z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
@@ -474,6 +478,8 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                 downvoteCount: z.ZodNumber;
                 replyCount: z.ZodNumber;
                 childCount: z.ZodOptional<z.ZodNumber>;
+                number: z.ZodOptional<z.ZodNumber>;
+                postNumber: z.ZodOptional<z.ZodNumber>;
                 edit: z.ZodOptional<z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
@@ -671,4 +677,7 @@ export declare const ModQueuePageIpfsSchema: z.ZodObject<{
         }, z.core.$loose>;
     }, z.core.$strip>>>;
     nextCid: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export declare const GetPageParam: z.ZodObject<{
+    cid: z.ZodString;
 }, z.core.$strip>;

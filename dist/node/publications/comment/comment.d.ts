@@ -4,7 +4,7 @@ import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from ".
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit/plebbit.js";
-import type { CommentIpfsType, CommentIpfsWithCidPostCidDefined, CommentPubsubMessagePublication, CommentState, CommentUpdateForChallengeVerification, CommentUpdateType, CommentWithinRepliesPostsPageJson, CreateCommentOptions } from "./types.js";
+import type { CommentIpfsType, CommentIpfsWithCidPostCidDefined, CommentPubsubMessagePublication, CommentRawField, CommentState, CommentUpdateForChallengeVerification, CommentUpdateType, CommentWithinRepliesPostsPageJson, CreateCommentOptions } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
@@ -48,15 +48,12 @@ export declare class Comment extends Publication implements Partial<CommentUpdat
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
     pendingApproval?: CommentUpdateForChallengeVerification["pendingApproval"];
     approved?: CommentUpdateType["approved"];
+    number?: CommentUpdateType["number"];
+    postNumber?: CommentUpdateType["postNumber"];
     signature: CommentPubsubMessagePublication["signature"];
     state: CommentState;
     private _updatingState;
-    raw: {
-        comment?: CommentIpfsType;
-        commentUpdate?: CommentUpdateType;
-        pubsubMessageToPublish?: CommentPubsubMessagePublication;
-        commentUpdateFromChallengeVerification?: CommentUpdateForChallengeVerification;
-    };
+    raw: CommentRawField;
     _commentUpdateIpfsPath?: string;
     _invalidCommentUpdateMfsPaths: Set<string>;
     private _commentIpfsloadingOperation?;
@@ -112,11 +109,13 @@ export declare class Comment extends Publication implements Partial<CommentUpdat
     protected _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]): void;
     protected _updateRpcClientStateFromUpdatingState(updatingState: Comment["updatingState"]): void;
     private _isRetriableLoadingError;
+    private _handleCommentEventFromRpc;
     private _handleUpdateEventFromRpc;
     private _handleUpdatingStateChangeFromRpc;
     private _handleStateChangeFromRpc;
     private _handleErrorEventFromRpc;
     private _updateViaRpc;
+    _useUpdatePropsFromUpdatingStartedSubplebbitIfPossible(): void;
     _useUpdatePropsFromUpdatingCommentIfPossible(): void;
     _useUpdatingCommentFromPlebbit(updatingCommentInstance: Comment): void;
     _setUpNewUpdatingCommentInstance(): Promise<void>;

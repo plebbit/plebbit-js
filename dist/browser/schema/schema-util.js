@@ -5,7 +5,7 @@ import { DecryptedChallengeAnswerSchema, DecryptedChallengeSchema, DecryptedChal
 import { CreateNewLocalSubplebbitUserOptionsSchema, CreateRemoteSubplebbitFunctionArgumentSchema, CreateRpcSubplebbitFunctionArgumentSchema, CreateSubplebbitFunctionArgumentsSchema, RpcRemoteSubplebbitUpdateEventResultSchema, SubplebbitEditOptionsSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import { throwWithErrorCode } from "../util.js";
 import { CidStringSchema } from "./schema.js";
-import { RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
+import { RpcCommentEventResultSchema, RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
 import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema } from "../rpc/src/schema.js";
 import { CommentModerationChallengeRequestToEncryptSchema, CommentModerationPubsubMessagePublicationSchema, CreateCommentModerationOptionsSchema } from "../publications/comment-moderation/schema.js";
 import { CreateVoteUserOptionsSchema, VoteChallengeRequestToEncryptSchema, VotePubsubMessagePublicationSchema } from "../publications/vote/schema.js";
@@ -101,6 +101,16 @@ export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult
     const parseRes = RpcCommentUpdateResultSchema.safeParse(updateResult);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATE_SCHEMA", {
+            zodError: parseRes.error,
+            updateResult
+        });
+    else
+        return updateResult;
+}
+export function parseRpcCommentEventWithPlebbitErrorIfItFails(updateResult) {
+    const parseRes = RpcCommentEventResultSchema.safeParse(updateResult);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_RPC_COMMENT_SCHEMA", {
             zodError: parseRes.error,
             updateResult
         });
@@ -512,14 +522,7 @@ function isJsonLike(schema) {
         return true;
     return false;
 }
-const jsonTypeNames = new Set([
-    "object",
-    "array",
-    "tuple",
-    "record",
-    "map",
-    "set"
-]);
+const jsonTypeNames = new Set(["object", "array", "tuple", "record", "map", "set"]);
 function isNullish(schema) {
     const base = unwrapSchema(schema);
     const def = base?.def;

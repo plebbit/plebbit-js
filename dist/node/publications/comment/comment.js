@@ -8,9 +8,9 @@ import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../p
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { RepliesPages } from "../../pages/pages.js";
-import { parseRawPages } from "../../pages/util.js";
+import { findCommentInPageInstanceRecursively, parseRawPages } from "../../pages/util.js";
 import { CommentIpfsSchema, CommentUpdateForChallengeVerificationSchema, CommentUpdateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
-import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import { parseRpcCommentEventWithPlebbitErrorIfItFails, parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import { CID } from "kubo-rpc-client";
 export class Comment extends Publication {
@@ -139,7 +139,12 @@ export class Comment extends Publication {
         this._updateRepliesPostsInstance(props.replies, subplebbit);
         if (typeof this.pendingApproval === "boolean" || "pendingApproval" in props)
             this.pendingApproval = Boolean("pendingApproval" in props && props.pendingApproval); // revert pendingApproval if we just received a CommentUpdate
+        else if ("approved" in props && typeof props.approved === "boolean") {
+            this.pendingApproval = false; // we received either a rejection or acceptance
+        }
         this.approved = props.approved;
+        this.number = props.number;
+        this.postNumber = props.postNumber;
     }
     _updateRepliesPostsInstance(newReplies, subplebbit) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
@@ -259,6 +264,10 @@ export class Comment extends Publication {
             log("No kubo rpc client found, will not add newly published comment", this.cid, "to ipfs");
             return;
         }
+        if (decryptedVerification.commentUpdate.pendingApproval) {
+            log("comment is pending approval, we're not gonna add it to IPFS node for now", this.cid);
+            return;
+        }
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
         // use p-retry here, 3 times maybe?
         const addRes = await retryKuboIpfsAdd({
@@ -282,7 +291,10 @@ export class Comment extends Publication {
         if (commentUpdate.author)
             Object.assign(this.author, commentUpdate.author);
         this.protocolVersion = commentUpdate.protocolVersion;
-        this.pendingApproval = commentUpdate.pendingApproval;
+        if ("pendingApproval" in commentUpdate)
+            this.pendingApproval = commentUpdate.pendingApproval;
+        else
+            this.pendingApproval = false;
     }
     _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification) {
         const log = Logger("plebbit-js:comment:publish:_updateCommentPropsFromDecryptedChallengeVerification");
@@ -296,6 +308,7 @@ export class Comment extends Publication {
             log("Found unknown props on decryptedVerification.commentUpdate record", unknownProps, "Will set them on Comment instance");
             Object.assign(this, remeda.pick(decryptedVerification.commentUpdate, unknownProps));
         }
+        this.emit("update", this);
     }
     async _verifyDecryptedChallengeVerificationAndUpdateCommentProps(decryptedVerification) {
         // We're gonna update Comment instance with DecryptedChallengeVerification.{comment, commentUpdate}
@@ -354,6 +367,8 @@ export class Comment extends Publication {
     async _retryLoadingCommentIpfs(cid, log) {
         return new Promise((resolve) => {
             this._commentIpfsloadingOperation.attempt(async (curAttempt) => {
+                if (this.raw.comment)
+                    return resolve(this.raw.comment);
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit();
@@ -376,6 +391,11 @@ export class Comment extends Publication {
                             newUpdatingState: "waiting-retry",
                             event: { name: "error", args: [error] }
                         });
+                        if (curAttempt === 1 && this.subplebbitAddress) {
+                            log("Failed the first time in loading comment", this.cid, "will try to load from subplebbit pages");
+                            // if we fail for second time, start trying to find CommentIpfs using pages instead of comment.cid
+                            await this._clientsManager._fetchCommentIpfsFromPages();
+                        }
                         this._commentIpfsloadingOperation.retry(e);
                     }
                     else {
@@ -419,24 +439,32 @@ export class Comment extends Publication {
         await this._commentIpfsloadingOperation.stop();
     }
     async startCommentUpdateSubplebbitSubscription() {
-        const log = Logger("plebbit-js:comment:update");
+        const log = Logger("plebbit-js:comment:update:startCommentUpdateSubplebbitSubscription");
         if (this.state === "stopped")
             return; // we may have called stop() before reaching comment update subscription and after loading commentipfs
         if (this.depth === 0) {
             if (!this._subplebbitForUpdating)
                 this._subplebbitForUpdating = await this._clientsManager._createSubInstanceWithStateTranslation();
+            if (this.state !== "updating")
+                return; // there are cases where stop() is called in parallel
             if (this._subplebbitForUpdating.subplebbit.state === "stopped") {
-                await this._subplebbitForUpdating.subplebbit.update();
+                await this._subplebbitForUpdating.subplebbit.update(); // BUG: calling this resets this._subplebbitForUpdating to undefined
             }
+            if (this.state !== "updating")
+                return; // there are cases where stop() is called in parallel
             if (this._subplebbitForUpdating.subplebbit.raw.subplebbitIpfs)
                 await this._subplebbitForUpdating.update(this._subplebbitForUpdating.subplebbit);
         }
         else {
             if (!this._postForUpdating)
                 this._postForUpdating = await this._clientsManager._createPostInstanceWithStateTranslation();
+            if (this.state !== "updating")
+                return; // there are cases where stop() is called in parallel
             if (this._postForUpdating.comment.state === "stopped") {
                 await this._postForUpdating.comment.update();
             }
+            if (this.state !== "updating")
+                return; // there are cases where stop() is called in parallel
             if (this._postForUpdating.comment.raw.commentUpdate)
                 await this._postForUpdating.update(this._postForUpdating.comment);
         }
@@ -459,8 +487,12 @@ export class Comment extends Publication {
         this._updatingState = newState;
     }
     get updatingState() {
-        if (this._updatingCommentInstance)
-            return this._updatingCommentInstance.comment.updatingState;
+        if (this._updatingCommentInstance) {
+            const mirroredComment = this._updatingCommentInstance.comment;
+            if (mirroredComment === this)
+                return this._updatingState; // prevent self-mirroring recursion
+            return mirroredComment.updatingState;
+        }
         return this._updatingState;
     }
     _changeCommentStateEmitEventEmitStateChangeEvent(opts) {
@@ -517,6 +549,21 @@ export class Comment extends Publication {
         else
             return this._isCommentIpfsErrorRetriable(err);
     }
+    _handleCommentEventFromRpc(args) {
+        const log = Logger("plebbit-js:comment:_handleCommentEventFromRpc");
+        let newComment;
+        try {
+            newComment = parseRpcCommentEventWithPlebbitErrorIfItFails(args.params.result);
+        }
+        catch (e) {
+            log.error("Failed to parse the rpc comment event of", this.cid, e);
+            this.emit("error", e);
+            throw e;
+        }
+        log(`Received new CommentIpfs (${this.cid}) from RPC`);
+        this._initIpfsProps(newComment);
+        this.emit("update", this);
+    }
     _handleUpdateEventFromRpc(args) {
         const log = Logger("plebbit-js:comment:_handleUpdateEventFromRpc");
         let newUpdate;
@@ -528,15 +575,11 @@ export class Comment extends Publication {
             this.emit("error", e);
             throw e;
         }
-        if ("subplebbitAddress" in newUpdate) {
-            log(`Received new CommentIpfs (${this.cid})`);
-            this._initIpfsProps(newUpdate);
-        }
-        else {
-            log(`Received new CommentUpdate (${this.cid})`);
+        if ((this.updatedAt || 0) <= newUpdate.updatedAt) {
+            log(`Received new CommentUpdate (${this.cid}) from RPC`);
             this._initCommentUpdate(newUpdate);
+            this.emit("update", this);
         }
-        this.emit("update", this);
     }
     _handleUpdatingStateChangeFromRpc(args) {
         const updateState = args.params.result; // optimistic, rpc server could transmit an updating state that is not known to us
@@ -573,7 +616,13 @@ export class Comment extends Publication {
         if (!this.cid)
             throw Error("Can't start updating comment without defining this.cid");
         try {
-            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient.commentUpdateSubscribe(this.cid);
+            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient.commentUpdateSubscribe({
+                cid: this.cid,
+                raw: this.raw,
+                subplebbitAddress: this.subplebbitAddress,
+                parentCid: this.parentCid,
+                postCid: this.postCid
+            });
         }
         catch (e) {
             log.error("Failed to receive commentUpdate from RPC due to error", e);
@@ -586,10 +635,43 @@ export class Comment extends Publication {
         this._plebbit
             ._plebbitRpcClient.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._handleUpdateEventFromRpc.bind(this))
+            .on("comment", this._handleCommentEventFromRpc.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
             .on("statechange", this._handleStateChangeFromRpc.bind(this))
             .on("error", this._handleErrorEventFromRpc.bind(this));
         this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+    }
+    _useUpdatePropsFromUpdatingStartedSubplebbitIfPossible() {
+        if (!this.cid)
+            throw Error("Need to have comment.cid defined");
+        if (!this.subplebbitAddress) {
+            // try to find cid in all _updatingSubplebbits
+            for (const updatingSubplebbit of Object.values(this._plebbit._updatingSubplebbits).concat(Object.values(this._plebbit._startedSubplebbits))) {
+                const commentInSubplebbitPosts = findCommentInPageInstanceRecursively(updatingSubplebbit.posts, this.cid);
+                if (commentInSubplebbitPosts) {
+                    this.setSubplebbitAddress(commentInSubplebbitPosts.comment.subplebbitAddress);
+                    break;
+                }
+            }
+            if (!this.subplebbitAddress)
+                return;
+        }
+        const updatingSubplebbitInstance = this._plebbit._updatingSubplebbits[this.subplebbitAddress] ||
+            this._subplebbitForUpdating?.subplebbit ||
+            this._plebbit._startedSubplebbits[this.subplebbitAddress];
+        if (updatingSubplebbitInstance?.raw?.subplebbitIpfs && this.cid) {
+            const commentInSubplebbitPosts = findCommentInPageInstanceRecursively(updatingSubplebbitInstance.posts, this.cid);
+            if (commentInSubplebbitPosts) {
+                if (!this.raw.comment) {
+                    this._initIpfsProps(commentInSubplebbitPosts.comment);
+                    this.emit("update", this);
+                }
+                if ((this.updatedAt || 0) < commentInSubplebbitPosts.commentUpdate.updatedAt) {
+                    this._initCommentUpdate(commentInSubplebbitPosts.commentUpdate, updatingSubplebbitInstance.raw.subplebbitIpfs);
+                    this.emit("update", this);
+                }
+            }
+        }
     }
     _useUpdatePropsFromUpdatingCommentIfPossible() {
         if (!this.cid)
@@ -605,6 +687,28 @@ export class Comment extends Publication {
                 this._initCommentUpdate(updatingCommentInstance.raw.commentUpdate, updatingCommentInstance._subplebbitForUpdating?.subplebbit?.raw.subplebbitIpfs);
                 this._commentUpdateIpfsPath = updatingCommentInstance._commentUpdateIpfsPath;
                 this.emit("update", this);
+            }
+        }
+        else {
+            const ancestorAndUpdatingCids = [this.postCid, this.parentCid, ...Object.keys(this._plebbit._updatingComments)];
+            for (const ancestorCid of ancestorAndUpdatingCids) {
+                if (!ancestorCid)
+                    continue;
+                const updatingCommentInstanceOfAncestor = this._plebbit._updatingComments[ancestorCid];
+                if (updatingCommentInstanceOfAncestor) {
+                    const commentInAncestor = findCommentInPageInstanceRecursively(updatingCommentInstanceOfAncestor.replies, this.cid);
+                    if (commentInAncestor) {
+                        if (!this.raw.comment) {
+                            this._initIpfsProps(commentInAncestor.comment);
+                            this.emit("update", this);
+                        }
+                        if ((this.updatedAt || 0) < commentInAncestor.commentUpdate.updatedAt) {
+                            this._initCommentUpdate(commentInAncestor.commentUpdate, this._plebbit._updatingSubplebbits[this.subplebbitAddress]?.raw?.subplebbitIpfs);
+                            this.emit("update", this);
+                        }
+                        break; // if we found it once we won't be finding it in other comments
+                    }
+                }
             }
         }
     }
@@ -671,10 +775,10 @@ export class Comment extends Publication {
             throw Error("Can't call comment.update() without defining cid");
         this._setStateWithEmission("updating");
         if (this._plebbit._updatingComments[this.cid]) {
-            this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]);
+            this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]); // this comment instance will be mirroring this._plebbit._updatingComments[this.cid]
         }
         else
-            await this._setUpNewUpdatingCommentInstance();
+            await this._setUpNewUpdatingCommentInstance(); // Create a this._plebbit._updatingComments[this.cid], then mirror it
         if (this.raw.comment || this.raw.commentUpdate)
             this.emit("update", this);
     }

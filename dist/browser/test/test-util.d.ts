@@ -33,20 +33,20 @@ export declare function loadAllPagesBySortName(pageSortName: string, pagesInstan
 export declare function loadAllUniquePostsUnderSubplebbit(subplebbit: RemoteSubplebbit): Promise<CommentWithinRepliesPostsPageJson[]>;
 export declare function loadAllUniqueCommentsUnderCommentInstance(comment: Comment): Promise<CommentWithinRepliesPostsPageJson[]>;
 type TestServerSubs = {
-    onlineSub?: string;
-    ensSub: string;
-    mainSub: string;
-    mathSub: string;
-    NoPubsubResponseSub: string;
-    mathCliSubWithNoMockedPubsub: string;
-    subForPurge: string;
-    subForRemove: string;
-    subForDelete: string;
-    subForChainProviders: string;
-    subForEditContent: string;
-    subForLocked: string;
+    onlineSub?: LocalSubplebbit;
+    ensSub: LocalSubplebbit;
+    mainSub: LocalSubplebbit;
+    mathSub: LocalSubplebbit;
+    NoPubsubResponseSub: LocalSubplebbit;
+    mathCliSubWithNoMockedPubsub: LocalSubplebbit;
+    subForPurge: LocalSubplebbit;
+    subForRemove: LocalSubplebbit;
+    subForDelete: LocalSubplebbit;
+    subForChainProviders: LocalSubplebbit;
+    subForEditContent: LocalSubplebbit;
+    subForLocked: LocalSubplebbit;
 };
-export declare function startOnlineSubplebbit(): Promise<LocalSubplebbit | RpcLocalSubplebbit>;
+export declare function startOnlineSubplebbit(): Promise<LocalSubplebbit>;
 export declare function startSubplebbits(props: {
     signers: SignerType[];
     noData: boolean;
@@ -73,6 +73,14 @@ export declare function publishRandomPost(subplebbitAddress: string, plebbit: Pl
 export declare function publishVote(commentCid: string, subplebbitAddress: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<CreateVoteOptions>): Promise<Vote>;
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
 export declare function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: PostsPages | RepliesPages): Promise<CommentWithinRepliesPostsPageJson | undefined>;
+export declare function findCommentInSubplebbitInstancePagesPreloadedAndPageCids(opts: {
+    comment: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>;
+    sub: RemoteSubplebbit;
+}): Promise<CommentWithinRepliesPostsPageJson | undefined>;
+export declare function findReplyInParentCommentPagesInstancePreloadedAndPageCids(opts: {
+    reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>;
+    parentComment: Comment;
+}): Promise<CommentWithinRepliesPostsPageJson | undefined>;
 export declare function waitTillPostInSubplebbitInstancePages(post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>, sub: RemoteSubplebbit): Promise<void>;
 export declare function waitTillPostInSubplebbitPages(post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>, plebbit: Plebbit): Promise<void>;
 export declare function iterateThroughPagesToFindCommentInParentPagesInstance(commentCid: string, pages: PostsPages | RepliesPages): Promise<PageTypeJson["comments"][0] | undefined>;
@@ -112,6 +120,7 @@ type PlebbitConfigWithName = {
 export declare function setPlebbitConfigs(configs: PlebbitTestConfigCode[]): void;
 export declare function getAvailablePlebbitConfigsToTestAgainst(opts?: {
     includeOnlyTheseTests?: PlebbitTestConfigCode[];
+    includeAllPossibleConfigOnEnv?: boolean;
 }): PlebbitConfigWithName[];
 export declare function createNewIpns(): Promise<{
     signer: import("../signer/index.js").SignerWithPublicKeyAddress;
@@ -266,6 +275,8 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                         };
                         protocolVersion: string;
                         childCount?: number | undefined;
+                        number?: number | undefined;
+                        postNumber?: number | undefined;
                         edit?: {
                             [x: string]: unknown;
                             timestamp: number;
@@ -447,10 +458,10 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     clients: import("../subplebbit/subplebbit-client-manager.js").SubplebbitClientsManager["clients"];
     title?: string | undefined;
     updatedAt?: SubplebbitIpfsType["updatedAt"] | undefined;
+    posts: PostsPages;
     encryption: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
     createdAt: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
     statsCid?: SubplebbitIpfsType["statsCid"] | undefined;
-    posts: PostsPages;
     modQueue: import("../pages/pages.js").ModQueuePages;
     challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
     description?: string | undefined;
@@ -527,6 +538,11 @@ export declare function jsonifyCommentAndRemoveInstanceProps(comment: Comment): 
 export declare function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string): Promise<void>;
 export declare function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean;
 export declare function mockRpcServerForTests(plebbitWs: any): void;
+export declare function disablePreloadPagesOnSub({ subplebbit }: {
+    subplebbit: LocalSubplebbit;
+}): {
+    cleanup: () => void;
+};
 export declare function mockPostToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string): void;
 export declare function mockPostToFailToLoadFromPostUpdates(postToBeMocked: Comment): void;
 export declare function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked: Comment): void;
@@ -544,6 +560,8 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
     };
     protocolVersion: string;
     childCount?: number | undefined;
+    number?: number | undefined;
+    postNumber?: number | undefined;
     edit?: {
         [x: string]: unknown;
         timestamp: number;
@@ -719,6 +737,8 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                     };
                     protocolVersion: string;
                     childCount?: number | undefined;
+                    number?: number | undefined;
+                    postNumber?: number | undefined;
                     edit?: {
                         [x: string]: unknown;
                         timestamp: number;
@@ -819,10 +839,25 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
     } | undefined;
 }>;
 export declare function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, subAddress: string, subplebbitRecord: any): Promise<void>;
-export declare function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit): void;
+export declare function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit): {
+    cleanUp: () => void;
+};
 export declare function mockCommentToNotUsePagesForUpdates(comment: Comment): void;
-export declare function forceSubplebbitToGenerateAllRepliesPages(comment: Comment, commentProps?: CreateCommentOptions): Promise<void>;
+export declare function forceLocalSubPagesToAlwaysGenerateMultipleChunks({ subplebbit, parentComment, forcedPreloadedPageSizeBytes, parentCommentReplyProps, subplebbitPostsCommentProps }: {
+    subplebbit: LocalSubplebbit | RemoteSubplebbit;
+    parentComment?: Comment;
+    forcedPreloadedPageSizeBytes?: number;
+    parentCommentReplyProps?: Partial<CreateCommentOptions>;
+    subplebbitPostsCommentProps?: CreateCommentOptions;
+}): Promise<{
+    cleanup: () => void;
+}>;
 export declare function findOrPublishCommentWithDepth({ depth, subplebbit, plebbit }: {
+    depth: number;
+    subplebbit: RemoteSubplebbit;
+    plebbit?: Plebbit;
+}): Promise<Comment>;
+export declare function findOrPublishCommentWithDepthWithHttpServerShortcut({ depth, subplebbit, plebbit }: {
     depth: number;
     subplebbit: RemoteSubplebbit;
     plebbit?: Plebbit;
@@ -855,8 +890,6 @@ export declare function publishToModQueueWithDepth({ subplebbit, depth, plebbit,
     challengeVerification: unknown;
 }>;
 export declare function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit, commentProps?: CreateCommentOptions): Promise<void>;
-export declare function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinRepliesPostsPageJson | Comment>;
-export declare function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinRepliesPostsPageJson | Comment>;
 export declare function mockReplyToUseParentPagesForUpdates(reply: Comment): void;
 export declare function mockUpdatingCommentResolvingAuthor(comment: Comment, mockFunction: Comment["_clientsManager"]["resolveAuthorAddressIfNeeded"]): void;
 export declare function mockCacheOfTextRecord(opts: {
@@ -866,22 +899,10 @@ export declare function mockCacheOfTextRecord(opts: {
     value: string;
 }): Promise<void>;
 export declare function getRandomPostCidFromSub(subplebbitAddress: string, plebbit: Plebbit): Promise<string>;
-export declare const describeSkipIfRpc: Mocha.SuiteFunction | {
-    (_: any): void;
-    skip(): void;
-};
-export declare const describeIfRpc: Mocha.SuiteFunction | {
-    (_: any): void;
-    skip(): void;
-};
-export declare const itSkipIfRpc: Mocha.TestFunction | {
-    (_: any): void;
-    skip(): void;
-};
-export declare const itIfRpc: Mocha.TestFunction | {
-    (_: any): void;
-    skip(): void;
-};
+export declare const describeSkipIfRpc: any;
+export declare const describeIfRpc: any;
+export declare const itSkipIfRpc: any;
+export declare const itIfRpc: any;
 export declare function mockViemClient({ plebbit, chainTicker, url, mockedViem }: {
     plebbit: Plebbit;
     chainTicker: string;

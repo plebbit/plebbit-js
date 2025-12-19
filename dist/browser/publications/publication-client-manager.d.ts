@@ -58,4 +58,6 @@ export declare class PublicationClientsManager extends PlebbitClientsManager {
         chainProviderListeners?: Record<ChainTicker, Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>>;
     } & Pick<SubplebbitEvents, "error" | "update" | "updatingstatechange">>;
     cleanUpUpdatingSubInstance(): Promise<void>;
+    fetchSubplebbitForPublishingWithCacheGuard(): Promise<NonNullable<Publication["_subplebbit"]>>;
+    private _loadSubplebbitForPublishingFromNetwork;
 }

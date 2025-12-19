@@ -3,6 +3,7 @@ import { BasePages } from "./pages.js";
 import * as remeda from "remeda";
 import { shortifyAddress, shortifyCid } from "../util.js";
 import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "../publications/comment/schema.js";
+import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 3600, // 60 * 60
     DAY: 86400, // 60 * 60 * 24
@@ -258,5 +259,85 @@ export function findCommentInPageInstanceRecursively(pageInstance, targetCid) {
             return foundComment;
     }
     return undefined;
+}
+const FIRST_PAGE_MAX_FILE_SIZE_BYTES = 1024 * 1024;
+export async function iterateOverPageCidsToFindAllCids(opts) {
+    if (!opts?.pages)
+        throw Error("expected pages to be defined when iterating over page cids");
+    const { pages, clientManager } = opts;
+    const timeoutMs = clientManager._plebbit._timeouts["page-ipfs"];
+    const visited = new Set();
+    const queued = new Map();
+    const queue = [];
+    const collectedCids = [];
+    const collectedSet = new Set();
+    const addCidToResult = (cid) => {
+        if (collectedSet.has(cid))
+            return;
+        collectedSet.add(cid);
+        collectedCids.push(cid);
+    };
+    const enqueue = (cid, maxSize, addToResultFlag = true) => {
+        if (typeof cid !== "string" || cid.length === 0 || visited.has(cid))
+            return;
+        if (addToResultFlag)
+            addCidToResult(cid);
+        const existingEntry = queued.get(cid);
+        if (existingEntry) {
+            if (existingEntry.maxSize >= maxSize)
+                return;
+            existingEntry.maxSize = maxSize;
+            return;
+        }
+        const entry = { cid, maxSize };
+        queued.set(cid, entry);
+        queue.push(entry);
+    };
+    const initialPageCids = Array.from(new Set(Object.values(pages.pageCids ?? {}).filter((cid) => typeof cid === "string" && cid.length > 0)));
+    initialPageCids.forEach((cid) => enqueue(cid, FIRST_PAGE_MAX_FILE_SIZE_BYTES));
+    const preloadedPages = "pages" in pages ? Object.values(pages.pages ?? {}) : [];
+    for (const preloadedPage of preloadedPages)
+        if (typeof preloadedPage?.nextCid === "string" && preloadedPage.nextCid.length > 0)
+            enqueue(preloadedPage.nextCid, FIRST_PAGE_MAX_FILE_SIZE_BYTES * 2);
+    const fetchPage = async (cid, maxSizeBytes) => {
+        const rawPage = await clientManager._fetchCidP2P(cid, { maxFileSizeBytes: maxSizeBytes, timeoutMs });
+        const parsedPage = parseJsonWithPlebbitErrorIfFails(rawPage);
+        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parsedPage);
+        return pageIpfs;
+    };
+    while (queue.length) {
+        const batch = queue.splice(0);
+        // Fetch the current batch concurrently to reduce latency across sorts.
+        const batchResults = await Promise.all(batch.map(async ({ cid, maxSize }) => {
+            if (visited.has(cid))
+                return { status: "skipped" };
+            try {
+                const page = await fetchPage(cid, maxSize);
+                return { status: "success", cid, page, maxSize };
+            }
+            catch (error) {
+                return { status: "error", cid, error };
+            }
+        }));
+        for (const result of batchResults) {
+            if (result.status === "skipped")
+                continue;
+            if (result.status === "error") {
+                visited.add(result.cid);
+                queued.delete(result.cid);
+                continue;
+            }
+            const { cid, page, maxSize } = result;
+            if (visited.has(cid))
+                continue;
+            visited.add(cid);
+            queued.delete(cid);
+            if (!page.nextCid || visited.has(page.nextCid))
+                continue;
+            const expectedNextPageSize = Math.max(maxSize * 2, FIRST_PAGE_MAX_FILE_SIZE_BYTES);
+            enqueue(page.nextCid, expectedNextPageSize);
+        }
+    }
+    return collectedCids;
 }
 //# sourceMappingURL=util.js.map

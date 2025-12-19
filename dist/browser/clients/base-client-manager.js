@@ -15,6 +15,7 @@ import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
 import pTimeout from "p-timeout";
+import { InflightResourceTypes } from "../util/inflight-fetch-manager.js";
 const createUrlFromPathResolution = (gateway, opts) => {
     const root = opts.recordIpfsType === "ipfs" ? CID.parse(opts.root).toV1().toString() : convertBase58IpnsNameToBase36Cid(opts.root);
     return `${gateway}/${opts.recordIpfsType}/${root}${opts.path ? "/" + opts.path : ""}`;
@@ -659,6 +660,9 @@ export class BaseClientsManager {
     }
     calculateIpfsCid(content) {
         return calculateIpfsCidV0(content);
+    }
+    async _withInflightSubplebbitFetch(subAddress, fetcher) {
+        return this._plebbit._inflightFetchManager.withResource(InflightResourceTypes.SUBPLEBBIT_IPNS, subAddress, fetcher);
     }
 }
 //# sourceMappingURL=base-client-manager.js.map

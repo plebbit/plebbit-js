@@ -254,9 +254,7 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     // - all required challenges pass without pendingApproval flag -> publish normally
     // - any challenge fails -> fail request
     // - requester passes every challenge and at least one non-excluded challenge has pendingApproval -> send to pending approval
-    const shouldSendToPendingApproval = Boolean(challengeRequestMessage.comment) &&
-        challengeVerification.challengeSuccess === true &&
-        pendingApprovalSuccess;
+    const shouldSendToPendingApproval = Boolean(challengeRequestMessage.comment) && challengeVerification.challengeSuccess === true && pendingApprovalSuccess;
     if (shouldSendToPendingApproval) {
         return { ...challengeVerification, pendingApproval: true };
     }

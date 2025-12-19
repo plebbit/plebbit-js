@@ -19,24 +19,36 @@ declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     };
     subscriptionCleanups: {
         [connectionId: string]: {
-            [subscriptionId: number]: () => void;
+            [subscriptionId: number]: () => Promise<void>;
         };
     };
     publishing: {
-        [subscriptionId: number]: Publication;
+        [subscriptionId: number]: {
+            publication: Publication;
+            plebbit: Plebbit;
+            connectionId: string;
+            timeout?: NodeJS.Timeout;
+        };
     };
+    private _setSettingsQueue;
     authKey: string | undefined;
     private _trackedSubplebbitListeners;
     private _getIpFromConnectionRequest;
     private _onSettingsChange;
+    private _startedSubplebbits;
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions);
+    getStartedSubplebbit(address: string): Promise<LocalSubplebbit>;
     private _emitError;
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
+    private _registerPublishing;
+    private _clearPublishing;
+    private _forceCleanupPublication;
+    private _retirePlebbitIfNeeded;
+    _getPlebbitInstance(): Promise<Plebbit>;
     getComment(params: any): Promise<CommentIpfsType>;
-    getSubplebbitModQueuePage(params: any): Promise<ModQueuePageIpfs>;
-    getSubplebbitPostsPage(params: any): Promise<PageIpfs>;
-    getCommentRepliesPage(params: any): Promise<PageIpfs>;
+    getSubplebbitPage(params: any): Promise<PageIpfs | ModQueuePageIpfs>;
+    getCommentPage(params: any): Promise<PageIpfs>;
     createSubplebbit(params: any): Promise<RpcInternalSubplebbitRecordBeforeFirstUpdateType>;
     private _trackSubplebbitListener;
     private _untrackSubplebbitListener;
@@ -48,13 +60,14 @@ declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     deleteSubplebbit(params: any): Promise<boolean>;
     subplebbitsSubscribe(params: any, connectionId: string): Promise<number>;
     fetchCid(params: any): Promise<string>;
-    private _getCurrentSettings;
+    private _serializeSettingsFromPlebbit;
     settingsSubscribe(params: any, connectionId: string): Promise<number>;
     private _initPlebbit;
     private _createPlebbitInstanceFromSetSettings;
     setSettings(params: any): Promise<boolean>;
     commentUpdateSubscribe(params: any, connectionId: string): Promise<number>;
     subplebbitUpdateSubscribe(params: any, connectionId: string): Promise<number>;
+    private _bindSubplebbitUpdateSubscription;
     private _createCommentInstanceFromPublishCommentParams;
     publishComment(params: any, connectionId: string): Promise<RpcPublishResult>;
     private _createVoteInstanceFromPublishVoteParams;

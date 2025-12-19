@@ -1,4 +1,4 @@
-import type { ModQueuePageIpfs, ModQueuePageTypeJson, PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
+import type { GetPageParam, ModQueuePageIpfs, ModQueuePageTypeJson, PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
 import { BasePagesClientsManager, SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "./pages-client-manager.js";
 import { Comment } from "../publications/comment/comment.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
@@ -30,7 +30,7 @@ export declare class BasePages {
     _validatePage(pageIpfs: PageIpfs | ModQueuePageIpfs, pageCid?: string): Promise<void>;
     _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs | ModQueuePageIpfs>;
     _parseRawPageIpfs(pageIpfs: PageIpfs | ModQueuePageIpfs): ModQueuePageTypeJson | PageTypeJson;
-    getPage(pageCid: string): Promise<PageTypeJson | ModQueuePageTypeJson>;
+    getPage(pageCid: GetPageParam): Promise<PageTypeJson | ModQueuePageTypeJson>;
     validatePage(page: PageIpfs | PageTypeJson): Promise<void>;
     _stop(): void;
 }
@@ -45,7 +45,7 @@ export declare class RepliesPages extends BasePages {
     protected _initClientsManager(plebbit: Plebbit): void;
     _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs>;
     _parseRawPageIpfs(pageIpfs: PageIpfs): PageTypeJson;
-    getPage(pageCid: string): Promise<PageTypeJson>;
+    getPage(args: GetPageParam): Promise<PageTypeJson>;
     _validatePage(pageIpfs: PageIpfs, pageCid?: string): Promise<void>;
 }
 export declare class PostsPages extends BasePages {
@@ -60,7 +60,7 @@ export declare class PostsPages extends BasePages {
     protected _initClientsManager(plebbit: Plebbit): void;
     _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs>;
     _parseRawPageIpfs(pageIpfs: PageIpfs): PageTypeJson;
-    getPage(pageCid: string): Promise<PageTypeJson>;
+    getPage(getPageArgs: GetPageParam): Promise<PageTypeJson>;
     _validatePage(pageIpfs: PageIpfs, pageCid?: string): Promise<void>;
 }
 type ModQueuePageCids = Record<string, string>;
@@ -73,7 +73,7 @@ export declare class ModQueuePages extends BasePages {
     protected _initClientsManager(plebbit: Plebbit): void;
     _fetchAndVerifyPage(pageCid: string): Promise<ModQueuePageIpfs>;
     _parseRawPageIpfs(pageIpfs: ModQueuePageIpfs): ModQueuePageTypeJson;
-    getPage(pageCid: string): Promise<ModQueuePageTypeJson>;
+    getPage(getPageArgs: GetPageParam): Promise<ModQueuePageTypeJson>;
     _validatePage(pageIpfs: ModQueuePageIpfs, pageCid?: string): Promise<void>;
 }
 export {};

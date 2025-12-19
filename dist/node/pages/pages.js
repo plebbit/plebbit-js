@@ -3,7 +3,7 @@ import { verifyModQueuePage, verifyPage } from "../signer/signatures.js";
 import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager, SubplebbitModQueueClientsManager } from "./pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { hideClassPrivateProps } from "../util.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { parsePageCidParams } from "./schema-util.js";
 export class BasePages {
     constructor(props) {
         this._parentComment = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
@@ -47,8 +47,8 @@ export class BasePages {
     async getPage(pageCid) {
         if (!this._subplebbit?.address)
             throw Error("Subplebbit address needs to be defined under page");
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
+        const parsedArgs = parsePageCidParams(pageCid);
+        const pageIpfs = await this._fetchAndVerifyPage(parsedArgs.cid);
         return this._parseRawPageIpfs(pageIpfs);
     }
     // method below will be present in both subplebbit.posts and comment.replies
@@ -79,24 +79,24 @@ export class RepliesPages extends BasePages {
     _parseRawPageIpfs(pageIpfs) {
         return parsePageIpfs(pageIpfs);
     }
-    async getPage(pageCid) {
+    async getPage(args) {
         if (!this._parentComment?.cid)
             throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID", {
-                pageCid,
+                getPageArgs: args,
                 parentComment: this._parentComment
             });
         if (typeof this._parentComment?.depth !== "number")
             throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH", {
                 parentComment: this._parentComment,
-                pageCid
+                getPageArgs: args
             });
         if (!this._parentComment?.postCid)
             throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID", {
-                pageCid,
+                getPageArgs: args,
                 parentComment: this._parentComment
             });
         // we need to make all updating comment instances do the getPage call to cache _loadedUniqueCommentFromGetPage in a centralized instance
-        return await super.getPage(pageCid);
+        return await super.getPage(args);
     }
     async _validatePage(pageIpfs, pageCid) {
         if (!this._parentComment?.cid)
@@ -160,9 +160,9 @@ export class PostsPages extends BasePages {
     _parseRawPageIpfs(pageIpfs) {
         return parsePageIpfs(pageIpfs);
     }
-    async getPage(pageCid) {
+    async getPage(getPageArgs) {
         // we need to make all updating subplebbit instances do the getPage call to cache _loadedUniqueCommentFromGetPage
-        return await super.getPage(pageCid);
+        return await super.getPage(getPageArgs);
     }
     async _validatePage(pageIpfs, pageCid) {
         if (pageIpfs.comments.length === 0)
@@ -209,8 +209,8 @@ export class ModQueuePages extends BasePages {
     _parseRawPageIpfs(pageIpfs) {
         return parseModQueuePageIpfs(pageIpfs);
     }
-    async getPage(pageCid) {
-        return await super.getPage(pageCid);
+    async getPage(getPageArgs) {
+        return await super.getPage(getPageArgs);
     }
     async _validatePage(pageIpfs, pageCid) {
         if (pageIpfs.comments.length === 0)

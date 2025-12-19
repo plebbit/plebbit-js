@@ -459,6 +459,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
@@ -694,7 +696,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.core.$loose>>>>;
 }, z.core.$strict>;
-export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "encryption" | "createdAt" | "statsCid" | "posts" | "modQueue" | "challenges" | "description" | "pubsubTopic" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
+export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "posts" | "encryption" | "createdAt" | "statsCid" | "modQueue" | "challenges" | "description" | "pubsubTopic" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
 export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: z.ZodObject<{
         posts: z.ZodOptional<z.ZodObject<{
@@ -777,6 +779,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                         downvoteCount: z.ZodNumber;
                         replyCount: z.ZodNumber;
                         childCount: z.ZodOptional<z.ZodNumber>;
+                        number: z.ZodOptional<z.ZodNumber>;
+                        postNumber: z.ZodOptional<z.ZodNumber>;
                         edit: z.ZodOptional<z.ZodObject<{
                             timestamp: z.ZodNumber;
                             signature: z.ZodObject<{
@@ -1208,6 +1212,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
@@ -1892,6 +1898,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
@@ -2108,6 +2116,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
@@ -2536,6 +2546,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
@@ -2752,6 +2764,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
@@ -3388,6 +3402,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
@@ -3604,6 +3620,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
