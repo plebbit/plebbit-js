@@ -404,6 +404,12 @@ export class Comment
             log("comment is pending approval, we're not gonna add it to IPFS node for now", this.cid);
             return;
         }
+        if (decryptedVerification.comment.signature.publicKey !== this.raw.pubsubMessageToPublish?.signature?.publicKey) {
+            log(
+                "We received a CommentIpfs whose publicKey is different than the one we published. We're gonna assume it's annoymized and skip adding to IPFS"
+            );
+            return;
+        }
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
         // use p-retry here, 3 times maybe?
         const addRes = await retryKuboIpfsAdd({
