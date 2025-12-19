@@ -56,21 +56,16 @@ import {
 } from "./db-row-parser.js";
 import { ZodError } from "zod";
 import { messages } from "../../../errors.js";
+import type { AnonymityAliasRow, CommentCidWithReplies, PurgedCommentTableRows } from "./db-handler-types.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
     VOTES: "votes",
     COMMENT_MODERATIONS: "commentModerations",
-    COMMENT_EDITS: "commentEdits"
+    COMMENT_EDITS: "commentEdits",
+    ANONYMITY_ALIASES: "anonymityAliases"
 });
-
-export interface PurgedCommentTableRows {
-    commentTableRow: CommentsTableRow;
-    commentUpdateTableRow?: CommentUpdatesRow;
-}
-
-type CommentCidWithReplies = Pick<CommentsTableRow, "cid"> & Pick<CommentUpdatesRow, "replies">;
 
 export class DbHandler {
     private _db!: BetterSqlite3Database;
@@ -394,6 +389,18 @@ export class DbHandler {
         `);
     }
 
+    private _createAnonymityAliasesTable(tableName: string) {
+        this._db.exec(`
+            CREATE TABLE IF NOT EXISTS ${tableName} (
+                commentCid TEXT NOT NULL PRIMARY KEY UNIQUE REFERENCES ${TABLES.COMMENTS}(cid) ON DELETE CASCADE,
+                aliasPrivateKey TEXT NOT NULL,
+                originalAuthorSignerPublicKey TEXT NOT NULL,
+                mode TEXT NOT NULL CHECK(mode IN ('per-post', 'per-reply', 'per-author')),
+                insertedAt INTEGER NOT NULL
+            )
+        `);
+    }
+
     getDbVersion(): number {
         const result = this._db.pragma("user_version", { simple: true }) as number;
         return Number(result);
@@ -452,7 +459,8 @@ export class DbHandler {
             this._createCommentUpdatesTable.bind(this),
             this._createVotesTable.bind(this),
             this._createCommentModerationsTable.bind(this),
-            this._createCommentEditsTable.bind(this)
+            this._createCommentEditsTable.bind(this),
+            this._createAnonymityAliasesTable.bind(this)
         ];
         const tables = Object.values(TABLES);
 
@@ -830,6 +838,22 @@ export class DbHandler {
         });
 
         insertMany(processedComments);
+    }
+
+    insertAnonymityAliases(aliases: AnonymityAliasRow[]): void {
+        if (aliases.length === 0) return;
+        const processedAliases = this._processRecordsForDbBeforeInsert(aliases);
+        const stmt = this._db.prepare(`
+            INSERT OR REPLACE INTO ${TABLES.ANONYMITY_ALIASES}
+            (commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt)
+            VALUES (@commentCid, @aliasPrivateKey, @originalAuthorSignerPublicKey, @mode, @insertedAt)
+        `);
+
+        const insertMany = this._db.transaction((items: AnonymityAliasRow[]) => {
+            for (const alias of items) stmt.run(alias);
+        });
+
+        insertMany(processedAliases);
     }
 
     upsertCommentUpdates(updates: CommentUpdatesTableRowInsert[]): void {
@@ -1400,6 +1424,46 @@ export class DbHandler {
         return this._parseCommentsTableRow(row);
     }
 
+    queryAnonymityAliasByCommentCid(commentCid: string): AnonymityAliasRow | undefined {
+        const row = this._db
+            .prepare(
+                `SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt FROM ${TABLES.ANONYMITY_ALIASES} WHERE commentCid = ?`
+            )
+            .get(commentCid) as AnonymityAliasRow | undefined;
+        return row;
+    }
+
+    queryAnonymityAliasForPost(originalAuthorSignerPublicKey: string, postCid: string): AnonymityAliasRow | undefined {
+        const row = this._db
+            .prepare(
+                `
+            SELECT alias.commentCid, alias.aliasPrivateKey, alias.originalAuthorSignerPublicKey, alias.mode, alias.insertedAt
+            FROM ${TABLES.ANONYMITY_ALIASES} AS alias
+            INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+            WHERE alias.mode = 'per-post' AND alias.originalAuthorSignerPublicKey = ? AND comments.postCid = ?
+            ORDER BY alias.insertedAt ASC
+            LIMIT 1
+        `
+            )
+            .get(originalAuthorSignerPublicKey, postCid) as AnonymityAliasRow | undefined;
+        return row;
+    }
+
+    queryAnonymityAliasForAuthor(originalAuthorSignerPublicKey: string): AnonymityAliasRow | undefined {
+        const row = this._db
+            .prepare(
+                `
+            SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt
+            FROM ${TABLES.ANONYMITY_ALIASES}
+            WHERE mode = 'per-author' AND originalAuthorSignerPublicKey = ?
+            ORDER BY insertedAt ASC
+            LIMIT 1
+        `
+            )
+            .get(originalAuthorSignerPublicKey) as AnonymityAliasRow | undefined;
+        return row;
+    }
+
     private _queryCommentAuthorAndParentWithoutParsing(cid: string):
         | {
               authorSignerAddress?: string;
@@ -1906,6 +1970,7 @@ export class DbHandler {
             const commentTableRow = this.queryComment(cid);
             this._db.prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ?`).run(cid);
             this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE commentCid = ?`).run(cid);
+            this._db.prepare(`DELETE FROM ${TABLES.ANONYMITY_ALIASES} WHERE commentCid = ?`).run(cid);
 
             const commentUpdate = this.queryStoredCommentUpdate({ cid });
             if (commentUpdate) {

@@ -19,7 +19,7 @@ import type {
 import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
-import type { PurgedCommentTableRows } from "./db-handler.js";
+import type { AnonymityAliasRow, PurgedCommentTableRows } from "./db-handler-types.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
     derivePublicationFromChallengeRequest,
@@ -68,6 +68,7 @@ import {
     cleanUpBeforePublishing,
     signChallengeMessage,
     signChallengeVerification,
+    signComment,
     signCommentUpdate,
     signCommentUpdateForChallengeVerification,
     signSubplebbit,
@@ -107,7 +108,11 @@ import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyF
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
-import type { CommentEditPubsubMessagePublication, CommentEditsTableRow } from "../../../publications/comment-edit/types.js";
+import type {
+    CommentEditOptionsToSign,
+    CommentEditPubsubMessagePublication,
+    CommentEditsTableRow
+} from "../../../publications/comment-edit/types.js";
 import {
     CommentEditPubsubMessagePublicationSchema,
     CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema,
@@ -116,6 +121,7 @@ import {
 import type { VotePubsubMessagePublication, VotesTableRow } from "../../../publications/vote/types.js";
 import type {
     CommentIpfsType,
+    CommentOptionsToSign,
     CommentPubsubMessagePublication,
     CommentPubsubMessagPublicationSignature,
     CommentsTableRow,
@@ -163,6 +169,7 @@ import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
 import { iterateOverPageCidsToFindAllCids } from "../../../pages/util.js";
+import { SignerType } from "../../../signer/types.js";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
@@ -1108,6 +1115,65 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
     }
 
+    private async _resolveAliasPrivateKeyForCommentPublication(opts: {
+        mode: "per-post" | "per-reply" | "per-author";
+        originalAuthorSignerPublicKey: string;
+        postCid?: string;
+    }): Promise<string> {
+        if (opts.mode === "per-post") {
+            if (!opts.postCid) throw Error("per-post anonymityMode requires postCid");
+            const existing = this._dbHandler.queryAnonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
+            if (existing?.aliasPrivateKey) return existing.aliasPrivateKey;
+            const signer = await this._plebbit.createSigner();
+            return signer.privateKey;
+        } else if (opts.mode === "per-reply") {
+            const signer = await this._plebbit.createSigner();
+            return signer.privateKey;
+        } else if (opts.mode === "per-author") {
+            const existing = this._dbHandler.queryAnonymityAliasForAuthor(opts.originalAuthorSignerPublicKey);
+            if (existing?.aliasPrivateKey) return existing.aliasPrivateKey;
+            const signer = await this._plebbit.createSigner();
+            return signer.privateKey;
+        } else throw Error(`Unsupported anonymityMode (${opts.mode})`);
+    }
+
+    private async _prepareCommentWithAnonymity(originalComment: CommentPubsubMessagePublication): Promise<{
+        publication: CommentPubsubMessagePublication;
+        anonymity?: {
+            aliasPrivateKey: AnonymityAliasRow["aliasPrivateKey"];
+            originalAuthorSignerPublicKey: AnonymityAliasRow["originalAuthorSignerPublicKey"];
+            mode: AnonymityAliasRow["mode"];
+            originalComment: CommentPubsubMessagePublication;
+        };
+    }> {
+        const mode = this.features?.anonymityMode;
+        if (!mode) return { publication: originalComment };
+
+        const originalAuthorSignerPublicKey = originalComment.signature.publicKey;
+        const aliasPrivateKey = await this._resolveAliasPrivateKeyForCommentPublication({
+            mode,
+            originalAuthorSignerPublicKey,
+            postCid: originalComment.postCid
+        });
+        const aliasSigner = await this._plebbit.createSigner({ privateKey: aliasPrivateKey, type: "ed25519" });
+        const sanitizedAuthor = { address: aliasSigner.address } as CommentPubsubMessagePublication["author"];
+
+        const anonymizedComment = remeda.clone(originalComment);
+
+        anonymizedComment.author = sanitizedAuthor;
+        anonymizedComment.signature = await signComment({ ...anonymizedComment, signer: aliasSigner }, this._plebbit);
+
+        return {
+            publication: anonymizedComment,
+            anonymity: {
+                aliasPrivateKey,
+                originalAuthorSignerPublicKey,
+                mode,
+                originalComment
+            }
+        };
+    }
+
     private async storeComment(
         commentPubsub: CommentPubsubMessagePublication,
         pendingApproval?: boolean
@@ -1176,8 +1242,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (request.vote) return this.storeVote(request.vote, request.challengeRequestId);
         else if (request.commentEdit) return this.storeCommentEdit(request.commentEdit, request.challengeRequestId);
         else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
-        else if (request.comment) return this.storeComment(request.comment, pendingApproval);
-        else if (request.subplebbitEdit) return this.storeSubplebbitEditPublication(request.subplebbitEdit, request.challengeRequestId);
+        else if (request.comment) {
+            const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
+            const storedComment = await this.storeComment(publication, pendingApproval);
+
+            if (anonymity)
+                this._dbHandler.insertAnonymityAliases([
+                    {
+                        commentCid: storedComment.cid,
+                        aliasPrivateKey: anonymity.aliasPrivateKey,
+                        originalAuthorSignerPublicKey: anonymity.originalAuthorSignerPublicKey,
+                        mode: anonymity.mode,
+                        insertedAt: timestamp()
+                    }
+                ]);
+
+            return storedComment;
+        } else if (request.subplebbitEdit) return this.storeSubplebbitEditPublication(request.subplebbitEdit, request.challengeRequestId);
         else throw Error("Don't know how to store this publication" + request);
     }
 

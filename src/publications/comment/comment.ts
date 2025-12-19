@@ -318,9 +318,11 @@ export class Comment
 
         if (!this.raw.pubsubMessageToPublish) throw Error("comment._pubsubMsgToPublish should be defined at this point");
         // verify that the sub did not change any props that we published
-        const pubsubMsgFromCommentIpfs = remeda.pick(decryptedVerification.comment, remeda.keys.strict(this.raw.pubsubMessageToPublish));
+        const keysToCompare = remeda.keys.strict(remeda.omit(this.raw.pubsubMessageToPublish, ["signature", "author"])); // we're omitting these two because that would fail because of anonymity features in subplebbit
+        const pubsubMsgFromCommentIpfs = remeda.pick(decryptedVerification.comment, keysToCompare);
+        const pubsubMsgFromPublishedPubsubMsg = remeda.pick(this.raw.pubsubMessageToPublish, keysToCompare);
 
-        if (!remeda.isDeepEqual(pubsubMsgFromCommentIpfs, this.raw.pubsubMessageToPublish)) {
+        if (!remeda.isDeepEqual(pubsubMsgFromCommentIpfs, pubsubMsgFromPublishedPubsubMsg)) {
             const error = new PlebbitError("ERR_SUB_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS", {
                 pubsubMsgFromSub: pubsubMsgFromCommentIpfs,
                 originalPubsubMsg: this.raw.pubsubMessageToPublish
@@ -1047,7 +1049,7 @@ export class Comment
             this._clientsManager,
             true
         ); // If author domain is not resolving to signer, then don't throw an error
-        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
+        if (!signatureValidity.valid) throw new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
     override async publish(): Promise<void> {
