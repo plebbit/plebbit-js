@@ -19,7 +19,7 @@ import { messages } from "../../../../dist/node/errors.js";
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
-    describe("local anonymization", () => {
+    describe.sequential("local anonymization", () => {
         let context;
         let authorSigner;
         let otherSigner;
@@ -456,7 +456,10 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
                 await waitTillPostInSubplebbitPages(sharedContext.post, sharedContext.publisherPlebbit);
                 await waitTillReplyInParentPages(sharedContext.reply, sharedContext.publisherPlebbit);
 
-                const aliasRow = sharedContext.subplebbit._dbHandler.queryAnonymityAliasForPost(signingAuthor.publicKey, sharedContext.post.cid);
+                const aliasRow = sharedContext.subplebbit._dbHandler.queryAnonymityAliasForPost(
+                    signingAuthor.publicKey,
+                    sharedContext.post.cid
+                );
                 expect(aliasRow).to.exist;
                 aliasSigner = await sharedContext.publisherPlebbit.createSigner({ privateKey: aliasRow.aliasPrivateKey, type: "ed25519" });
             });
@@ -542,9 +545,13 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
                 });
                 await waitForStoredCommentUpdateWithAssertions(paginatedContext.subplebbit, paginatedContext.reply);
 
-                paginatedContext.secondPost = await publishRandomPost(paginatedContext.subplebbit.address, paginatedContext.publisherPlebbit, {
-                    signer: paginatedSigningAuthor
-                });
+                paginatedContext.secondPost = await publishRandomPost(
+                    paginatedContext.subplebbit.address,
+                    paginatedContext.publisherPlebbit,
+                    {
+                        signer: paginatedSigningAuthor
+                    }
+                );
                 await waitForStoredCommentUpdateWithAssertions(paginatedContext.subplebbit, paginatedContext.secondPost);
 
                 await forceSubplebbitToGenerateAllPostsPages(paginatedContext.subplebbit);
@@ -658,7 +665,10 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
                                         });
                                     }
                                 });
-                                if (page.nextCid && (!seenAddresses.has(paginatedContext.post.cid) || !seenAddresses.has(paginatedContext.secondPost.cid)))
+                                if (
+                                    page.nextCid &&
+                                    (!seenAddresses.has(paginatedContext.post.cid) || !seenAddresses.has(paginatedContext.secondPost.cid))
+                                )
                                     currentCid = page.nextCid;
                                 else break;
                             }
