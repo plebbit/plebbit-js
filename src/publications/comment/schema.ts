@@ -180,16 +180,16 @@ export const CommentUpdateForChallengeVerificationSignedPropertyNames = remeda.k
 
 type OverlapCommentPubsubAndCommentUpdate =
     | (keyof CommentPubsubMessagePublication & keyof Omit<CommentUpdateType, "signature">)
-    | "content";
+    | "content"
+    | "signature";
 
-const originalFields = <OverlapCommentPubsubAndCommentUpdate[]>(
-    remeda
-        .intersection(
-            remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape),
-            remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]))
-        )
-        .concat("content") // have to hard code this here because Comment.content uses CommentUpdate.edit.content
-);
+const originalFields = <OverlapCommentPubsubAndCommentUpdate[]>remeda
+    .intersection(
+        remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape),
+        remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]))
+    )
+    .concat("content")
+    .concat("signature"); // have to hard code this here because Comment.content uses CommentUpdate.edit.content
 
 const originalFieldsObj = <Record<OverlapCommentPubsubAndCommentUpdate, true>>remeda.fromKeys(originalFields, () => true);
 
