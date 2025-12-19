@@ -69,6 +69,7 @@ import {
     signChallengeMessage,
     signChallengeVerification,
     signComment,
+    signCommentEdit,
     signCommentUpdate,
     signCommentUpdateForChallengeVerification,
     signSubplebbit,
@@ -1174,6 +1175,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
     }
 
+    private async _prepareCommentEditWithAlias(originalEdit: CommentEditPubsubMessagePublication) {
+        const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(originalEdit.commentCid);
+        if (!aliasSignerOfComment) return originalEdit;
+
+        const aliasSigner = await this._plebbit.createSigner({
+            privateKey: aliasSignerOfComment.aliasPrivateKey,
+            type: "ed25519"
+        });
+        const commentEditSignedByAlias = remeda.clone(originalEdit);
+        commentEditSignedByAlias.author = { address: aliasSigner.address };
+        commentEditSignedByAlias.signature = await signCommentEdit({ ...commentEditSignedByAlias, signer: aliasSigner }, this._plebbit);
+
+        return commentEditSignedByAlias;
+    }
+
     private async storeComment(
         commentPubsub: CommentPubsubMessagePublication,
         pendingApproval?: boolean
@@ -1240,8 +1256,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async storePublication(request: DecryptedChallengeRequestMessageType, pendingApproval?: boolean) {
         if (request.vote) return this.storeVote(request.vote, request.challengeRequestId);
-        else if (request.commentEdit) return this.storeCommentEdit(request.commentEdit, request.challengeRequestId);
-        else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
+        else if (request.commentEdit) {
+            const commentEditWithAlias = await this._prepareCommentEditWithAlias(request.commentEdit);
+            return this.storeCommentEdit(commentEditWithAlias, request.challengeRequestId);
+        } else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
         else if (request.comment) {
             const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
             const storedComment = await this.storeComment(publication, pendingApproval);
@@ -1654,12 +1672,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             const commentToBeEdited = this._dbHandler.queryComment(commentEditPublication.commentCid); // We assume commentToBeEdited to be defined because we already tested for its existence above
             if (!commentToBeEdited) return messages.ERR_COMMENT_EDIT_NO_COMMENT_TO_EDIT;
-            const editSignedByOriginalAuthor = commentEditPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
-
-            if (!editSignedByOriginalAuthor) return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
 
             const commentEditInDb = this._dbHandler.hasCommentEditWithSignatureEncoded(commentEditPublication.signature.signature);
             if (commentEditInDb) return messages.ERR_DUPLICATE_COMMENT_EDIT;
+
+            const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(commentToBeEdited.cid);
+            if (aliasSignerOfComment) {
+                const editSignedByOriginalAuthor =
+                    commentEditPublication.signature.publicKey === aliasSignerOfComment.originalAuthorSignerPublicKey;
+                if (!editSignedByOriginalAuthor) return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
+            } else {
+                const editSignedByOriginalAuthor = commentEditPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
+
+                if (!editSignedByOriginalAuthor) return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
+            }
         }
 
         return undefined;
