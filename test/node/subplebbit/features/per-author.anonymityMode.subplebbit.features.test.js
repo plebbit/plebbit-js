@@ -211,7 +211,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
 
             const storedUpdate = context.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: editablePost.cid });
             expect(storedUpdate?.edit?.content).to.equal(editedContent);
-            expect(storedUpdate?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+            expect(storedUpdate?.edit?.signature?.publicKey).to.equal(aliasSigner.publicKey);
             await editablePost.stop();
         });
 
@@ -252,7 +252,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             const aliasBeforePurge = context.subplebbit._dbHandler.queryAnonymityAliasForAuthor(purgeSigner.publicKey);
             expect(aliasBeforePurge).to.exist;
 
-            await context.subplebbit.purgeComment(purgeTarget.cid);
+            await context.subplebbit._dbHandler.purgeComment(purgeTarget.cid);
 
             const aliasAfterPurge = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(purgeTarget.cid);
             expect(aliasAfterPurge).to.be.undefined;
@@ -333,24 +333,28 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
 
                 it("Spec: loads preloaded pages with anonymized posts/replies without failing verification", async () => {
                     const remoteSubplebbit = await remotePlebbit.getSubplebbit({ address: sharedContext.subplebbit.address });
-                    const sortName = Object.keys(remoteSubplebbit.posts.pages)[0];
-                    const page = remoteSubplebbit.posts.pages[sortName];
-                    const postEntry = page?.comments?.find((c) => c.comment?.cid === sharedContext.post.cid);
-                    expect(postEntry?.comment?.author?.address).to.equal(aliasSigner.address);
-                    expect(postEntry?.comment?.author?.displayName).to.be.undefined;
-                    expect(postEntry?.comment?.author?.wallets).to.be.undefined;
-                    expect(postEntry?.comment?.author?.flair).to.be.undefined;
-                    expect(postEntry?.comment?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+                    expect(Object.keys(remoteSubplebbit.posts.pages).length).to.be.greaterThan(0);
+                    for (const sortName of Object.keys(remoteSubplebbit.posts.pages)) {
+                        const page = remoteSubplebbit.posts.pages[sortName];
+                        const postInPage = page?.comments?.find((c) => c.cid === sharedContext.post.cid);
+                        expect(postInPage).to.be.ok;
+                        expect(postInPage?.author?.address).to.equal(aliasSigner.address);
+                        expect(postInPage?.author?.displayName).to.be.undefined;
+                        expect(postInPage?.author?.wallets).to.be.undefined;
+                        expect(postInPage?.author?.flair).to.be.undefined;
+                        expect(postInPage?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+                    }
                 });
 
                 it("Spec: subplebbit.posts.getPage({ cid }) loads a page with anonymized comments", async () => {
                     const remoteSubplebbit = await remotePlebbit.getSubplebbit({ address: sharedContext.subplebbit.address });
-                    const sortName = Object.keys(remoteSubplebbit.posts.pageCids)[0];
-                    const firstPageCid = remoteSubplebbit.posts.pageCids[sortName];
-                    const page = await remoteSubplebbit.posts.getPage({ cid: firstPageCid });
-                    const postEntry = page.comments.find((c) => c.comment?.cid === sharedContext.post.cid);
-                    expect(postEntry?.comment?.author?.address).to.equal(aliasSigner.address);
-                    expect(postEntry?.comment?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+                    expect(Object.keys(remoteSubplebbit.posts.pageCids).length).to.be.greaterThan(0);
+                    for (const firstPageCid of Object.values(remoteSubplebbit.posts.pageCids)) {
+                        const page = await remoteSubplebbit.posts.getPage({ cid: firstPageCid });
+                        const postInPage = page.comments.find((c) => c.cid === sharedContext.post.cid);
+                        expect(postInPage?.author?.address).to.equal(aliasSigner.address);
+                        expect(postInPage?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+                    }
                 });
 
                 it("Spec: comment.replies.getPage({ cid }) loads a page with anonymized replies", async () => {
@@ -359,15 +363,19 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
                     const replyPageCid = Object.values(remoteParent.replies.pageCids || {})[0];
                     expect(replyPageCid).to.be.a("string");
                     const repliesPage = await remoteParent.replies.getPage({ cid: replyPageCid });
-                    const replyEntry = repliesPage.comments.find((c) => c.comment?.cid === sharedContext.reply.cid);
-                    expect(replyEntry?.comment?.author?.address).to.equal(aliasSigner.address);
-                    expect(replyEntry?.comment?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+                    const replyEntryInPage = repliesPage.comments.find((c) => c.cid === sharedContext.reply.cid);
+                    expect(replyEntryInPage?.author?.address).to.equal(aliasSigner.address);
+                    expect(replyEntryInPage?.signature?.publicKey).to.equal(aliasSigner.publicKey);
                     await remoteParent.stop();
                 });
 
                 it("Can load an anonymized comment with getComment", async () => {
                     const remoteComment = await remotePlebbit.getComment({ cid: sharedContext.post.cid });
                     await remoteComment.update();
+                    await resolveWhenConditionIsTrue({
+                        toUpdate: remoteReply,
+                        predicate: () => typeof remoteComment.updatedAt === "number"
+                    });
                     expect(remoteComment.author.address).to.equal(aliasSigner.address);
                     expect(remoteComment.author.displayName).to.be.undefined;
                     expect(remoteComment.signature.publicKey).to.equal(aliasSigner.publicKey);
