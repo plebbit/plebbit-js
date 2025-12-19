@@ -1122,11 +1122,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         postCid?: string;
     }): Promise<string> {
         if (opts.mode === "per-post") {
-            if (!opts.postCid) throw Error("per-post anonymityMode requires postCid");
-            const existing = this._dbHandler.queryAnonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
-            if (existing?.aliasPrivateKey) return existing.aliasPrivateKey;
-            const signer = await this._plebbit.createSigner();
-            return signer.privateKey;
+            // For a new post (no postCid yet), always generate a fresh alias; once stored the postCid will be used for reuse.
+            if (opts.postCid) {
+                const existing = this._dbHandler.queryAnonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
+                if (existing?.aliasPrivateKey) return existing.aliasPrivateKey;
+            }
+            return (await this._plebbit.createSigner()).privateKey;
         } else if (opts.mode === "per-reply") {
             const signer = await this._plebbit.createSigner();
             return signer.privateKey;
@@ -1151,10 +1152,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!mode) return { publication: originalComment };
 
         const originalAuthorSignerPublicKey = originalComment.signature.publicKey;
+        const postCid = originalComment.postCid;
         const aliasPrivateKey = await this._resolveAliasPrivateKeyForCommentPublication({
             mode,
             originalAuthorSignerPublicKey,
-            postCid: originalComment.postCid
+            postCid
         });
         const aliasSigner = await this._plebbit.createSigner({ privateKey: aliasPrivateKey, type: "ed25519" });
         const sanitizedAuthor = { address: aliasSigner.address } as CommentPubsubMessagePublication["author"];
@@ -1459,7 +1461,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             try {
                 toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
             } catch (e) {
-                if ((e as PlebbitError).code) failureReason = (e as PlebbitError).message;
+                failureReason = (e as PlebbitError).message;
+                log.error("Failed to store store Publication And Encrypt For ChallengeVerification", e);
             }
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
