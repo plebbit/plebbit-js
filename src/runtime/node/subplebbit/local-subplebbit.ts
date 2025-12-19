@@ -1117,8 +1117,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _resolveAliasPrivateKeyForCommentPublication(opts: {
-        mode: "per-post" | "per-reply" | "per-author";
-        originalAuthorSignerPublicKey: string;
+        mode: AnonymityAliasRow["mode"];
+        originalAuthorSignerPublicKey: AnonymityAliasRow["originalAuthorSignerPublicKey"];
         postCid?: string;
     }): Promise<string> {
         if (opts.mode === "per-post") {
