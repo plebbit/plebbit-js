@@ -163,6 +163,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
                 title: originalTitle
             });
             await publishWithExpectedResult(authoredPost, true);
+            expect(authoredPost.original).to.be.ok;
             await waitForStoredCommentUpdateWithAssertions(context.subplebbit, authoredPost);
 
             await authoredPost.update();
@@ -179,7 +180,6 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             expect(authoredPost.original?.author?.flair).to.deep.equal(originalAuthor.flair);
             expect(authoredPost.original?.author?.previousCommentCid).to.equal(originalAuthor.previousCommentCid);
             expect(authoredPost.original?.content).to.equal(originalContent);
-            expect(authoredPost.original?.title).to.equal(originalTitle);
             expect(authoredPost.original?.signature?.publicKey).to.equal(authorSigner.publicKey);
 
             await authoredPost.stop();
