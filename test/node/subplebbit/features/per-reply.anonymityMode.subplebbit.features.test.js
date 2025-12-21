@@ -10,6 +10,7 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     forceSubplebbitToGenerateAllPostsPages,
+    forceLocalSubPagesToAlwaysGenerateMultipleChunks,
     waitTillPostInSubplebbitPages,
     waitTillReplyInParentPages,
     waitTillReplyInParentPagesInstance
@@ -1074,6 +1075,8 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             let paginatedSigningAuthor;
             let firstReplyAliasSigner;
             let secondReplyAliasSigner;
+            let paginatedForcedChunkingCleanup;
+            let nestedForcedChunkingCleanup;
 
             before(async () => {
                 paginatedContext = await createPerReplySubplebbit();
@@ -1104,6 +1107,16 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                     }
                 );
                 await waitForStoredCommentUpdateWithAssertions(paginatedContext.subplebbit, paginatedContext.firstNestedReply);
+                const { cleanup } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
+                    subplebbit: paginatedContext.subplebbit,
+                    parentComment: paginatedContext.post
+                });
+                paginatedForcedChunkingCleanup = cleanup;
+                const { cleanup: cleanupNested } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
+                    subplebbit: paginatedContext.subplebbit,
+                    parentComment: paginatedContext.firstReply
+                });
+                nestedForcedChunkingCleanup = cleanupNested;
 
                 await forceSubplebbitToGenerateAllPostsPages(paginatedContext.subplebbit);
                 await waitTillPostInSubplebbitPages(paginatedContext.post, paginatedContext.publisherPlebbit);
@@ -1141,6 +1154,8 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                 await paginatedContext?.firstReply?.stop();
                 await paginatedContext?.secondReply?.stop();
                 await paginatedContext?.firstNestedReply?.stop();
+                await paginatedForcedChunkingCleanup?.();
+                await nestedForcedChunkingCleanup?.();
                 await paginatedContext?.cleanup();
             });
 
@@ -1187,44 +1202,26 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                         const remoteParent = await remotePlebbit.getComment({ cid: paginatedContext.post.cid });
                         await remoteParent.update();
                         await waitTillReplyInParentPagesInstance(paginatedContext.firstReply, remoteParent);
+                        expect(
+                            Object.keys(remoteParent.replies.pageCids || {}),
+                            "expected replies.pageCids to be populated for paginated replies"
+                        ).to.not.be.empty;
                         const replyPageCid = Object.values(remoteParent.replies.pageCids || {})[0];
+                        expect(replyPageCid, "expected a replies page cid after forcing pagination").to.be.ok;
+                        const repliesPage = await remoteParent.replies.getPage({ cid: replyPageCid });
+                        const firstReplyEntryInPage = repliesPage.comments.find((c) => c.cid === paginatedContext.firstReply.cid);
+                        const secondReplyEntryInPage = repliesPage.comments.find((c) => c.cid === paginatedContext.secondReply.cid);
 
-                        if (!replyPageCid) {
-                            const preloadedBest = remoteParent.replies.pages?.best;
-                            expect(
-                                preloadedBest?.comments.length,
-                                "expected preloaded replies to exist when no pageCid is present"
-                            ).to.be.greaterThan(0);
+                        expect(firstReplyEntryInPage?.author?.address).to.not.equal(paginatedSigningAuthor.address);
+                        expect(firstReplyEntryInPage?.author?.displayName).to.be.undefined;
+                        expect(firstReplyEntryInPage?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
 
-                            const firstReplyEntry = preloadedBest.comments.find((c) => c.cid === paginatedContext.firstReply.cid);
-                            const secondReplyEntry = preloadedBest.comments.find((c) => c.cid === paginatedContext.secondReply.cid);
+                        expect(secondReplyEntryInPage?.author?.address).to.not.equal(paginatedSigningAuthor.address);
+                        expect(secondReplyEntryInPage?.author?.displayName).to.be.undefined;
+                        expect(secondReplyEntryInPage?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
 
-                            expect(firstReplyEntry?.author?.address).to.not.equal(paginatedSigningAuthor.address);
-                            expect(firstReplyEntry?.author?.displayName).to.be.undefined;
-                            expect(firstReplyEntry?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
-
-                            expect(secondReplyEntry?.author?.address).to.not.equal(paginatedSigningAuthor.address);
-                            expect(secondReplyEntry?.author?.displayName).to.be.undefined;
-                            expect(secondReplyEntry?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
-
-                            // Verify replies have different anonymized addresses
-                            expect(firstReplyEntry?.author?.address).to.not.equal(secondReplyEntry?.author?.address);
-                        } else {
-                            const repliesPage = await remoteParent.replies.getPage({ cid: replyPageCid });
-                            const firstReplyEntryInPage = repliesPage.comments.find((c) => c.cid === paginatedContext.firstReply.cid);
-                            const secondReplyEntryInPage = repliesPage.comments.find((c) => c.cid === paginatedContext.secondReply.cid);
-
-                            expect(firstReplyEntryInPage?.author?.address).to.not.equal(paginatedSigningAuthor.address);
-                            expect(firstReplyEntryInPage?.author?.displayName).to.be.undefined;
-                            expect(firstReplyEntryInPage?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
-
-                            expect(secondReplyEntryInPage?.author?.address).to.not.equal(paginatedSigningAuthor.address);
-                            expect(secondReplyEntryInPage?.author?.displayName).to.be.undefined;
-                            expect(secondReplyEntryInPage?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
-
-                            // Verify replies have different anonymized addresses
-                            expect(firstReplyEntryInPage?.author?.address).to.not.equal(secondReplyEntryInPage?.author?.address);
-                        }
+                        // Verify replies have different anonymized addresses
+                        expect(firstReplyEntryInPage?.author?.address).to.not.equal(secondReplyEntryInPage?.author?.address);
                         await remoteParent.stop();
                     });
 
@@ -1236,54 +1233,32 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
 
                         const seenReplyAddresses = new Map();
                         const replyPageCids = remoteParent.replies.pageCids || {};
-
-                        if (Object.keys(replyPageCids).length === 0) {
-                            const preloadedBest = remoteParent.replies.pages?.best;
-                            expect(
-                                preloadedBest?.comments.length,
-                                "expected preloaded replies to exist when no reply pageCid is present"
-                            ).to.be.greaterThan(0);
-
-                            const firstReplyEntry = preloadedBest.comments.find((c) => c.cid === paginatedContext.firstReply.cid);
-                            const secondReplyEntry = preloadedBest.comments.find((c) => c.cid === paginatedContext.secondReply.cid);
-
-                            if (firstReplyEntry)
-                                seenReplyAddresses.set(firstReplyEntry.cid, {
-                                    address: firstReplyEntry.author.address,
-                                    publicKey: firstReplyEntry.signature.publicKey
+                        expect(Object.keys(replyPageCids), "expected replies.pageCids to be populated").to.not.be.empty;
+                        for (const firstPageCid of Object.values(replyPageCids)) {
+                            let currentCid = firstPageCid;
+                            while (currentCid) {
+                                const page = await remoteParent.replies.getPage({ cid: currentCid });
+                                page.comments.forEach((comment) => {
+                                    if (comment.cid === paginatedContext.firstReply.cid) {
+                                        seenReplyAddresses.set(comment.cid, {
+                                            address: comment.author.address,
+                                            publicKey: comment.signature.publicKey
+                                        });
+                                    }
+                                    if (comment.cid === paginatedContext.secondReply.cid) {
+                                        seenReplyAddresses.set(comment.cid, {
+                                            address: comment.author.address,
+                                            publicKey: comment.signature.publicKey
+                                        });
+                                    }
                                 });
-                            if (secondReplyEntry)
-                                seenReplyAddresses.set(secondReplyEntry.cid, {
-                                    address: secondReplyEntry.author.address,
-                                    publicKey: secondReplyEntry.signature.publicKey
-                                });
-                        } else {
-                            for (const firstPageCid of Object.values(replyPageCids)) {
-                                let currentCid = firstPageCid;
-                                while (currentCid) {
-                                    const page = await remoteParent.replies.getPage({ cid: currentCid });
-                                    page.comments.forEach((comment) => {
-                                        if (comment.cid === paginatedContext.firstReply.cid) {
-                                            seenReplyAddresses.set(comment.cid, {
-                                                address: comment.author.address,
-                                                publicKey: comment.signature.publicKey
-                                            });
-                                        }
-                                        if (comment.cid === paginatedContext.secondReply.cid) {
-                                            seenReplyAddresses.set(comment.cid, {
-                                                address: comment.author.address,
-                                                publicKey: comment.signature.publicKey
-                                            });
-                                        }
-                                    });
-                                    if (
-                                        page.nextCid &&
-                                        (!seenReplyAddresses.has(paginatedContext.firstReply.cid) ||
-                                            !seenReplyAddresses.has(paginatedContext.secondReply.cid))
-                                    )
-                                        currentCid = page.nextCid;
-                                    else break;
-                                }
+                                if (
+                                    page.nextCid &&
+                                    (!seenReplyAddresses.has(paginatedContext.firstReply.cid) ||
+                                        !seenReplyAddresses.has(paginatedContext.secondReply.cid))
+                                )
+                                    currentCid = page.nextCid;
+                                else break;
                             }
                         }
 
@@ -1306,36 +1281,23 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                         await waitTillReplyInParentPagesInstance(paginatedContext.firstNestedReply, remoteParentReply);
 
                         const nestedReplyPageCid = Object.values(remoteParentReply.replies.pageCids || {})[0];
+                        expect(
+                            Object.keys(remoteParentReply.replies.pageCids || {}),
+                            "expected nested replies.pageCids to be populated"
+                        ).to.not.be.empty;
+                        expect(nestedReplyPageCid, "expected a nested replies page cid after forcing pagination").to.be.ok;
+                        const nestedRepliesPage = await remoteParentReply.replies.getPage({ cid: nestedReplyPageCid });
+                        const nestedReplyEntryInPage = nestedRepliesPage.comments.find(
+                            (c) => c.cid === paginatedContext.firstNestedReply.cid
+                        );
 
-                        if (!nestedReplyPageCid) {
-                            const preloadedBest = remoteParentReply.replies.pages?.best;
-                            expect(
-                                preloadedBest?.comments.length,
-                                "expected preloaded nested replies to exist when no pageCid is present"
-                            ).to.be.greaterThan(0);
+                        expect(nestedReplyEntryInPage?.author?.address).to.not.equal(paginatedSigningAuthor.address);
+                        expect(nestedReplyEntryInPage?.author?.displayName).to.be.undefined;
+                        expect(nestedReplyEntryInPage?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
 
-                            const nestedReplyEntry = preloadedBest.comments.find((c) => c.cid === paginatedContext.firstNestedReply.cid);
-                            expect(nestedReplyEntry?.author?.address).to.not.equal(paginatedSigningAuthor.address);
-                            expect(nestedReplyEntry?.author?.displayName).to.be.undefined;
-                            expect(nestedReplyEntry?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
-
-                            // Verify nested reply has different anonymized address from parent replies
-                            expect(nestedReplyEntry?.author?.address).to.not.equal(firstReplyAliasSigner.address);
-                            expect(nestedReplyEntry?.author?.address).to.not.equal(secondReplyAliasSigner.address);
-                        } else {
-                            const nestedRepliesPage = await remoteParentReply.replies.getPage({ cid: nestedReplyPageCid });
-                            const nestedReplyEntryInPage = nestedRepliesPage.comments.find(
-                                (c) => c.cid === paginatedContext.firstNestedReply.cid
-                            );
-
-                            expect(nestedReplyEntryInPage?.author?.address).to.not.equal(paginatedSigningAuthor.address);
-                            expect(nestedReplyEntryInPage?.author?.displayName).to.be.undefined;
-                            expect(nestedReplyEntryInPage?.signature?.publicKey).to.not.equal(paginatedSigningAuthor.publicKey);
-
-                            // Verify nested reply has different anonymized address from parent replies
-                            expect(nestedReplyEntryInPage?.author?.address).to.not.equal(firstReplyAliasSigner.address);
-                            expect(nestedReplyEntryInPage?.author?.address).to.not.equal(secondReplyAliasSigner.address);
-                        }
+                        // Verify nested reply has different anonymized address from parent replies
+                        expect(nestedReplyEntryInPage?.author?.address).to.not.equal(firstReplyAliasSigner.address);
+                        expect(nestedReplyEntryInPage?.author?.address).to.not.equal(secondReplyAliasSigner.address);
                         await remoteParentReply.stop();
                     });
                 });
