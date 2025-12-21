@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { describeSkipIfRpc, generateMockPost, mockPlebbit } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
+import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 
 class InMemoryDbHandlerMock {
     constructor() {
@@ -62,6 +63,21 @@ class InMemoryDbHandlerMock {
         });
     }
 
+    // anonymity alias helpers
+    queryAnonymityAliasByCommentCid() {
+        return undefined;
+    }
+
+    queryAnonymityAliasForPost() {
+        return undefined;
+    }
+
+    queryAnonymityAliasForAuthor() {
+        return undefined;
+    }
+
+    insertAnonymityAliases() {}
+
     // comment edit helpers
     hasCommentEditWithSignatureEncoded(signatureEncoded) {
         return this.commentEdits.some((edit) => edit.signature?.signature === signatureEncoded);
@@ -108,6 +124,7 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
     let dbMock;
     let originalEdit;
     const clone = (value) => JSON.parse(JSON.stringify(value));
+    const toPublicKeyBuffer = (publicKey) => (typeof publicKey === "string" ? uint8ArrayFromString(publicKey, "base64") : publicKey);
 
     const expectNoDuplicateSignatures = () => {
         const unique = (values) => new Set(values).size === values.length;
@@ -133,7 +150,11 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         subplebbit.settings = subplebbit.settings || {};
         subplebbit.features = subplebbit.features || {};
         subplebbit.roles = {};
-        subplebbit.edit = originalEdit;
+        // use a lightweight stub to avoid real DB work during these unit tests
+        subplebbit.edit = async (newProps) => {
+            Object.assign(subplebbit, newProps);
+            return subplebbit;
+        };
         subplebbit._ongoingChallengeExchanges = new Map();
         subplebbit._challengeAnswerPromises = new Map();
         subplebbit._challengeAnswerResolveReject = new Map();
@@ -151,31 +172,31 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
 
     const makeCommentRequest = (commentPublication, requestId) => ({
         challengeRequestId: BigInt(requestId),
-        signature: { publicKey: commentPublication.signature.publicKey },
+        signature: { publicKey: toPublicKeyBuffer(commentPublication.signature.publicKey) },
         comment: clone(commentPublication)
     });
 
     const makeCommentEditRequest = (commentEditPublication, requestId) => ({
         challengeRequestId: BigInt(requestId),
-        signature: { publicKey: commentEditPublication.signature.publicKey },
+        signature: { publicKey: toPublicKeyBuffer(commentEditPublication.signature.publicKey) },
         commentEdit: clone(commentEditPublication)
     });
 
     const makeCommentModerationRequest = (commentModerationPublication, requestId) => ({
         challengeRequestId: BigInt(requestId),
-        signature: { publicKey: commentModerationPublication.signature.publicKey },
+        signature: { publicKey: toPublicKeyBuffer(commentModerationPublication.signature.publicKey) },
         commentModeration: clone(commentModerationPublication)
     });
 
     const makeVoteRequest = (votePublication, requestId) => ({
         challengeRequestId: BigInt(requestId),
-        signature: { publicKey: votePublication.signature.publicKey },
+        signature: { publicKey: toPublicKeyBuffer(votePublication.signature.publicKey) },
         vote: clone(votePublication)
     });
 
     const makeSubplebbitEditRequest = (subplebbitEditPublication, requestId) => ({
         challengeRequestId: BigInt(requestId),
-        signature: { publicKey: subplebbitEditPublication.signature.publicKey },
+        signature: { publicKey: toPublicKeyBuffer(subplebbitEditPublication.signature.publicKey) },
         subplebbitEdit: clone(subplebbitEditPublication)
     });
 
