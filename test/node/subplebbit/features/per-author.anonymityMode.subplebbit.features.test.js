@@ -10,6 +10,7 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     forceSubplebbitToGenerateAllPostsPages,
+    forceLocalSubPagesToAlwaysGenerateMultipleChunks,
     waitTillPostInSubplebbitPages,
     waitTillReplyInParentPages,
     waitTillReplyInParentPagesInstance
@@ -568,8 +569,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
                         const firstReplyUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: reply.cid });
                         const secondPostUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: secondPost.cid });
                         return (
-                            firstReplyUpdate?.author?.subplebbit?.postScore === 1 &&
-                            secondPostUpdate?.author?.subplebbit?.postScore === 1
+                            firstReplyUpdate?.author?.subplebbit?.postScore === 1 && secondPostUpdate?.author?.subplebbit?.postScore === 1
                         );
                     }
                 });
@@ -903,8 +903,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
                         await resolveWhenConditionIsTrue({
                             toUpdate: remoteComment,
                             predicate: () =>
-                                typeof remoteComment.updatedAt === "number" &&
-                                remoteComment.edit?.content === sharedContext.editContent
+                                typeof remoteComment.updatedAt === "number" && remoteComment.edit?.content === sharedContext.editContent
                         });
                         expect(remoteComment.author.address).to.equal(aliasSigner.address);
                         expect(remoteComment.author.displayName).to.be.undefined;
@@ -936,6 +935,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             let paginatedContext;
             let paginatedAliasSigner;
             let paginatedSigningAuthor;
+            let paginatedForcedChunkingCleanup;
 
             before(async () => {
                 paginatedContext = await createPerAuthorSubplebbit();
@@ -948,6 +948,11 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
                     signer: paginatedSigningAuthor
                 });
                 await waitForStoredCommentUpdateWithAssertions(paginatedContext.subplebbit, paginatedContext.reply);
+                const { cleanup } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
+                    subplebbit: paginatedContext.subplebbit,
+                    parentComment: paginatedContext.post
+                });
+                paginatedForcedChunkingCleanup = cleanup;
                 await forceSubplebbitToGenerateAllPostsPages(paginatedContext.subplebbit);
                 await waitTillPostInSubplebbitPages(paginatedContext.post, paginatedContext.publisherPlebbit);
                 await waitTillReplyInParentPages(paginatedContext.reply, paginatedContext.publisherPlebbit);
@@ -963,6 +968,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             after(async () => {
                 await paginatedContext?.post?.stop();
                 await paginatedContext?.reply?.stop();
+                await paginatedForcedChunkingCleanup?.();
                 await paginatedContext?.cleanup();
             });
 
@@ -999,14 +1005,16 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
                         }
                     });
 
-                    it.skip("Spec: comment.replies.getPage({ cid }) loads a page with anonymized replies", async () => {
-                        // this test is failing, leave it be for now
-                        // need to figure out why remoteParent.replies.pageCids is empty
+                    it("Spec: comment.replies.getPage({ cid }) loads a page with anonymized replies", async () => {
                         const remoteParent = await remotePlebbit.getComment({ cid: paginatedContext.post.cid });
                         await remoteParent.update();
                         await waitTillReplyInParentPagesInstance(paginatedContext.reply, remoteParent);
-                        const replyPageCid = Object.values(remoteParent.replies.pageCids)[0];
-                        expect(replyPageCid).to.be.ok;
+                        expect(
+                            Object.keys(remoteParent.replies.pageCids || {}),
+                            "expected replies.pageCids to be populated for paginated replies"
+                        ).to.not.be.empty;
+                        const replyPageCid = Object.values(remoteParent.replies.pageCids || {})[0];
+                        expect(replyPageCid, "expected a replies page cid after forcing pagination").to.be.ok;
                         const repliesPage = await remoteParent.replies.getPage({ cid: replyPageCid });
                         const replyEntryInPage = repliesPage.comments.find((c) => c.cid === paginatedContext.reply.cid);
                         expect(replyEntryInPage?.author?.address).to.equal(paginatedAliasSigner.address);
