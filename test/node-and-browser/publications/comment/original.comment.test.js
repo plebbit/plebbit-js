@@ -25,7 +25,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(post.original.author.subplebbit).to.be.undefined;
             expect(post.original.content).to.equal(post.content);
             expect(post.original.protocolVersion).to.be.a("string");
-            expect(post.original.signature).to.be.undefined;
+            expect(post.original.signature).to.deep.equal(post.signature);
+            expect(post.original.signature).to.include.all.keys("type", "signature", "publicKey", "signedPropertyNames");
         });
 
         it(`comment.original from plebbit.getComment({cid: ) should be undefined`, async () => {
@@ -45,7 +46,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(comment.original.author.subplebbit).to.be.undefined;
             expect(comment.original.content).to.equal(originalComment.content);
             expect(comment.original.protocolVersion).to.be.a("string");
-            expect(comment.original.signature).to.be.undefined;
+            expect(comment.original.signature).to.deep.equal(originalComment.signature);
+            expect(comment.original.signature).to.include.all.keys("type", "signature", "publicKey", "signedPropertyNames");
 
             await comment.stop();
         });

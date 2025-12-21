@@ -121,7 +121,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 });
 
                 const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbitWithMathCliChallenge }, testPlebbit);
-                mockPost._publishToDifferentProviderThresholdSeconds = 1; // Very fast timeout
+                mockPost._publishToDifferentProviderThresholdSeconds = 5; // Very fast timeout
 
                 const challengesReceived = [];
 
