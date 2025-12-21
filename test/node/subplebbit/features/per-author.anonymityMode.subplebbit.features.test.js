@@ -20,7 +20,7 @@ import { timestamp } from "../../../../dist/node/util.js";
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
-    describe("local anonymization", () => {
+    describe.concurrent("local anonymization", () => {
         let context;
         let authorSigner;
         let otherSigner;
@@ -785,7 +785,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             });
 
             remotePlebbitConfigs.forEach((config) => {
-                describe.sequential(`${config.name} - paginated`, () => {
+                describe.concurrent(`${config.name} - paginated`, () => {
                     let remotePlebbit;
 
                     before(async () => {
