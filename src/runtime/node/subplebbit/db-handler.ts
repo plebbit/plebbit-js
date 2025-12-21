@@ -18,7 +18,7 @@ import type {
     SubplebbitStats
 } from "../../../subplebbit/types.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
-import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
+import { getPlebbitAddressFromPublicKey, getPlebbitAddressFromPublicKeySync } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import type {
     CommentEditPubsubMessagePublication,
@@ -1851,9 +1851,13 @@ export class DbHandler {
         return results.map((r) => this._parseCommentsTableRow(r));
     }
 
-    queryAuthorModEdits(authorSignerAddress: string): Pick<SubplebbitAuthor, "banExpiresAt" | "flair"> {
+    queryAuthorModEdits(authorSignerAddresses: string[]): Pick<SubplebbitAuthor, "banExpiresAt" | "flair"> {
+        if (authorSignerAddresses.length === 0) return {};
+        const placeholdersForAuthors = authorSignerAddresses.map(() => "?").join(",");
         const authorCommentCids = (
-            this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE authorSignerAddress = ?`).all(authorSignerAddress) as {
+            this._db
+                .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE authorSignerAddress IN (${placeholdersForAuthors})`)
+                .all(...authorSignerAddresses) as {
                 cid: string;
             }[]
         ).map((r) => r.cid);
@@ -1880,6 +1884,55 @@ export class DbHandler {
     }
 
     querySubplebbitAuthor(authorSignerAddress: string): SubplebbitAuthor | undefined {
+        const authorSignerAddresses = new Set<string>([authorSignerAddress]);
+
+        // If the provided address is the original signer, include all alias signer addresses for that author.
+        const aliasRowsForOriginal = this._db
+            .prepare(
+                `
+            SELECT alias.commentCid, alias.originalAuthorSignerPublicKey
+            FROM ${TABLES.ANONYMITY_ALIASES} AS alias
+        `
+            )
+            .all() as Pick<AnonymityAliasRow, "commentCid" | "originalAuthorSignerPublicKey">[];
+        for (const aliasRow of aliasRowsForOriginal) {
+            try {
+                const originalAddress = getPlebbitAddressFromPublicKeySync(aliasRow.originalAuthorSignerPublicKey);
+                if (originalAddress === authorSignerAddress) {
+                    const commentRow = this._db
+                        .prepare(`SELECT authorSignerAddress FROM ${TABLES.COMMENTS} WHERE cid = ?`)
+                        .get(aliasRow.commentCid) as { authorSignerAddress?: string } | undefined;
+                    if (commentRow?.authorSignerAddress) authorSignerAddresses.add(commentRow.authorSignerAddress);
+                }
+            } catch {
+                // ignore malformed keys
+            }
+        }
+
+        // If the provided address is an alias, include the original signer address for that alias.
+        const aliasRowsForAliasAddress = this._db
+            .prepare(
+                `
+            SELECT alias.originalAuthorSignerPublicKey
+            FROM ${TABLES.ANONYMITY_ALIASES} AS alias
+            INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+            WHERE comments.authorSignerAddress = ?
+        `
+            )
+            .all(authorSignerAddress) as Pick<AnonymityAliasRow, "originalAuthorSignerPublicKey">[];
+        for (const aliasRow of aliasRowsForAliasAddress) {
+            try {
+                const originalAddress = getPlebbitAddressFromPublicKeySync(aliasRow.originalAuthorSignerPublicKey);
+                authorSignerAddresses.add(originalAddress);
+            } catch {
+                // ignore malformed keys
+            }
+        }
+
+        const authorSignerAddressArray = [...authorSignerAddresses];
+        if (authorSignerAddressArray.length === 0) return undefined;
+        const placeholders = authorSignerAddressArray.map(() => "?").join(", ");
+
         const authorCommentsData = this._db
             .prepare(
                 `
@@ -1887,10 +1940,10 @@ export class DbHandler {
                    COALESCE(SUM(CASE WHEN v.vote = 1 THEN 1 ELSE 0 END), 0) as upvoteCount,
                    COALESCE(SUM(CASE WHEN v.vote = -1 THEN 1 ELSE 0 END), 0) as downvoteCount
             FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.VOTES} v ON c.cid = v.commentCid
-            WHERE c.authorSignerAddress = ? GROUP BY c.cid
+            WHERE c.authorSignerAddress IN (${placeholders}) GROUP BY c.cid
         `
             )
-            .all(authorSignerAddress) as (Pick<CommentsTableRow, "depth" | "timestamp" | "cid"> & {
+            .all(...authorSignerAddressArray) as (Pick<CommentsTableRow, "depth" | "timestamp" | "cid"> & {
             rowid: number;
             upvoteCount: number;
             downvoteCount: number;
@@ -1905,7 +1958,7 @@ export class DbHandler {
         if (!lastCommentCid) throw Error("Failed to query subplebbitAuthor.lastCommentCid");
         const firstCommentTimestamp = remeda.minBy(authorCommentsData, (c) => c.rowid)?.timestamp;
         if (typeof firstCommentTimestamp !== "number") throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
-        const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddress);
+        const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddressArray);
         return { postScore, replyScore, lastCommentCid, ...modAuthorEdits, firstCommentTimestamp };
     }
 
