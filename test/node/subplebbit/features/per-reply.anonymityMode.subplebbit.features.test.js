@@ -17,6 +17,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { timestamp } from "../../../../dist/node/util.js";
+import signers from "../../../fixtures/signers.js";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
@@ -54,6 +55,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             expect(stored?.author?.address).to.equal(aliasSigner.address);
             expect(stored?.signature?.publicKey).to.equal(aliasSigner.publicKey);
             expect(stored?.signature?.publicKey).to.not.equal(authorSigner.publicKey);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, reply.cid, aliasSigner);
             await post.stop();
             await reply.stop();
         });
@@ -83,6 +85,8 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             });
 
             expect(firstAliasSigner.address).to.not.equal(secondAliasSigner.address);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, firstReply.cid, firstAliasSigner);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, secondReply.cid, secondAliasSigner);
             await post.stop();
             await firstReply.stop();
             await secondReply.stop();
@@ -115,6 +119,8 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             });
 
             expect(firstAliasSigner.address).to.not.equal(secondAliasSigner.address);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, firstReply.cid, firstAliasSigner);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, secondReply.cid, secondAliasSigner);
             await firstPost.stop();
             await secondPost.stop();
             await firstReply.stop();
@@ -157,6 +163,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             const stored = context.subplebbit._dbHandler.queryComment(noisyReply.cid);
             expect(stored?.author).to.deep.equal({ address: aliasSigner.address });
             expect(stored?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, noisyReply.cid, aliasSigner);
             await post.stop();
             await noisyReply.stop();
         });
@@ -180,6 +187,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             const stored = context.subplebbit._dbHandler.queryComment(chainedReply.cid);
             expect(stored?.author?.previousCommentCid).to.be.undefined;
             expect(stored?.author?.address).to.equal(aliasSigner.address);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, chainedReply.cid, aliasSigner);
             await previousPost.stop();
             await post.stop();
             await chainedReply.stop();
@@ -215,6 +223,9 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             const storedUpdate = context.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: editableReply.cid });
             expect(storedUpdate?.edit?.content).to.equal(editedContent);
             expect(storedUpdate?.edit?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+            const storedComment = context.subplebbit._dbHandler.queryComment(editableReply.cid);
+            expect(storedComment?.author?.address).to.equal(aliasSigner.address);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, editableReply.cid, aliasSigner);
             await post.stop();
             await editableReply.stop();
         });
@@ -251,7 +262,16 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             await waitForStoredCommentUpdateWithAssertions(context.subplebbit, reply);
 
             const stored = context.subplebbit._dbHandler.queryComment(reply.cid);
+            const aliasRow = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(reply.cid);
+            expect(aliasRow).to.exist;
+            const aliasSigner = await context.publisherPlebbit.createSigner({
+                privateKey: aliasRow.aliasPrivateKey,
+                type: "ed25519"
+            });
             expect(stored?.signature?.publicKey).to.not.equal(freshSigner.publicKey);
+            expect(stored?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+            expect(stored?.author?.address).to.equal(aliasSigner.address);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, reply.cid, aliasSigner);
             await post.stop();
             await reply.stop();
         });
@@ -307,21 +327,31 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             expect(authoredReply.original).to.be.ok;
             await waitForStoredCommentUpdateWithAssertions(context.subplebbit, authoredReply);
 
-            await authoredReply.update();
             const aliasRow = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(authoredReply.cid);
             expect(aliasRow).to.exist;
             const alias = await context.publisherPlebbit.createSigner({ privateKey: aliasRow.aliasPrivateKey, type: "ed25519" });
+            const expectOriginalFields = () => {
+                expect(authoredReply.original?.author?.address).to.equal(originalAuthor.address);
+                expect(authoredReply.original?.author?.displayName).to.equal(originalAuthor.displayName);
+                expect(authoredReply.original?.author?.wallets).to.deep.equal(originalAuthor.wallets);
+                expect(authoredReply.original?.author?.flair).to.deep.equal(originalAuthor.flair);
+                expect(authoredReply.original?.author?.previousCommentCid).to.equal(originalAuthor.previousCommentCid);
+                expect(authoredReply.original?.content).to.equal(originalContent);
+                expect(authoredReply.original?.signature?.publicKey).to.equal(authorSigner.publicKey);
+            };
+
+            const stored = context.subplebbit._dbHandler.queryComment(authoredReply.cid);
+            expect(stored?.author?.address).to.equal(alias.address);
+            expect(stored?.signature?.publicKey).to.equal(alias.publicKey);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, authoredReply.cid, alias);
+            expectOriginalFields();
+
+            await authoredReply.update();
 
             expect(authoredReply.author.address).to.equal(alias.address);
             expect(authoredReply.author.displayName).to.be.undefined;
 
-            expect(authoredReply.original?.author?.address).to.equal(originalAuthor.address);
-            expect(authoredReply.original?.author?.displayName).to.equal(originalAuthor.displayName);
-            expect(authoredReply.original?.author?.wallets).to.deep.equal(originalAuthor.wallets);
-            expect(authoredReply.original?.author?.flair).to.deep.equal(originalAuthor.flair);
-            expect(authoredReply.original?.author?.previousCommentCid).to.equal(originalAuthor.previousCommentCid);
-            expect(authoredReply.original?.content).to.equal(originalContent);
-            expect(authoredReply.original?.signature?.publicKey).to.equal(authorSigner.publicKey);
+            expectOriginalFields();
 
             await post.stop();
             await authoredReply.stop();
@@ -380,6 +410,16 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             const secondAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(secondReply.cid);
             expect(secondAlias).to.exist;
             expect(secondAlias.aliasPrivateKey).to.not.equal(firstAlias.aliasPrivateKey);
+            const aliasSigner = await context.publisherPlebbit.createSigner({
+                privateKey: aliasAfterEdits.aliasPrivateKey,
+                type: "ed25519"
+            });
+            const secondAliasSigner = await context.publisherPlebbit.createSigner({
+                privateKey: secondAlias.aliasPrivateKey,
+                type: "ed25519"
+            });
+            await expectCommentCidToUseAlias(context.publisherPlebbit, firstReply.cid, aliasSigner);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, secondReply.cid, secondAliasSigner);
 
             await post.stop();
             await firstReply.stop();
@@ -416,10 +456,46 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             });
 
             expect(firstAliasSigner.address).to.not.equal(secondAliasSigner.address);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, firstReply.cid, firstAliasSigner);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, secondReply.cid, secondAliasSigner);
             await firstPost.stop();
             await secondPost.stop();
             await firstReply.stop();
             await secondReply.stop();
+        });
+
+        it("Spec: author.address domains resolve and are anonymized per reply", async () => {
+            const domainSigner = await context.publisherPlebbit.createSigner(signers[6]);
+            const domainAddress = "plebbit.eth";
+            const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: domainSigner });
+            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
+
+            const resolvedAddress = await context.publisherPlebbit.resolveAuthorAddress({ address: domainAddress });
+            expect(resolvedAddress).to.equal(domainSigner.address);
+
+            const domainReply = await context.publisherPlebbit.createComment({
+                subplebbitAddress: context.subplebbit.address,
+                signer: domainSigner,
+                author: { address: domainAddress, displayName: "Domain author" },
+                content: "Domain anonymization content " + Date.now(),
+                parentCid: post.cid,
+                postCid: post.cid
+            });
+            await publishWithExpectedResult(domainReply, true);
+            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, domainReply);
+
+            const aliasRow = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(domainReply.cid);
+            expect(aliasRow).to.exist;
+            const aliasSigner = await context.publisherPlebbit.createSigner({ privateKey: aliasRow.aliasPrivateKey, type: "ed25519" });
+
+            const stored = context.subplebbit._dbHandler.queryComment(domainReply.cid);
+            expect(stored?.author?.address).to.equal(aliasSigner.address);
+            expect(stored?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+            expect(domainReply.original?.author?.address).to.equal(domainAddress);
+            await expectCommentCidToUseAlias(context.publisherPlebbit, domainReply.cid, aliasSigner);
+
+            await post.stop();
+            await domainReply.stop();
         });
 
         it("Spec: reply-to-reply (nested) anonymization creates a unique alias distinct from parent/post aliases and still strips author metadata", async () => {
@@ -454,6 +530,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             expect(storedNested?.author?.address).to.equal(nestedAliasSigner.address);
             expect(storedNested?.author?.displayName).to.be.undefined;
             expect(storedNested?.author?.wallets).to.be.undefined;
+            await expectCommentCidToUseAlias(context.publisherPlebbit, nestedReply.cid, nestedAliasSigner);
 
             await post.stop();
             await reply.stop();
@@ -495,6 +572,10 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                 const storedAnonymized = context.subplebbit._dbHandler.queryComment(anonymizedReply.cid);
                 expect(storedAnonymized?.author?.address).to.not.equal(authorSigner.address);
                 expect(storedAnonymized?.signature?.publicKey).to.not.equal(authorSigner.publicKey);
+                await expectCommentCidToUseAlias(context.publisherPlebbit, anonymizedReply.cid, {
+                    address: storedAnonymized?.author?.address,
+                    publicKey: storedAnonymized?.signature?.publicKey
+                });
 
                 await post.stop();
                 await anonymizedReply.stop();
@@ -601,6 +682,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
         it("Spec: challengerequest emits full publication author.subplebbit fields without anonymization in per-reply mode", async () => {
             const localContext = await createPerReplySubplebbit();
             const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const voter = await localContext.publisherPlebbit.createSigner();
 
             try {
                 const seededPost = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
@@ -608,8 +690,17 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                 });
                 await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, seededPost);
 
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => !!localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address)
+                });
+
                 const subplebbitAuthorBefore = localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address);
                 expect(subplebbitAuthorBefore, "expected subplebbit author to exist for original signer").to.be.ok;
+                expect(subplebbitAuthorBefore.lastCommentCid).to.equal(seededPost.cid);
+                expect(subplebbitAuthorBefore.firstCommentTimestamp).to.equal(seededPost.timestamp);
+                expect(subplebbitAuthorBefore.postScore).to.equal(0);
+                expect(subplebbitAuthorBefore.replyScore).to.equal(0);
 
                 const challengeRequestPromise = new Promise((resolve) => localContext.subplebbit.once("challengerequest", resolve));
                 const publication = await localContext.publisherPlebbit.createComment({
@@ -623,6 +714,10 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                 const challengerequest = await challengeRequestPromise;
                 expect(challengerequest.comment.author.address).to.equal(localAuthor.address);
                 expect(challengerequest.comment.author.subplebbit).to.deep.equal(subplebbitAuthorBefore);
+                expect(challengerequest.comment.author.subplebbit?.lastCommentCid).to.equal(seededPost.cid);
+                expect(challengerequest.comment.author.subplebbit?.firstCommentTimestamp).to.equal(seededPost.timestamp);
+                expect(challengerequest.comment.author.subplebbit?.postScore).to.equal(0);
+                expect(challengerequest.comment.author.subplebbit?.replyScore).to.equal(0);
 
                 await seededPost.stop();
                 await publication.stop();
@@ -1281,10 +1376,8 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                         await waitTillReplyInParentPagesInstance(paginatedContext.firstNestedReply, remoteParentReply);
 
                         const nestedReplyPageCid = Object.values(remoteParentReply.replies.pageCids || {})[0];
-                        expect(
-                            Object.keys(remoteParentReply.replies.pageCids || {}),
-                            "expected nested replies.pageCids to be populated"
-                        ).to.not.be.empty;
+                        expect(Object.keys(remoteParentReply.replies.pageCids || {}), "expected nested replies.pageCids to be populated").to
+                            .not.be.empty;
                         expect(nestedReplyPageCid, "expected a nested replies page cid after forcing pagination").to.be.ok;
                         const nestedRepliesPage = await remoteParentReply.replies.getPage({ cid: nestedReplyPageCid });
                         const nestedReplyEntryInPage = nestedRepliesPage.comments.find(
@@ -1305,6 +1398,12 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
         });
     });
 });
+
+async function expectCommentCidToUseAlias(plebbit, cid, aliasSigner) {
+    const fetched = JSON.parse(await plebbit.fetchCid({ cid }));
+    expect(fetched?.author?.address).to.equal(aliasSigner.address);
+    expect(fetched?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+}
 
 async function createPerReplySubplebbit() {
     const publisherPlebbit = await mockPlebbit();
