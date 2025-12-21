@@ -472,6 +472,65 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             }
         });
 
+        it("Spec: author.subplebbit.postScore adjusts when a vote flips from upvote to downvote", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const voter = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                const post = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, post);
+
+                const upvote = await localContext.publisherPlebbit.createVote({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post.cid,
+                    vote: 1,
+                    signer: voter
+                });
+                await publishWithExpectedResult(upvote, true);
+
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address)?.postScore === 1
+                });
+
+                const downvote = await localContext.publisherPlebbit.createVote({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post.cid,
+                    vote: -1,
+                    signer: voter
+                });
+                await publishWithExpectedResult(downvote, true);
+
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address)?.postScore === -1
+                });
+
+                const waitForFlippedScoreInUpdate = async () => {
+                    const timeoutMs = 60000;
+                    const start = Date.now();
+                    while (Date.now() - start < timeoutMs) {
+                        const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                        if (postUpdate?.author?.subplebbit?.postScore === -1) return;
+                        await new Promise((resolve) => setTimeout(resolve, 50));
+                    }
+                    throw new Error("Timed out waiting for postScore to reflect flipped vote in comment update");
+                };
+                await waitForFlippedScoreInUpdate();
+
+                const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                expect(postUpdate?.author?.subplebbit?.postScore).to.equal(-1);
+                expect(postUpdate?.author?.subplebbit?.replyScore).to.equal(0);
+
+                await post.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
         it("Spec: author.subplebbit.replyScore is present with total reply karma when anonymityMode is per-author", async () => {
             const localContext = await createPerAuthorSubplebbit();
             const localAuthor = await localContext.publisherPlebbit.createSigner();
@@ -511,6 +570,61 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
 
                 await post.stop();
                 await reply.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
+        it("Spec: votes from multiple authors aggregate into author.subplebbit.postScore for per-author mode", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const voterOne = await localContext.publisherPlebbit.createSigner();
+            const voterTwo = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                const post = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, post);
+
+                const upvoteOne = await localContext.publisherPlebbit.createVote({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post.cid,
+                    vote: 1,
+                    signer: voterOne
+                });
+                await publishWithExpectedResult(upvoteOne, true);
+
+                const upvoteTwo = await localContext.publisherPlebbit.createVote({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post.cid,
+                    vote: 1,
+                    signer: voterTwo
+                });
+                await publishWithExpectedResult(upvoteTwo, true);
+
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address)?.postScore === 2
+                });
+
+                const waitForAggregatedScoreInUpdate = async () => {
+                    const timeoutMs = 60000;
+                    const start = Date.now();
+                    while (Date.now() - start < timeoutMs) {
+                        const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                        if (postUpdate?.author?.subplebbit?.postScore === 2) return;
+                        await new Promise((resolve) => setTimeout(resolve, 50));
+                    }
+                    throw new Error("Timed out waiting for aggregated postScore in comment update");
+                };
+                await waitForAggregatedScoreInUpdate();
+
+                const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                expect(postUpdate?.author?.subplebbit?.postScore).to.equal(2);
+                expect(postUpdate?.author?.subplebbit?.replyScore).to.equal(0);
+
+                await post.stop();
             } finally {
                 await localContext.cleanup();
             }
