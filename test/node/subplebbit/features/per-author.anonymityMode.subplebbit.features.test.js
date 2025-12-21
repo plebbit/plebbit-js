@@ -15,6 +15,7 @@ import {
     waitTillReplyInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
+import { timestamp } from "../../../../dist/node/util.js";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
@@ -262,7 +263,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             expect(commentAfterPurge).to.be.undefined;
         });
 
-        it("Spec: disabling pseudonymousAuthors stops anonymization for new comments without rewriting old ones", async () => {
+        it.sequential("Spec: disabling pseudonymousAuthors stops anonymization for new comments without rewriting old ones", async () => {
             await context.subplebbit.edit({ features: { anonymityMode: undefined } });
             await resolveWhenConditionIsTrue({
                 toUpdate: context.subplebbit,
@@ -279,6 +280,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             const alias = context.subplebbit._dbHandler.queryAnonymityAliasForAuthor(plainSigner.publicKey);
             expect(alias).to.be.undefined;
             await plainPost.stop();
+            await context.subplebbit.edit({ features: { anonymityMode: "per-author" } }); // need to reset settings
         });
 
         it("Spec: sub owner can resolve the pseudonymous author address back to the original author address", async () => {
@@ -288,6 +290,261 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
 
             const aliasSigner = await context.publisherPlebbit.createSigner({ privateKey: aliasRow.aliasPrivateKey, type: "ed25519" });
             expect(aliasSigner.address).to.be.a("string");
+        });
+
+        it("Spec: challengerequest emits full publication author.subplebbit fields without anonymization in per-author mode", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                const seededPost = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, seededPost);
+
+                const aliasRow = localContext.subplebbit._dbHandler.queryAnonymityAliasForAuthor(localAuthor.publicKey);
+                expect(aliasRow).to.exist;
+                const aliasSigner = await localContext.publisherPlebbit.createSigner({
+                    privateKey: aliasRow.aliasPrivateKey,
+                    type: "ed25519"
+                });
+
+                const subplebbitAuthorBefore = localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address);
+                expect(subplebbitAuthorBefore, "expected subplebbit author to exist for original signer").to.be.ok;
+                expect(subplebbitAuthorBefore).to.include.keys(["postScore", "replyScore", "lastCommentCid", "firstCommentTimestamp"]);
+
+                const challengeRequestPromise = new Promise((resolve) => localContext.subplebbit.once("challengerequest", resolve));
+                const publication = await localContext.publisherPlebbit.createComment({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    signer: localAuthor,
+                    content: "Challengerequest author.subplebbit check",
+                    title: "Challengerequest author.subplebbit check"
+                });
+                await publishWithExpectedResult(publication, true);
+
+                const challengerequest = await challengeRequestPromise;
+                expect(challengerequest.comment.author.address).to.equal(localAuthor.address);
+                expect(challengerequest.comment.author.address).to.not.equal(aliasSigner.address);
+                expect(challengerequest.comment.author.subplebbit).to.deep.equal(subplebbitAuthorBefore);
+
+                await seededPost.stop();
+                await publication.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
+        it("Spec: author.subplebbit.lastCommentCid tracks the author's latest comment in the subplebbit for per-author mode", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                const firstPost = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, firstPost);
+
+                const followUpReply = await publishRandomReply(firstPost, localContext.publisherPlebbit, { signer: localAuthor });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, followUpReply);
+
+                const aggregatedAuthor = localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address);
+                expect(aggregatedAuthor?.lastCommentCid).to.equal(followUpReply.cid);
+
+                const replyUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: followUpReply.cid });
+                expect(replyUpdate?.author?.subplebbit?.lastCommentCid).to.equal(followUpReply.cid);
+
+                const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: firstPost.cid });
+                expect(postUpdate?.author?.subplebbit?.lastCommentCid).to.equal(followUpReply.cid);
+
+                await firstPost.stop();
+                await followUpReply.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
+        it("Spec: author.subplebbit.banExpiresAt rejects new publications and surfaces on all of the author's comments in per-author mode", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const moderator = await localContext.publisherPlebbit.createSigner();
+
+            await localContext.subplebbit.edit({ roles: { [moderator.address]: { role: "moderator" } } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: localContext.subplebbit,
+                predicate: () => typeof localContext.subplebbit.updatedAt === "number"
+            });
+
+            try {
+                const post = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, post);
+                const reply = await publishRandomReply(post, localContext.publisherPlebbit, { signer: localAuthor });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, reply);
+
+                const banExpiresAt = timestamp() + 60;
+                const banModeration = await localContext.publisherPlebbit.createCommentModeration({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post.cid,
+                    commentModeration: { author: { banExpiresAt }, reason: "ban for test" },
+                    signer: moderator
+                });
+                await publishWithExpectedResult(banModeration, true);
+
+                await post.update();
+                await reply.update();
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () =>
+                        localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address)?.banExpiresAt === banExpiresAt
+                });
+
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => {
+                        const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                        const replyUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: reply.cid });
+                        return (
+                            postUpdate?.author?.subplebbit?.banExpiresAt === banExpiresAt &&
+                            replyUpdate?.author?.subplebbit?.banExpiresAt === banExpiresAt
+                        );
+                    }
+                });
+
+                const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                const replyUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: reply.cid });
+                expect(postUpdate?.author?.subplebbit?.banExpiresAt).to.equal(banExpiresAt);
+                expect(replyUpdate?.author?.subplebbit?.banExpiresAt).to.equal(banExpiresAt);
+
+                const blockedPost = await localContext.publisherPlebbit.createComment({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    signer: localAuthor,
+                    title: "should be rejected",
+                    content: "should be rejected"
+                });
+                await publishWithExpectedResult(blockedPost, false, messages.ERR_AUTHOR_IS_BANNED);
+
+                await post.stop();
+                await reply.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
+        it("Spec: author.subplebbit.postScore is present with total post karma when anonymityMode is per-author", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const voter = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                const post = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, post);
+
+                const upvote = await localContext.publisherPlebbit.createVote({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post.cid,
+                    vote: 1,
+                    signer: voter
+                });
+                await publishWithExpectedResult(upvote, true);
+
+                const waitForPostScoreInUpdate = async () => {
+                    const timeoutMs = 60000;
+                    const start = Date.now();
+                    while (Date.now() - start < timeoutMs) {
+                        const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                        if (postUpdate?.author?.subplebbit?.postScore === 1) return;
+                        await new Promise((resolve) => setTimeout(resolve, 50));
+                    }
+                    throw new Error("Timed out waiting for postScore to update in comment update");
+                };
+                await waitForPostScoreInUpdate();
+
+                const postUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: post.cid });
+                expect(postUpdate?.author?.subplebbit?.postScore).to.equal(1);
+                expect(postUpdate?.author?.subplebbit?.replyScore).to.equal(0);
+
+                await post.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
+        it("Spec: author.subplebbit.replyScore is present with total reply karma when anonymityMode is per-author", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const voter = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                const post = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, post);
+                const reply = await publishRandomReply(post, localContext.publisherPlebbit, { signer: localAuthor });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, reply);
+
+                const upvote = await localContext.publisherPlebbit.createVote({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: reply.cid,
+                    vote: 1,
+                    signer: voter
+                });
+                await publishWithExpectedResult(upvote, true);
+
+                const waitForReplyScoreInUpdate = async () => {
+                    const timeoutMs = 60000;
+                    const start = Date.now();
+                    while (Date.now() - start < timeoutMs) {
+                        const replyUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: reply.cid });
+                        if (replyUpdate?.author?.subplebbit?.replyScore === 1) return;
+                        await new Promise((resolve) => setTimeout(resolve, 50));
+                    }
+                    throw new Error("Timed out waiting for replyScore to update in comment update");
+                };
+                await waitForReplyScoreInUpdate();
+
+                const replyUpdate = localContext.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: reply.cid });
+                expect(replyUpdate?.author?.subplebbit?.replyScore).to.equal(1);
+                expect(replyUpdate?.author?.subplebbit?.postScore).to.equal(0);
+
+                await post.stop();
+                await reply.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
+        it("Spec: author.subplebbit.firstCommentTimestamp is present and matches the first comment time for per-author mode", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                const firstPost = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, firstPost);
+                const firstTimestamp = firstPost.timestamp;
+
+                const secondComment = await publishRandomReply(firstPost, localContext.publisherPlebbit, { signer: localAuthor });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, secondComment);
+
+                await secondComment.update();
+                await resolveWhenConditionIsTrue({
+                    toUpdate: secondComment,
+                    predicate: () => typeof secondComment.author?.subplebbit?.firstCommentTimestamp === "number"
+                });
+
+                const aggregatedAuthor = localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address);
+                expect(aggregatedAuthor?.firstCommentTimestamp).to.equal(firstTimestamp);
+                expect(secondComment.author?.subplebbit?.firstCommentTimestamp).to.equal(firstTimestamp);
+
+                await firstPost.stop();
+                await secondComment.stop();
+            } finally {
+                await localContext.cleanup();
+            }
         });
     });
 
