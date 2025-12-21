@@ -458,46 +458,49 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             await nestedReply.stop();
         });
 
-        it("Spec: disabling pseudonymousAuthors stops anonymization for new replies without rewriting previously stored anonymized replies", async () => {
-            // Create anonymized reply before disabling
-            const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
+        it.sequential(
+            "Spec: disabling pseudonymousAuthors stops anonymization for new replies without rewriting previously stored anonymized replies",
+            async () => {
+                // Create anonymized reply before disabling
+                const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
 
-            const anonymizedReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, anonymizedReply);
+                const anonymizedReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, anonymizedReply);
 
-            const anonymizedAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(anonymizedReply.cid);
-            expect(anonymizedAlias).to.exist;
+                const anonymizedAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(anonymizedReply.cid);
+                expect(anonymizedAlias).to.exist;
 
-            // Disable anonymization
-            await context.subplebbit.edit({ features: { anonymityMode: undefined } });
-            await resolveWhenConditionIsTrue({
-                toUpdate: context.subplebbit,
-                predicate: () => typeof context.subplebbit.updatedAt === "number"
-            });
+                // Disable anonymization
+                await context.subplebbit.edit({ features: { anonymityMode: undefined } });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: context.subplebbit,
+                    predicate: () => typeof context.subplebbit.updatedAt === "number"
+                });
 
-            // Create new reply after disabling - should not be anonymized
-            const plainReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, plainReply);
+                // Create new reply after disabling - should not be anonymized
+                const plainReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, plainReply);
 
-            const storedPlain = context.subplebbit._dbHandler.queryComment(plainReply.cid);
-            expect(storedPlain?.author?.address).to.equal(authorSigner.address);
-            expect(storedPlain?.signature?.publicKey).to.equal(authorSigner.publicKey);
+                const storedPlain = context.subplebbit._dbHandler.queryComment(plainReply.cid);
+                expect(storedPlain?.author?.address).to.equal(authorSigner.address);
+                expect(storedPlain?.signature?.publicKey).to.equal(authorSigner.publicKey);
 
-            const plainAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(plainReply.cid);
-            expect(plainAlias).to.be.undefined;
+                const plainAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(plainReply.cid);
+                expect(plainAlias).to.be.undefined;
 
-            // Verify old anonymized reply is still anonymized
-            const storedAnonymized = context.subplebbit._dbHandler.queryComment(anonymizedReply.cid);
-            expect(storedAnonymized?.author?.address).to.not.equal(authorSigner.address);
-            expect(storedAnonymized?.signature?.publicKey).to.not.equal(authorSigner.publicKey);
+                // Verify old anonymized reply is still anonymized
+                const storedAnonymized = context.subplebbit._dbHandler.queryComment(anonymizedReply.cid);
+                expect(storedAnonymized?.author?.address).to.not.equal(authorSigner.address);
+                expect(storedAnonymized?.signature?.publicKey).to.not.equal(authorSigner.publicKey);
 
-            await post.stop();
-            await anonymizedReply.stop();
-            await plainReply.stop();
+                await post.stop();
+                await anonymizedReply.stop();
+                await plainReply.stop();
 
-            await context.subplebbit.edit({ features: { anonymityMode: "per-reply" } }); // need to reset
-        });
+                await context.subplebbit.edit({ features: { anonymityMode: "per-reply" } }); // need to reset
+            }
+        );
 
         it("Spec: purging one anonymized reply removes only that reply's alias mapping and leaves other replies (even from the same signer) intact", async () => {
             const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
@@ -875,34 +878,61 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                     });
 
                     it("Spec: paginated replies from the same signer show distinct anonymized addresses per reply with valid signatures across pages", async () => {
-                        const remoteSubplebbit = await remotePlebbit.getSubplebbit({ address: paginatedContext.subplebbit.address });
-                        const seenReplyAddresses = new Map();
+                        const remoteParent = await remotePlebbit.getComment({ cid: paginatedContext.post.cid });
+                        await remoteParent.update();
+                        await waitTillReplyInParentPagesInstance(paginatedContext.firstReply, remoteParent);
+                        await waitTillReplyInParentPagesInstance(paginatedContext.secondReply, remoteParent);
 
-                        for (const firstPageCid of Object.values(remoteSubplebbit.posts.pageCids)) {
-                            let currentCid = firstPageCid;
-                            while (currentCid) {
-                                const page = await remoteSubplebbit.posts.getPage({ cid: currentCid });
-                                page.comments.forEach((comment) => {
-                                    if (comment.cid === paginatedContext.firstReply.cid) {
-                                        seenReplyAddresses.set(comment.cid, {
-                                            address: comment.author.address,
-                                            publicKey: comment.signature.publicKey
-                                        });
-                                    }
-                                    if (comment.cid === paginatedContext.secondReply.cid) {
-                                        seenReplyAddresses.set(comment.cid, {
-                                            address: comment.author.address,
-                                            publicKey: comment.signature.publicKey
-                                        });
-                                    }
+                        const seenReplyAddresses = new Map();
+                        const replyPageCids = remoteParent.replies.pageCids || {};
+
+                        if (Object.keys(replyPageCids).length === 0) {
+                            const preloadedBest = remoteParent.replies.pages?.best;
+                            expect(
+                                preloadedBest?.comments.length,
+                                "expected preloaded replies to exist when no reply pageCid is present"
+                            ).to.be.greaterThan(0);
+
+                            const firstReplyEntry = preloadedBest.comments.find((c) => c.cid === paginatedContext.firstReply.cid);
+                            const secondReplyEntry = preloadedBest.comments.find((c) => c.cid === paginatedContext.secondReply.cid);
+
+                            if (firstReplyEntry)
+                                seenReplyAddresses.set(firstReplyEntry.cid, {
+                                    address: firstReplyEntry.author.address,
+                                    publicKey: firstReplyEntry.signature.publicKey
                                 });
-                                if (
-                                    page.nextCid &&
-                                    (!seenReplyAddresses.has(paginatedContext.firstReply.cid) ||
-                                        !seenReplyAddresses.has(paginatedContext.secondReply.cid))
-                                )
-                                    currentCid = page.nextCid;
-                                else break;
+                            if (secondReplyEntry)
+                                seenReplyAddresses.set(secondReplyEntry.cid, {
+                                    address: secondReplyEntry.author.address,
+                                    publicKey: secondReplyEntry.signature.publicKey
+                                });
+                        } else {
+                            for (const firstPageCid of Object.values(replyPageCids)) {
+                                let currentCid = firstPageCid;
+                                while (currentCid) {
+                                    const page = await remoteParent.replies.getPage({ cid: currentCid });
+                                    page.comments.forEach((comment) => {
+                                        if (comment.cid === paginatedContext.firstReply.cid) {
+                                            seenReplyAddresses.set(comment.cid, {
+                                                address: comment.author.address,
+                                                publicKey: comment.signature.publicKey
+                                            });
+                                        }
+                                        if (comment.cid === paginatedContext.secondReply.cid) {
+                                            seenReplyAddresses.set(comment.cid, {
+                                                address: comment.author.address,
+                                                publicKey: comment.signature.publicKey
+                                            });
+                                        }
+                                    });
+                                    if (
+                                        page.nextCid &&
+                                        (!seenReplyAddresses.has(paginatedContext.firstReply.cid) ||
+                                            !seenReplyAddresses.has(paginatedContext.secondReply.cid))
+                                    )
+                                        currentCid = page.nextCid;
+                                    else break;
+                                }
                             }
                         }
 
@@ -916,6 +946,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
                         expect(secondEntry.address).to.not.equal(paginatedSigningAuthor.address);
                         expect(firstEntry.address).to.not.equal(secondEntry.address);
                         expect(firstEntry.publicKey).to.not.equal(secondEntry.publicKey);
+                        await remoteParent.stop();
                     });
 
                     it("Spec: replies-to-replies fetched via comment.replies.getPage remain anonymized and verifiable (distinct per reply)", async () => {
