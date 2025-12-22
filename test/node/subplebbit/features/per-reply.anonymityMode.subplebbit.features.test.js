@@ -588,6 +588,8 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
         it.sequential(
             "Spec: purging one anonymized reply removes only that reply's alias mapping and leaves other replies (even from the same signer) intact",
             async () => {
+                expect(context.subplebbit.features.anonymityMode).to.equal("per-reply");
+
                 const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
                 await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
 
@@ -596,6 +598,8 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
 
                 const secondReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
                 await waitForStoredCommentUpdateWithAssertions(context.subplebbit, secondReply);
+
+                expect(context.subplebbit.features.anonymityMode).to.equal("per-reply");
 
                 // Verify both aliases exist
                 const firstAliasBefore = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(firstReply.cid);

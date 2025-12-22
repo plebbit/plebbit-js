@@ -16,7 +16,7 @@ import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent(`Comments with extra props - ${config.name}`, async () => {
+    describe.sequential(`Comments with extra props - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -37,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
         });
 
-        describe.concurrent(`Publishing comments with extra props - ${config.name}`, async () => {
+        describe.sequential(`Publishing comments with extra props - ${config.name}`, async () => {
             it(`A CommentPubsub with a field not included in signature.signedPropertyNames will be rejected`, async () => {
                 // Skip for rpc because it's gonna throw due to invalid signature
                 const post = await generateMockPost(subplebbitAddress, plebbit);
@@ -84,7 +84,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
         });
 
-        describe.concurrent(`Loading comments with extra prop`, async () => {
+        describe.sequential(`Loading comments with extra prop`, async () => {
             let commentWithExtraProps;
             let extraProps;
 
@@ -129,7 +129,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe.concurrent(`Comments with extra props in author`, async () => {
+    describe.sequential(`Comments with extra props in author`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -137,7 +137,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         after(async () => {
             await plebbit.destroy();
         });
-        describe.concurrent(`Publishing comment with extra props in author field - ${config.name}`, async () => {
+        describe.sequential(`Publishing comment with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const post = await generateMockPost(subplebbitAddress, plebbit);
                 await setExtraPropOnCommentAndSign(
@@ -166,7 +166,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
         });
 
-        describe.concurrent(`Loading a comment with author.extraProp - ${config.name}`, async () => {
+        describe.sequential(`Loading a comment with author.extraProp - ${config.name}`, async () => {
             let postWithExtraAuthorProp;
             const extraProps = { extraProp: "1234" };
 
