@@ -121,3 +121,5 @@ karma-electron-preload.js
 .subs-publishing-with-http-tracker
 .fix-subs/
 .plebbit-rpc*
+.vitest*/
+benchmarking_libp2p/
