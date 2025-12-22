@@ -328,24 +328,32 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-author"', () => {
             expect(commentAfterPurge).to.be.undefined;
         });
 
-        it.sequential("Spec: disabling pseudonymousAuthors stops anonymization for new comments without rewriting old ones", async () => {
-            await context.subplebbit.edit({ features: { anonymityMode: undefined } });
-            await resolveWhenConditionIsTrue({
-                toUpdate: context.subplebbit,
-                predicate: () => typeof context.subplebbit.updatedAt === "number"
-            });
+        it("Spec: disabling pseudonymousAuthors stops anonymization for new comments without rewriting old ones", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const plainSigner = await localContext.publisherPlebbit.createSigner();
+            let plainPost;
 
-            const plainSigner = await context.publisherPlebbit.createSigner();
-            const plainPost = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: plainSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, plainPost);
+            try {
+                await localContext.subplebbit.edit({ features: { anonymityMode: undefined } });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => localContext.subplebbit.features.anonymityMode === undefined
+                });
 
-            const stored = context.subplebbit._dbHandler.queryComment(plainPost.cid);
-            expect(stored?.author?.address).to.equal(plainSigner.address);
-            expect(stored?.signature?.publicKey).to.equal(plainSigner.publicKey);
-            const alias = context.subplebbit._dbHandler.queryAnonymityAliasForAuthor(plainSigner.publicKey);
-            expect(alias).to.be.undefined;
-            await plainPost.stop();
-            await context.subplebbit.edit({ features: { anonymityMode: "per-author" } }); // need to reset settings
+                plainPost = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: plainSigner
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, plainPost);
+
+                const stored = localContext.subplebbit._dbHandler.queryComment(plainPost.cid);
+                expect(stored?.author?.address).to.equal(plainSigner.address);
+                expect(stored?.signature?.publicKey).to.equal(plainSigner.publicKey);
+                const alias = localContext.subplebbit._dbHandler.queryAnonymityAliasForAuthor(plainSigner.publicKey);
+                expect(alias).to.be.undefined;
+            } finally {
+                await plainPost?.stop();
+                await localContext.cleanup();
+            }
         });
 
         it("Spec: sub owner can resolve the pseudonymous author address back to the original author address", async () => {

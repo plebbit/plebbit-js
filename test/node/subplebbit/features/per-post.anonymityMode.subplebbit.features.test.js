@@ -490,24 +490,32 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
             await secondPost.stop();
         });
 
-        it.sequential("Spec: disabling per-post anonymity stops anonymization for new comments without rewriting old ones", async () => {
-            await context.subplebbit.edit({ features: { anonymityMode: undefined } });
-            await resolveWhenConditionIsTrue({
-                toUpdate: context.subplebbit,
-                predicate: () => typeof context.subplebbit.updatedAt === "number"
-            });
+        it("Spec: disabling per-post anonymity stops anonymization for new comments without rewriting old ones", async () => {
+            const localContext = await createPerPostSubplebbit();
+            const plainSigner = await localContext.publisherPlebbit.createSigner();
+            let plainPost;
 
-            const plainSigner = await context.publisherPlebbit.createSigner();
-            const plainPost = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: plainSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, plainPost);
+            try {
+                await localContext.subplebbit.edit({ features: { anonymityMode: undefined } });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => localContext.subplebbit.features.anonymityMode === undefined
+                });
 
-            const stored = context.subplebbit._dbHandler.queryComment(plainPost.cid);
-            expect(stored?.author?.address).to.equal(plainSigner.address);
-            expect(stored?.signature?.publicKey).to.equal(plainSigner.publicKey);
-            const alias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(plainPost.cid);
-            expect(alias).to.be.undefined;
-            await plainPost.stop();
-            await context.subplebbit.edit({ features: { anonymityMode: "per-post" } }); // reset
+                plainPost = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: plainSigner
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, plainPost);
+
+                const stored = localContext.subplebbit._dbHandler.queryComment(plainPost.cid);
+                expect(stored?.author?.address).to.equal(plainSigner.address);
+                expect(stored?.signature?.publicKey).to.equal(plainSigner.publicKey);
+                const alias = localContext.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(plainPost.cid);
+                expect(alias).to.be.undefined;
+            } finally {
+                await plainPost?.stop();
+                await localContext.cleanup();
+            }
         });
 
         it("Spec: challengerequest emits full publication author.subplebbit fields without anonymization in per-post mode", async () => {
@@ -864,7 +872,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
         });
     });
 
-    describe.sequential("remote loading with anonymized comments", () => {
+    describe("remote loading with anonymized comments", () => {
         describe("preloaded pages", () => {
             let sharedContext;
             let aliasSigner;
@@ -914,7 +922,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
             });
 
             remotePlebbitConfigs.forEach((config) => {
-                describe.sequential(`${config.name} - preloaded`, () => {
+                describe(`${config.name} - preloaded`, () => {
                     let remotePlebbit;
 
                     before(async () => {
