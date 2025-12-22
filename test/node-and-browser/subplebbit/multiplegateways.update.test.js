@@ -14,7 +14,7 @@ import {
 import { describe, it } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describe.concurrent(`Test fetching subplebbit record from multiple gateways`, async () => {
+    describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         // these test gateways will be set in test-server.js
         const stallingGateway = "http://localhost:14000"; // This gateaway will wait for 11s then respond
         const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record because it's the same node running the subs
@@ -52,8 +52,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             } catch (e) {
                 expect(e.details.gatewayToError[stallingGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
                 expect(e.message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
+            } finally {
+                await customPlebbit.destroy();
             }
-            await customPlebbit.destroy();
         });
         it(`updating a subplebbit through working gateway and another gateway that is timing out`, async () => {
             const customPlebbit = await config.plebbitInstancePromise({
@@ -61,23 +62,29 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
             // should succeed and return the result from normalGateway
-            const subFromGateway = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
-            const latestSub = await fetchLatestSubplebbitJson();
-            expect(subFromGateway.toJSONIpfs()).to.deep.equal(latestSub);
-            await customPlebbit.destroy();
+            try {
+                const subFromGateway = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
+                const latestSub = await fetchLatestSubplebbitJson();
+                expect(subFromGateway.toJSONIpfs()).to.deep.equal(latestSub);
+            } finally {
+                await customPlebbit.destroy();
+            }
         });
         it(`updating a subplebbit through working gateway and another gateway that is throwing an error`, async () => {
             const customPlebbit = await config.plebbitInstancePromise({
                 plebbitOptions: { ipfsGatewayUrls: [normalGateway, errorGateway] }
             });
-            // should succeed and return the result from normalGateway
-            const [latestSub, sub] = await Promise.all([
-                fetchLatestSubplebbitJson(),
-                customPlebbit.getSubplebbit({ address: subplebbitAddress })
-            ]);
-            expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
-            expect(sub.updatedAt).to.be.a("number");
-            await customPlebbit.destroy();
+            try {
+                // should succeed and return the result from normalGateway
+                const [latestSub, sub] = await Promise.all([
+                    fetchLatestSubplebbitJson(),
+                    customPlebbit.getSubplebbit({ address: subplebbitAddress })
+                ]);
+                expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
+                expect(sub.updatedAt).to.be.a("number");
+            } finally {
+                await customPlebbit.destroy();
+            }
         });
 
         it(`all gateways are throwing an error`, async () => {
@@ -91,8 +98,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+            } finally {
+                await customPlebbit.destroy();
             }
-            await customPlebbit.destroy();
         });
 
         it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {
@@ -109,13 +117,16 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
-            const buffer = customPlebbit._timeouts["subplebbit-ipns"] * 5;
-            const base = Math.round(Date.now() / 1000);
-            const sub = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
-            expect(sub.updatedAt)
-                .to.be.lessThanOrEqual(base + buffer)
-                .greaterThanOrEqual(base - buffer);
-            await customPlebbit.destroy();
+            try {
+                const buffer = customPlebbit._timeouts["subplebbit-ipns"] * 5;
+                const base = Math.round(Date.now() / 1000);
+                const sub = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
+                expect(sub.updatedAt)
+                    .to.be.lessThanOrEqual(base + buffer)
+                    .greaterThanOrEqual(base - buffer);
+            } finally {
+                await customPlebbit.destroy();
+            }
         });
 
         // at the moment we changed the algo so it would resolve the first record to get as long as it's higher than updatedAt
@@ -124,28 +135,31 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const customPlebbit = await config.plebbitInstancePromise({
                 plebbitOptions: { ipfsGatewayUrls: [hourLateGateway, twoHoursLateGateway] }
             });
-            const sub = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
-            await sub.update();
+            try {
+                const sub = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
+                await sub.update();
 
-            // should go with the hour old, not the two hours
-            const bufferSeconds = 10;
-            await resolveWhenConditionIsTrue({
-                toUpdate: sub,
-                predicate: () => {
-                    const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
-                    return (
-                        typeof sub.updatedAt === "number" &&
-                        sub.updatedAt >= timestampHourAgo - bufferSeconds &&
-                        sub.updatedAt <= timestampHourAgo + bufferSeconds
-                    );
-                }
-            });
-            const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
+                // should go with the hour old, not the two hours
+                const bufferSeconds = 10;
+                await resolveWhenConditionIsTrue({
+                    toUpdate: sub,
+                    predicate: () => {
+                        const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
+                        return (
+                            typeof sub.updatedAt === "number" &&
+                            sub.updatedAt >= timestampHourAgo - bufferSeconds &&
+                            sub.updatedAt <= timestampHourAgo + bufferSeconds
+                        );
+                    }
+                });
+                const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
 
-            expect(sub.updatedAt)
-                .to.greaterThanOrEqual(timestampHourAgo - bufferSeconds)
-                .lessThanOrEqual(timestampHourAgo + bufferSeconds);
-            await customPlebbit.destroy();
+                expect(sub.updatedAt)
+                    .to.greaterThanOrEqual(timestampHourAgo - bufferSeconds)
+                    .lessThanOrEqual(timestampHourAgo + bufferSeconds);
+            } finally {
+                await customPlebbit.destroy();
+            }
         });
         it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
             // the problem here is that the normalGateway cache IPNS for 3s, and when we do getSubplebbit it's gonna use the cache
@@ -160,14 +174,17 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             // await new Promise((resolve) => setTimeout(resolve, customPlebbit.publishInterval * 3)); // wait for the cache to expire
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
-            const [gatewaySub, latestSub] = await Promise.all([
-                customPlebbit.getSubplebbit({ address: subplebbitAddress }),
-                fetchLatestSubplebbitJson()
-            ]);
-            const diff = latestSub.updatedAt - gatewaySub.updatedAt;
-            const buffer = 10;
-            expect(diff).to.be.lessThan(buffer);
-            await customPlebbit.destroy();
+            try {
+                const [gatewaySub, latestSub] = await Promise.all([
+                    customPlebbit.getSubplebbit({ address: subplebbitAddress }),
+                    fetchLatestSubplebbitJson()
+                ]);
+                const diff = latestSub.updatedAt - gatewaySub.updatedAt;
+                const buffer = 10;
+                expect(diff).to.be.lessThan(buffer);
+            } finally {
+                await customPlebbit.destroy();
+            }
         });
     });
 });
