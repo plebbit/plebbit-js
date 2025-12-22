@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
-import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
 import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing, _signJson } from "../../../dist/node/signer/signatures.js";
 import * as remeda from "remeda";
@@ -62,7 +62,10 @@ describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
     });
 
     it(`Can validate live subplebbit`, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
+        const loadedSubplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+        await loadedSubplebbit.update();
+        await resolveWhenConditionIsTrue({ toUpdate: loadedSubplebbit, predicate: () => typeof loadedSubplebbit.updatedAt === "number" });
+
         expect(
             await verifySubplebbit({
                 subplebbit: loadedSubplebbit.toJSONIpfs(),
@@ -94,7 +97,9 @@ describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
         const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded = (address) =>
             address === "plebbit.eth" ? signers[4].address : address;
-        const sub = await plebbit.getSubplebbit({ address: "plebbit.eth" });
+        const sub = await plebbit.createSubplebbit({ address: "plebbit.eth" });
+        await sub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
         const verification = await verifySubplebbit({
             subplebbit: sub.toJSONIpfs(),
             subplebbitIpnsName: signers[4].address,
@@ -110,8 +115,11 @@ describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
     });
 
     it(`subplebbit signature is invalid if subplebbit.posts has an invalid comment signature `, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
+        const loadedSubplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+        await loadedSubplebbit.update();
+        await resolveWhenConditionIsTrue({ toUpdate: loadedSubplebbit, predicate: () => typeof loadedSubplebbit.updatedAt === "number" });
 
+        await loadedSubplebbit.stop();
         const subJson = remeda.clone(loadedSubplebbit.toJSONIpfs());
         expect(
             await verifySubplebbit({

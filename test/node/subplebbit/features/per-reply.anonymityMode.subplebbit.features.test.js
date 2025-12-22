@@ -22,7 +22,7 @@ import signers from "../../../fixtures/signers.js";
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
-    describe.concurrent("local anonymization", () => {
+    describe.sequential("local anonymization", () => {
         let context;
         let authorSigner;
         let otherSigner;
@@ -1050,7 +1050,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
         });
     });
 
-    describe.concurrent("remote loading with anonymized comments", () => {
+    describe.sequential("remote loading with anonymized comments", () => {
         describe("preloaded pages", () => {
             let sharedContext;
             let signingAuthor;
@@ -1097,7 +1097,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             });
 
             remotePlebbitConfigs.forEach((config) => {
-                describe.concurrent(`${config.name} - preloaded`, () => {
+                describe.sequential(`${config.name} - preloaded`, () => {
                     let remotePlebbit;
 
                     before(async () => {

@@ -30,7 +30,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`subplebbit.posts.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
-            const mockSub = await gatewayPlebbit.getSubplebbit({ address: subplebbitAddress });
+            const mockSub = await gatewayPlebbit.createSubplebbit({ address: subplebbitAddress });
             const sortTypes = Object.keys(mockSub.posts.clients[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
             for (const sortType of sortTypes) expect(mockSub.posts.clients[clientFieldName][sortType]).to.deep.equal({});
@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`subplebbit.posts.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
-            const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
+            const mockSub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             const key = Object.keys(mockSub.clients[clientFieldName])[0];
             // add tests here
             expect(Object.keys(mockSub.posts.clients[clientFieldName]["new"]).length).to.equal(1);
