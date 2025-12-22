@@ -18,13 +18,24 @@ const workingPubsubUrl = "http://localhost:15002/api/v0"; // kubo node with work
 
 const offlinePubsubUrl = "http://localhost:23425"; // Non-existent URL that will fail
 
+const waitForPubsubTopicToBeRemoved = async (pubsubClient, pubsubTopic, { timeoutMs = 10000, intervalMs = 200 } = {}) => {
+    const start = Date.now();
+    while (true) {
+        const subscribedTopics = await pubsubClient.pubsub.ls();
+        expect(subscribedTopics).to.be.an("array");
+        if (!subscribedTopics.includes(pubsubTopic)) return;
+        if (Date.now() - start > timeoutMs) {
+            throw new Error(`pubsub topic ${pubsubTopic} still subscribed after ${timeoutMs}ms`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+};
+
 const validateKuboRpcNotListeningToPubsubTopic = async (testPlebbit, pubsubTopic) => {
     expect(pubsubTopic).to.be.a("string");
     for (const pubsubProviderUrl of Object.keys(testPlebbit.clients.pubsubKuboRpcClients)) {
         const pubsubClient = testPlebbit.clients.pubsubKuboRpcClients[pubsubProviderUrl]._client;
-        const subscribedTopics = await pubsubClient.pubsub.ls();
-        expect(subscribedTopics).to.be.an("array");
-        expect(subscribedTopics).to.not.include(pubsubTopic);
+        await waitForPubsubTopicToBeRemoved(pubsubClient, pubsubTopic);
     }
 };
 
