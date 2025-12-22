@@ -6,8 +6,7 @@ import {
     describeSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst,
     publishRandomPost,
-    createMockedSubplebbitIpns,
-    addStringToIpfs
+    createStaticSubplebbitRecordForComment
 } from "../../../../../dist/node/test/test-util.js";
 import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
@@ -87,39 +86,6 @@ const cleanupStateArray = (states) => {
     return filteredStates;
 };
 
-const createReplyCidWithInvalidSubplebbitRecord = async (plebbit) => {
-    const { subplebbitRecord, ipnsObj } = await createMockedSubplebbitIpns({});
-    const invalidSubplebbitRecord = {
-        ...subplebbitRecord,
-        updatedAt: subplebbitRecord.updatedAt + 1234 + Math.round(Math.random() * 1000)
-    };
-
-    await ipnsObj.publishToIpns(JSON.stringify(invalidSubplebbitRecord));
-
-    const postToPublish = await plebbit.createComment({
-        signer: await plebbit.createSigner(),
-        subplebbitAddress: subplebbitRecord.address,
-        title: `Mock Post - ${Date.now()}`,
-        content: `Mock content - ${Date.now()}`
-    });
-
-    const postIpfs = { ...postToPublish.raw.pubsubMessageToPublish, depth: 0 };
-    const postCid = await addStringToIpfs(JSON.stringify(postIpfs));
-
-    const replyToPublish = await plebbit.createComment({
-        signer: await plebbit.createSigner(),
-        subplebbitAddress: subplebbitRecord.address,
-        parentCid: postCid,
-        postCid,
-        content: `Mock reply content - ${Date.now()}`
-    });
-
-    const replyIpfs = { ...replyToPublish.raw.pubsubMessageToPublish, depth: 1, parentCid: postCid, postCid };
-    const replyCid = await addStringToIpfs(JSON.stringify(replyIpfs));
-
-    return { replyCid, subAddress: subplebbitRecord.address };
-};
-
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc.concurrent(`reply.updatingState - ${config.name}`, async () => {
         let replyCid;
@@ -183,7 +149,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
-                const { replyCid: mockedReplyCid, subAddress } = await createReplyCidWithInvalidSubplebbitRecord(plebbit);
+                const { commentCid: mockedReplyCid, subAddress } = await createStaticSubplebbitRecordForComment({
+                    invalidateSubplebbitSignature: true
+                });
 
                 const mockReply = await plebbit.createComment({ cid: mockedReplyCid, subplebbitAddress: subAddress });
 
@@ -256,10 +224,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
         it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise();
-            let cleanupMockedSub;
             try {
-                const { replyCid: mockedReplyCid, subAddress, cleanup } = await createReplyCidWithInvalidSubplebbitRecord(plebbit);
-                cleanupMockedSub = cleanup;
+                const { commentCid: mockedReplyCid, subAddress } = await createStaticSubplebbitRecordForComment({
+                    plebbit,
+                    invalidateSubplebbitSignature: true,
+                    commentOptions: {
+                        content: `Mock reply content - ${Date.now()}`
+                    }
+                });
 
                 const mockReply = await plebbit.createComment({ cid: mockedReplyCid, subplebbitAddress: subAddress });
                 const recordedStates = [];
@@ -290,7 +262,6 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 const filteredRecordedStates = cleanupStateArray(recordedStates);
                 expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
             } finally {
-                if (cleanupMockedSub) await cleanupMockedSub();
                 await plebbit.destroy();
             }
         });

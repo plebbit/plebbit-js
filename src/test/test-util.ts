@@ -1499,12 +1499,12 @@ export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalS
     return { subplebbitRecord, ipnsObj };
 }
 
-export async function createStaticSubplebbitRecordForComment(opts: {
+export async function createStaticSubplebbitRecordForComment(opts?: {
     plebbit?: Plebbit;
     commentOptions?: Partial<CreateCommentOptions & { depth?: number }>;
     invalidateSubplebbitSignature?: boolean;
 }) {
-    const { plebbit, commentOptions = {}, invalidateSubplebbitSignature = false } = opts;
+    const { plebbit, commentOptions = {}, invalidateSubplebbitSignature = false } = opts || {};
     if (commentOptions.parentCid && !commentOptions.postCid) throw Error("postCid must be provided when parentCid is supplied for a reply");
 
     const ipnsObj = await createNewIpns();
@@ -1742,14 +1742,25 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     if (plebbit._plebbitRpcClient) throw Error("Can't mock sub to return specific record when plebbit is using RPC");
 
     const clearOut = () => {
-        delete sub.raw.subplebbitIpfs;
-        delete sub.updatedAt;
-        sub._clientsManager._updateCidsAlreadyLoaded.clear();
-        delete sub.updateCid;
+        const instancesToClear = [
+            sub,
+            plebbit._startedSubplebbits[subAddress] && plebbit._startedSubplebbits[subAddress] !== sub
+                ? plebbit._startedSubplebbits[subAddress]
+                : undefined
+        ].filter(Boolean) as (typeof sub)[];
+
+        plebbit._memCaches.subplebbitVerificationCache.clear(); // avoid cached signature-valid result on modified record
+
+        for (const instance of instancesToClear) {
+            delete instance.raw.subplebbitIpfs;
+            delete instance.updatedAt;
+            instance._clientsManager._updateCidsAlreadyLoaded.clear();
+            delete instance.updateCid;
+            instance.posts.resetPages(); // avoid serving stale pages with valid comment updates
+        }
     };
 
     clearOut();
-    sub.once("update", () => clearOut());
 
     const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
     if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
