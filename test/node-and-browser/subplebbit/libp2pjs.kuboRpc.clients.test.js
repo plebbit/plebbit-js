@@ -5,7 +5,8 @@ import {
     publishRandomPost,
     getAvailablePlebbitConfigsToTestAgainst,
     mockGatewayPlebbit,
-    mockPlebbitToReturnSpecificSubplebbit
+    createStaticSubplebbitRecordForComment,
+    createMockedSubplebbitIpns
 } from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
@@ -82,9 +83,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`Correct order of ${clientFieldName} state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
-            const customPlebbit = await config.plebbitInstancePromise();
+            const subRecord = await createMockedSubplebbitIpns({}); // only published once, a static record
 
-            const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+            const sub = await plebbit.createSubplebbit({ address: subRecord.subplebbitRecord.address });
 
             const recordedStates = [];
             const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
@@ -96,11 +97,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await sub.update();
             await updatePromise;
 
-            const updatingSubInstance = customPlebbit._updatingSubplebbits[sub.address];
-
-            updatingSubInstance._clientsManager.resolveIpnsToCidP2P = () => sub.updateCid; // stop it from loading new IPNS
-
-            await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
 
             await sub.stop();
 
@@ -108,46 +105,44 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             expect(recordedStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
 
-            const noNewUpdateStates = recordedStates.slice(expectedFirstStates.length, recordedStates.length); // should be just 'fetching-ipns' and 'succeeded
+            const noNewUpdateStates = recordedStates.slice(expectedFirstStates.length, recordedStates.length);
 
-            // the rest should be just ["fetching-ipns", "stopped"]
-            // because it can't find a new record
+            // The rest should loop as ["fetching-ipns", "stopped"] because it can't find a new record
+            expect(noNewUpdateStates.length % 2).to.equal(0);
             for (let i = 0; i < noNewUpdateStates.length; i += 2) {
-                expect(noNewUpdateStates[i]).to.equal("fetching-ipns");
-                expect(noNewUpdateStates[i + 1]).to.equal("stopped");
+                expect(noNewUpdateStates.slice(i, i + 2)).to.deep.equal(["fetching-ipns", "stopped"]);
             }
-            await customPlebbit.destroy();
         });
 
         it(`Correct order of ${clientFieldName} client states when we attempt to update a subplebbit with invalid record`, async () => {
-            const customPlebbit = await config.plebbitInstancePromise();
+            const { commentCid, subplebbitAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
 
-            // Create a subplebbit with a valid address
-            const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+            // Create a static subplebbit record with invalid signature
+            const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
 
             const recordedStates = [];
             const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
             sub.clients[clientFieldName][clientUrl].on("statechange", (newState) => recordedStates.push(newState));
 
-            // First update should succeed with the initial valid record
-            const updatePromise = new Promise((resolve) => sub.once("update", resolve));
-            await sub.update();
-            await updatePromise;
-
-            // Mock the subplebbit to return an invalid record
-            const invalidSubplebbitRecord = { address: sub.address }; // Missing required fields will fail validation
-
             const errorPromise = new Promise((resolve) => sub.once("error", resolve));
-            await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, invalidSubplebbitRecord);
 
-            await errorPromise;
+            await sub.update();
+            const err = await errorPromise;
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
+
             await sub.stop();
+            expect(sub.updatedAt).to.be.undefined;
+            expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
 
-            // Expected states for initial update and then the invalid update attempt, then checking if there's a new update
-            const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped", "fetching-ipns", "fetching-ipfs", "stopped"];
+            const expectedFirstStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
+            expect(recordedStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
 
-            expect(recordedStates).to.deep.equal(expectedStates);
-            await customPlebbit.destroy();
+            // Remaining states should loop as ["fetching-ipns", "stopped"] when it keeps failing
+            const remainingStates = recordedStates.slice(expectedFirstStates.length);
+            expect(remainingStates.length % 2).to.equal(0);
+            for (let i = 0; i < remainingStates.length; i += 2) {
+                expect(remainingStates.slice(i, i + 2)).to.deep.equal(["fetching-ipns", "stopped"]);
+            }
         });
     });
 });
