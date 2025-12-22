@@ -1,5 +1,5 @@
 import PlebbitIndex from "../index.js";
-import { calculateStringSizeSameAsIpfsAddCidV0, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import { calculateStringSizeSameAsIpfsAddCidV0, removeUndefinedValuesRecursively, retryKuboIpfsAdd, timestamp } from "../util.js";
 import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 import Vote from "../publications/vote/vote.js";
@@ -1259,7 +1259,8 @@ export async function publishChallengeVerificationMessageWithEncryption(
 export async function addStringToIpfs(content: string): Promise<string> {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
-    const cid = (await ipfsClient._client.add(content)).path;
+    const cid = (await retryKuboIpfsAdd({ content, ipfsClient: ipfsClient._client, log: Logger("plebbit-js:test-util:addStringToIpfs") }))
+        .path;
     await plebbit.destroy();
     return cid;
 }

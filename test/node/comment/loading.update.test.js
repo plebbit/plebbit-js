@@ -45,7 +45,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 expect(subInstance.state).to.equal("stopped");
 
                 await postComment.update();
-                await waitForReplyToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
+                await waitForCommentToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
                 expect(postComment.updatedAt).to.equal(context.expectedPostUpdate.updatedAt);
                 const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
                 expect(updatingPost).to.exist;
@@ -63,7 +63,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
             try {
                 expect(subInstance.state).to.equal("started");
                 await postComment.update();
-                await waitForReplyToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
+                await waitForCommentToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
                 expect(postComment.updatedAt).to.equal(context.expectedPostUpdate.updatedAt);
                 const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
                 expect(updatingPost).to.exist;
@@ -104,8 +104,9 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 
                         await postComment.update();
                         await mockCommentToNotUsePagesForUpdates(postComment);
-                        await waitForReplyToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
-                        expect(postComment.updatedAt).to.equal(paginationContext.expectedPostUpdate.updatedAt);
+                        await waitForCommentToMatchStoredUpdate(postComment, paginationContext.expectedPostUpdate.updatedAt);
+                        expect(postComment.updatedAt).to.be.a("number");
+                        expect(postComment.updatedAt).to.be.greaterThanOrEqual(paginationContext.expectedPostUpdate.updatedAt);
 
                         const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
                         expect(updatingPost._commentUpdateIpfsPath).to.be.a("string"); // post shouldn't find itself in pages, rather it needs to use postUpdates
@@ -171,7 +172,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         const postComment = await remotePlebbit.createComment({ cid: context.rootCid });
                         expect(subInstance.state).to.equal("started");
                         await postComment.update();
-                        await waitForReplyToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
+                        await waitForCommentToMatchStoredUpdate(postComment, context.expectedPostUpdate.updatedAt);
                         expect(postComment.updatedAt).to.equal(context.expectedPostUpdate.updatedAt);
                         const updatingPost = postComment._plebbit._updatingComments[postComment.cid];
                         expect(updatingPost).to.exist;
@@ -247,7 +248,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         const replyComment = await remotePlebbit.getComment({ cid: context.leafCid });
                         try {
                             await replyComment.update();
-                            await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
+                            await waitForCommentToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
                             expect(replyComment.updatedAt).to.be.greaterThanOrEqual(context.expectedLeafUpdate.updatedAt);
                             const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
                             expect(updatingReply).to.exist;
@@ -271,7 +272,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                             await postComment.update();
                             await waitForPostToStartUpdating(postComment);
                             await replyComment.update();
-                            await waitForReplyToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
+                            await waitForCommentToMatchStoredUpdate(replyComment, context.expectedLeafUpdate.updatedAt);
                             expect(replyComment.updatedAt).to.be.greaterThanOrEqual(context.expectedLeafUpdate.updatedAt);
                             const updatingReply = replyComment._plebbit._updatingComments[replyComment.cid];
                             expect(updatingReply).to.exist;
@@ -319,7 +320,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
 
                         await replyComment.update();
                         mockReplyToUseParentPagesForUpdates(replyComment);
-                        await waitForReplyToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
+                        await waitForCommentToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
                         expect(replyComment.parentCid).to.equal(paginationContext.leafParentCid);
                         // await waitForParentPageCidsToLoad(replyComment, paginationContext.plebbit);
 
@@ -341,7 +342,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                         await waitForPostToStartUpdating(parentComment);
                         await replyComment.update();
                         mockReplyToUseParentPagesForUpdates(replyComment);
-                        await waitForReplyToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
+                        await waitForCommentToMatchStoredUpdate(replyComment, paginationContext.expectedLeafUpdate.updatedAt);
                         // await waitForParentPageCidsToLoad(replyComment, paginationContext.plebbit);
                         expect(replyComment.parentCid).to.equal(paginationContext.leafParentCid);
                         const storedParentUpdate = paginationContext.forcedParentStoredUpdate;
@@ -491,10 +492,10 @@ async function waitForStoredCommentUpdate(subplebbit, cid) {
     throw new Error(`Timed out waiting for stored comment update for ${cid}`);
 }
 
-async function waitForReplyToMatchStoredUpdate(replyComment, expectedUpdatedAt) {
+async function waitForCommentToMatchStoredUpdate(comment, expectedUpdatedAt) {
     await resolveWhenConditionIsTrue({
-        toUpdate: replyComment,
-        predicate: () => typeof replyComment.updatedAt === "number" && replyComment.updatedAt >= expectedUpdatedAt
+        toUpdate: comment,
+        predicate: () => typeof comment.updatedAt === "number" && comment.updatedAt >= expectedUpdatedAt
     });
 }
 

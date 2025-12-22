@@ -9,6 +9,8 @@ import {
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { describe, it } from "vitest";
 import { CID } from "kubo-rpc-client";
+import validCommentFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
+
 const subplebbitSigner = signers[0];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
@@ -136,10 +138,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(updatedHasBeenCalled).to.be.false;
         });
 
-        it(`plebbit.getComment should throw immeditely if it finds a non retriable error`, async () => {
-            const subplebbit = await plebbit.getSubplebbit({ address: subplebbitSigner.address });
-
-            const commentIpfsOfInvalidSignature = JSON.parse(await plebbit.fetchCid({ cid: subplebbit.posts.pages.hot.comments[0].cid })); // comment ipfs
+        it(`plebbit.getComment should throw immeditely if CommentIpfs has an invalid signature (non retriable error)`, async () => {
+            const commentIpfsOfInvalidSignature = JSON.parse(JSON.stringify(validCommentFixture)); // comment ipfs
 
             commentIpfsOfInvalidSignature.content += "1234"; // make signature invalid
             const commentIpfsInvalidSignatureCid = await addStringToIpfs(JSON.stringify(commentIpfsOfInvalidSignature));
