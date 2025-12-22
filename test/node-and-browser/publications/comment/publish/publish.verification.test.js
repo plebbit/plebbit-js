@@ -6,11 +6,11 @@ import {
     publishWithExpectedResult,
     mockRemotePlebbit,
     publishRandomPost,
+    createStaticSubplebbitRecordForComment,
     overrideCommentInstancePropsAndSign,
     setExtraPropOnCommentAndSign,
     disableValidationOfSignatureBeforePublishing,
-    itSkipIfRpc,
-    mockPlebbitToReturnSpecificSubplebbit
+    itSkipIfRpc
 } from "../../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../../dist/node/errors.js";
@@ -43,15 +43,8 @@ describe.sequential(`Client side verification`, async () => {
 
     itSkipIfRpc.sequential(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         // this test is flaky in CI for some reason
-        const customPlebbit = await mockRemotePlebbit();
-        const invalidSubRecord = (await customPlebbit.getSubplebbit({ address: subplebbitAddress })).toJSONIpfs();
-        invalidSubRecord.updatedAt += 1; // should invalidate the signature
-
-        const updatingSub = await customPlebbit.getSubplebbit({ address: subplebbitAddress });
-        await updatingSub.update();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, subplebbitAddress, invalidSubRecord);
-        const mockPost = await generateMockPost(subplebbitAddress, customPlebbit);
+        const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
+        const mockPost = await generateMockPost(subAddress, plebbit);
         mockPost._getSubplebbitCache = () => undefined;
 
         try {
@@ -59,9 +52,6 @@ describe.sequential(`Client side verification`, async () => {
             expect.fail("should fail");
         } catch (e) {
             expect(e.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", "Got a different error than expected: " + JSON.stringify(e));
-        } finally {
-            await updatingSub.stop();
-            await customPlebbit.destroy();
         }
     });
 });
