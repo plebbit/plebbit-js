@@ -864,7 +864,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
         });
     });
 
-    describe.concurrent("remote loading with anonymized comments", () => {
+    describe.sequential("remote loading with anonymized comments", () => {
         describe("preloaded pages", () => {
             let sharedContext;
             let aliasSigner;
@@ -914,7 +914,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
             });
 
             remotePlebbitConfigs.forEach((config) => {
-                describe.concurrent(`${config.name} - preloaded`, () => {
+                describe.sequential(`${config.name} - preloaded`, () => {
                     let remotePlebbit;
 
                     before(async () => {
@@ -924,7 +924,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
                     });
 
                     after(async () => {
-                        await remotePlebbit?.destroy();
+                        await remotePlebbit.destroy();
                     });
 
                     it("Spec: loads preloaded pages with anonymized posts/replies without failing verification", async () => {
@@ -976,7 +976,7 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-post"', () => {
             });
         });
 
-        describe.concurrent("paginated pages", () => {
+        describe.sequential("paginated pages", () => {
             let paginatedContext;
             let paginatedAliasSigner;
             let paginatedSigningAuthor;
