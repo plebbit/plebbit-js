@@ -43,8 +43,8 @@ describe.sequential(`Client side verification`, async () => {
 
     itSkipIfRpc.sequential(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         // this test is flaky in CI for some reason
-        const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
-        const mockPost = await generateMockPost(subAddress, plebbit);
+        const { commentCid, subplebbitAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
+        const mockPost = await generateMockPost(subplebbitAddress, plebbit);
         mockPost._getSubplebbitCache = () => undefined;
 
         try {

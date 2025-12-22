@@ -67,10 +67,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`Correct order of ipfs gateway state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
-            const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment();
+            const { commentCid, subplebbitAddress } = await createStaticSubplebbitRecordForComment();
             // subAddress is static and won't be publishing new updates
 
-            const sub = await gatewayPlebbit.createSubplebbit({ address: subAddress });
+            const sub = await gatewayPlebbit.createSubplebbit({ address: subplebbitAddress });
             expect(sub.updatedAt).to.be.undefined; // should not get an update yet
 
             let updateCount = 0;
@@ -108,10 +108,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`Correct order of ipfs gateway states when we update a subplebbit with record whose signature is invalid`, async () => {
-            const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
+            const { commentCid, subplebbitAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
             // subAddress is static and is already published an invalid record
 
-            const sub = await gatewayPlebbit.createSubplebbit({ address: subAddress });
+            const sub = await gatewayPlebbit.createSubplebbit({ address: subplebbitAddress });
             expect(sub.updatedAt).to.be.undefined;
 
             let updateCount = 0;
