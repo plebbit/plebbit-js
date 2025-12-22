@@ -5,7 +5,9 @@ import {
     itSkipIfRpc,
     publishRandomPost,
     publishRandomReply,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    addStringToIpfs,
+    createMockedSubplebbitIpns
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
@@ -257,6 +259,33 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(plebbit._updatingComments).to.deep.equal({});
             }
         );
+
+        it(`doesn't resurrect _updatingComments after stop() when the subplebbit record is invalid`, async () => {
+            const { subplebbitRecord, ipnsObj } = await createMockedSubplebbitIpns({});
+            const invalidSubplebbitRecord = { ...subplebbitRecord, updatedAt: subplebbitRecord.updatedAt + 9999 };
+            await ipnsObj.publishToIpns(JSON.stringify(invalidSubplebbitRecord));
+
+            const postToPublish = await plebbit.createComment({
+                signer: await plebbit.createSigner(),
+                subplebbitAddress: invalidSubplebbitRecord.address,
+                title: `Mock Post - ${Date.now()}`,
+                content: `Mock content - ${Date.now()}`
+            });
+            const postIpfs = { ...postToPublish.raw.pubsubMessageToPublish, depth: 0 };
+            const postCid = await addStringToIpfs(JSON.stringify(postIpfs));
+
+            const post = await plebbit.createComment({ cid: postCid });
+            const errors = [];
+            post.on("error", (e) => errors.push(e));
+
+            await post.update();
+            await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => errors.length >= 1, eventName: "error" });
+
+            await post.stop();
+
+            expect(Object.keys(plebbit._updatingComments)).to.deep.equal([]);
+            expect(Object.keys(plebbit._updatingSubplebbits)).to.deep.equal([]);
+        });
 
         it(`Calling comment.stop() and update() should behave as normal with plebbit._updatingComments`, async () => {
             const comment = await publishRandomPost(subplebbitAddress, plebbit);

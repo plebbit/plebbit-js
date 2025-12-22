@@ -1034,6 +1034,13 @@ export class Comment
             ) {
                 log("Cleaning up plebbit._updatingComments", this.cid, "There are no comments using it for updates");
                 await this._updatingCommentInstance.comment.stop();
+            } else if (
+                this._updatingCommentInstance.comment._numOfListenersForUpdatingInstance === 0 &&
+                this._updatingCommentInstance.comment.state === "stopped" &&
+                this._plebbit._updatingComments[this.cid] === this._updatingCommentInstance.comment
+            ) {
+                // No listeners left and the updating comment is already stopped; remove the stale entry
+                delete this._plebbit._updatingComments[this.cid];
             }
             this._updatingCommentInstance = undefined;
         }
