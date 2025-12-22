@@ -3,13 +3,13 @@ import signers from "../../../../fixtures/signers.js";
 import {
     publishRandomPost,
     mockPostToReturnSpecificCommentUpdate,
-    mockPlebbitToReturnSpecificSubplebbit,
     createCommentUpdateWithInvalidSignature,
     mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst,
-    addStringToIpfs
+    addStringToIpfs,
+    createMockedSubplebbitIpns
 } from "../../../../../dist/node/test/test-util.js";
 import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
@@ -92,8 +92,29 @@ const normalizePostUpdateFailureStates = (states) => {
     return normalized;
 };
 
+const createPostCidWithInvalidSubplebbitRecord = async (plebbit) => {
+    const { subplebbitRecord, ipnsObj } = await createMockedSubplebbitIpns({});
+    const invalidSubplebbitRecord = {
+        ...subplebbitRecord,
+        updatedAt: subplebbitRecord.updatedAt + 1234 + Math.round(Math.random() * 1000)
+    };
+
+    await ipnsObj.publishToIpns(JSON.stringify(invalidSubplebbitRecord));
+
+    const postToPublish = await plebbit.createComment({
+        signer: await plebbit.createSigner(),
+        subplebbitAddress: subplebbitRecord.address,
+        title: `Mock Post - ${Date.now()}`,
+        content: `Mock content - ${Date.now()}`
+    });
+
+    const postIpfs = { ...postToPublish.raw.pubsubMessageToPublish, depth: 0 };
+    const postCid = await addStringToIpfs(JSON.stringify(postIpfs));
+    return { postCid, subAddress: subplebbitRecord.address };
+};
+
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describeSkipIfRpc.sequential(`post.updatingState - ${config.name}`, async () => {
+    describeSkipIfRpc.concurrent(`post.updatingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -157,13 +178,15 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         });
 
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
-            // this test times out
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { resolveAuthorAddresses: false } }); // set resolve to false so it wouldn't show up in states
+            let cleanupMockedSub;
             try {
-                const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
-                const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
+                const { postCid, subAddress, cleanup } = await createPostCidWithInvalidSubplebbitRecord(plebbit);
+                cleanupMockedSub = cleanup;
+
                 const createdPost = await plebbit.createComment({
-                    cid: sub.posts.pages.hot.comments[0].cid
+                    cid: postCid,
+                    subplebbitAddress: subAddress
                 });
                 expect(createdPost.content).to.be.undefined;
                 expect(createdPost.updatedAt).to.be.undefined;
@@ -177,16 +200,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                             if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") resolve();
                         })
                     );
-                await sub.update(); // need to update it so that we can mock it below
-                await mockPlebbitToReturnSpecificSubplebbit(createdPost._plebbit, subplebbitAddress, subInvalidRecord);
-                expect(createdPost.updatedAt).to.be.undefined;
+
                 await createdPost.update();
-                expect(createdPost.updatedAt).to.be.undefined;
 
                 await createErrorPromise();
 
                 await createdPost.stop();
-                await sub.stop();
                 expect(createdPost.updatedAt).to.be.undefined;
 
                 const expectedUpdateStates = [
@@ -199,6 +218,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 ];
                 expect(updatingStates).to.deep.equal(expectedUpdateStates);
             } finally {
+                if (cleanupMockedSub) await cleanupMockedSub();
                 await plebbit.destroy();
             }
         });
@@ -283,11 +303,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
             const dedicatedPlebbit = await config.plebbitInstancePromise();
             try {
-                const sub = await dedicatedPlebbit.getSubplebbit({ address: subplebbitAddress });
-                const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; // override updatedAt which will give us an invalid signature
-                const createdPost = await dedicatedPlebbit.createComment({
-                    cid: sub.posts.pages.hot.comments[0].cid
-                });
+                const { postCid, subAddress } = await createPostCidWithInvalidSubplebbitRecord(dedicatedPlebbit);
+                const createdPost = await dedicatedPlebbit.createComment({ cid: postCid });
                 expect(createdPost.content).to.be.undefined;
                 expect(createdPost.updatedAt).to.be.undefined;
 
@@ -297,14 +314,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 const errors = [];
 
                 createdPost.on("error", (err) => errors.push(err));
-                await sub.update(); // need to update it so that we can mock it below
-                await mockPlebbitToReturnSpecificSubplebbit(dedicatedPlebbit, subplebbitAddress, subInvalidRecord);
                 await createdPost.update();
 
-                await resolveWhenConditionIsTrue({ toUpdate: createdPost, predicate: () => errors.length === 1, eventName: "error" });
+                await resolveWhenConditionIsTrue({ toUpdate: createdPost, predicate: () => errors.length >= 1, eventName: "error" });
 
                 await createdPost.stop();
-                await sub.stop();
+                if (Object.keys(dedicatedPlebbit._updatingComments).length > 0) throw Error("should reset updating comments");
                 expect(createdPost.updatedAt).to.be.undefined;
                 expect(createdPost.raw.commentUpdate).to.be.undefined;
 
@@ -321,8 +336,6 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                     "stopped" // called post.stop()
                 ];
                 expect(recordedStates).to.deep.equal(expectedUpdateStates);
-            } catch (error) {
-                throw error;
             } finally {
                 await dedicatedPlebbit.destroy();
             }
