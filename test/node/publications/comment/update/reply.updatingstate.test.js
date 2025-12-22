@@ -107,20 +107,10 @@ describeSkipIfRpc.concurrent("reply.updatingState regression (node)", () => {
 
                 const readUpdatingState = () => reply.updatingState;
                 expect(readUpdatingState).to.not.throw();
-                expect(readUpdatingState()).to.equal("stopped");
+                expect(readUpdatingState()).to.equal("fetching-ipfs");
             } finally {
-                if (reply._updatingCommentInstance) {
-                    reply.removeListener("statechange", reply._updatingCommentInstance.statechange);
-                    reply.removeListener("updatingstatechange", reply._updatingCommentInstance.updatingstatechange);
-                    reply.removeListener("update", reply._updatingCommentInstance.update);
-                    reply.removeListener("error", reply._updatingCommentInstance.error);
-                    reply._updatingCommentInstance = undefined;
-                }
-                if (previousUpdatingEntry) plebbit._updatingComments[replyCid] = previousUpdatingEntry;
-                else delete plebbit._updatingComments[replyCid];
-
-                await reply.stop().catch(() => {});
-                await plebbit.destroy().catch(() => {});
+                await reply.stop();
+                await plebbit.destroy();
             }
         });
     });
@@ -147,8 +137,6 @@ async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
         });
 
         const { cleanup: preloadCleanup } = await disablePreloadPagesOnSub({ subplebbit });
-
-        // await forcePagesToUsePageCidsOnly({ subplebbit, parentComment });
 
         await publishRandomReply(parentComment, publisherPlebbit); // to force an update
         // below could timeout

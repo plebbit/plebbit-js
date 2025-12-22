@@ -464,19 +464,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const readUpdatingState = () => post.updatingState;
 
                 expect(readUpdatingState).to.not.throw();
-                expect(readUpdatingState()).to.equal("stopped");
+                expect(readUpdatingState()).to.equal("fetching-ipfs");
             } finally {
-                if (post._updatingCommentInstance) {
-                    post.removeListener("statechange", post._updatingCommentInstance.statechange);
-                    post.removeListener("updatingstatechange", post._updatingCommentInstance.updatingstatechange);
-                    post.removeListener("update", post._updatingCommentInstance.update);
-                    post.removeListener("error", post._updatingCommentInstance.error);
-                    post._updatingCommentInstance = undefined;
-                }
-                if (previousUpdatingEntry) plebbit._updatingComments[postCid] = previousUpdatingEntry;
-                else delete plebbit._updatingComments[postCid];
-
-                await post.stop().catch(() => {});
+                await post.stop();
             }
         });
 

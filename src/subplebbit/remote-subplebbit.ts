@@ -412,6 +412,13 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
         }
 
+        const subInstance = this._plebbit._updatingSubplebbits[this.address];
+        if (subInstance === this) {
+            // Already tracking this instance; start the loop directly without mirroring to itself
+            this._clientsManager.startUpdatingLoop().catch((err) => log.error("Failed to start update loop of subplebbit", err));
+            return;
+        }
+
         this._updatingSubInstanceWithListeners = await this._initSubInstanceWithListeners();
         this._updatingSubInstanceWithListeners.subplebbit.on("update", this._updatingSubInstanceWithListeners.update);
 

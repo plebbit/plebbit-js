@@ -890,6 +890,7 @@ export class Comment
     }
 
     _useUpdatingCommentFromPlebbit(updatingCommentInstance: Comment) {
+        if (updatingCommentInstance === this) return; // don't mirror to itself; prevents recursive events
         this._updatingCommentInstance = {
             comment: updatingCommentInstance,
             statechange: async (newState) => {
@@ -958,8 +959,16 @@ export class Comment
         if (!this.cid) throw Error("Can't call comment.update() without defining cid");
         this._setStateWithEmission("updating");
 
-        if (this._plebbit._updatingComments[this.cid]) {
-            this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]); // this comment instance will be mirroring this._plebbit._updatingComments[this.cid]
+        const existingUpdatingComment = this._plebbit._updatingComments[this.cid];
+        if (existingUpdatingComment) {
+            if (existingUpdatingComment === this) {
+                // This instance is already tracked; start the update loop without mirroring to itself
+                if (this._plebbit._plebbitRpcClient) {
+                    await this._updateViaRpc();
+                } else {
+                    this.loadCommentIpfsAndStartCommentUpdateSubscription().catch((e) => log.error("Failed to update comment", e));
+                }
+            } else this._useUpdatingCommentFromPlebbit(existingUpdatingComment); // this comment instance will be mirroring this._plebbit._updatingComments[this.cid]
         } else await this._setUpNewUpdatingCommentInstance(); // Create a this._plebbit._updatingComments[this.cid], then mirror it
 
         if (this.raw.comment || this.raw.commentUpdate) this.emit("update", this);

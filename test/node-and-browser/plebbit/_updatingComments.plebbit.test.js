@@ -323,6 +323,30 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(plebbit._updatingComments[postCommentCid]).to.be.undefined;
         });
 
+        it("fails (for now) when an updating comment mirrors itself from _updatingComments", async () => {
+            const post = await publishRandomPost(subplebbitAddress, plebbit);
+            const selfUpdatingComment = await plebbit.createComment({ cid: post.cid });
+
+            // Simulate the CI case where _updatingComments already holds the same instance before update()
+            plebbit._updatingComments[selfUpdatingComment.cid] = selfUpdatingComment;
+
+            await selfUpdatingComment.update(); // wires self-listeners because the map points to this same instance
+
+            let thrownError;
+            try {
+                selfUpdatingComment.emit("updatingstatechange", "fetching-ipfs");
+            } catch (err) {
+                thrownError = err;
+            } finally {
+                delete plebbit._updatingComments[selfUpdatingComment.cid];
+                await selfUpdatingComment.stop();
+                await post.stop();
+            }
+
+            // When the recursion bug is fixed this should be undefined, so the test will start passing.
+            expect(thrownError).to.be.undefined;
+        });
+
         // with rpc clients we don't create a post instance, the rpc server does it for us
         itSkipIfRpc(
             `Calling reply.stop() when it's subscribed to a post and post is updating only for reply should remove both reply and post from _updatingComments`,

@@ -35,6 +35,27 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
         });
 
+        it("handles self-referenced _updatingSubplebbits without recursion", async () => {
+            const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+
+            // Simulate the case where _updatingSubplebbits already points to this instance
+            plebbit._updatingSubplebbits[subplebbitAddress] = sub;
+
+            await sub.update();
+
+            let thrownError;
+            try {
+                sub.emit("update", sub);
+            } catch (err) {
+                thrownError = err;
+            } finally {
+                delete plebbit._updatingSubplebbits[subplebbitAddress];
+                await sub.stop();
+            }
+
+            expect(thrownError).to.be.undefined;
+        });
+
         it(`Multiple subplebbit instances (same address) updating. Calling stop on all of them should clean all subscriptions and remove plebbit._updatingSubplebbits`, async () => {
             const sub1 = await plebbit.createSubplebbit({ address: subplebbitAddress });
             const sub2 = await plebbit.createSubplebbit({ address: subplebbitAddress });
