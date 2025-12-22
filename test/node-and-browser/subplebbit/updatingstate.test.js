@@ -1,17 +1,18 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
+import { describe, it } from "vitest";
 import {
     publishRandomPost,
     publishSubplebbitRecordWithExtraProp,
-    mockPlebbitToReturnSpecificSubplebbit,
+    createStaticSubplebbitRecordForComment,
     createNewIpns,
     resolveWhenConditionIsTrue,
     getAvailablePlebbitConfigsToTestAgainst
 } from "../../../dist/node/test/test-util.js";
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
+    describe.concurrent(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -95,10 +96,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`updatingState is correct when we attempt to update a subplebbit with invalid record, if we're updating with an ipfs client`, async () => {
             // Create a subplebbit with a valid address
-            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+            const { commentCid, subplebbitAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
 
-            // Mock the subplebbit to return an invalid record
-            const invalidSubplebbitRecord = { address: subplebbit.address }; // Missing required fields will fail validation
+            const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
 
             const recordedUpdatingStates = [];
             const errors = [];
@@ -107,30 +107,29 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             subplebbit.on("error", (err) => errors.push(err));
 
             // First update should succeed with the initial valid record
-            await subplebbit.update();
-            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" }); // wait until the subplebbit is updated
-
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
-            await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbit.address, invalidSubplebbitRecord);
+
+            await subplebbit.update();
 
             await errorPromise;
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
 
             await subplebbit.stop();
 
-            // Expected states for initial update and then the invalid update attempt
-            const expectedUpdatingStates = [
-                "fetching-ipns",
-                "fetching-ipfs",
-                "succeeded",
-                "fetching-ipns",
-                "fetching-ipfs",
-                "failed",
-                "stopped"
-            ];
+            const expectedFirstStates = ["fetching-ipns", "fetching-ipfs", "failed"];
+            expect(recordedUpdatingStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
 
-            expect(recordedUpdatingStates).to.deep.equal(expectedUpdatingStates);
+            // Remaining states should loop as ["fetching-ipns", "stopped"] when it keeps failing
+            const remainingStates = recordedUpdatingStates.slice(expectedFirstStates.length, recordedUpdatingStates.length - 1);
+            expect(remainingStates.length % 2).to.equal(0);
+            for (let i = 0; i < remainingStates.length; i += 2) {
+                expect(remainingStates.slice(i, i + 2)).to.deep.equal(["fetching-ipns", "waiting-retry"]); // resolves IPNS, then realizes it's the same IPNS with invalid signature and abort
+            }
+
+            expect(recordedUpdatingStates[recordedUpdatingStates.length - 1]).to.equal("stopped");
+
             expect(errors.length).to.equal(1);
-            expect(errors[0].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+            expect(errors[0].code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
         });
     });
 });
@@ -274,11 +273,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`updatingState is correct when we attempt to update a subplebbit with invalid record, if we're updating with an ipfs gateways`, async () => {
-            // Create a subplebbit with a valid address
-            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+            const { commentCid, subplebbitAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
 
-            // Mock the subplebbit to return an invalid record
-            const invalidSubplebbitRecord = { address: "1234.eth" }; // This will fail validation
+            // Create a subplebbit with a valid address
+            const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
 
             const recordedUpdatingStates = [];
             const errors = [];
@@ -287,25 +285,28 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             subplebbit.on("error", (err) => errors.push(err));
 
             // First update should succeed with the initial valid record
-            await subplebbit.update();
-            await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" }); // wait until the subplebbit is updated
-
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
-            await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbit.address, invalidSubplebbitRecord);
-
+            await subplebbit.update();
             await errorPromise;
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
 
             await subplebbit.stop();
 
-            expect(recordedUpdatingStates[0]).to.equal("fetching-ipns");
-            expect(recordedUpdatingStates[1]).to.equal("succeeded");
-            expect(recordedUpdatingStates.slice(recordedUpdatingStates.length - 2, recordedUpdatingStates.length)).to.deep.equal([
-                "failed",
-                "stopped"
-            ]);
+            const expectedFirstStates = ["fetching-ipns", "failed"];
+            expect(recordedUpdatingStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
+
+            // Remaining states should loop as ["fetching-ipns", "stopped"] when it keeps failing
+            const remainingStates = recordedUpdatingStates.slice(expectedFirstStates.length, recordedUpdatingStates.length - 1);
+            expect(remainingStates.length % 2).to.equal(0);
+            for (let i = 0; i < remainingStates.length; i += 2) {
+                expect(remainingStates.slice(i, i + 2)).to.deep.equal(["fetching-ipns", "waiting-retry"]); // resolves IPNS, then realizes it's the same IPNS with invalid signature and abort
+            }
+
+            expect(recordedUpdatingStates[recordedUpdatingStates.length - 1]).to.equal("stopped");
+
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-            expect(errors[0].details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+            expect(errors[0].details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
         });
     });
 });

@@ -1545,7 +1545,7 @@ export async function createStaticSubplebbitRecordForComment(opts?: {
 
         const commentCid = await addStringToIpfs(JSON.stringify(commentIpfs));
 
-        return { commentCid, subAddress: subplebbitRecord!.address };
+        return { commentCid, subplebbitAddress: subplebbitRecord.address };
     } finally {
         if (shouldDestroyCommentPlebbit) await commentPlebbit.destroy();
     }
@@ -1734,51 +1734,6 @@ export async function createCommentUpdateWithInvalidSignature(commentCid: string
     invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
 
     return invalidCommentUpdateJson;
-}
-
-export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, subAddress: string, subplebbitRecord: any) {
-    const sub = plebbit._updatingSubplebbits[subAddress];
-    if (!sub) throw Error("Can't mock sub when it's not being updated");
-    if (plebbit._plebbitRpcClient) throw Error("Can't mock sub to return specific record when plebbit is using RPC");
-
-    const clearOut = () => {
-        const instancesToClear = [
-            sub,
-            plebbit._startedSubplebbits[subAddress] && plebbit._startedSubplebbits[subAddress] !== sub
-                ? plebbit._startedSubplebbits[subAddress]
-                : undefined
-        ].filter(Boolean) as (typeof sub)[];
-
-        plebbit._memCaches.subplebbitVerificationCache.clear(); // avoid cached signature-valid result on modified record
-
-        for (const instance of instancesToClear) {
-            delete instance.raw.subplebbitIpfs;
-            delete instance.updatedAt;
-            instance._clientsManager._updateCidsAlreadyLoaded.clear();
-            delete instance.updateCid;
-            instance.posts.resetPages(); // avoid serving stale pages with valid comment updates
-        }
-    };
-
-    clearOut();
-
-    const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
-    if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
-        const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
-        //@ts-expect-error
-        sub._clientsManager._fetchWithLimit = async (...args) => {
-            const url = args[0];
-            if (url.includes("ipns")) {
-                return {
-                    ...args,
-                    resText: JSON.stringify(subplebbitRecord)
-                };
-            } else return originalFetch(...args);
-        };
-    } else {
-        // we're using kubo/helia
-        sub._clientsManager.resolveIpnsToCidP2P = async () => subplebbitRecordCid;
-    }
 }
 
 export function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit) {
