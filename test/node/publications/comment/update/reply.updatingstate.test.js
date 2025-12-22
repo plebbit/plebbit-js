@@ -133,7 +133,7 @@ async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
         await parentComment.update();
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,
-            predicate: () => parentComment.updatedAt
+            predicate: () => typeof parentComment.updatedAt === "number"
         });
 
         const { cleanup: preloadCleanup } = await disablePreloadPagesOnSub({ subplebbit });

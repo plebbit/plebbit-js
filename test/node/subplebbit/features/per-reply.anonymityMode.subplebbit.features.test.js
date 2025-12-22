@@ -585,81 +585,87 @@ describeSkipIfRpc('subplebbit.features.anonymityMode="per-reply"', () => {
             }
         );
 
-        it("Spec: purging one anonymized reply removes only that reply's alias mapping and leaves other replies (even from the same signer) intact", async () => {
-            const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
+        it.sequential(
+            "Spec: purging one anonymized reply removes only that reply's alias mapping and leaves other replies (even from the same signer) intact",
+            async () => {
+                const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
 
-            const firstReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, firstReply);
+                const firstReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, firstReply);
 
-            const secondReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, secondReply);
+                const secondReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, secondReply);
 
-            // Verify both aliases exist
-            const firstAliasBefore = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(firstReply.cid);
-            const secondAliasBefore = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(secondReply.cid);
-            expect(firstAliasBefore).to.exist;
-            expect(secondAliasBefore).to.exist;
+                // Verify both aliases exist
+                const firstAliasBefore = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(firstReply.cid);
+                const secondAliasBefore = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(secondReply.cid);
+                expect(firstAliasBefore).to.exist;
+                expect(secondAliasBefore).to.exist;
 
-            // Purge only the first reply
-            await context.subplebbit._dbHandler.purgeComment(firstReply.cid);
+                // Purge only the first reply
+                await context.subplebbit._dbHandler.purgeComment(firstReply.cid);
 
-            // Verify first reply and alias are gone
-            const firstAliasAfter = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(firstReply.cid);
-            const firstCommentAfter = context.subplebbit._dbHandler.queryComment(firstReply.cid);
-            expect(firstAliasAfter).to.be.undefined;
-            expect(firstCommentAfter).to.be.undefined;
+                // Verify first reply and alias are gone
+                const firstAliasAfter = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(firstReply.cid);
+                const firstCommentAfter = context.subplebbit._dbHandler.queryComment(firstReply.cid);
+                expect(firstAliasAfter).to.be.undefined;
+                expect(firstCommentAfter).to.be.undefined;
 
-            // Verify second reply and alias are still there
-            const secondAliasAfter = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(secondReply.cid);
-            const secondCommentAfter = context.subplebbit._dbHandler.queryComment(secondReply.cid);
-            expect(secondAliasAfter).to.exist;
-            expect(secondCommentAfter).to.exist;
-            expect(secondAliasAfter.aliasPrivateKey).to.equal(secondAliasBefore.aliasPrivateKey);
+                // Verify second reply and alias are still there
+                const secondAliasAfter = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(secondReply.cid);
+                const secondCommentAfter = context.subplebbit._dbHandler.queryComment(secondReply.cid);
+                expect(secondAliasAfter).to.exist;
+                expect(secondCommentAfter).to.exist;
+                expect(secondAliasAfter.aliasPrivateKey).to.equal(secondAliasBefore.aliasPrivateKey);
 
-            await post.stop();
-            await firstReply.stop();
-            await secondReply.stop();
-        });
+                await post.stop();
+                await firstReply.stop();
+                await secondReply.stop();
+            }
+        );
 
-        it("Spec: sub owner can resolve multiple anonymized addresses created by the same signer across several replies and map each back to the original signer", async () => {
-            const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
+        it.sequential(
+            "Spec: sub owner can resolve multiple anonymized addresses created by the same signer across several replies and map each back to the original signer",
+            async () => {
+                const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
 
-            const firstReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, firstReply);
+                const firstReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, firstReply);
 
-            const secondReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, secondReply);
+                const secondReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, secondReply);
 
-            const thirdReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
-            await waitForStoredCommentUpdateWithAssertions(context.subplebbit, thirdReply);
+                const thirdReply = await publishRandomReply(post, context.publisherPlebbit, { signer: authorSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit, thirdReply);
 
-            // Verify all aliases exist and map to the same original signer
-            const firstAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(firstReply.cid);
-            const secondAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(secondReply.cid);
-            const thirdAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(thirdReply.cid);
+                // Verify all aliases exist and map to the same original signer
+                const firstAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(firstReply.cid);
+                const secondAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(secondReply.cid);
+                const thirdAlias = context.subplebbit._dbHandler.queryAnonymityAliasByCommentCid(thirdReply.cid);
 
-            expect(firstAlias).to.exist;
-            expect(secondAlias).to.exist;
-            expect(thirdAlias).to.exist;
+                expect(firstAlias).to.exist;
+                expect(secondAlias).to.exist;
+                expect(thirdAlias).to.exist;
 
-            expect(firstAlias.originalAuthorSignerPublicKey).to.equal(authorSigner.publicKey);
-            expect(secondAlias.originalAuthorSignerPublicKey).to.equal(authorSigner.publicKey);
-            expect(thirdAlias.originalAuthorSignerPublicKey).to.equal(authorSigner.publicKey);
+                expect(firstAlias.originalAuthorSignerPublicKey).to.equal(authorSigner.publicKey);
+                expect(secondAlias.originalAuthorSignerPublicKey).to.equal(authorSigner.publicKey);
+                expect(thirdAlias.originalAuthorSignerPublicKey).to.equal(authorSigner.publicKey);
 
-            // Verify all aliases are unique
-            expect(firstAlias.aliasPrivateKey).to.not.equal(secondAlias.aliasPrivateKey);
-            expect(firstAlias.aliasPrivateKey).to.not.equal(thirdAlias.aliasPrivateKey);
-            expect(secondAlias.aliasPrivateKey).to.not.equal(thirdAlias.aliasPrivateKey);
+                // Verify all aliases are unique
+                expect(firstAlias.aliasPrivateKey).to.not.equal(secondAlias.aliasPrivateKey);
+                expect(firstAlias.aliasPrivateKey).to.not.equal(thirdAlias.aliasPrivateKey);
+                expect(secondAlias.aliasPrivateKey).to.not.equal(thirdAlias.aliasPrivateKey);
 
-            await post.stop();
-            await firstReply.stop();
-            await secondReply.stop();
-            await thirdReply.stop();
-        });
+                await post.stop();
+                await firstReply.stop();
+                await secondReply.stop();
+                await thirdReply.stop();
+            }
+        );
 
-        it("Spec: sub owner can resolve anonymized author addresses back to the original author address", async () => {
+        it.sequential("Spec: sub owner can resolve anonymized author addresses back to the original author address", async () => {
             const post = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: authorSigner });
             await waitForStoredCommentUpdateWithAssertions(context.subplebbit, post);
 
