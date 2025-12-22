@@ -71,6 +71,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._updateRpcClientStateFromUpdatingState(newUpdatingState);
     }
     async _initMirroringUpdatingSubplebbit(updatingSubplebbit) {
+        if (updatingSubplebbit === this)
+            return; // avoid mirroring to itself
         this._updatingRpcSubInstanceWithListeners = {
             subplebbit: updatingSubplebbit,
             error: (err) => this.emit("error", err),
@@ -166,7 +168,11 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._setState("updating");
         try {
             if (this._plebbit._updatingSubplebbits[this.address]) {
-                await this._initMirroringUpdatingSubplebbit(this._plebbit._updatingSubplebbits[this.address]);
+                const existingSub = this._plebbit._updatingSubplebbits[this.address];
+                if (existingSub === this)
+                    await this._initRpcUpdateSubscription();
+                else
+                    await this._initMirroringUpdatingSubplebbit(existingSub);
             }
             else if (this._plebbit._startedSubplebbits[this.address]) {
                 await this._initMirroringUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address]);

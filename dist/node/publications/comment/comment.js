@@ -1,5 +1,5 @@
 import retry from "retry";
-import { hideClassPrivateProps, removeUndefinedValuesRecursively, retryKuboIpfsAdd, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, removeUndefinedValuesRecursively, retryKuboIpfsAdd, shortifyCid } from "../../util.js";
 import Publication from "../publication.js";
 import Logger from "@plebbit/plebbit-logger";
 import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdate } from "../../signer/signatures.js";
@@ -193,8 +193,10 @@ export class Comment extends Publication {
         if (!this.raw.pubsubMessageToPublish)
             throw Error("comment._pubsubMsgToPublish should be defined at this point");
         // verify that the sub did not change any props that we published
-        const pubsubMsgFromCommentIpfs = remeda.pick(decryptedVerification.comment, remeda.keys.strict(this.raw.pubsubMessageToPublish));
-        if (!remeda.isDeepEqual(pubsubMsgFromCommentIpfs, this.raw.pubsubMessageToPublish)) {
+        const keysToCompare = remeda.keys.strict(remeda.omit(this.raw.pubsubMessageToPublish, ["signature", "author"])); // we're omitting these two because that would fail because of anonymity features in subplebbit
+        const pubsubMsgFromCommentIpfs = remeda.pick(decryptedVerification.comment, keysToCompare);
+        const pubsubMsgFromPublishedPubsubMsg = remeda.pick(this.raw.pubsubMessageToPublish, keysToCompare);
+        if (!remeda.isDeepEqual(pubsubMsgFromCommentIpfs, pubsubMsgFromPublishedPubsubMsg)) {
             const error = new PlebbitError("ERR_SUB_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS", {
                 pubsubMsgFromSub: pubsubMsgFromCommentIpfs,
                 originalPubsubMsg: this.raw.pubsubMessageToPublish
@@ -266,6 +268,10 @@ export class Comment extends Publication {
         }
         if (decryptedVerification.commentUpdate.pendingApproval) {
             log("comment is pending approval, we're not gonna add it to IPFS node for now", this.cid);
+            return;
+        }
+        if (decryptedVerification.comment.signature.publicKey !== this.raw.pubsubMessageToPublish?.signature?.publicKey) {
+            log("We received a CommentIpfs whose publicKey is different than the one we published. We're gonna assume it's annoymized and skip adding to IPFS");
             return;
         }
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
@@ -713,6 +719,8 @@ export class Comment extends Publication {
         }
     }
     _useUpdatingCommentFromPlebbit(updatingCommentInstance) {
+        if (updatingCommentInstance === this)
+            return; // don't mirror to itself; prevents recursive events
         this._updatingCommentInstance = {
             comment: updatingCommentInstance,
             statechange: async (newState) => {
@@ -774,8 +782,19 @@ export class Comment extends Publication {
         if (!this.cid)
             throw Error("Can't call comment.update() without defining cid");
         this._setStateWithEmission("updating");
-        if (this._plebbit._updatingComments[this.cid]) {
-            this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]); // this comment instance will be mirroring this._plebbit._updatingComments[this.cid]
+        const existingUpdatingComment = this._plebbit._updatingComments[this.cid];
+        if (existingUpdatingComment) {
+            if (existingUpdatingComment === this) {
+                // This instance is already tracked; start the update loop without mirroring to itself
+                if (this._plebbit._plebbitRpcClient) {
+                    await this._updateViaRpc();
+                }
+                else {
+                    this.loadCommentIpfsAndStartCommentUpdateSubscription().catch((e) => log.error("Failed to update comment", e));
+                }
+            }
+            else
+                this._useUpdatingCommentFromPlebbit(existingUpdatingComment); // this comment instance will be mirroring this._plebbit._updatingComments[this.cid]
         }
         else
             await this._setUpNewUpdatingCommentInstance(); // Create a this._plebbit._updatingComments[this.cid], then mirror it
@@ -842,6 +861,12 @@ export class Comment extends Publication {
                 log("Cleaning up plebbit._updatingComments", this.cid, "There are no comments using it for updates");
                 await this._updatingCommentInstance.comment.stop();
             }
+            else if (this._updatingCommentInstance.comment._numOfListenersForUpdatingInstance === 0 &&
+                this._updatingCommentInstance.comment.state === "stopped" &&
+                this._plebbit._updatingComments[this.cid] === this._updatingCommentInstance.comment) {
+                // No listeners left and the updating comment is already stopped; remove the stale entry
+                delete this._plebbit._updatingComments[this.cid];
+            }
             this._updatingCommentInstance = undefined;
         }
     }
@@ -857,7 +882,7 @@ export class Comment extends Publication {
         const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub
         const signatureValidity = await verifyCommentPubsubMessage(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
-            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
+            throw new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
     async publish() {
         await this._validateSignature();

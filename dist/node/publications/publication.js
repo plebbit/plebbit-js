@@ -675,6 +675,7 @@ class Publication extends TypedEmitter {
         }
         else if (this.state === "stopped") {
             log.error(`Publication is stopped, will not re-publish`);
+            await this._postSucessOrFailurePublishing();
         }
         else {
             if (currentPubsubProviderIndex + 1 === providers.length) {

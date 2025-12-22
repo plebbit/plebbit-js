@@ -817,6 +817,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<{
 }, z.core.$strict>;
 export declare const CommentUpdateForChallengeVerificationSignedPropertyNames: ("author" | "protocolVersion" | "cid" | "pendingApproval")[];
 export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject<{
+    signature: z.ZodObject<{
+        type: z.ZodString;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString>;
+    }, z.core.$strip>;
     flair: z.ZodOptional<z.ZodObject<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;

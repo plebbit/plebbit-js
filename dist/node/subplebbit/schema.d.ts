@@ -55,6 +55,11 @@ export declare const SubplebbitFeaturesSchema: z.ZodObject<{
     noDownvotes: z.ZodOptional<z.ZodBoolean>;
     requirePostLink: z.ZodOptional<z.ZodBoolean>;
     requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    anonymityMode: z.ZodOptional<z.ZodEnum<{
+        "per-post": "per-post";
+        "per-reply": "per-reply";
+        "per-author": "per-author";
+    }>>;
 }, z.core.$loose>;
 export declare const ChallengeOptionInputSchema: z.ZodObject<{
     option: z.ZodString;
@@ -680,6 +685,11 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>;
     suggested: z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -1000,6 +1010,11 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             noDownvotes: z.ZodOptional<z.ZodBoolean>;
             requirePostLink: z.ZodOptional<z.ZodBoolean>;
             requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            anonymityMode: z.ZodOptional<z.ZodEnum<{
+                "per-post": "per-post";
+                "per-reply": "per-reply";
+                "per-author": "per-author";
+            }>>;
         }, z.core.$loose>>;
         suggested: z.ZodOptional<z.ZodObject<{
             primaryColor: z.ZodOptional<z.ZodString>;
@@ -1116,6 +1131,11 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -1427,6 +1447,11 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -1526,6 +1551,11 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -1631,6 +1661,11 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -1802,6 +1837,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -2337,6 +2377,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>;
     suggested: z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -2450,6 +2495,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -2985,6 +3035,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>;
     suggested: z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -3034,6 +3089,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -3139,6 +3199,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -3306,6 +3371,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>>;
     suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;
@@ -3841,6 +3911,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+        anonymityMode: z.ZodOptional<z.ZodEnum<{
+            "per-post": "per-post";
+            "per-reply": "per-reply";
+            "per-author": "per-author";
+        }>>;
     }, z.core.$loose>>;
     suggested: z.ZodOptional<z.ZodObject<{
         primaryColor: z.ZodOptional<z.ZodString>;

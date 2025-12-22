@@ -322,6 +322,11 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 noDownvotes: z.ZodOptional<z.ZodBoolean>;
                 requirePostLink: z.ZodOptional<z.ZodBoolean>;
                 requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+                anonymityMode: z.ZodOptional<z.ZodEnum<{
+                    "per-post": "per-post";
+                    "per-reply": "per-reply";
+                    "per-author": "per-author";
+                }>>;
             }, z.core.$loose>>>;
             suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
                 primaryColor: z.ZodOptional<z.ZodString>;
@@ -680,6 +685,11 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 noDownvotes: z.ZodOptional<z.ZodBoolean>;
                 requirePostLink: z.ZodOptional<z.ZodBoolean>;
                 requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+                anonymityMode: z.ZodOptional<z.ZodEnum<{
+                    "per-post": "per-post";
+                    "per-reply": "per-reply";
+                    "per-author": "per-author";
+                }>>;
             }, z.core.$loose>>>;
             suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
                 primaryColor: z.ZodOptional<z.ZodString>;

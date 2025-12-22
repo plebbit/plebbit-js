@@ -118,10 +118,10 @@ export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.p
     .merge(z.object({ pendingApproval: z.boolean().optional() }))
     .strict();
 export const CommentUpdateForChallengeVerificationSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateForChallengeVerificationSchema.shape, ["signature"]));
-const originalFields = (remeda
+const originalFields = remeda
     .intersection(remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape), remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"])))
-    .concat("content") // have to hard code this here because Comment.content uses CommentUpdate.edit.content
-);
+    .concat("content")
+    .concat("signature"); // have to hard code this here because Comment.content uses CommentUpdate.edit.content
 const originalFieldsObj = remeda.fromKeys(originalFields, () => true);
 export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageWithFlexibleAuthorSchema.pick(originalFieldsObj).strip();
 // Comment table here

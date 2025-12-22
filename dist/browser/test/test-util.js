@@ -1,5 +1,5 @@
 import PlebbitIndex from "../index.js";
-import { calculateStringSizeSameAsIpfsAddCidV0, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import { calculateStringSizeSameAsIpfsAddCidV0, removeUndefinedValuesRecursively, retryKuboIpfsAdd, timestamp } from "../util.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { v4 as uuidv4 } from "uuid";
@@ -890,7 +890,8 @@ export async function publishChallengeVerificationMessageWithEncryption(publicat
 export async function addStringToIpfs(content) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
-    const cid = (await ipfsClient._client.add(content)).path;
+    const cid = (await retryKuboIpfsAdd({ content, ipfsClient: ipfsClient._client, log: Logger("plebbit-js:test-util:addStringToIpfs") }))
+        .path;
     await plebbit.destroy();
     return cid;
 }
@@ -1089,6 +1090,53 @@ export async function createMockedSubplebbitIpns(subplebbitOpts) {
     await ipnsObj.plebbit.destroy();
     return { subplebbitRecord, ipnsObj };
 }
+export async function createStaticSubplebbitRecordForComment(opts) {
+    const { plebbit, commentOptions = {}, invalidateSubplebbitSignature = false } = opts || {};
+    if (commentOptions.parentCid && !commentOptions.postCid)
+        throw Error("postCid must be provided when parentCid is supplied for a reply");
+    const ipnsObj = await createNewIpns();
+    let subplebbitRecord;
+    try {
+        subplebbitRecord = {
+            ...(await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" })).toJSONIpfs(),
+            posts: undefined,
+            address: ipnsObj.signer.address,
+            pubsubTopic: ipnsObj.signer.address
+        };
+        if (!subplebbitRecord.posts)
+            delete subplebbitRecord.posts;
+        subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
+        if (invalidateSubplebbitSignature)
+            subplebbitRecord.updatedAt = (subplebbitRecord.updatedAt || timestamp()) + 1234;
+        await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+    }
+    finally {
+        await ipnsObj.plebbit.destroy();
+    }
+    const commentPlebbit = plebbit || (await mockPlebbitNoDataPathWithOnlyKuboClient());
+    const shouldDestroyCommentPlebbit = !plebbit;
+    try {
+        const commentToPublish = await commentPlebbit.createComment({
+            ...commentOptions,
+            signer: commentOptions.signer || (await commentPlebbit.createSigner()),
+            subplebbitAddress: subplebbitRecord.address,
+            title: commentOptions.title ?? `Mock Post - ${Date.now()}`,
+            content: commentOptions.content ?? `Mock content - ${Date.now()}`
+        });
+        const depth = typeof commentOptions.depth === "number" ? commentOptions.depth : commentOptions.parentCid ? 1 : 0;
+        const commentIpfs = { ...commentToPublish.raw.pubsubMessageToPublish, depth };
+        if (commentOptions.parentCid) {
+            commentIpfs.parentCid = commentOptions.parentCid;
+            commentIpfs.postCid = commentOptions.postCid;
+        }
+        const commentCid = await addStringToIpfs(JSON.stringify(commentIpfs));
+        return { commentCid, subplebbitAddress: subplebbitRecord.address };
+    }
+    finally {
+        if (shouldDestroyCommentPlebbit)
+            await commentPlebbit.destroy();
+    }
+}
 export function jsonifySubplebbitAndRemoveInternalProps(sub) {
     const jsonfied = JSON.parse(JSON.stringify(sub));
     delete jsonfied["posts"]["clients"];
@@ -1246,41 +1294,6 @@ export async function createCommentUpdateWithInvalidSignature(commentCid) {
     await comment.stop();
     invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
     return invalidCommentUpdateJson;
-}
-export async function mockPlebbitToReturnSpecificSubplebbit(plebbit, subAddress, subplebbitRecord) {
-    const sub = plebbit._updatingSubplebbits[subAddress];
-    if (!sub)
-        throw Error("Can't mock sub when it's not being updated");
-    if (plebbit._plebbitRpcClient)
-        throw Error("Can't mock sub to return specific record when plebbit is using RPC");
-    const clearOut = () => {
-        delete sub.raw.subplebbitIpfs;
-        delete sub.updatedAt;
-        sub._clientsManager._updateCidsAlreadyLoaded.clear();
-        delete sub.updateCid;
-    };
-    clearOut();
-    sub.once("update", () => clearOut());
-    const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
-    if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
-        const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
-        //@ts-expect-error
-        sub._clientsManager._fetchWithLimit = async (...args) => {
-            const url = args[0];
-            if (url.includes("ipns")) {
-                return {
-                    ...args,
-                    resText: JSON.stringify(subplebbitRecord)
-                };
-            }
-            else
-                return originalFetch(...args);
-        };
-    }
-    else {
-        // we're using kubo/helia
-        sub._clientsManager.resolveIpnsToCidP2P = async () => subplebbitRecordCid;
-    }
 }
 export function mockPlebbitToTimeoutFetchingCid(plebbit) {
     const originalFetch = plebbit._clientsManager._fetchCidP2P;

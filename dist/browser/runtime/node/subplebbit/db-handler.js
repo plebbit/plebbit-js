@@ -10,7 +10,7 @@ import Database from "better-sqlite3";
 import { sha256 } from "js-sha256";
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
-import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
+import { getPlebbitAddressFromPublicKey, getPlebbitAddressFromPublicKeySync } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentEdit, verifyCommentIpfs } from "../../../signer/signatures.js";
@@ -27,7 +27,8 @@ const TABLES = Object.freeze({
     COMMENT_UPDATES: "commentUpdates",
     VOTES: "votes",
     COMMENT_MODERATIONS: "commentModerations",
-    COMMENT_EDITS: "commentEdits"
+    COMMENT_EDITS: "commentEdits",
+    ANONYMITY_ALIASES: "anonymityAliases"
 });
 export class DbHandler {
     constructor(subplebbit) {
@@ -310,6 +311,17 @@ export class DbHandler {
             )
         `);
     }
+    _createAnonymityAliasesTable(tableName) {
+        this._db.exec(`
+            CREATE TABLE IF NOT EXISTS ${tableName} (
+                commentCid TEXT NOT NULL PRIMARY KEY UNIQUE REFERENCES ${TABLES.COMMENTS}(cid) ON DELETE CASCADE,
+                aliasPrivateKey TEXT NOT NULL,
+                originalAuthorSignerPublicKey TEXT NOT NULL,
+                mode TEXT NOT NULL CHECK(mode IN ('per-post', 'per-reply', 'per-author')),
+                insertedAt INTEGER NOT NULL
+            )
+        `);
+    }
     getDbVersion() {
         const result = this._db.pragma("user_version", { simple: true });
         return Number(result);
@@ -359,7 +371,8 @@ export class DbHandler {
             this._createCommentUpdatesTable.bind(this),
             this._createVotesTable.bind(this),
             this._createCommentModerationsTable.bind(this),
-            this._createCommentEditsTable.bind(this)
+            this._createCommentEditsTable.bind(this),
+            this._createAnonymityAliasesTable.bind(this)
         ];
         const tables = Object.values(TABLES);
         for (let i = 0; i < tables.length; i++) {
@@ -676,6 +689,21 @@ export class DbHandler {
             }
         });
         insertMany(processedComments);
+    }
+    insertAnonymityAliases(aliases) {
+        if (aliases.length === 0)
+            return;
+        const processedAliases = this._processRecordsForDbBeforeInsert(aliases);
+        const stmt = this._db.prepare(`
+            INSERT OR REPLACE INTO ${TABLES.ANONYMITY_ALIASES}
+            (commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt)
+            VALUES (@commentCid, @aliasPrivateKey, @originalAuthorSignerPublicKey, @mode, @insertedAt)
+        `);
+        const insertMany = this._db.transaction((items) => {
+            for (const alias of items)
+                stmt.run(alias);
+        });
+        insertMany(processedAliases);
     }
     upsertCommentUpdates(updates) {
         const processedUpdates = this._processRecordsForDbBeforeInsert(updates);
@@ -1187,6 +1215,37 @@ export class DbHandler {
             return undefined;
         return this._parseCommentsTableRow(row);
     }
+    queryAnonymityAliasByCommentCid(commentCid) {
+        const row = this._db
+            .prepare(`SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt FROM ${TABLES.ANONYMITY_ALIASES} WHERE commentCid = ?`)
+            .get(commentCid);
+        return row;
+    }
+    queryAnonymityAliasForPost(originalAuthorSignerPublicKey, postCid) {
+        const row = this._db
+            .prepare(`
+            SELECT alias.commentCid, alias.aliasPrivateKey, alias.originalAuthorSignerPublicKey, alias.mode, alias.insertedAt
+            FROM ${TABLES.ANONYMITY_ALIASES} AS alias
+            INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+            WHERE alias.mode = 'per-post' AND alias.originalAuthorSignerPublicKey = ? AND comments.postCid = ?
+            ORDER BY alias.insertedAt ASC
+            LIMIT 1
+        `)
+            .get(originalAuthorSignerPublicKey, postCid);
+        return row;
+    }
+    queryAnonymityAliasForAuthor(originalAuthorSignerPublicKey) {
+        const row = this._db
+            .prepare(`
+            SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt
+            FROM ${TABLES.ANONYMITY_ALIASES}
+            WHERE mode = 'per-author' AND originalAuthorSignerPublicKey = ?
+            ORDER BY insertedAt ASC
+            LIMIT 1
+        `)
+            .get(originalAuthorSignerPublicKey);
+        return row;
+    }
     _queryCommentAuthorAndParentWithoutParsing(cid) {
         const row = this._db.prepare(`SELECT authorSignerAddress, parentCid FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid);
         if (!row)
@@ -1493,8 +1552,13 @@ export class DbHandler {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all();
         return results.map((r) => this._parseCommentsTableRow(r));
     }
-    queryAuthorModEdits(authorSignerAddress) {
-        const authorCommentCids = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE authorSignerAddress = ?`).all(authorSignerAddress).map((r) => r.cid);
+    queryAuthorModEdits(authorSignerAddresses) {
+        if (authorSignerAddresses.length === 0)
+            return {};
+        const placeholdersForAuthors = authorSignerAddresses.map(() => "?").join(",");
+        const authorCommentCids = this._db
+            .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE authorSignerAddress IN (${placeholdersForAuthors})`)
+            .all(...authorSignerAddresses).map((r) => r.cid);
         if (authorCommentCids.length === 0)
             return {};
         const placeholders = authorCommentCids.map(() => "?").join(",");
@@ -1515,15 +1579,60 @@ export class DbHandler {
         return aggregateAuthor;
     }
     querySubplebbitAuthor(authorSignerAddress) {
+        const authorSignerAddresses = new Set([authorSignerAddress]);
+        // If the provided address is the original signer, include all alias signer addresses for that author.
+        const aliasRowsForOriginal = this._db
+            .prepare(`
+            SELECT alias.commentCid, alias.originalAuthorSignerPublicKey
+            FROM ${TABLES.ANONYMITY_ALIASES} AS alias
+        `)
+            .all();
+        for (const aliasRow of aliasRowsForOriginal) {
+            try {
+                const originalAddress = getPlebbitAddressFromPublicKeySync(aliasRow.originalAuthorSignerPublicKey);
+                if (originalAddress === authorSignerAddress) {
+                    const commentRow = this._db
+                        .prepare(`SELECT authorSignerAddress FROM ${TABLES.COMMENTS} WHERE cid = ?`)
+                        .get(aliasRow.commentCid);
+                    if (commentRow?.authorSignerAddress)
+                        authorSignerAddresses.add(commentRow.authorSignerAddress);
+                }
+            }
+            catch {
+                // ignore malformed keys
+            }
+        }
+        // If the provided address is an alias, include the original signer address for that alias.
+        const aliasRowsForAliasAddress = this._db
+            .prepare(`
+            SELECT alias.originalAuthorSignerPublicKey
+            FROM ${TABLES.ANONYMITY_ALIASES} AS alias
+            INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+            WHERE comments.authorSignerAddress = ?
+        `)
+            .all(authorSignerAddress);
+        for (const aliasRow of aliasRowsForAliasAddress) {
+            try {
+                const originalAddress = getPlebbitAddressFromPublicKeySync(aliasRow.originalAuthorSignerPublicKey);
+                authorSignerAddresses.add(originalAddress);
+            }
+            catch {
+                // ignore malformed keys
+            }
+        }
+        const authorSignerAddressArray = [...authorSignerAddresses];
+        if (authorSignerAddressArray.length === 0)
+            return undefined;
+        const placeholders = authorSignerAddressArray.map(() => "?").join(", ");
         const authorCommentsData = this._db
             .prepare(`
             SELECT c.depth, c.rowid, c.timestamp, c.cid,
                    COALESCE(SUM(CASE WHEN v.vote = 1 THEN 1 ELSE 0 END), 0) as upvoteCount,
                    COALESCE(SUM(CASE WHEN v.vote = -1 THEN 1 ELSE 0 END), 0) as downvoteCount
             FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.VOTES} v ON c.cid = v.commentCid
-            WHERE c.authorSignerAddress = ? GROUP BY c.cid
+            WHERE c.authorSignerAddress IN (${placeholders}) GROUP BY c.cid
         `)
-            .all(authorSignerAddress);
+            .all(...authorSignerAddressArray);
         if (authorCommentsData.length === 0)
             return undefined;
         const authorPosts = authorCommentsData.filter((c) => c.depth === 0);
@@ -1536,7 +1645,7 @@ export class DbHandler {
         const firstCommentTimestamp = remeda.minBy(authorCommentsData, (c) => c.rowid)?.timestamp;
         if (typeof firstCommentTimestamp !== "number")
             throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
-        const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddress);
+        const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddressArray);
         return { postScore, replyScore, lastCommentCid, ...modAuthorEdits, firstCommentTimestamp };
     }
     _getAllDescendantCids(cid) {
@@ -1592,6 +1701,7 @@ export class DbHandler {
             const commentTableRow = this.queryComment(cid);
             this._db.prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ?`).run(cid);
             this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE commentCid = ?`).run(cid);
+            this._db.prepare(`DELETE FROM ${TABLES.ANONYMITY_ALIASES} WHERE commentCid = ?`).run(cid);
             const commentUpdate = this.queryStoredCommentUpdate({ cid });
             if (commentUpdate) {
                 this._db.prepare(`DELETE FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).run(cid);

@@ -422,6 +422,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
             noDownvotes?: boolean | undefined;
             requirePostLink?: boolean | undefined;
             requirePostLinkIsMedia?: boolean | undefined;
+            anonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
         } | undefined;
         suggested?: {
             [x: string]: unknown;
@@ -445,6 +446,16 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
         publishToIpns: (content: string) => Promise<void>;
         plebbit: Plebbit;
     };
+}>;
+export declare function createStaticSubplebbitRecordForComment(opts?: {
+    plebbit?: Plebbit;
+    commentOptions?: Partial<CreateCommentOptions & {
+        depth?: number;
+    }>;
+    invalidateSubplebbitSignature?: boolean;
+}): Promise<{
+    commentCid: string;
+    subplebbitAddress: string;
 }>;
 export declare function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit): Omit<any, "signer" | "state" | "clients" | "settings" | "startedState" | "editable" | "updatingState" | "started">;
 export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit): Omit<{
@@ -503,6 +514,7 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        anonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {
         [x: string]: unknown;
@@ -838,7 +850,6 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
         pageCids?: Record<string, string> | undefined;
     } | undefined;
 }>;
-export declare function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, subAddress: string, subplebbitRecord: any): Promise<void>;
 export declare function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit): {
     cleanUp: () => void;
 };

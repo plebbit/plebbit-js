@@ -7,7 +7,7 @@ import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLett
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
-import { cleanUpBeforePublishing, signChallengeMessage, signChallengeVerification, signCommentUpdate, signCommentUpdateForChallengeVerification, signSubplebbit, verifyChallengeAnswer, verifyChallengeRequest, verifyCommentEdit, verifyCommentModeration, verifyCommentUpdate, verifySubplebbitEdit } from "../../../signer/signatures.js";
+import { cleanUpBeforePublishing, signChallengeMessage, signChallengeVerification, signComment, signCommentEdit, signCommentUpdate, signCommentUpdateForChallengeVerification, signSubplebbit, verifyChallengeAnswer, verifyChallengeRequest, verifyCommentEdit, verifyCommentModeration, verifyCommentUpdate, verifySubplebbitEdit } from "../../../signer/signatures.js";
 import { calculateExpectedSignatureSize, calculateInlineRepliesBudget, deriveCommentIpfsFromCommentTableRow, getThumbnailPropsOfLink, importSignerIntoKuboNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { SignerWithPublicKeyAddress, decryptEd25519AesGcmPublicKeyBuffer, verifyCommentPubsubMessage, verifySubplebbit, verifyVote } from "../../../signer/index.js";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
@@ -799,6 +799,69 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             previousCid: commentsUnderParent[0]?.cid
         };
     }
+    async _resolveAliasPrivateKeyForCommentPublication(opts) {
+        if (opts.mode === "per-post") {
+            // For a new post (no postCid yet), always generate a fresh alias; once stored the postCid will be used for reuse.
+            if (opts.postCid) {
+                const existing = this._dbHandler.queryAnonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
+                if (existing?.aliasPrivateKey)
+                    return existing.aliasPrivateKey;
+            }
+            return (await this._plebbit.createSigner()).privateKey;
+        }
+        else if (opts.mode === "per-reply") {
+            const signer = await this._plebbit.createSigner();
+            return signer.privateKey;
+        }
+        else if (opts.mode === "per-author") {
+            const existing = this._dbHandler.queryAnonymityAliasForAuthor(opts.originalAuthorSignerPublicKey);
+            if (existing?.aliasPrivateKey)
+                return existing.aliasPrivateKey;
+            const signer = await this._plebbit.createSigner();
+            return signer.privateKey;
+        }
+        else
+            throw Error(`Unsupported anonymityMode (${opts.mode})`);
+    }
+    async _prepareCommentWithAnonymity(originalComment) {
+        const mode = this.features?.anonymityMode;
+        if (!mode)
+            return { publication: originalComment };
+        const originalAuthorSignerPublicKey = originalComment.signature.publicKey;
+        const postCid = originalComment.postCid;
+        const aliasPrivateKey = await this._resolveAliasPrivateKeyForCommentPublication({
+            mode,
+            originalAuthorSignerPublicKey,
+            postCid
+        });
+        const aliasSigner = await this._plebbit.createSigner({ privateKey: aliasPrivateKey, type: "ed25519" });
+        const sanitizedAuthor = { address: aliasSigner.address };
+        const anonymizedComment = remeda.clone(originalComment);
+        anonymizedComment.author = sanitizedAuthor;
+        anonymizedComment.signature = await signComment({ ...anonymizedComment, signer: aliasSigner }, this._plebbit);
+        return {
+            publication: anonymizedComment,
+            anonymity: {
+                aliasPrivateKey,
+                originalAuthorSignerPublicKey,
+                mode,
+                originalComment
+            }
+        };
+    }
+    async _prepareCommentEditWithAlias(originalEdit) {
+        const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(originalEdit.commentCid);
+        if (!aliasSignerOfComment)
+            return originalEdit;
+        const aliasSigner = await this._plebbit.createSigner({
+            privateKey: aliasSignerOfComment.aliasPrivateKey,
+            type: "ed25519"
+        });
+        const commentEditSignedByAlias = remeda.clone(originalEdit);
+        commentEditSignedByAlias.author = { address: aliasSigner.address };
+        commentEditSignedByAlias.signature = await signCommentEdit({ ...commentEditSignedByAlias, signer: aliasSigner }, this._plebbit);
+        return commentEditSignedByAlias;
+    }
     async storeComment(commentPubsub, pendingApproval) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storeComment");
         const commentIpfs = {
@@ -848,12 +911,27 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async storePublication(request, pendingApproval) {
         if (request.vote)
             return this.storeVote(request.vote, request.challengeRequestId);
-        else if (request.commentEdit)
-            return this.storeCommentEdit(request.commentEdit, request.challengeRequestId);
+        else if (request.commentEdit) {
+            const commentEditWithAlias = await this._prepareCommentEditWithAlias(request.commentEdit);
+            return this.storeCommentEdit(commentEditWithAlias, request.challengeRequestId);
+        }
         else if (request.commentModeration)
             return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
-        else if (request.comment)
-            return this.storeComment(request.comment, pendingApproval);
+        else if (request.comment) {
+            const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
+            const storedComment = await this.storeComment(publication, pendingApproval);
+            if (anonymity)
+                this._dbHandler.insertAnonymityAliases([
+                    {
+                        commentCid: storedComment.cid,
+                        aliasPrivateKey: anonymity.aliasPrivateKey,
+                        originalAuthorSignerPublicKey: anonymity.originalAuthorSignerPublicKey,
+                        mode: anonymity.mode,
+                        insertedAt: timestamp()
+                    }
+                ]);
+            return storedComment;
+        }
         else if (request.subplebbitEdit)
             return this.storeSubplebbitEditPublication(request.subplebbitEdit, request.challengeRequestId);
         else
@@ -979,8 +1057,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
             }
             catch (e) {
-                if (e.code)
-                    failureReason = e.message;
+                failureReason = e.message;
+                log.error("Failed to store store Publication And Encrypt For ChallengeVerification", e);
             }
             const toSignMsg = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
@@ -1162,12 +1240,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentToBeEdited = this._dbHandler.queryComment(commentEditPublication.commentCid); // We assume commentToBeEdited to be defined because we already tested for its existence above
             if (!commentToBeEdited)
                 return messages.ERR_COMMENT_EDIT_NO_COMMENT_TO_EDIT;
-            const editSignedByOriginalAuthor = commentEditPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            if (!editSignedByOriginalAuthor)
-                return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
             const commentEditInDb = this._dbHandler.hasCommentEditWithSignatureEncoded(commentEditPublication.signature.signature);
             if (commentEditInDb)
                 return messages.ERR_DUPLICATE_COMMENT_EDIT;
+            const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(commentToBeEdited.cid);
+            if (aliasSignerOfComment) {
+                const editSignedByOriginalAuthor = commentEditPublication.signature.publicKey === aliasSignerOfComment.originalAuthorSignerPublicKey;
+                if (!editSignedByOriginalAuthor)
+                    return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
+            }
+            else {
+                const editSignedByOriginalAuthor = commentEditPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
+                if (!editSignedByOriginalAuthor)
+                    return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
+            }
         }
         return undefined;
     }

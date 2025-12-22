@@ -76,6 +76,11 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            anonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
+                "per-post": "per-post";
+                "per-reply": "per-reply";
+                "per-author": "per-author";
+            }>>;
         }, import("zod/v4/core").$loose>>>;
         suggested: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             primaryColor: import("zod").ZodOptional<import("zod").ZodString>;
@@ -217,6 +222,11 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            anonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
+                "per-post": "per-post";
+                "per-reply": "per-reply";
+                "per-author": "per-author";
+            }>>;
         }, import("zod/v4/core").$loose>>>;
         suggested: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             primaryColor: import("zod").ZodOptional<import("zod").ZodString>;
@@ -360,6 +370,11 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                anonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
+                    "per-post": "per-post";
+                    "per-reply": "per-reply";
+                    "per-author": "per-author";
+                }>>;
             }, import("zod/v4/core").$loose>>>;
             suggested: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
                 primaryColor: import("zod").ZodOptional<import("zod").ZodString>;

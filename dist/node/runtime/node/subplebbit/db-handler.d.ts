@@ -6,11 +6,7 @@ import type { CommentsTableRow, CommentsTableRowInsert, CommentUpdatesRow, Comme
 import type { PageIpfs } from "../../../pages/types.js";
 import type { CommentModerationsTableRowInsert } from "../../../publications/comment-moderation/types.js";
 import type { VotesTableRow, VotesTableRowInsert } from "../../../publications/vote/types.js";
-export interface PurgedCommentTableRows {
-    commentTableRow: CommentsTableRow;
-    commentUpdateTableRow?: CommentUpdatesRow;
-}
-type CommentCidWithReplies = Pick<CommentsTableRow, "cid"> & Pick<CommentUpdatesRow, "replies">;
+import type { AnonymityAliasRow, CommentCidWithReplies, PurgedCommentTableRows } from "./db-handler-types.js";
 export declare class DbHandler {
     private _db;
     private _subplebbit;
@@ -45,6 +41,7 @@ export declare class DbHandler {
     private _createVotesTable;
     private _createCommentEditsTable;
     private _createCommentModerationsTable;
+    private _createAnonymityAliasesTable;
     getDbVersion(): number;
     _migrateOldSettings(oldSettings: InternalSubplebbitRecordBeforeFirstUpdateType["settings"]): {
         fetchThumbnailUrls?: boolean | undefined;
@@ -97,6 +94,7 @@ export declare class DbHandler {
     private _deleteCommentEditRow;
     insertVotes(votes: VotesTableRowInsert[]): void;
     insertComments(comments: CommentsTableRowInsert[]): void;
+    insertAnonymityAliases(aliases: AnonymityAliasRow[]): void;
     upsertCommentUpdates(updates: CommentUpdatesTableRowInsert[]): void;
     insertCommentModerations(moderations: CommentModerationsTableRowInsert[]): void;
     insertCommentEdits(edits: CommentEditsTableRowInsert[]): void;
@@ -124,6 +122,9 @@ export declare class DbHandler {
     queryFirstCommentWithDepth(commentDepth: number): CommentsTableRow | undefined;
     queryCombinedHashOfPendingComments(): string;
     queryComment(cid: string): CommentsTableRow | undefined;
+    queryAnonymityAliasByCommentCid(commentCid: string): AnonymityAliasRow | undefined;
+    queryAnonymityAliasForPost(originalAuthorSignerPublicKey: string, postCid: string): AnonymityAliasRow | undefined;
+    queryAnonymityAliasForAuthor(originalAuthorSignerPublicKey: string): AnonymityAliasRow | undefined;
     private _queryCommentAuthorAndParentWithoutParsing;
     private _queryCommentCounts;
     queryPostsWithOutdatedBuckets(buckets: number[]): {
@@ -154,7 +155,7 @@ export declare class DbHandler {
     queryLatestPostCid(): Pick<CommentsTableRow, "cid"> | undefined;
     queryLatestCommentCid(): Pick<CommentsTableRow, "cid"> | undefined;
     queryAllCommentsOrderedByIdAsc(): CommentsTableRow[];
-    queryAuthorModEdits(authorSignerAddress: string): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
+    queryAuthorModEdits(authorSignerAddresses: string[]): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
     querySubplebbitAuthor(authorSignerAddress: string): SubplebbitAuthor | undefined;
     private _getAllDescendantCids;
     purgeComment(cid: string, isNestedCall?: boolean): PurgedCommentTableRows[];
@@ -175,4 +176,3 @@ export declare class DbHandler {
     private _processRecordsForDbBeforeInsert;
     private _spreadExtraProps;
 }
-export {};
