@@ -1499,6 +1499,58 @@ export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalS
     return { subplebbitRecord, ipnsObj };
 }
 
+export async function createStaticSubplebbitRecordForComment(opts: {
+    plebbit?: Plebbit;
+    commentOptions?: Partial<CreateCommentOptions & { depth?: number }>;
+    invalidateSubplebbitSignature?: boolean;
+}) {
+    const { plebbit, commentOptions = {}, invalidateSubplebbitSignature = false } = opts;
+    if (commentOptions.parentCid && !commentOptions.postCid) throw Error("postCid must be provided when parentCid is supplied for a reply");
+
+    const ipnsObj = await createNewIpns();
+    let subplebbitRecord: SubplebbitIpfsType | undefined;
+    try {
+        subplebbitRecord = <SubplebbitIpfsType>{
+            ...(await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" })).toJSONIpfs(),
+            posts: undefined,
+            address: ipnsObj.signer.address,
+            pubsubTopic: ipnsObj.signer.address
+        };
+        if (!subplebbitRecord.posts) delete subplebbitRecord.posts;
+        subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
+        if (invalidateSubplebbitSignature) subplebbitRecord.updatedAt = (subplebbitRecord.updatedAt || timestamp()) + 1234;
+        await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+    } finally {
+        await ipnsObj.plebbit.destroy();
+    }
+
+    const commentPlebbit = plebbit || (await mockPlebbitNoDataPathWithOnlyKuboClient());
+    const shouldDestroyCommentPlebbit = !plebbit;
+    try {
+        const commentToPublish = await commentPlebbit.createComment({
+            ...commentOptions,
+            signer: commentOptions.signer || (await commentPlebbit.createSigner()),
+            subplebbitAddress: subplebbitRecord!.address,
+            title: commentOptions.title ?? `Mock Post - ${Date.now()}`,
+            content: commentOptions.content ?? `Mock content - ${Date.now()}`
+        });
+
+        const depth = typeof commentOptions.depth === "number" ? commentOptions.depth : commentOptions.parentCid ? 1 : 0;
+
+        const commentIpfs: Record<string, any> = { ...commentToPublish.raw.pubsubMessageToPublish, depth };
+        if (commentOptions.parentCid) {
+            commentIpfs.parentCid = commentOptions.parentCid;
+            commentIpfs.postCid = commentOptions.postCid;
+        }
+
+        const commentCid = await addStringToIpfs(JSON.stringify(commentIpfs));
+
+        return { commentCid, subAddress: subplebbitRecord!.address };
+    } finally {
+        if (shouldDestroyCommentPlebbit) await commentPlebbit.destroy();
+    }
+}
+
 export function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit) {
     const jsonfied = JSON.parse(JSON.stringify(sub));
     delete jsonfied["posts"]["clients"];

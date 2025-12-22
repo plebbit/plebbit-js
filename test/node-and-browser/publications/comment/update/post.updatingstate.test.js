@@ -9,7 +9,7 @@ import {
     describeSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst,
     addStringToIpfs,
-    createMockedSubplebbitIpns
+    createStaticSubplebbitRecordForComment
 } from "../../../../../dist/node/test/test-util.js";
 import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
@@ -92,27 +92,6 @@ const normalizePostUpdateFailureStates = (states) => {
     return normalized;
 };
 
-const createPostCidWithInvalidSubplebbitRecord = async (plebbit) => {
-    const { subplebbitRecord, ipnsObj } = await createMockedSubplebbitIpns({});
-    const invalidSubplebbitRecord = {
-        ...subplebbitRecord,
-        updatedAt: subplebbitRecord.updatedAt + 1234 + Math.round(Math.random() * 1000)
-    };
-
-    await ipnsObj.publishToIpns(JSON.stringify(invalidSubplebbitRecord));
-
-    const postToPublish = await plebbit.createComment({
-        signer: await plebbit.createSigner(),
-        subplebbitAddress: subplebbitRecord.address,
-        title: `Mock Post - ${Date.now()}`,
-        content: `Mock content - ${Date.now()}`
-    });
-
-    const postIpfs = { ...postToPublish.raw.pubsubMessageToPublish, depth: 0 };
-    const postCid = await addStringToIpfs(JSON.stringify(postIpfs));
-    return { postCid, subAddress: subplebbitRecord.address };
-};
-
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc.concurrent(`post.updatingState - ${config.name}`, async () => {
         let plebbit;
@@ -179,14 +158,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { resolveAuthorAddresses: false } }); // set resolve to false so it wouldn't show up in states
-            let cleanupMockedSub;
             try {
-                const { postCid, subAddress, cleanup } = await createPostCidWithInvalidSubplebbitRecord(plebbit);
-                cleanupMockedSub = cleanup;
+                const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment({
+                    plebbit,
+                    invalidateSubplebbitSignature: true
+                });
 
                 const createdPost = await plebbit.createComment({
-                    cid: postCid,
-                    subplebbitAddress: subAddress
+                    cid: commentCid
                 });
                 expect(createdPost.content).to.be.undefined;
                 expect(createdPost.updatedAt).to.be.undefined;
@@ -218,7 +197,6 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 ];
                 expect(updatingStates).to.deep.equal(expectedUpdateStates);
             } finally {
-                if (cleanupMockedSub) await cleanupMockedSub();
                 await plebbit.destroy();
             }
         });
@@ -303,8 +281,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
             const dedicatedPlebbit = await config.plebbitInstancePromise();
             try {
-                const { postCid, subAddress } = await createPostCidWithInvalidSubplebbitRecord(dedicatedPlebbit);
-                const createdPost = await dedicatedPlebbit.createComment({ cid: postCid });
+                const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment({
+                    plebbit: dedicatedPlebbit,
+                    invalidateSubplebbitSignature: true
+                });
+                const createdPost = await dedicatedPlebbit.createComment({ cid: commentCid });
                 expect(createdPost.content).to.be.undefined;
                 expect(createdPost.updatedAt).to.be.undefined;
 
