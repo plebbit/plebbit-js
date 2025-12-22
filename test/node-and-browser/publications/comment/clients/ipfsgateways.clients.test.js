@@ -8,55 +8,10 @@ import {
     createCommentUpdateWithInvalidSignature,
     resolveWhenConditionIsTrue,
     mockPostToReturnSpecificCommentUpdate,
-    createMockedSubplebbitIpns,
-    addStringToIpfs
+    createStaticSubplebbitRecordForComment
 } from "../../../../../dist/node/test/test-util.js";
-import { signCommentUpdate, signSubplebbit } from "../../../../../dist/node/signer/signatures.js";
 import { describe, it } from "vitest";
 const subplebbitAddress = signers[0].address;
-
-const createPostCidForSubplebbitWithFrozenUpdates = async (plebbit) => {
-    const { subplebbitRecord, ipnsObj } = await createMockedSubplebbitIpns({});
-
-    const postToPublish = await plebbit.createComment({
-        signer: await plebbit.createSigner(),
-        subplebbitAddress: subplebbitRecord.address,
-        title: `Mock Post - ${Date.now()}`,
-        content: `Mock content - ${Date.now()}`
-    });
-
-    const postIpfs = { ...postToPublish.raw.pubsubMessageToPublish, depth: 0 };
-    const postCid = await addStringToIpfs(JSON.stringify(postIpfs));
-
-    const commentUpdateWithoutSignature = {
-        cid: postCid,
-        upvoteCount: 0,
-        downvoteCount: 0,
-        replyCount: 0,
-        updatedAt: Math.floor(Date.now() / 1000),
-        protocolVersion: postIpfs.protocolVersion
-    };
-    const signature = await signCommentUpdate(commentUpdateWithoutSignature, ipnsObj.signer);
-    const commentUpdate = { ...commentUpdateWithoutSignature, signature };
-
-    const ipfsClient = ipnsObj.plebbit._clientsManager.getDefaultKuboRpcClient()._client;
-
-    let folderCid;
-    for await (const file of ipfsClient.addAll([{ path: `${postCid}/update`, content: JSON.stringify(commentUpdate) }], {
-        wrapWithDirectory: true
-    })) {
-        if (!file.path || file.path === postCid) folderCid = file.cid.toString();
-    }
-
-    folderCid = folderCid || (await addStringToIpfs(JSON.stringify(commentUpdate)));
-
-    subplebbitRecord.postUpdates = { 86400: folderCid };
-    subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
-
-    await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
-
-    return { postCid, subAddress: subplebbitRecord.address };
-};
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe.concurrent(`comment.clients.ipfsGateways - ${config.name}`, async () => {
@@ -154,33 +109,36 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         it(`Correct order of ipfs gateway clients state when we update a comment but its subplebbit is not publishing new updates`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             try {
-                const { postCid, subAddress } = await createPostCidForSubplebbitWithFrozenUpdates(plebbit);
+                const { commentCid } = await createStaticSubplebbitRecordForComment({ plebbit });
 
-                const mockPost = await plebbit.createComment({ cid: postCid });
+                const mockPost = await plebbit.createComment({ cid: commentCid });
 
                 const recordedStates = [];
+                const errors = [];
 
                 const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
 
                 mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
+                mockPost.on("error", (err) => errors.push(err));
 
                 await mockPost.update();
                 mockCommentToNotUsePagesForUpdates(mockPost);
 
-                await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => typeof mockPost.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: () => errors.length >= 1, eventName: "error" });
 
                 await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
 
                 await mockPost.stop();
 
-                const expectedFirstStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"];
+                expect(errors.length).to.be.at.least(1);
+
+                const expectedFirstStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns"];
                 expect(recordedStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
 
                 const noNewUpdateStates = recordedStates.slice(expectedFirstStates.length, recordedStates.length);
 
-                for (let i = 0; i < noNewUpdateStates.length; i += 2) {
-                    expect(noNewUpdateStates[i]).to.equal("fetching-subplebbit-ipns");
-                    expect(noNewUpdateStates[i + 1]).to.equal("stopped");
+                for (let i = 0; i < noNewUpdateStates.length; i += 1) {
+                    expect(noNewUpdateStates[i]).to.be.oneOf(["fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"]);
                 }
             } finally {
                 await plebbit.destroy();

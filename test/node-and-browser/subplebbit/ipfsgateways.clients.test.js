@@ -3,8 +3,7 @@ import signers from "../../fixtures/signers.js";
 import {
     publishRandomPost,
     getAvailablePlebbitConfigsToTestAgainst,
-    mockGatewayPlebbit,
-    mockPlebbitToReturnSpecificSubplebbit,
+    createStaticSubplebbitRecordForComment,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
@@ -68,9 +67,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         });
 
         it(`Correct order of ipfs gateway state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
-            const customPlebbit = await mockGatewayPlebbit();
+            const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment();
+            // subAddress is static and won't be publishing new updates
 
-            const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+            const sub = await gatewayPlebbit.createSubplebbit({ address: subAddress });
+            expect(sub.updatedAt).to.be.undefined; // should not get an update yet
 
             let updateCount = 0;
             sub.on("update", () => updateCount++);
@@ -81,12 +82,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
             sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
 
-            // now customPlebbit._updatingSubplebbits will be defined
+            // now gatewayPlebbit._updatingSubplebbits will be defined
 
             const updatePromise = new Promise((resolve) => sub.once("update", resolve));
             await sub.update();
             await updatePromise;
-            await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, JSON.parse(JSON.stringify(sub.toJSONIpfs())));
 
             const expectedWaitingRetryCount = 3;
             await resolveWhenConditionIsTrue({
@@ -97,7 +97,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             await sub.stop();
 
-            expect(updateCount).to.equal(3); // mockPlebbitToReturnSpecificSubplebbit will delete updateAt which will force a second update
+            expect(updateCount).to.equal(1); // only one update cause we're not publishing anymore
             expect(waitingRetryCount).to.equal(expectedWaitingRetryCount);
             // should be just ["fetching-ipns", "stopped"]
             // because it can't find a new record
@@ -105,13 +105,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 expect(recordedStates[i]).to.equal("fetching-ipns");
                 expect(recordedStates[i + 1]).to.equal("stopped");
             }
-            await customPlebbit.destroy();
         });
 
         it(`Correct order of ipfs gateway states when we update a subplebbit with record whose signature is invalid`, async () => {
-            const customPlebbit = await mockGatewayPlebbit();
+            const { commentCid, subAddress } = await createStaticSubplebbitRecordForComment({ invalidateSubplebbitSignature: true });
+            // subAddress is static and is already published an invalid record
 
-            const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+            const sub = await gatewayPlebbit.createSubplebbit({ address: subAddress });
+            expect(sub.updatedAt).to.be.undefined;
 
             let updateCount = 0;
             sub.on("update", () => updateCount++);
@@ -127,19 +128,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
             sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
 
-            // First update to get a valid record
-            const updatePromise = new Promise((resolve) => sub.once("update", resolve));
             await sub.update();
-            await updatePromise;
 
-            const validRecord = sub.toJSONIpfs();
-            const invalidRecord = { ...validRecord, rules: ["1234"] }; // new rules should invalidate the record
-
-            await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, invalidRecord);
-
-            await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
+            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => waitingRetryCount >= 2, eventName: "updatingstatechange" });
 
             await sub.stop();
+            expect(sub.updatedAt).to.be.undefined; // should not defined since signature is invalid
 
             // verifying states for the first correct update
             expect(recordedStates.slice(0, 2)).to.deep.equal(["fetching-ipns", "stopped"]);
@@ -153,14 +147,15 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 expect(recordedStates[i + 1]).to.equal("stopped");
             }
 
-            // Verify the counts of various events
-            expect(emittedErrors.length).to.be.at.least(1);
-            expect(emittedErrors[0].code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-            expect(emittedErrors[0].details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+            expect(emittedErrors.length).to.equal(1); // it's only a single emitted error since we never re-download an invalid record
+
+            for (const emittedError of emittedErrors) {
+                expect(emittedError.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                expect(emittedError.details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+            }
 
             expect(waitingRetryCount).to.be.greaterThan(0);
-            expect(updateCount).to.equal(1); // Only the first update should succeed
-            await customPlebbit.destroy();
+            expect(updateCount).to.equal(0); // no updatess because invalid signatures
         });
     });
 });
