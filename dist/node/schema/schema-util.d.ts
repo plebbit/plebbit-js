@@ -7,7 +7,7 @@ import { CreateNewLocalSubplebbitUserOptionsSchema, CreateRemoteSubplebbitFuncti
 import type { CreateNewLocalSubplebbitUserOptions, RpcRemoteSubplebbitUpdateEventResultType, SubplebbitEditOptions, SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { DecryptedChallenge, DecryptedChallengeAnswer, DecryptedChallengeVerification } from "../pubsub-messages/types.js";
 import { CidStringSchema } from "./schema.js";
-import { RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
+import { RpcCommentEventResultSchema, RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
 import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema } from "../rpc/src/schema.js";
 import type { CreatePlebbitWsServerOptions } from "../rpc/src/types.js";
 import type { CommentModerationChallengeRequestToEncrypt } from "../publications/comment-moderation/types.js";
@@ -266,6 +266,8 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                         };
                         protocolVersion: string;
                         childCount?: number | undefined;
+                        number?: number | undefined;
+                        postNumber?: number | undefined;
                         edit?: {
                             [x: string]: unknown;
                             timestamp: number;
@@ -433,7 +435,8 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
     updatingState?: import("../subplebbit/types.js").SubplebbitUpdatingState | undefined;
 };
 export declare function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: z.infer<typeof CidStringSchema>): string;
-export declare function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: z.infer<typeof RpcCommentUpdateResultSchema>): CommentIpfsType | CommentUpdateType;
+export declare function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: z.infer<typeof RpcCommentUpdateResultSchema>): CommentUpdateType;
+export declare function parseRpcCommentEventWithPlebbitErrorIfItFails(updateResult: z.infer<typeof RpcCommentEventResultSchema>): CommentIpfsType;
 export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: SubplebbitEditPubsubMessagePublication): {
     timestamp: number;
     signature: {
@@ -1219,6 +1222,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     };
                     protocolVersion: string;
                     childCount?: number | undefined;
+                    number?: number | undefined;
+                    postNumber?: number | undefined;
                     edit?: {
                         [x: string]: unknown;
                         timestamp: number;
@@ -1678,6 +1683,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     };
                     protocolVersion: string;
                     childCount?: number | undefined;
+                    number?: number | undefined;
+                    postNumber?: number | undefined;
                     edit?: {
                         [x: string]: unknown;
                         timestamp: number;
@@ -1921,6 +1928,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     };
                     protocolVersion: string;
                     childCount?: number | undefined;
+                    number?: number | undefined;
+                    postNumber?: number | undefined;
                     edit?: {
                         [x: string]: unknown;
                         timestamp: number;
@@ -2380,6 +2389,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     };
                     protocolVersion: string;
                     childCount?: number | undefined;
+                    number?: number | undefined;
+                    postNumber?: number | undefined;
                     edit?: {
                         [x: string]: unknown;
                         timestamp: number;

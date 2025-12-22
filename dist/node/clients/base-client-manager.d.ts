@@ -2,7 +2,7 @@ import { Plebbit } from "../plebbit/plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import type { PubsubMessage } from "../pubsub-messages/types";
-import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
+import type { ChainTicker, PubsubSubscriptionHandler, ResultOfFetchingSubplebbit } from "../types.js";
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 export type CachedTextRecordResolve = {
     timestampSeconds: number;
@@ -101,4 +101,5 @@ export declare class BaseClientsManager {
     resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string | null>;
     emitError(e: PlebbitError): void;
     calculateIpfsCid(content: string): Promise<string>;
+    protected _withInflightSubplebbitFetch(subAddress: string, fetcher: () => Promise<ResultOfFetchingSubplebbit>): Promise<ResultOfFetchingSubplebbit>;
 }

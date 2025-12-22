@@ -1,7 +1,7 @@
 import "./zod-error-map.js";
 import * as PlebbitClass from "./plebbit/plebbit.js";
 import type { InputPlebbitOptions } from "./types.js";
-import { shortifyAddress, shortifyCid } from "./util.js";
+import type { AuthorAddressRpcParam, CidRpcParam } from "./clients/rpc-client/types.js";
 declare const Plebbit: {
     (plebbitOptions?: InputPlebbitOptions): Promise<PlebbitClass.Plebbit>;
     setNativeFunctions: (newNativeFunctions: Partial<import("./types.js").NativeFunctions>) => void;
@@ -9,8 +9,8 @@ declare const Plebbit: {
         node: import("./types.js").NativeFunctions;
         browser: import("./types.js").NativeFunctions;
     };
-    getShortCid: typeof shortifyCid;
-    getShortAddress: typeof shortifyAddress;
+    getShortCid: (params: CidRpcParam) => string;
+    getShortAddress: (params: AuthorAddressRpcParam) => string;
     challenges: Record<string, import("zod/v4/core").$InferInnerFunctionType<import("zod").ZodTuple<readonly [import("zod").ZodObject<{
         path: import("zod").ZodOptional<import("zod").ZodString>;
         name: import("zod").ZodOptional<import("zod").ZodString>;
@@ -118,8 +118,8 @@ export declare const nativeFunctions: {
     node: import("./types.js").NativeFunctions;
     browser: import("./types.js").NativeFunctions;
 };
-export declare const getShortCid: typeof shortifyCid;
-export declare const getShortAddress: typeof shortifyAddress;
+export declare const getShortCid: (params: CidRpcParam) => string;
+export declare const getShortAddress: (params: AuthorAddressRpcParam) => string;
 export declare const challenges: Record<string, import("zod/v4/core").$InferInnerFunctionType<import("zod").ZodTuple<readonly [import("zod").ZodObject<{
     path: import("zod").ZodOptional<import("zod").ZodString>;
     name: import("zod").ZodOptional<import("zod").ZodString>;

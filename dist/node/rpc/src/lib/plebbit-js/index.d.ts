@@ -6,8 +6,8 @@ declare const PlebbitJs: {
             node: import("../../../../types.js").NativeFunctions;
             browser: import("../../../../types.js").NativeFunctions;
         };
-        getShortCid: typeof import("../../../../util.js").shortifyCid;
-        getShortAddress: typeof import("../../../../util.js").shortifyAddress;
+        getShortCid: (params: import("../../../../clients/rpc-client/types.js").CidRpcParam) => string;
+        getShortAddress: (params: import("../../../../clients/rpc-client/types.js").AuthorAddressRpcParam) => string;
         challenges: Record<string, import("zod/v4/core").$InferInnerFunctionType<import("zod").ZodTuple<readonly [import("zod").ZodObject<{
             path: import("zod").ZodOptional<import("zod").ZodString>;
             name: import("zod").ZodOptional<import("zod").ZodString>;

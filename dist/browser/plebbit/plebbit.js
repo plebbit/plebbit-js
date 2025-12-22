@@ -12,12 +12,13 @@ import Storage from "../runtime/browser/storage.js";
 import { PlebbitClientsManager } from "./plebbit-client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../plebbit-error.js";
+import { InflightFetchManager } from "../util/inflight-fetch-manager.js";
 import LRUStorage from "../runtime/browser/lru-storage.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/browser/subplebbit/local-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
-import { AuthorAddressSchema, AuthorReservedFields, SubplebbitAddressSchema } from "../schema/schema.js";
+import { AuthorReservedFields } from "../schema/schema.js";
 import { PubsubTopicSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentIpfsSchemaWithPlebbitErrorIfItFails, parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails, parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails, parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails, parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails, parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails, parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseSubplebbitAddressWithPlebbitErrorIfItFails, parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
@@ -27,6 +28,7 @@ import { LRUCache } from "lru-cache";
 import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 import { createLibp2pJsClientOrUseExistingOne } from "../helia/helia-for-plebbit.js";
+import { parseRpcAuthorAddressParam, parseRpcCidParam, parseRpcSubplebbitAddressParam } from "../clients/rpc-client/rpc-schema-util.js";
 export class Plebbit extends PlebbitTypedEmitter {
     constructor(options) {
         super();
@@ -91,6 +93,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         this._initIpfsGatewaysIfNeeded();
         this._initChainProviders();
         this._initMemCaches();
+        this._inflightFetchManager = new InflightFetchManager();
         if (!this.noData && !this.plebbitRpcClientsOptions)
             this.dataPath = this.parsedPlebbitOptions.dataPath =
                 "dataPath" in this.parsedPlebbitOptions ? this.parsedPlebbitOptions.dataPath : getDefaultDataPath();
@@ -101,6 +104,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             pageVerificationCache: new LRUCache({ max: 1000 }),
             commentVerificationCache: new LRUCache({ max: 5000 }),
             commentUpdateVerificationCache: new LRUCache({ max: 100_000 }),
+            commentIpfs: new LRUCache({ max: 10 }),
             subplebbitForPublishing: new LRUCache({
                 max: 100,
                 ttl: 600000
@@ -119,7 +123,8 @@ export class Plebbit extends PlebbitTypedEmitter {
                 _client: kuboRpcClient,
                 _clientOptions: clientOptions,
                 peers: kuboRpcClient.swarm.peers,
-                url: clientOptions.url.toString()
+                url: clientOptions.url.toString(),
+                destroy: async () => { }
             };
         }
     }
@@ -138,7 +143,8 @@ export class Plebbit extends PlebbitTypedEmitter {
                     const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                     return peers;
                 },
-                url: clientOptions.url.toString()
+                url: clientOptions.url.toString(),
+                destroy: async () => { }
             };
         }
     }
@@ -220,9 +226,9 @@ export class Plebbit extends PlebbitTypedEmitter {
         this._clientsManager = new PlebbitClientsManager(this);
         hideClassPrivateProps(this);
     }
-    async getSubplebbit(subplebbitAddress) {
-        const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const subplebbit = await this.createSubplebbit({ address: parsedAddress });
+    async getSubplebbit(getSubplebbitArgs) {
+        const parsedArgs = parseRpcSubplebbitAddressParam(getSubplebbitArgs);
+        const subplebbit = await this.createSubplebbit(parsedArgs);
         if (typeof subplebbit.createdAt === "number")
             return subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         const timeoutMs = this._timeouts["subplebbit-ipns"];
@@ -231,9 +237,9 @@ export class Plebbit extends PlebbitTypedEmitter {
     }
     async getComment(cid) {
         const log = Logger("plebbit-js:plebbit:getComment");
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
+        const parsedGetCommentArgs = parseRpcCidParam(cid);
         // getComment is interested in loading CommentIpfs only
-        const comment = await this.createComment({ cid: parsedCid });
+        const comment = await this.createComment(parsedGetCommentArgs);
         let lastUpdateError;
         const errorListener = (err) => (lastUpdateError = err);
         comment.on("error", errorListener);
@@ -241,7 +247,8 @@ export class Plebbit extends PlebbitTypedEmitter {
         try {
             await pTimeout(comment._attemptInfintelyToLoadCommentIpfs(), {
                 milliseconds: commentTimeout,
-                message: lastUpdateError || new TimeoutError(`plebbit.getComment(${cid}) timed out after ${commentTimeout}ms`)
+                message: lastUpdateError ||
+                    new TimeoutError(`plebbit.getComment({cid: ${parsedGetCommentArgs}}) timed out after ${commentTimeout}ms`)
             });
             if (!comment.signature)
                 throw Error("Failed to load CommentIpfs");
@@ -284,6 +291,10 @@ export class Plebbit extends PlebbitTypedEmitter {
         const commentInstance = new Comment(this);
         if (options.cid)
             commentInstance.setCid(options.cid);
+        if (options.subplebbitAddress)
+            commentInstance.setSubplebbitAddress(options.subplebbitAddress);
+        if (options.raw?.commentUpdate?.cid)
+            commentInstance.setCid(options.raw?.commentUpdate?.cid);
         if ("pubsubMessageToPublish" in options.raw && options.raw.pubsubMessageToPublish && "signer" in options && options.signer)
             commentInstance._initLocalProps({
                 comment: options.raw.pubsubMessageToPublish,
@@ -293,10 +304,10 @@ export class Plebbit extends PlebbitTypedEmitter {
         if (options.raw.comment)
             commentInstance._initIpfsProps(options.raw.comment);
         // can only get one CommentUpdate
+        if ("commentUpdateFromChallengeVerification" in options.raw && options.raw.commentUpdateFromChallengeVerification)
+            commentInstance._initCommentUpdateFromChallengeVerificationProps(options.raw.commentUpdateFromChallengeVerification);
         if (options.raw.commentUpdate)
             commentInstance._initCommentUpdate(options.raw.commentUpdate);
-        else if ("commentUpdateFromChallengeVerification" in options.raw && options.raw.commentUpdateFromChallengeVerification)
-            commentInstance._initCommentUpdateFromChallengeVerificationProps(options.raw.commentUpdateFromChallengeVerification);
         return commentInstance;
     }
     async createComment(options) {
@@ -347,8 +358,10 @@ export class Plebbit extends PlebbitTypedEmitter {
         else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }
-        if (commentInstance.cid)
+        if (commentInstance.cid) {
+            commentInstance._useUpdatePropsFromUpdatingStartedSubplebbitIfPossible();
             commentInstance._useUpdatePropsFromUpdatingCommentIfPossible();
+        }
         return commentInstance;
     }
     _canCreateNewLocalSub() {
@@ -640,10 +653,10 @@ export class Plebbit extends PlebbitTypedEmitter {
     createSigner(createSignerOptions) {
         return createSigner(createSignerOptions);
     }
-    async fetchCid(cid) {
+    async fetchCid(fetchCidArgs) {
         // plebbit-with-rpc-client will handle if user is connected to rpc client
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
-        return this._clientsManager.fetchCid(parsedCid);
+        const parsedArgs = parseRpcCidParam(fetchCidArgs);
+        return this._clientsManager.fetchCid(parsedArgs.cid);
     }
     // Used to pre-subscribe so publishing on pubsub would be faster
     async pubsubSubscribe(pubsubTopic) {
@@ -661,9 +674,9 @@ export class Plebbit extends PlebbitTypedEmitter {
         await this._clientsManager.pubsubUnsubscribe(parsedTopic, this._pubsubSubscriptions[parsedTopic]);
         delete this._pubsubSubscriptions[parsedTopic];
     }
-    async resolveAuthorAddress(authorAddress) {
-        const parsedAddress = AuthorAddressSchema.parse(authorAddress);
-        const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(parsedAddress);
+    async resolveAuthorAddress(resolveAuthorAddressArgs) {
+        const parsedArgs = parseRpcAuthorAddressParam(resolveAuthorAddressArgs);
+        const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(parsedArgs.address);
         return resolved;
     }
     async validateComment(comment, opts) {
@@ -721,6 +734,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         return this._storageLRUs[opts.cacheName];
     }
     async destroy() {
+        const log = Logger("plebbit-js:plebbit:destroy");
         if (this.destroyed)
             return;
         this.destroyed = true;
@@ -756,7 +770,10 @@ export class Plebbit extends PlebbitTypedEmitter {
                 console.error("Error unsubscribing from pubsub topics", e);
             }
         }
+        const kuboClients = [...Object.values(this.clients.kuboRpcClients), ...Object.values(this.clients.pubsubKuboRpcClients)];
+        await Promise.all(kuboClients.map(async (client) => client.destroy()));
         await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
+        await Promise.all(Object.values(this.clients.plebbitRpcClients).map((client) => client.destroy()));
         // Get all methods on the instance and override them to throw errors if used after destruction
         Object.getOwnPropertyNames(Object.getPrototypeOf(this))
             .filter((prop) => typeof this[prop] === "function")
@@ -765,6 +782,7 @@ export class Plebbit extends PlebbitTypedEmitter {
                 throw new PlebbitError("ERR_PLEBBIT_IS_DESTROYED");
             };
         });
+        log("Destroyed plebbit instance");
     }
 }
 //# sourceMappingURL=plebbit.js.map

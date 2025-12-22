@@ -26,3 +26,18 @@ export declare function createKuboRpcClient(kuboRpcClientOptions: KuboRpcClient[
 export declare function monitorSubplebbitsDirectory(plebbit: Plebbit): Promise<AbortController>;
 export declare function calculateExpectedSignatureSize(newIpns: Omit<SubplebbitIpfsType, "signature" | "posts"> | Omit<CommentUpdateType, "signature" | "posts">): number;
 export declare function deriveCommentIpfsFromCommentTableRow(commentTableRow: CommentsTableRow): CommentIpfsType;
+type InlineRepliesBudgetOptions = {
+    comment: CommentsTableRow;
+    commentUpdateWithoutReplies: Omit<CommentUpdateType, "signature">;
+    maxCommentUpdateBytes?: number;
+    maxPageBytes?: number;
+    minInlineRepliesBytes?: number;
+    hardInlineRepliesLimitBytes?: number;
+    depthBufferBaseBytes?: number;
+    depthBufferPerDepthBytes?: number;
+    commentUpdateHeadroomBytes?: number;
+    pageSafetyMarginBytes?: number;
+    inlineMetadataBytes?: number;
+};
+export declare function calculateInlineRepliesBudget({ comment, commentUpdateWithoutReplies, maxCommentUpdateBytes, maxPageBytes, minInlineRepliesBytes, hardInlineRepliesLimitBytes, depthBufferBaseBytes, depthBufferPerDepthBytes, commentUpdateHeadroomBytes, pageSafetyMarginBytes, inlineMetadataBytes }: InlineRepliesBudgetOptions): number;
+export {};

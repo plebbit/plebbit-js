@@ -3,7 +3,7 @@ import { decryptEd25519AesGcm, encryptEd25519AesGcm } from "../signer/index.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
 import { cleanUpBeforePublishing, signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "../signer/signatures.js";
-import { waitForUpdateInSubInstanceWithErrorAndTimeout, hideClassPrivateProps, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
+import { hideClassPrivateProps, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
 import { PlebbitError } from "../plebbit-error.js";
@@ -444,35 +444,13 @@ class Publication extends TypedEmitter {
             if (!this._plebbit._memCaches.subplebbitForPublishing.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
                 this._plebbit
-                    .getSubplebbit(this.subplebbitAddress)
+                    .getSubplebbit({ address: this.subplebbitAddress })
                     .catch((e) => log.error("Failed to update cache of subplebbit", this.subplebbitAddress, e)); // will update cache in background, will not update current comment states
             }
             return cachedSubplebbit;
         }
-        else {
-            // we have no cache or plebbit._updatingSubplebbit[this.subplebbitAddress]
-            const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation();
-            let subIpfs;
-            if (!updatingSubInstance.subplebbit.raw.subplebbitIpfs) {
-                const timeoutMs = this._plebbit._timeouts["subplebbit-ipns"];
-                try {
-                    await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
-                    subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
-                }
-                catch (e) {
-                    await this._clientsManager.cleanUpUpdatingSubInstance();
-                    throw e;
-                }
-                await this._clientsManager.cleanUpUpdatingSubInstance();
-            }
-            else {
-                subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
-                await this._clientsManager.cleanUpUpdatingSubInstance();
-            }
-            if (!subIpfs)
-                throw Error("Should fail properly here");
-            return subIpfs;
-        }
+        else
+            return this._clientsManager.fetchSubplebbitForPublishingWithCacheGuard();
     }
     async stop() {
         await this._postSucessOrFailurePublishing();

@@ -17,6 +17,8 @@ import Logger from "@plebbit/plebbit-logger";
 import retry from "retry";
 import PeerId from "peer-id";
 import { unmarshalIPNSRecord } from "ipns";
+import { importFile } from "ipfs-unixfs-importer";
+import { MemoryBlockstore } from "blockstore-core";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -400,7 +402,7 @@ export async function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, lo
                     }
                 }
                 catch (e) {
-                    log("Minor Error, not a big deal: Failed to provide after add", e);
+                    log.trace("Minor Error, not a big deal: Failed to provide after add", e);
                 }
                 resolve(addRes);
             }
@@ -541,5 +543,15 @@ export async function getIpnsRecordInLocalKuboNode(kuboRpcClient, ipnsName) {
     catch (e) {
         throw new PlebbitError("ERR_FAILED_TO_PARSE_LOCAL_RAW_IPNS_RECORD", { ipnsName, ipnsFetchUrl, parseError: e });
     }
+}
+const textEncoder = new TextEncoder();
+export async function calculateStringSizeSameAsIpfsAddCidV0(content) {
+    const blockstore = new MemoryBlockstore();
+    const entry = await importFile({ path: "content.json", content: textEncoder.encode(content) }, blockstore, {
+        cidVersion: 0,
+        rawLeaves: false,
+        wrapWithDirectory: false
+    });
+    return Number(entry.size);
 }
 //# sourceMappingURL=util.js.map

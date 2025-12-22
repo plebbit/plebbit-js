@@ -2,6 +2,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../../plebbit/plebbit.js";
 import type { CreateNewLocalSubplebbitParsedOptions, InternalSubplebbitRecordBeforeFirstUpdateType, InternalSubplebbitRecordAfterFirstUpdateType, ParsedSubplebbitEditOptions, SubplebbitEditOptions, RpcInternalSubplebbitRecordBeforeFirstUpdateType, RpcInternalSubplebbitRecordAfterFirstUpdateType } from "../../../subplebbit/types.js";
 import { DbHandler } from "./db-handler.js";
+import type { PurgedCommentTableRows } from "./db-handler.js";
 import type { ChallengeAnswerMessageType, ChallengeRequestMessageType } from "../../../pubsub-messages/types.js";
 import { SignerWithPublicKeyAddress } from "../../../signer/index.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
@@ -48,6 +49,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _calculateLatestUpdateTrigger;
     private _requireSubplebbitUpdateIfModQueueChanged;
     _resolveIpnsAndLogIfPotentialProblematicSequence(): Promise<void>;
+    private _addOldPageCidsToCidsToUnpin;
     private updateSubplebbitIpnsIfNeeded;
     private shouldResolveDomainForVerification;
     private _validateSubSizeSchemaAndSignatureBeforePublishing;
@@ -91,6 +93,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _syncPostUpdatesWithIpfs;
     private _adjustPostUpdatesBucketsIfNeeded;
     private _cleanUpIpfsRepoRarely;
+    _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: PurgedCommentTableRows): void;
     private _purgeDisapprovedCommentsOlderThan;
     private syncIpnsWithDb;
     private _assertDomainResolvesCorrectly;

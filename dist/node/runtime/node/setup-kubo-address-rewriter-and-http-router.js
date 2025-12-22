@@ -31,6 +31,26 @@ function _mergeRouterConfigs(existingConfig, newConfig) {
         Routers: mergedRouters
     };
 }
+async function _setProvideDhtSweepEnabledOnKuboNode(kuboClient, sweepEnabled) {
+    const log = Logger("plebbit-js:plebbit:_init:retrySettingHttpRoutersOnIpfsNodes:setProvideDhtSweepEnabledOnIpfsNode");
+    const configKey = "Provide.DHT.SweepEnabled";
+    const url = `${kuboClient._clientOptions.url}/config?arg=${configKey}&arg=${JSON.stringify(sweepEnabled)}&json=true`;
+    try {
+        await fetch(url, { method: "POST", headers: kuboClient._clientOptions.headers });
+    }
+    catch (e) {
+        const error = new PlebbitError("ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE", {
+            fullUrl: url,
+            actualError: e,
+            kuboEndpoint: kuboClient._clientOptions.url,
+            configKey,
+            configValueToBeSet: sweepEnabled
+        });
+        log.error(e);
+        throw error;
+    }
+    log.trace("Succeeded in setting config key", configKey, "on node", kuboClient._clientOptions.url, "to be", sweepEnabled);
+}
 async function _setHttpRouterOptionsOnKuboNode(kuboClient, routingValue) {
     const log = Logger("plebbit-js:plebbit:_init:retrySettingHttpRoutersOnIpfsNodes:setHttpRouterOptionsOnIpfsNode");
     const routingKey = "Routing";
@@ -64,6 +84,7 @@ async function _setHttpRouterOptionsOnKuboNode(kuboClient, routingValue) {
         throw error;
     }
     log.trace("Succeeded in setting config key", routingKey, "on node", kuboClient._clientOptions.url, "to be", mergedRoutingValue);
+    await _setProvideDhtSweepEnabledOnKuboNode(kuboClient, false);
     const endpointsBefore = Object.values(routingConfigBeforeChanging?.["Routers"] || {}).map(
     //@ts-expect-error
     (router) => router["Parameters"]["Endpoint"]);

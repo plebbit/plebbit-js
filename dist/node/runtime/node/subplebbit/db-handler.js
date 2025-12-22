@@ -235,6 +235,8 @@ export class DbHandler {
                 downvoteCount INTEGER NOT NULL,
                 replyCount INTEGER NOT NULL,
                 childCount INTEGER NOT NULL,
+                number INTEGER NULLABLE,
+                postNumber INTEGER NULLABLE,
                 flair TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
@@ -378,10 +380,9 @@ export class DbHandler {
             }
         }
         if (needToMigrate) {
-            if (currentDbVersion <= 15) {
-                await this._purgeCommentsWithInvalidSchemaOrSignature();
-                await this._purgeCommentEditsWithInvalidSchemaOrSignature();
-            }
+            await this._purgeCommentsWithInvalidSchemaOrSignature();
+            await this._purgeCommentEditsWithInvalidSchemaOrSignature();
+            this._purgePublicationTablesWithDuplicateSignatures();
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
             await this.initDbIfNeeded(); // to init keyv
@@ -484,6 +485,66 @@ export class DbHandler {
             }
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
+    }
+    _purgePublicationTablesWithDuplicateSignatures() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgePublicationTablesWithDuplicateSignatures");
+        const publicationTables = [TABLES.COMMENTS, TABLES.COMMENT_EDITS, TABLES.COMMENT_MODERATIONS, TABLES.COMMENT_UPDATES];
+        for (const tableName of publicationTables) {
+            const columnNames = this._getColumnNames(tableName);
+            if (!columnNames.includes("signature")) {
+                log.trace(`Skipping duplicate signature purge for ${tableName} because column signature is missing.`);
+                continue;
+            }
+            const jsonValidExpr = (alias) => `json_valid(${alias}.signature) = 1`;
+            const signatureExtractExpr = (alias) => `json_extract(${alias}.signature, '$.signature')`;
+            const duplicateRows = this._db
+                .prepare(`
+                        SELECT newer.rowid AS rowid
+                        FROM ${tableName} AS newer
+                        WHERE ${jsonValidExpr("newer")}
+                          AND ${signatureExtractExpr("newer")} IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1
+                              FROM ${tableName} AS older
+                              WHERE ${jsonValidExpr("older")}
+                                AND ${signatureExtractExpr("older")} = ${signatureExtractExpr("newer")}
+                                AND older.rowid < newer.rowid
+                          )
+                    `)
+                .all();
+            if (duplicateRows.length === 0)
+                continue;
+            if (tableName === TABLES.COMMENTS) {
+                const duplicateCids = this._db
+                    .prepare(`
+                            SELECT cid
+                            FROM ${TABLES.COMMENTS} AS newer
+                            WHERE ${jsonValidExpr("newer")}
+                              AND ${signatureExtractExpr("newer")} IS NOT NULL
+                              AND EXISTS (
+                                  SELECT 1
+                                  FROM ${TABLES.COMMENTS} AS older
+                                  WHERE ${jsonValidExpr("older")}
+                                    AND ${signatureExtractExpr("older")} = ${signatureExtractExpr("newer")}
+                                    AND older.rowid < newer.rowid
+                              )
+                        `)
+                    .all();
+                for (const { cid } of duplicateCids) {
+                    const purgedRows = this.purgeComment(cid);
+                    purgedRows.forEach((row) => this._subplebbit._addAllCidsUnderPurgedCommentToBeRemoved(row));
+                }
+                log(`Purged ${duplicateCids.length} duplicate comment row(s) based on signature.signature with higher rowid values.`);
+                continue;
+            }
+            const deleteStmt = this._db.prepare(`DELETE FROM ${tableName} WHERE rowid = ?`);
+            const deleteMany = this._db.transaction((rows) => {
+                for (const row of rows)
+                    deleteStmt.run(row.rowid);
+            });
+            deleteMany(duplicateRows);
+            log(`Purged ${duplicateRows.length} duplicate row(s) from ${tableName} based on signature.signature with higher rowid values.`);
+        }
     }
     async _purgeCommentEditsWithInvalidSchemaOrSignature() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentEditsWithInvalidSchemaOrSignature");
@@ -622,10 +683,12 @@ export class DbHandler {
         const columnNames = this._getColumnNames(TABLES.COMMENT_UPDATES);
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_UPDATES} 
-            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, flair, spoiler, nsfw, pinned, locked, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt) 
-            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
+            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, number, postNumber, flair, spoiler, nsfw, pinned, locked, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt) 
+            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @number, @postNumber, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
             ON CONFLICT(cid) DO UPDATE SET
                 edit = excluded.edit, upvoteCount = excluded.upvoteCount, downvoteCount = excluded.downvoteCount, replyCount = excluded.replyCount, childCount = excluded.childCount,
+                number = COALESCE(excluded.number, ${TABLES.COMMENT_UPDATES}.number),
+                postNumber = COALESCE(excluded.postNumber, ${TABLES.COMMENT_UPDATES}.postNumber),
                 flair = excluded.flair, spoiler = excluded.spoiler, nsfw = excluded.nsfw, pinned = excluded.pinned, locked = excluded.locked,
                 removed = excluded.removed, approved = excluded.approved, reason = excluded.reason, updatedAt = excluded.updatedAt, protocolVersion = excluded.protocolVersion,
                 signature = excluded.signature, author = excluded.author, replies = excluded.replies, lastChildCid = excluded.lastChildCid,
@@ -884,6 +947,8 @@ export class DbHandler {
         return results.map((r) => this._parseCommentsTableRow(r));
     }
     queryCommentsToBeUpdated() {
+        // TODO optimize this query in the future
+        // Make sure tests in commentsToUpdate.db.subplebbit.test.js are passing
         const query = `
             WITH RECURSIVE 
             direct_updates AS (
@@ -899,14 +964,6 @@ export class DbHandler {
                     OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.insertedAt)
                     OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.insertedAt)
                   )
-            ),
-            authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM direct_updates),
-            parent_chain AS (
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
-                UNION
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
             ),
             child_counts AS (
                 SELECT 
@@ -960,12 +1017,55 @@ export class DbHandler {
                 WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
                   AND COALESCE(lc.actual_last_child_cid, '') != COALESCE(cu_parent.lastChildCid, '')
             ),
+            replies_json AS (
+                SELECT
+                    cu_parent.cid AS parentCid,
+                    json_extract(comment_entry.value, '$.comment.cid') AS comment_child_cid,
+                    json_extract(comment_entry.value, '$.commentUpdate.cid') AS update_child_cid,
+                    json_extract(comment_entry.value, '$.commentUpdate.updatedAt') AS json_child_updated_at
+                FROM ${TABLES.COMMENT_UPDATES} cu_parent
+                INNER JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+                JOIN json_each(cu_parent.replies, '$.pages') pages
+                JOIN json_each(pages.value, '$.comments') comment_entry
+                WHERE cu_parent.replies IS NOT NULL
+                  AND json_type(cu_parent.replies, '$.pages') = 'object'
+                  AND (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
+            ),
+            stale_replies_json AS (
+                SELECT r.parentCid AS cid
+                FROM replies_json r
+                LEFT JOIN ${TABLES.COMMENTS} existing_child ON existing_child.cid = COALESCE(r.comment_child_cid, r.update_child_cid)
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} actual_child_update ON actual_child_update.cid = COALESCE(r.comment_child_cid, r.update_child_cid)
+                WHERE COALESCE(r.comment_child_cid, r.update_child_cid) IS NOT NULL
+                  AND (
+                      existing_child.cid IS NULL
+                      OR actual_child_update.cid IS NULL
+                      OR (
+                          r.json_child_updated_at IS NOT NULL
+                              AND actual_child_update.cid IS NOT NULL
+                              AND CAST(r.json_child_updated_at AS INTEGER) < actual_child_update.updatedAt
+                      )
+                  )
+                GROUP BY r.parentCid
+            ),
+            base_updates AS (
+                SELECT * FROM direct_updates
+                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_child_counts scc ON c.cid = scc.cid
+                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_last_child_cids slc ON c.cid = slc.cid
+                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_replies_json srj ON c.cid = srj.cid
+            ),
+            authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM base_updates),
+            parent_chain AS (
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN base_updates bu ON p.cid = bu.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
+                UNION
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
+            ),
             all_updates AS (
-                SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
+                SELECT cid FROM base_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
                 WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                UNION SELECT cid FROM stale_child_counts
-                UNION SELECT cid FROM stale_last_child_cids
             )
             SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
             WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
@@ -975,7 +1075,14 @@ export class DbHandler {
         return results.map((r) => this._parseCommentsTableRow(r));
     }
     querySubplebbitStats() {
+        // if you change this query, make sure to run stats.subplebbit.test.js
         const now = timestamp(); // All timestamps are in seconds
+        const subplebbitAddress = this._subplebbit.address;
+        const removedCommentsClause = this._removedClause("cu_comments");
+        const deletedCommentsClause = this._deletedFromUpdatesClause("cu_comments");
+        const removedVotesClause = this._removedClause("cu_votes");
+        const deletedVotesClause = this._deletedFromUpdatesClause("cu_votes");
+        const pendingCommentsClause = this._pendingApprovalClause("comments");
         const queryString = `
             SELECT 
                 -- Active user counts from combined activity
@@ -1003,35 +1110,70 @@ export class DbHandler {
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 THEN 1 ELSE 0 END), 0) as allReplyCount
             FROM (
                 SELECT 
-                    authorSignerAddress, 
-                    timestamp,
-                    depth,
+                    comments.authorSignerAddress, 
+                    comments.timestamp,
+                    comments.depth,
                     1 as is_comment,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
-                FROM ${TABLES.COMMENTS}
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                FROM ${TABLES.COMMENTS} AS comments
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_comments ON cu_comments.cid = comments.cid
+                WHERE comments.subplebbitAddress = :subplebbitAddress
+                  AND ${removedCommentsClause}
+                  AND ${deletedCommentsClause}
+                  AND ${pendingCommentsClause}
                 UNION ALL
                 SELECT 
-                    authorSignerAddress, 
-                    timestamp,
+                    votes.authorSignerAddress, 
+                    votes.timestamp,
                     NULL as depth,
                     0 as is_comment,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
-                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
-                FROM ${TABLES.VOTES}
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                FROM ${TABLES.VOTES} AS votes
+                INNER JOIN ${TABLES.COMMENTS} AS comments_for_votes ON comments_for_votes.cid = votes.commentCid
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_votes ON cu_votes.cid = comments_for_votes.cid
+                WHERE comments_for_votes.subplebbitAddress = :subplebbitAddress
+                  AND ${removedVotesClause}
+                  AND ${deletedVotesClause}
             )
         `;
-        return this._db.prepare(queryString).get();
+        return this._db.prepare(queryString).get({ subplebbitAddress });
     }
     queryCommentsUnderComment(parentCid) {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(parentCid);
         return results.map((r) => this._parseCommentsTableRow(r));
+    }
+    queryFirstCommentWithDepth(commentDepth) {
+        if (!Number.isInteger(commentDepth) || commentDepth < 0)
+            throw new Error("commentDepth must be a non-negative integer");
+        const exactDepthRow = this._db
+            .prepare(`SELECT c.* FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.subplebbitAddress = @subplebbitAddress
+                   AND c.depth = @commentDepth
+                 ORDER BY COALESCE(cu.replyCount, 0) DESC
+                 LIMIT 1`)
+            .get({ subplebbitAddress: this._subplebbit.address, commentDepth });
+        if (exactDepthRow)
+            return this._parseCommentsTableRow(exactDepthRow);
+        const lowerDepthRow = this._db
+            .prepare(`SELECT c.* FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.subplebbitAddress = @subplebbitAddress
+                   AND c.depth < @commentDepth
+                 ORDER BY c.depth DESC, COALESCE(cu.replyCount, 0) DESC
+                 LIMIT 1`)
+            .get({ subplebbitAddress: this._subplebbit.address, commentDepth });
+        if (!lowerDepthRow)
+            return undefined;
+        return this._parseCommentsTableRow(lowerDepthRow);
     }
     queryCombinedHashOfPendingComments() {
         const rows = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC`).all();
@@ -1183,12 +1325,12 @@ export class DbHandler {
         log(`Purging ${rows.length} disapproved comments older than ${retentionSeconds} seconds (cutoff ${cutoffTimestamp}).`);
         const purgedDetails = [];
         for (const row of rows) {
-            const purgedCids = this.purgeComment(row.cid);
+            const purgedTableRows = this.purgeComment(row.cid);
             purgedDetails.push({
                 cid: row.cid,
                 parentCid: row.parentCid,
                 postUpdatesBucket: row.postUpdatesBucket || undefined,
-                purgedCids
+                purgedTableRows
             });
         }
         return purgedDetails;
@@ -1280,6 +1422,24 @@ export class DbHandler {
             return undefined;
         return { approved: Boolean(result.approved) };
     }
+    _calculateCommentNumbers(cid) {
+        const commentRowMeta = this._db.prepare(`SELECT rowid as rowid, depth FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid);
+        if (!commentRowMeta)
+            throw Error(`Failed to query row metadata for comment ${cid}`);
+        const existingNumbers = this._db
+            .prepare(`SELECT number, postNumber FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ? LIMIT 1`)
+            .get(cid);
+        const commentNumber = typeof existingNumbers?.number === "number" && existingNumbers.number > 0 ? existingNumbers.number : commentRowMeta.rowid;
+        let postNumber = typeof existingNumbers?.postNumber === "number" && existingNumbers.postNumber > 0 ? existingNumbers.postNumber : undefined;
+        if (postNumber === undefined && commentRowMeta.depth === 0) {
+            const postNumberRow = this._db
+                .prepare(`SELECT COUNT(1) AS postCount FROM ${TABLES.COMMENTS} WHERE depth = 0 AND rowid <= ?`)
+                .get(commentRowMeta.rowid);
+            if (postNumberRow && typeof postNumberRow.postCount === "number" && postNumberRow.postCount > 0)
+                postNumber = postNumberRow.postCount;
+        }
+        return { number: commentNumber, ...(postNumber !== undefined ? { postNumber } : undefined) };
+    }
     queryCalculatedCommentUpdate(comment) {
         const authorSubplebbit = this.querySubplebbitAuthor(comment.authorSignerAddress);
         const authorEdit = this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress);
@@ -1290,11 +1450,14 @@ export class DbHandler {
         const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
         const isThisCommentApproved = this._queryIsCommentApproved(comment);
         const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // automatically add removed:true if approved=false. Will be overridden if there's commentFlags.removed
+        const { number: commentNumber, postNumber } = this._calculateCommentNumbers(comment.cid);
         if (!authorSubplebbit)
             throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             ...(removedFromApproved ? removedFromApproved : undefined),
             cid: comment.cid,
+            number: commentNumber,
+            ...(postNumber !== undefined ? { postNumber } : undefined),
             ...commentUpdateCounts,
             flair: commentModFlair?.flair || authorEdit?.flair,
             ...commentFlags,
@@ -1386,7 +1549,8 @@ export class DbHandler {
     }
     purgeComment(cid, isNestedCall = false) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeComment");
-        const purgedCids = [];
+        const purgedRecords = [];
+        const detachedPageCids = [];
         if (!isNestedCall)
             this.createTransaction();
         try {
@@ -1424,22 +1588,23 @@ export class DbHandler {
             }
             const directChildren = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(cid);
             for (const child of directChildren)
-                purgedCids.push(...this.purgeComment(child.cid, true));
+                purgedRecords.push(...this.purgeComment(child.cid, true));
+            const commentTableRow = this.queryComment(cid);
             this._db.prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ?`).run(cid);
             this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE commentCid = ?`).run(cid);
             const commentUpdate = this.queryStoredCommentUpdate({ cid });
             if (commentUpdate) {
-                if (commentUpdate.replies?.pageCids) {
-                    Object.values(commentUpdate.replies.pageCids).forEach((pageCid) => {
-                        if (typeof pageCid === "string")
-                            purgedCids.push(pageCid);
-                    });
-                }
                 this._db.prepare(`DELETE FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).run(cid);
             }
             const deleteResult = this._db.prepare(`DELETE FROM ${TABLES.COMMENTS} WHERE cid = ?`).run(cid);
-            if (deleteResult.changes > 0)
-                purgedCids.push(cid);
+            if (deleteResult.changes > 0) {
+                if (!commentTableRow)
+                    throw new Error(`Comment with cid ${cid} not found when attempting to purge`);
+                purgedRecords.push({
+                    commentTableRow,
+                    commentUpdateTableRow: commentUpdate
+                });
+            }
             // Force update on all comments by all affected authors since their statistics have changed
             if (!isNestedCall && (allAffectedAuthors.size > 0 || commentsToForceUpdate.size > 0)) {
                 const allAffectedAuthorCids = [];
@@ -1470,12 +1635,8 @@ export class DbHandler {
             }
             if (!isNestedCall)
                 this.commitTransaction();
-            const uniquePurgedCids = remeda.unique(purgedCids);
-            uniquePurgedCids.forEach((cid) => {
-                this._subplebbit._cidsToUnPin.add(cid);
-                this._subplebbit._blocksToRm.push(cid);
-            });
-            return uniquePurgedCids;
+            const uniquePurgedRecords = remeda.uniqueBy(purgedRecords, (record) => record.commentTableRow.cid);
+            return uniquePurgedRecords;
         }
         catch (error) {
             log.error(`Error during comment purge for ${cid}: ${error}`);
@@ -1614,19 +1775,40 @@ export class DbHandler {
             .prepare(`UPDATE ${TABLES.COMMENT_UPDATES} SET publishedToPostUpdatesMFS = 0 WHERE cid IN (${commentCids.map(() => "?").join(",")})`)
             .run(...commentCids);
     }
-    queryAllCidsUnderThisSubplebbit() {
-        const allCids = new Set();
-        this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS}`).all().forEach((c) => allCids.add(c.cid));
-        const pageCidsResult = this._db
-            .prepare(`SELECT json_extract(replies, '$.pageCids') AS pageCids 
-                             FROM ${TABLES.COMMENT_UPDATES} 
-                             WHERE json_extract(replies, '$.pageCids') IS NOT NULL`)
+    queryAllCommentCidsAndTheirReplies() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:queryAllCidsUnderThisSubplebbit");
+        const rows = this._db
+            .prepare(`SELECT 
+                     c.cid AS cid,
+                     CASE
+                         WHEN cu.replies IS NULL THEN NULL
+                         ELSE json_set(
+                             cu.replies,
+                             '$.pages',
+                             (
+                                 SELECT json_group_object(
+                                     pages.key,
+                                     json_set(pages.value, '$.comments', json('[]'))
+                                 )
+                                 FROM json_each(cu.replies, '$.pages') AS pages
+                             )
+                         )
+                     END AS replies
+                 FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid`)
             .all();
-        pageCidsResult.forEach((row) => {
-            const pageCidsParsed = JSON.parse(row.pageCids);
-            Object.values(pageCidsParsed).forEach((cid) => allCids.add(cid));
+        return rows.map((row) => {
+            let parsedReplies;
+            if (typeof row.replies === "string" && row.replies.length > 0) {
+                try {
+                    parsedReplies = JSON.parse(row.replies);
+                }
+                catch (e) {
+                    log.error(`Failed to parse replies JSON for comment ${row.cid} when collecting cids`, e);
+                }
+            }
+            return { cid: row.cid, replies: parsedReplies };
         });
-        return allCids;
     }
     queryPostsWithActiveScore(pageOptions) {
         const activeScoreRootConditions = ["p.depth = 0"];

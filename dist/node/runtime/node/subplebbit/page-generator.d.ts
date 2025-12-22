@@ -1,7 +1,7 @@
 import type { ModQueueCommentInPage, ModQueuePageIpfs, PageIpfs, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "../../../pages/types.js";
 import type { CommentsTableRow, CommentUpdateType } from "../../../publications/comment/types.js";
 import { POST_REPLIES_SORT_TYPES, REPLY_REPLIES_SORT_TYPES } from "../../../pages/util.js";
-import { SubplebbitIpfsType } from "../../../subplebbit/types.js";
+import type { SubplebbitIpfsType } from "../../../subplebbit/types.js";
 export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
@@ -29,7 +29,7 @@ export declare class PageGenerator {
     _chunkComments<T extends PageIpfs["comments"] | ModQueuePageIpfs["comments"]>({ comments, firstPageSizeBytes }: {
         comments: T;
         firstPageSizeBytes: number;
-    }): T[];
+    }): Promise<T[]>;
     sortAndChunkComments(unsortedComments: (PageIpfs["comments"][0] & {
         activeScore?: number;
     })[], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<PageIpfs["comments"][]>;
@@ -126,6 +126,8 @@ export declare class PageGenerator {
                     };
                     protocolVersion: string;
                     childCount?: number | undefined;
+                    number?: number | undefined;
+                    postNumber?: number | undefined;
                     edit?: {
                         [x: string]: unknown;
                         timestamp: number;
@@ -308,6 +310,8 @@ export declare class PageGenerator {
                         };
                         protocolVersion: string;
                         childCount?: number | undefined;
+                        number?: number | undefined;
+                        postNumber?: number | undefined;
                         edit?: {
                             [x: string]: unknown;
                             timestamp: number;

@@ -749,7 +749,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString>>;
     challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
-export declare const ChallengeRequestMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted" | "acceptedChallengeTypes")[];
+export declare const ChallengeRequestMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "userAgent" | "challengeRequestId" | "encrypted" | "acceptedChallengeTypes")[];
 export declare const ChallengeInChallengePubsubMessageSchema: z.ZodObject<{
     challenge: z.ZodString;
     type: z.ZodLazy<z.ZodString>;
@@ -781,7 +781,7 @@ export declare const DecryptedChallengeSchema: z.ZodObject<{
         caseInsensitive: z.ZodLazy<z.ZodOptional<z.ZodBoolean>>;
     }, z.core.$strict>>;
 }, z.core.$strict>;
-export declare const ChallengeMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted")[];
+export declare const ChallengeMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "userAgent" | "challengeRequestId" | "encrypted")[];
 export declare const ChallengeAnswerMessageSchema: z.ZodObject<{
     challengeRequestId: z.ZodCustom<Uint8Array<ArrayBufferLike>, Uint8Array<ArrayBufferLike>>;
     signature: z.ZodObject<{
@@ -804,7 +804,7 @@ export declare const ChallengeAnswerMessageSchema: z.ZodObject<{
 export declare const DecryptedChallengeAnswerSchema: z.ZodObject<{
     challengeAnswers: z.ZodArray<z.ZodString>;
 }, z.core.$strict>;
-export declare const ChallengeAnswerMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted")[];
+export declare const ChallengeAnswerMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "userAgent" | "challengeRequestId" | "encrypted")[];
 export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
     challengeRequestId: z.ZodCustom<Uint8Array<ArrayBufferLike>, Uint8Array<ArrayBufferLike>>;
     signature: z.ZodObject<{
@@ -916,4 +916,4 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         pendingApproval: z.ZodOptional<z.ZodBoolean>;
     }, z.core.$loose>;
 }, z.core.$strict>;
-export declare const ChallengeVerificationMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "reason" | "challengeRequestId" | "userAgent" | "encrypted" | "challengeSuccess" | "challengeErrors")[];
+export declare const ChallengeVerificationMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "reason" | "userAgent" | "challengeRequestId" | "encrypted" | "challengeSuccess" | "challengeErrors")[];

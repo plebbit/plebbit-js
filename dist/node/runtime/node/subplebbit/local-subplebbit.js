@@ -3,12 +3,12 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, calculateIpfsCidV0 } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
 import { cleanUpBeforePublishing, signChallengeMessage, signChallengeVerification, signCommentUpdate, signCommentUpdateForChallengeVerification, signSubplebbit, verifyChallengeAnswer, verifyChallengeRequest, verifyCommentEdit, verifyCommentModeration, verifyCommentUpdate, verifySubplebbitEdit } from "../../../signer/signatures.js";
-import { calculateExpectedSignatureSize, deriveCommentIpfsFromCommentTableRow, getThumbnailPropsOfLink, importSignerIntoKuboNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
+import { calculateExpectedSignatureSize, calculateInlineRepliesBudget, deriveCommentIpfsFromCommentTableRow, getThumbnailPropsOfLink, importSignerIntoKuboNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { SignerWithPublicKeyAddress, decryptEd25519AesGcmPublicKeyBuffer, verifyCommentPubsubMessage, verifySubplebbit, verifyVote } from "../../../signer/index.js";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
 import { messages } from "../../../errors.js";
@@ -30,9 +30,9 @@ import { CommentModerationPubsubMessagePublicationSchema, CommentModerationReser
 import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
-import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
+import { iterateOverPageCidsToFindAllCids } from "../../../pages/util.js";
 const _startedSubplebbits = {}; // A global record on process level to track started subplebbits
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -207,22 +207,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.initDbHandlerIfNeeded();
             try {
                 await this._updateStartedValue();
-                if (this.started) {
-                    throw new PlebbitError("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
-                        address: this.address,
-                        dataPath: this._plebbit.dataPath
-                    });
-                }
                 const subDbExists = this._dbHandler.subDbExists();
                 if (!subDbExists)
                     throw new PlebbitError("CAN_NOT_LOAD_LOCAL_SUBPLEBBIT_IF_DB_DOES_NOT_EXIST", {
                         address: this.address,
                         dataPath: this._plebbit.dataPath
                     });
-                await this._dbHandler.initDbIfNeeded();
+                const dbConfig = this.state === "updating" ? { readonly: true } : undefined;
+                await this._dbHandler.initDbIfNeeded(dbConfig);
                 await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
                 if (!this.signer)
-                    throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
+                    throw new PlebbitError("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
                 await this._updateStartedValue();
                 log("Loaded local subplebbit", this.address, "from db");
             }
@@ -407,8 +402,41 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log.trace("Failed to resolve subplebbit before publishing", this.address, "IPNS key", this.signer.ipnsKeyName, e);
         }
     }
+    async _addOldPageCidsToCidsToUnpin(curPages, newPages, addToBlockRm) {
+        if (!curPages && !newPages)
+            return;
+        else if (curPages && !newPages) {
+            // we had to reset our sub pages, maybe because we purged all comments or changed subplebbit address
+            const allPageCidsUnderCurPages = await iterateOverPageCidsToFindAllCids({
+                pages: curPages,
+                clientManager: this._clientsManager
+            });
+            allPageCidsUnderCurPages.forEach((cid) => {
+                this._cidsToUnPin.add(cid);
+                if (addToBlockRm)
+                    this._blocksToRm.push(cid);
+            });
+        }
+        else if (curPages && newPages) {
+            // need to find cids for both, and compare them and only keep ones in newPages
+            const allPageCidsUnderCurPages = await iterateOverPageCidsToFindAllCids({
+                pages: curPages,
+                clientManager: this._clientsManager
+            });
+            const allPageCidsUnderNewPages = await iterateOverPageCidsToFindAllCids({
+                pages: newPages,
+                clientManager: this._clientsManager
+            });
+            const cidsToUnpin = remeda.difference(allPageCidsUnderCurPages, allPageCidsUnderNewPages);
+            cidsToUnpin.forEach((cid) => {
+                this._cidsToUnPin.add(cid);
+                if (addToBlockRm)
+                    this._blocksToRm.push(cid);
+            });
+        }
+    }
     async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs) {
-        const log = Logger("plebbit-js:local-subplebbit:sync:updateSubplebbitIpnsIfNeeded");
+        const log = Logger("plebbit-js:local-subplebbit:start:updateSubplebbitIpnsIfNeeded");
         this._calculateLatestUpdateTrigger();
         if (!this._subplebbitUpdateTrigger)
             return; // No reason to update
@@ -468,18 +496,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     pageCids: generatedPosts.pageCids,
                     pages: remeda.pick(generatedPosts.pages, [preloadedPostsPages])
                 };
-                const newPageCids = remeda.unique(Object.values(generatedPosts.pageCids));
-                const pageCidsToUnPin = remeda.unique(Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid)));
-                pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
             }
         }
-        else
+        else {
             await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
+            // TODO make sure to capture this.posts cids to unpin
+        }
+        this._addOldPageCidsToCidsToUnpin(this.raw.subplebbitIpfs?.posts, newIpns.posts).catch((err) => log.error("Failed to add old page cids of subplebbit.posts to _cidsToUnpin", err));
         if (newModQueue) {
             newIpns.modQueue = { pageCids: newModQueue.pageCids };
-            const newModQueuePageCids = remeda.unique(Object.values(newModQueue.pageCids));
-            const modQueuePageCidsToUnPin = remeda.unique(Object.values(this.modQueue.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid)));
-            modQueuePageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         }
         else {
             await this._updateDbInternalState({ modQueue: undefined });
@@ -495,6 +520,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             addOptions: { pin: true },
             provideOptions: { recursive: true }
         });
+        if (file.size > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
+            throw new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
+                calculatedSizeOfNewSubplebbitRecord: file.size,
+                maxSize: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
+                newSubplebbitRecord,
+                address: this.address
+            });
+        }
         if (!this.signer.ipnsKeyName)
             throw Error("IPNS key name is not defined");
         if (this._firstUpdateAfterStart)
@@ -514,6 +547,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         });
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`);
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
+        this._addOldPageCidsToCidsToUnpin(this.raw.subplebbitIpfs?.modQueue, newIpns.modQueue).catch((err) => log.error("Failed to add old page cids of subplebbit.modQueue to _cidsToUnpin", err));
         await this._unpinStaleCids();
         if (this._blocksToRm.length > 0) {
             const removedBlocks = await removeBlocksFromKuboNode({
@@ -556,16 +590,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _validateSubSizeSchemaAndSignatureBeforePublishing(recordToPublishRaw) {
         const log = Logger("plebbit-js:local-subplebbit:_validateSubSchemaAndSignatureBeforePublishing");
+        const stringifiedNewSubplebbitRecord = deterministicStringify(recordToPublishRaw);
+        const calculatedSizeOfNewSubplebbitRecord = await calculateStringSizeSameAsIpfsAddCidV0(stringifiedNewSubplebbitRecord);
         // Check if the subplebbit record size is less than 1MB
-        const recordSize = Buffer.byteLength(JSON.stringify(recordToPublishRaw)); // size in bytes
-        if (recordSize > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
+        if (calculatedSizeOfNewSubplebbitRecord > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
             const error = new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
-                size: recordSize,
+                calculatedSizeOfNewSubplebbitRecord,
                 maxSize: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
                 recordToPublishRaw,
                 address: this.address
             });
-            log.error(`Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)} bytes). Maximum size is ${MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS} bytes.`, error);
+            log.error(`Local subplebbit (${this.address}) produced a record that is too large (${calculatedSizeOfNewSubplebbitRecord.toFixed(2)} bytes). Maximum size is ${MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS} bytes.`, error);
             throw error;
         }
         const parseRes = SubplebbitIpfsSchema.safeParse(recordToPublishRaw);
@@ -599,7 +634,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log.error(`Local subplebbit (${this.address}) produced an invalid signature`, e);
             throw e;
         }
-        verificationOpts.subplebbit = JSON.parse(deterministicStringify(recordToPublishRaw)); // let's stringify and parse again to make sure we're not using any invalid data
+        verificationOpts.subplebbit = JSON.parse(stringifiedNewSubplebbitRecord); // let's stringify and parse again to make sure we're not using any invalid data
         try {
             const validation = await verifySubplebbit(verificationOpts);
             if (!validation.valid) {
@@ -643,6 +678,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log("Found extra props on CommentEdit", extraPropsInEdit, "Will be adding them to extraProps column");
             editTableRow.extraProps = remeda.pick(commentEditRaw, extraPropsInEdit);
         }
+        const isEditDuplicate = this._dbHandler.hasCommentEditWithSignatureEncoded(editTableRow.signature.signature);
+        if (isEditDuplicate) {
+            throw new PlebbitError("ERR_DUPLICATE_COMMENT_EDIT", { editTableRow });
+        }
         this._dbHandler.insertCommentEdits([editTableRow]);
     }
     async storeCommentModeration(commentModRaw, challengeRequestId) {
@@ -657,6 +696,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             modSignerAddress,
             insertedAt: timestamp()
         };
+        const isCommentModDuplicate = this._dbHandler.hasCommentModerationWithSignatureEncoded(modTableRow.signature.signature);
+        if (isCommentModDuplicate) {
+            throw new PlebbitError("ERR_DUPLICATE_COMMENT_MODERATION", { modTableRow });
+        }
         const extraPropsInMod = remeda.difference(remeda.keys.strict(commentModRaw), remeda.keys.strict(CommentModerationPubsubMessagePublicationSchema.shape));
         if (extraPropsInMod.length > 0) {
             log("Found extra props on CommentModeration", extraPropsInMod, "Will be adding them to extraProps column");
@@ -664,28 +707,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         if (modTableRow.commentModeration.purged) {
             log("commentModeration.purged=true, and therefore will delete the post/comment and all its reply tree from the db as well as unpin the cids from ipfs", "comment cid is", modTableRow.commentCid);
-            const commentUpdateToPurge = this._dbHandler.queryStoredCommentUpdate({ cid: modTableRow.commentCid });
             const commentToPurge = this._dbHandler.queryComment(modTableRow.commentCid);
             if (!commentToPurge)
                 throw Error("Comment to purge not found");
-            const cidsToPurgeOffIpfsNode = this._dbHandler.purgeComment(modTableRow.commentCid);
-            cidsToPurgeOffIpfsNode.forEach((cid) => this._cidsToUnPin.add(cid));
-            cidsToPurgeOffIpfsNode.forEach((cid) => this._blocksToRm.push(cid));
+            const purgedTableRows = this._dbHandler.purgeComment(modTableRow.commentCid);
+            purgedTableRows.forEach((purgedTableRow) => this._addAllCidsUnderPurgedCommentToBeRemoved(purgedTableRow));
+            log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", "out of DB and IPFS");
+            await this._rmUnneededMfsPaths(); // not sure if needed here
             if (this.updateCid) {
-                this._blocksToRm.push(this.updateCid); // remove old cid from kubo node so we new users don't load it from our node
+                // need to remove any update cids with reference to purged comment
+                this._blocksToRm.push(this.updateCid);
                 this._cidsToUnPin.add(this.updateCid);
-            }
-            log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", cidsToPurgeOffIpfsNode.length, "out of DB and IPFS");
-            log(`Set _subplebbitUpdateTrigger to true after purging comment ${modTableRow.commentCid}.`);
-            if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
-                const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(commentToPurge, commentUpdateToPurge.postUpdatesBucket).replace("/update", "");
-                this._mfsPathsToRemove.add(localCommentUpdatePath);
-                try {
-                    await this._rmUnneededMfsPaths();
-                }
-                catch (e) {
-                    log.error("while purging we failed to remove mfs path", localCommentUpdatePath, "due to error", e);
-                }
             }
         }
         else if ("approved" in modTableRow.commentModeration) {
@@ -789,6 +821,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentPubsub.signature.publicKey);
         const strippedOutCommentIpfs = CommentIpfsSchema.strip().parse(commentIpfs); // remove unknown props
+        const isCommentDuplicate = this._dbHandler.hasCommentWithSignatureEncoded(commentPubsub.signature.signature);
+        if (isCommentDuplicate) {
+            this._cidsToUnPin.add(commentCid);
+            throw new PlebbitError("ERR_DUPLICATE_COMMENT", { file, commentIpfs, commentPubsub });
+        }
         const commentRow = {
             ...strippedOutCommentIpfs,
             cid: commentCid,
@@ -935,17 +972,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return this._publishFailedChallengeVerification(challengeResult, request.challengeRequestId);
         else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
-            const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
+            // call below could fail if the comment is duplicated
+            let failureReason;
+            let toEncrypt;
+            try {
+                toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
+            }
+            catch (e) {
+                if (e.code)
+                    failureReason = e.message;
+            }
             const toSignMsg = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
-                challengeSuccess: true,
-                reason: undefined,
                 encrypted: toEncrypt?.encrypted, // could be undefined
                 challengeErrors: challengeResult.challengeErrors,
                 userAgent: this._plebbit.userAgent,
                 protocolVersion: env.PROTOCOL_VERSION,
-                timestamp: timestamp()
+                timestamp: timestamp(),
+                ...(failureReason ? { reason: failureReason, challengeSuccess: false } : { challengeSuccess: true, reason: undefined })
             });
             const challengeVerification = {
                 ...toSignMsg,
@@ -973,7 +1018,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return true;
         if (this._plebbit.resolveAuthorAddresses) {
             const resolvedSignerAddress = isStringDomain(publication.author.address)
-                ? await this._plebbit.resolveAuthorAddress(publication.author.address)
+                ? await this._plebbit.resolveAuthorAddress({ address: publication.author.address })
                 : publication.author.address;
             if (resolvedSignerAddress !== signerAddress)
                 return false;
@@ -1359,12 +1404,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 protocolVersion: env.PROTOCOL_VERSION
             })
         };
-        const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdatePriorToSigning), "utf8");
-        const repliesAvailableSize = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 1000;
         const preloadedRepliesPages = "best";
+        const inlineRepliesBudget = calculateInlineRepliesBudget({
+            comment,
+            commentUpdateWithoutReplies: commentUpdatePriorToSigning
+        });
+        const adjustedPreloadedRepliesPageSizeBytes = Math.max(inlineRepliesBudget, 1);
         const generatedRepliesPages = comment.depth === 0
-            ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, repliesAvailableSize)
-            : await this._pageGenerator.generateReplyPages(comment, preloadedRepliesPages, repliesAvailableSize);
+            ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, adjustedPreloadedRepliesPageSizeBytes)
+            : await this._pageGenerator.generateReplyPages(comment, preloadedRepliesPages, adjustedPreloadedRepliesPageSizeBytes);
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
         if (generatedRepliesPages) {
             if ("singlePreloadedPage" in generatedRepliesPages)
@@ -1374,11 +1422,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     pageCids: generatedRepliesPages.pageCids,
                     pages: remeda.pick(generatedRepliesPages.pages, [preloadedRepliesPages])
                 };
-                const newPageCids = remeda.unique(Object.values(generatedRepliesPages.pageCids));
-                const pageCidsToUnPin = remeda.unique(Object.values(storedCommentUpdate?.replies?.pageCids || {}).filter((oldPageCid) => !newPageCids.includes(oldPageCid)));
-                pageCidsToUnPin.forEach((pageCid) => this._cidsToUnPin.add(pageCid));
             }
         }
+        this._addOldPageCidsToCidsToUnpin(storedCommentUpdate?.replies, commentUpdatePriorToSigning.replies).catch((err) => log.error("Failed to add old page cids of comment.replies to _cidsToUnpin", err));
         const newCommentUpdate = {
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
@@ -1399,6 +1445,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             publishedToPostUpdatesMFS: false,
             insertedAt: timestamp()
         };
+        if (!generatedRepliesPages)
+            newCommentUpdateDbRecord.replies = undefined;
         return {
             newCommentUpdate,
             newCommentUpdateToWriteToDb: newCommentUpdateDbRecord,
@@ -1625,7 +1673,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const postUpdatesDirectory = `/${this.address}`;
         const commentUpdatesWithLocalPath = commentUpdateRowsToPublishToIpfs.filter((row) => typeof row.localMfsPath === "string");
         if (commentUpdatesWithLocalPath.length === 0)
-            throw Error("No comment updates of posts to publish to postUpdates directory");
+            throw Error("No comment updates of posts to publish to postUpdates directory. This is a critical bug");
         const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         const removedMfsPaths = await this._rmUnneededMfsPaths();
         let postUpdatesDirectoryCid;
@@ -1685,6 +1733,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log("GC cleaned", gcCids, "cids out of the IPFS node");
         }
     }
+    _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate) {
+        const log = Logger("plebbit-js:_addAllCidsUnderPurgedCommentToBeRemoved");
+        this._cidsToUnPin.add(purgedCommentAndCommentUpdate.commentTableRow.cid);
+        this._blocksToRm.push(purgedCommentAndCommentUpdate.commentTableRow.cid);
+        if (typeof purgedCommentAndCommentUpdate.commentUpdateTableRow?.postUpdatesBucket === "number") {
+            const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(purgedCommentAndCommentUpdate.commentTableRow, purgedCommentAndCommentUpdate.commentUpdateTableRow?.postUpdatesBucket);
+            this._mfsPathsToRemove.add(localCommentUpdatePath);
+        }
+        if (purgedCommentAndCommentUpdate?.commentUpdateTableRow?.replies)
+            this._addOldPageCidsToCidsToUnpin(purgedCommentAndCommentUpdate?.commentUpdateTableRow?.replies, undefined, true).catch((err) => log.error("Failed to add purged page cids to be unpinned and removed", err));
+    }
     async _purgeDisapprovedCommentsOlderThan() {
         if (typeof this.settings.purgeDisapprovedCommentsOlderThan !== "number")
             return;
@@ -1693,21 +1752,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!purgedComments || purgedComments.length === 0)
             return;
         log("Purged disapproved comments", purgedComments, "because retention time has passed and it's time to purge them from DB and pages");
-        for (const purgedComment of purgedComments) {
-            const purgedCids = purgedComment.purgedCids ?? [];
-            purgedCids
-                .filter((cid) => !cid.startsWith("/"))
-                .forEach((cid) => {
-                this._cidsToUnPin.add(cid);
-                this._blocksToRm.push(cid);
-            });
-            if (typeof purgedComment.postUpdatesBucket !== "number")
-                continue;
-            const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(purgedComment, purgedComment.postUpdatesBucket);
-            this._mfsPathsToRemove.add(localCommentUpdatePath);
-        }
+        // need to clear out any commentUpdate.postUpdatesBucket
+        // need to clear out any comment.cid
+        // need to clear out any commentUpdate.replies
+        for (const purgedComment of purgedComments)
+            for (const purgedCommentAndCommentUpdate of purgedComment.purgedTableRows)
+                this._addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate);
         if (this._mfsPathsToRemove.size > 0)
             await this._rmUnneededMfsPaths();
+        if (this.updateCid) {
+            this._blocksToRm.push(this.updateCid); // we need to remove current updateCid which references purged comments
+            this._cidsToUnPin.add(this.updateCid);
+        }
     }
     async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
@@ -2093,13 +2149,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._initMirroringStartedOrUpdatingSubplebbit(this._plebbit._updatingSubplebbits[this.address]);
             return;
         }
-        else if (this.started) {
-            // this sub is started in another process, we need to emit an error to user
-            throw new PlebbitError("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
-                address: this.address,
-                dataPath: this._plebbit.dataPath
-            });
-        }
         else {
             // this sub is not started or updated anywhere, but maybe another process will call edit() on it
             this._plebbit._updatingSubplebbits[this.address] = this;
@@ -2251,10 +2300,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // scenario 3: we call delete() on a subplebbit that is started
         // scenario 4: we call delete() on a subplebbit that is not started, but the same sub is started in plebbit._startedSubplebbits[address]
         try {
+            await this._addOldPageCidsToCidsToUnpin(this.raw?.subplebbitIpfs?.posts, undefined);
+        }
+        catch (e) {
+            log.error("Failed to add old page cids from subplebbit.posts to be unpinned", e);
+        }
+        try {
             await this.initDbHandlerIfNeeded();
             await this._dbHandler.initDbIfNeeded();
-            const allCids = this._dbHandler.queryAllCidsUnderThisSubplebbit();
-            allCids.forEach((cid) => this._cidsToUnPin.add(cid));
+            const cidsAndReplies = this._dbHandler.queryAllCommentCidsAndTheirReplies();
+            cidsAndReplies.forEach((comment) => this._cidsToUnPin.add(comment.cid));
+            await Promise.all(cidsAndReplies
+                .filter((comment) => comment.replies)
+                .map(async (commentWithReplies) => {
+                await this._addOldPageCidsToCidsToUnpin(commentWithReplies.replies, undefined);
+            }));
         }
         catch (e) {
             log.error("Failed to query all cids under this subplebbit to delete them", e);
@@ -2263,8 +2323,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._cidsToUnPin.add(this.updateCid);
         if (this.statsCid)
             this._cidsToUnPin.add(this.statsCid);
-        if (this.posts.pageCids)
-            Object.values(this.posts.pageCids).forEach((pageCid) => this._cidsToUnPin.add(pageCid));
         try {
             await this._unpinStaleCids();
         }

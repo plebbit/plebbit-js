@@ -6,6 +6,11 @@ import type { CommentsTableRow, CommentsTableRowInsert, CommentUpdatesRow, Comme
 import type { PageIpfs } from "../../../pages/types.js";
 import type { CommentModerationsTableRowInsert } from "../../../publications/comment-moderation/types.js";
 import type { VotesTableRow, VotesTableRowInsert } from "../../../publications/vote/types.js";
+export interface PurgedCommentTableRows {
+    commentTableRow: CommentsTableRow;
+    commentUpdateTableRow?: CommentUpdatesRow;
+}
+type CommentCidWithReplies = Pick<CommentsTableRow, "cid"> & Pick<CommentUpdatesRow, "replies">;
 export declare class DbHandler {
     private _db;
     private _subplebbit;
@@ -85,6 +90,7 @@ export declare class DbHandler {
     private _tableExists;
     private _getColumnNames;
     private _copyTable;
+    private _purgePublicationTablesWithDuplicateSignatures;
     private _purgeCommentEditsWithInvalidSchemaOrSignature;
     private _purgeCommentsWithInvalidSchemaOrSignature;
     deleteVote(authorSignerAddress: VotesTableRow["authorSignerAddress"], commentCid: VotesTableRow["commentCid"]): void;
@@ -115,6 +121,7 @@ export declare class DbHandler {
     queryCommentsToBeUpdated(): CommentsTableRow[];
     querySubplebbitStats(): SubplebbitStats;
     queryCommentsUnderComment(parentCid: string | null): CommentsTableRow[];
+    queryFirstCommentWithDepth(commentDepth: number): CommentsTableRow | undefined;
     queryCombinedHashOfPendingComments(): string;
     queryComment(cid: string): CommentsTableRow | undefined;
     private _queryCommentAuthorAndParentWithoutParsing;
@@ -132,7 +139,7 @@ export declare class DbHandler {
         cid: string;
         parentCid?: string | null;
         postUpdatesBucket?: number;
-        purgedCids: string[];
+        purgedTableRows: PurgedCommentTableRows[];
     }[] | undefined;
     private _queryLatestModeratorReason;
     queryCommentFlagsSetByMod(cid: string): Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">;
@@ -142,6 +149,7 @@ export declare class DbHandler {
     _queryIsCommentApproved(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">): {
         approved: boolean;
     } | undefined;
+    private _calculateCommentNumbers;
     queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">;
     queryLatestPostCid(): Pick<CommentsTableRow, "cid"> | undefined;
     queryLatestCommentCid(): Pick<CommentsTableRow, "cid"> | undefined;
@@ -149,7 +157,7 @@ export declare class DbHandler {
     queryAuthorModEdits(authorSignerAddress: string): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
     querySubplebbitAuthor(authorSignerAddress: string): SubplebbitAuthor | undefined;
     private _getAllDescendantCids;
-    purgeComment(cid: string, isNestedCall?: boolean): string[];
+    purgeComment(cid: string, isNestedCall?: boolean): PurgedCommentTableRows[];
     changeDbFilename(oldDbName: string, newDbName: string): Promise<void>;
     lockSubStart(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;
@@ -160,10 +168,11 @@ export declare class DbHandler {
     markCommentsAsPublishedToPostUpdates(commentCids: string[]): void;
     forceUpdateOnAllComments(): void;
     forceUpdateOnAllCommentsWithCid(commentCids: string[]): void;
-    queryAllCidsUnderThisSubplebbit(): Set<string>;
+    queryAllCommentCidsAndTheirReplies(): CommentCidWithReplies[];
     queryPostsWithActiveScore(pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">): (PageIpfs["comments"][0] & {
         activeScore: number;
     })[];
     private _processRecordsForDbBeforeInsert;
     private _spreadExtraProps;
 }
+export {};

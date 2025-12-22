@@ -27,4 +27,6 @@ export const ModQueuePageIpfsSchema = z.object({
     comments: z.lazy(() => z.object({ comment: CommentIpfsSchema.loose(), commentUpdate: CommentUpdateForChallengeVerificationSchema.loose() }).array()),
     nextCid: CidStringSchema.optional()
 });
+// getPage params
+export const GetPageParam = z.object({ cid: CidStringSchema });
 //# sourceMappingURL=schema.js.map

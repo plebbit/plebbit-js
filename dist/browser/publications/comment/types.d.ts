@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { CommentChallengeRequestToEncryptSchema, CommentIpfsSchema, CommentPubsubMessagePublicationSchema, CommentSignedPropertyNames, CommentsTableRowSchema, CommentUpdateForChallengeVerificationSchema, CommentUpdateForChallengeVerificationSignedPropertyNames, CommentUpdateForDisapprovedPendingComment, CommentUpdateSchema, CommentUpdateSignedPropertyNames, CommentUpdateTableRowSchema, CreateCommentOptionsSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
 import { SubplebbitAuthorSchema } from "../../schema/schema.js";
-import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
+import { RpcCommentEventResultSchema, RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
 import type { RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationRpcErrorToTransmit, PublicationState } from "../types.js";
 import type { JsonSignature, SignerType } from "../../signer/types.js";
+import Publication from "../publication.js";
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 export type CreateCommentOptions = z.infer<typeof CreateCommentOptionsSchema>;
 export type CommentPubsubMessagePublication = z.infer<typeof CommentPubsubMessagePublicationSchema>;
@@ -19,7 +20,14 @@ export type CommentUpdateForChallengeVerification = z.infer<typeof CommentUpdate
 export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallengeRequestToEncryptSchema>;
 export type RpcCommentUpdateResultType = z.infer<typeof RpcCommentUpdateResultSchema>;
+export type RpcCommentResultType = z.infer<typeof RpcCommentEventResultSchema>;
 type CommentOriginalField = z.infer<typeof OriginalCommentFieldsBeforeCommentUpdateSchema>;
+export interface CommentRawField extends Omit<Required<Publication["raw"]>, "pubsubMessageToPublish"> {
+    comment?: CommentIpfsType;
+    commentUpdate?: CommentUpdateType;
+    pubsubMessageToPublish?: CommentPubsubMessagePublication;
+    commentUpdateFromChallengeVerification?: CommentUpdateForChallengeVerification;
+}
 export type CommentJson = JsonOfClass<Comment>;
 type AuthorWithShortSubplebbitAddress = AuthorTypeWithCommentUpdate & {
     shortAddress: string;

@@ -1,9 +1,9 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
-import { AuthorAddressSchema } from "../schema/schema.js";
+import { parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
+import { parseRpcAuthorAddressParam, parseRpcCidParam } from "../clients/rpc-client/rpc-schema-util.js";
 // This is a helper class for separating RPC-client logic from main Plebbit
 // Not meant to be used with end users
 export class PlebbitWithRpcClient extends Plebbit {
@@ -33,12 +33,12 @@ export class PlebbitWithRpcClient extends Plebbit {
         // TODO should set up settingschange
     }
     async fetchCid(cid) {
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
-        return this._plebbitRpcClient.fetchCid(parsedCid);
+        const parsedCid = parseRpcCidParam(cid).cid;
+        return this._plebbitRpcClient.fetchCid({ cid: parsedCid });
     }
-    async resolveAuthorAddress(authorAddress) {
-        const parsedAddress = AuthorAddressSchema.parse(authorAddress);
-        return this._plebbitRpcClient.resolveAuthorAddress(parsedAddress);
+    async resolveAuthorAddress(args) {
+        const parsedArgs = parseRpcAuthorAddressParam(args);
+        return this._plebbitRpcClient.resolveAuthorAddress(parsedArgs);
     }
     async destroy() {
         for (const startedSubplebbit of Object.values(this._startedSubplebbits)) {
@@ -48,9 +48,9 @@ export class PlebbitWithRpcClient extends Plebbit {
         await this._plebbitRpcClient.destroy();
     }
     async getComment(commentCid) {
-        const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
-        const commentIpfs = await this._plebbitRpcClient.getComment(parsedCommentCid);
-        return this.createComment({ ...commentIpfs, cid: parsedCommentCid });
+        const parsedArgs = parseRpcCidParam(commentCid);
+        const commentIpfs = await this._plebbitRpcClient.getComment(parsedArgs);
+        return this.createComment({ raw: { comment: commentIpfs }, cid: parsedArgs.cid });
     }
     async createSubplebbit(options = {}) {
         const log = Logger("plebbit-js:plebbit-with-rpc-client:createSubplebbit");

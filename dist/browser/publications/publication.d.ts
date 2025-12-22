@@ -204,6 +204,8 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
                         };
                         protocolVersion: string;
                         childCount?: number | undefined;
+                        number?: number | undefined;
+                        postNumber?: number | undefined;
                         edit?: {
                             [x: string]: unknown;
                             timestamp: number;

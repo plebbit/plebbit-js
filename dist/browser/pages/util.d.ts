@@ -1,8 +1,10 @@
 import type { PageIpfs, PagesTypeIpfs, PagesTypeJson, PostSort, ReplySort, Timeframe, PageTypeJson, ModQueuePageTypeJson, ModQueuePageIpfs } from "./types.js";
 import { Comment } from "../publications/comment/comment.js";
 import { PostsPages, RepliesPages } from "./pages.js";
-import type { CommentWithinModQueuePageJson, CommentWithinRepliesPostsPageJson } from "../publications/comment/types.js";
+import type { CommentWithinModQueuePageJson, CommentWithinRepliesPostsPageJson, CommentUpdateType } from "../publications/comment/types.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
+import { BaseClientsManager } from "../clients/base-client-manager.js";
+import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare const POSTS_SORT_TYPES: PostSort;
 export declare const POST_REPLIES_SORT_TYPES: ReplySort;
@@ -25,4 +27,9 @@ export declare function findCommentInPageInstance(pageInstance: RemoteSubplebbit
 export declare function findCommentInParsedPages(pageJson: PageTypeJson, targetCommentCid: string): PageTypeJson["comments"][0] | undefined;
 export declare function findCommentInHierarchicalPageIpfsRecursively(page: PageIpfs, targetCid: string): PageIpfs["comments"][0] | undefined;
 export declare function findCommentInPageInstanceRecursively(pageInstance: RemoteSubplebbit["posts"] | Comment["replies"], targetCid: string): PageIpfs["comments"][0] | undefined;
+type PagesSource = NonNullable<SubplebbitIpfsType["posts"]> | NonNullable<CommentUpdateType["replies"] | NonNullable<SubplebbitIpfsType["modQueue"]>>;
+export declare function iterateOverPageCidsToFindAllCids(opts: {
+    pages: PagesSource;
+    clientManager: BaseClientsManager;
+}): Promise<string[]>;
 export {};

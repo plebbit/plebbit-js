@@ -1,6 +1,6 @@
 import { z } from "zod";
 export declare const SubscriptionIdSchema: z.ZodNumber;
-export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
+export declare const RpcCommentEventResultSchema: z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -60,12 +60,15 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodString>;
-}, z.core.$loose>, z.ZodObject<{
+}, z.core.$loose>;
+export declare const RpcCommentUpdateResultSchema: z.ZodObject<{
     cid: z.ZodString;
     upvoteCount: z.ZodNumber;
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
     childCount: z.ZodOptional<z.ZodNumber>;
+    number: z.ZodOptional<z.ZodNumber>;
+    postNumber: z.ZodOptional<z.ZodNumber>;
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -238,4 +241,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             oldFlat: "oldFlat";
         }>, z.ZodString]>, z.ZodString>>;
     }, z.core.$strip>>;
-}, z.core.$strict>]>;
+}, z.core.$strict>;
+export declare const RpcCidParamSchema: z.ZodObject<{
+    cid: z.ZodString;
+}, z.core.$loose>;
+export declare const RpcSubplebbitAddressParamSchema: z.ZodObject<{
+    address: z.ZodString;
+}, z.core.$strip>;
+export declare const RpcAuthorAddressParamSchema: z.ZodObject<{
+    address: z.ZodString;
+}, z.core.$strip>;
+export declare const RpcSubplebbitPageParamSchema: z.ZodObject<{
+    cid: z.ZodString;
+    subplebbitAddress: z.ZodString;
+    type: z.ZodEnum<{
+        posts: "posts";
+        modqueue: "modqueue";
+    }>;
+}, z.core.$loose>;
+export declare const RpcCommentRepliesPageParamSchema: z.ZodObject<{
+    subplebbitAddress: z.ZodString;
+    cid: z.ZodString;
+    commentCid: z.ZodString;
+}, z.core.$loose>;

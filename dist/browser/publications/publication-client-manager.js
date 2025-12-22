@@ -1,6 +1,7 @@
 import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import * as remeda from "remeda";
 import { PublicationKuboPubsubClient, PublicationKuboRpcClient, PublicationPlebbitRpcStateClient } from "./publication-clients.js";
+import { waitForUpdateInSubInstanceWithErrorAndTimeout } from "../util.js";
 export class PublicationClientsManager extends PlebbitClientsManager {
     constructor(publication) {
         super(publication._plebbit);
@@ -99,9 +100,9 @@ export class PublicationClientsManager extends PlebbitClientsManager {
     async _createSubInstanceWithStateTranslation() {
         // basically in Publication or comment we need to be fetching the subplebbit record
         // this function will be for translating between the states of the subplebbit and its clients to publication/comment states
-        const sub = this._plebbit._updatingSubplebbits[this._publication.subplebbitAddress] ||
-            this._plebbit._startedSubplebbits[this._publication.subplebbitAddress] ||
-            (await this._plebbit.createSubplebbit({ address: this._publication.subplebbitAddress }));
+        const directSubInstance = this._plebbit._updatingSubplebbits[this._publication.subplebbitAddress] ||
+            this._plebbit._startedSubplebbits[this._publication.subplebbitAddress];
+        const sub = directSubInstance || (await this._plebbit.createSubplebbit({ address: this._publication.subplebbitAddress }));
         this._subplebbitForUpdating = {
             subplebbit: sub,
             error: this.handleErrorEventFromSub.bind(this),
@@ -155,6 +156,9 @@ export class PublicationClientsManager extends PlebbitClientsManager {
         this._subplebbitForUpdating.subplebbit.on("update", this._subplebbitForUpdating.update);
         this._subplebbitForUpdating.subplebbit.on("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
         this._subplebbitForUpdating.subplebbit.on("error", this._subplebbitForUpdating.error);
+        if (directSubInstance) {
+            directSubInstance._numOfListenersForUpdatingInstance++;
+        }
         return this._subplebbitForUpdating;
     }
     async cleanUpUpdatingSubInstance() {
@@ -197,7 +201,40 @@ export class PublicationClientsManager extends PlebbitClientsManager {
         if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
             // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
             await this._subplebbitForUpdating.subplebbit.stop();
+        else {
+            // _subplebbitForUpdating is actually plebbit._updatingSubplebbits or plebbit._startedSubplebbits
+            this._subplebbitForUpdating.subplebbit._numOfListenersForUpdatingInstance--;
+            if (this._subplebbitForUpdating.subplebbit._numOfListenersForUpdatingInstance <= 0 &&
+                this._subplebbitForUpdating.subplebbit.state === "updating")
+                await this._subplebbitForUpdating.subplebbit.stop();
+        }
         this._subplebbitForUpdating = undefined;
+    }
+    async fetchSubplebbitForPublishingWithCacheGuard() {
+        return this._loadSubplebbitForPublishingFromNetwork();
+    }
+    async _loadSubplebbitForPublishingFromNetwork() {
+        const updatingSubInstance = await this._createSubInstanceWithStateTranslation();
+        let subIpfs;
+        if (!updatingSubInstance.subplebbit.raw.subplebbitIpfs) {
+            const timeoutMs = this._plebbit._timeouts["subplebbit-ipns"];
+            try {
+                await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
+                subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+            }
+            catch (e) {
+                await this.cleanUpUpdatingSubInstance();
+                throw e;
+            }
+            await this.cleanUpUpdatingSubInstance();
+        }
+        else {
+            subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+            await this.cleanUpUpdatingSubInstance();
+        }
+        if (!subIpfs)
+            throw Error("Should fail properly here");
+        return subIpfs;
     }
 }
 //# sourceMappingURL=publication-client-manager.js.map

@@ -16,6 +16,7 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import Database from "better-sqlite3";
 import { CommentIpfsSchema } from "../../publications/comment/schema.js";
+import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../publications/comment/comment-client-manager.js";
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) => {
     let filename;
@@ -354,5 +355,23 @@ export function deriveCommentIpfsFromCommentTableRow(commentTableRow) {
     if (commentTableRow.depth === 0)
         delete finalCommentIpfsJson.postCid;
     return finalCommentIpfsJson;
+}
+export function calculateInlineRepliesBudget({ comment, commentUpdateWithoutReplies, maxCommentUpdateBytes = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE, maxPageBytes = 512 * 1024, minInlineRepliesBytes = 96 * 1024, hardInlineRepliesLimitBytes = 256 * 1024, depthBufferBaseBytes = 8 * 1024, depthBufferPerDepthBytes = 8 * 1024, commentUpdateHeadroomBytes = 4 * 1024, pageSafetyMarginBytes = 1024, inlineMetadataBytes = 2 * 1024 }) {
+    const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdateWithoutReplies), "utf8");
+    const repliesAvailableSize = maxCommentUpdateBytes -
+        commentUpdateSize -
+        calculateExpectedSignatureSize(commentUpdateWithoutReplies) -
+        commentUpdateHeadroomBytes;
+    const depthBufferBytes = depthBufferBaseBytes + comment.depth * depthBufferPerDepthBytes;
+    const desiredPreloadedPageBudget = repliesAvailableSize - depthBufferBytes;
+    const clampedPreloadedPageBudget = Math.min(Math.max(desiredPreloadedPageBudget, minInlineRepliesBytes), hardInlineRepliesLimitBytes);
+    const inlineBudgetFromComment = Math.max(0, Math.min(clampedPreloadedPageBudget, repliesAvailableSize));
+    const commentEntryWithoutReplies = {
+        comment: deriveCommentIpfsFromCommentTableRow(comment),
+        commentUpdate: commentUpdateWithoutReplies
+    };
+    const entryWithoutRepliesSize = Buffer.byteLength(JSON.stringify({ comments: [commentEntryWithoutReplies] }), "utf8");
+    const inlineBudgetFromPage = Math.max(0, maxPageBytes - pageSafetyMarginBytes - inlineMetadataBytes - entryWithoutRepliesSize);
+    return Math.max(0, Math.min(inlineBudgetFromComment, inlineBudgetFromPage));
 }
 //# sourceMappingURL=util.js.map

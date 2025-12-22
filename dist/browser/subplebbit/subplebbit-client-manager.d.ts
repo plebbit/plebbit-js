@@ -3,14 +3,10 @@ import { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../clients/chain-provider-client.js";
 import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { ChainTicker } from "../types.js";
+import { ChainTicker, ResultOfFetchingSubplebbit } from "../types.js";
 import type { SubplebbitIpfsType } from "./types.js";
 import { LimitedSet } from "../general-util/limited-set.js";
 import { SubplebbitIpfsGatewayClient, SubplebbitKuboPubsubClient, SubplebbitKuboRpcClient, SubplebbitLibp2pJsClient, SubplebbitPlebbitRpcStateClient } from "./subplebbit-clients.js";
-type ResultOfFetchingSubplebbit = {
-    subplebbit: SubplebbitIpfsType;
-    cid: string;
-} | undefined;
 export declare const MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS: number;
 export declare class SubplebbitClientsManager extends PlebbitClientsManager {
     clients: {
@@ -57,4 +53,3 @@ export declare class SubplebbitClientsManager extends PlebbitClientsManager {
     private _fetchSubplebbitFromGateways;
     private _findErrorInSubplebbitRecord;
 }
-export {};

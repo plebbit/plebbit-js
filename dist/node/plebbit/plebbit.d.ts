@@ -5,6 +5,7 @@ import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import Stats from "../stats.js";
 import { PlebbitClientsManager } from "./plebbit-client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
+import { InflightFetchManager } from "../util/inflight-fetch-manager.js";
 import type { CreateRemoteSubplebbitOptions, SubplebbitJson, SubplebbitIpfsType, RemoteSubplebbitJson, RpcRemoteSubplebbitJson } from "../subplebbit/types.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
@@ -15,7 +16,6 @@ import type { CreateSignerOptions } from "../signer/types.js";
 import type { CommentEditPubsubMessagePublication, CommentEditTypeJson, CreateCommentEditOptions } from "../publications/comment-edit/types.js";
 import type { CreateVoteOptions, VoteJson, VotePubsubMessagePublication } from "../publications/vote/types.js";
 import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentJson, CommentPubsubMessagePublication, CommentUpdateType, CommentWithinRepliesPostsPageJson, CreateCommentOptions, MinimumCommentFieldsToFetchPages } from "../publications/comment/types.js";
-import { CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
 import { CreateSubplebbitFunctionArgumentsSchema } from "../subplebbit/schema.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type { CommentModerationPubsubMessagePublication, CommentModerationTypeJson, CreateCommentModerationOptions } from "../publications/comment-moderation/types.js";
@@ -25,6 +25,7 @@ import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { Libp2pJsClient } from "../helia/libp2pjsClient.js";
+import { AuthorAddressRpcParam, CidRpcParam, SubplebbitAddressRpcParam } from "../clients/rpc-client/types.js";
 export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
@@ -79,6 +80,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     private _storageLRUs;
     _memCaches: PlebbitMemCaches;
     _domainResolver: DomainResolver;
+    _inflightFetchManager: InflightFetchManager;
     _timeouts: {
         "subplebbit-ipns": number;
         "subplebbit-ipfs": number;
@@ -97,8 +99,8 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     private _initIpfsGatewaysIfNeeded;
     private _setupHttpRoutersWithKuboNodeInBackground;
     _init(): Promise<void>;
-    getSubplebbit(subplebbitAddress: z.infer<typeof SubplebbitAddressSchema>): Promise<RemoteSubplebbit>;
-    getComment(cid: z.infer<typeof CidStringSchema>): Promise<Comment>;
+    getSubplebbit(getSubplebbitArgs: SubplebbitAddressRpcParam): Promise<RemoteSubplebbit>;
+    getComment(cid: CidRpcParam): Promise<Comment>;
     private _initMissingFieldsOfPublicationBeforeSigning;
     private _createCommentInstanceFromAnotherCommentInstance;
     createComment(options: CommentIpfsType | CommentPubsubMessagePublication | {
@@ -122,10 +124,10 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     _createSubplebbitEditInstanceFromJsonfiedSubplebbitEdit(jsonfied: SubplebbitEditJson): Promise<SubplebbitEdit>;
     createSubplebbitEdit(options: CreateSubplebbitEditPublicationOptions | SubplebbitEditPubsubMessagePublication | SubplebbitEditJson): Promise<SubplebbitEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<import("../signer/index.js").SignerWithPublicKeyAddress>;
-    fetchCid(cid: string): Promise<string>;
+    fetchCid(fetchCidArgs: CidRpcParam): Promise<string>;
     pubsubSubscribe(pubsubTopic: string): Promise<void>;
     pubsubUnsubscribe(pubsubTopic: string): Promise<void>;
-    resolveAuthorAddress(authorAddress: string): Promise<string | null>;
+    resolveAuthorAddress(resolveAuthorAddressArgs: AuthorAddressRpcParam): Promise<string | null>;
     validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: {
         validateReplies?: boolean;
     }): Promise<void>;

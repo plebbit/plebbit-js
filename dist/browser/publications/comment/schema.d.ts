@@ -574,6 +574,8 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
     childCount: z.ZodOptional<z.ZodNumber>;
+    number: z.ZodOptional<z.ZodNumber>;
+    postNumber: z.ZodOptional<z.ZodNumber>;
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -747,7 +749,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
         }>, z.ZodString]>, z.ZodString>>;
     }, z.core.$strip>>;
 }, z.core.$strict>;
-export declare const CommentUpdateSignedPropertyNames: ("flair" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "updatedAt" | "upvoteCount" | "downvoteCount" | "replyCount" | "childCount" | "edit" | "pinned" | "locked" | "removed" | "approved" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
+export declare const CommentUpdateSignedPropertyNames: ("number" | "flair" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "updatedAt" | "upvoteCount" | "downvoteCount" | "replyCount" | "childCount" | "postNumber" | "edit" | "pinned" | "locked" | "removed" | "approved" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
 export declare const CommentUpdateForDisapprovedPendingComment: z.ZodObject<{
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -927,6 +929,8 @@ export declare const CommentUpdateTableRowSchema: z.ZodObject<{
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
     childCount: z.ZodOptional<z.ZodNumber>;
+    number: z.ZodOptional<z.ZodNumber>;
+    postNumber: z.ZodOptional<z.ZodNumber>;
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -1093,6 +1097,8 @@ export declare const CommentUpdateTableRowSchema: z.ZodObject<{
                     downvoteCount: z.ZodNumber;
                     replyCount: z.ZodNumber;
                     childCount: z.ZodOptional<z.ZodNumber>;
+                    number: z.ZodOptional<z.ZodNumber>;
+                    postNumber: z.ZodOptional<z.ZodNumber>;
                     edit: z.ZodOptional<z.ZodObject<{
                         timestamp: z.ZodNumber;
                         signature: z.ZodObject<{
