@@ -1,0 +1,15 @@
+-   You don't need to run build if you're modifying files outside src/
+-   Make sure to run npm run build if you're modifying files inside src/, and make sure it passes with no errors
+-   each http router keep provider announcement for only 24 hours
+-   If you're gonna edit schema make sure to check for docs relevant to the local zod version by checking package.json
+-   Run every automated test suite through `node test/run-test-config.js --plebbit-config ${plebbit-config} ${testPath}` so our Vitest setup enforces bail/allowOnly/timeouts automatically. you need to supply test path to run-test-config.js. You also need to choose plebbit-config. If the test is inside test/node then choose "local-kubo-rpc"
+-   When running RPC tests (e.g. remove.test.js), set `USE_RPC=1` in the environment
+-   You should never use removeAllListeners because it removes error listener initialized in constructor which may cause process to crash
+-   If you need to troubleshoot or debug anything related to a local subplebbit, you can run sqlite queries against its database at `${plebbitDataPath}/subplebbits/${subplebbitAddress}`
+-   You can't add code that only works in node under src/, it has to be under src/runtime/node, or otherwise it will fail browser build
+-   Do not include this.timeout in tests, that is not supported by vitest
+-   When I report a bug or regression to you we need to figure out how to reproduce it determinstically in a test case first and then we can brainstorm how to fix it.
+-   Do not write in typescript inside test files that end with .js
+-   If you need to mock consider to use vitest utilities for mocking
+-   If you're gonna mock a comment, you need to create a fixture that's similar to how it looks to production like this one. For comment (CommentIpfs), look at test/fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json, while for commentUpdate look at test/fixtures/signatures/comment/commentUpdate/valid_comment_update.json
+-   Keep in mind that a comment's bytes size during publication is limited to 40kb
