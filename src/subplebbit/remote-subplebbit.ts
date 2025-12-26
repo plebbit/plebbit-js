@@ -195,6 +195,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this.ipnsName = getPlebbitAddressFromPublicKeySync(newProps.signature.publicKey);
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
             this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        } else if ("address" in newProps && typeof newProps.address === "string" && isIpns(newProps.address)) {
+            // Address is already an IPNS name; initialize pubsub fields immediately.
+            this.ipnsName = newProps.address;
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
         if (!this.pubsubTopicRoutingCid) {
             if ("pubsubTopicRoutingCid" in newProps) this.pubsubTopicRoutingCid = newProps.pubsubTopicRoutingCid;
