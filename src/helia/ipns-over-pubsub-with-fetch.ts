@@ -16,7 +16,7 @@ export type PlebbitIpnsGetOptions = ipnsGetOptions & {
     ipnsName: string;
 };
 
-const PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT = 3;
+const LIMIT_PARALLEL_FETCH_IPNS_FROM_PEERS = 3;
 const IPNS_FETCH_FROM_PEER_TIMEOUT_MS = 10000;
 
 // Infer types from the existing usage
@@ -84,7 +84,7 @@ export class IpnsFetchRouter implements IPNSRouting {
         pubsubSubscribers: PeerId[];
         options: PlebbitIpnsGetOptions & { signal: AbortSignal; abortController: AbortController };
     }): Promise<Uint8Array> {
-        const limit = pLimit(PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT);
+        const limit = pLimit(LIMIT_PARALLEL_FETCH_IPNS_FROM_PEERS);
 
         // We already have subscribers, no need to find providers
         log("Using", pubsubSubscribers.length, "existing pubsub subscribers for topic", topic);
@@ -151,7 +151,7 @@ export class IpnsFetchRouter implements IPNSRouting {
         topic: string;
         options: PlebbitIpnsGetOptions & { signal: AbortSignal; abortController: AbortController };
     }): Promise<Uint8Array> {
-        const limit = pLimit(PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT);
+        const limit = pLimit(LIMIT_PARALLEL_FETCH_IPNS_FROM_PEERS);
         // No subscribers, need to find providers using content routing and process them as they come
         const pubsubTopicCidString = pubsubTopicToDhtKey(topic);
         const pubsubTopicCid = CID.parse(pubsubTopicToDhtKey(topic));
@@ -211,7 +211,7 @@ export class IpnsFetchRouter implements IPNSRouting {
                 }
 
                 // If we have reached the limit, wait for some to complete before adding more
-                if (activeFetchPromises.length >= PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT) {
+                if (activeFetchPromises.length >= LIMIT_PARALLEL_FETCH_IPNS_FROM_PEERS) {
                     // Remove completed promises
                     const results = await Promise.allSettled(activeFetchPromises);
                     const successfulResult = results.find(
