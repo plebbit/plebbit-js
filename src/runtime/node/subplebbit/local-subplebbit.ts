@@ -1159,7 +1159,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             postCid
         });
         const aliasSigner = await this._plebbit.createSigner({ privateKey: aliasPrivateKey, type: "ed25519" });
-        const sanitizedAuthor = { address: aliasSigner.address } as CommentPubsubMessagePublication["author"];
+        const displayName = originalComment.author?.displayName;
+        const sanitizedAuthor = {
+            address: aliasSigner.address,
+            ...(displayName !== undefined ? { displayName } : {})
+        } as CommentPubsubMessagePublication["author"];
 
         const anonymizedComment = remeda.clone(originalComment);
 

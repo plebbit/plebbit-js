@@ -129,7 +129,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
             await domainPost.stop();
         });
 
-        it("Spec: anonymized publication strips author displayName/wallets/avatar/flair fields", async () => {
+        it("Spec: anonymized publication keeps author displayName while stripping wallets/avatar/flair fields", async () => {
             const noisyAuthor = {
                 address: authorSigner.address,
                 displayName: "Noisy Display Name",
@@ -160,7 +160,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
             const aliasSigner = await context.publisherPlebbit.createSigner({ privateKey: aliasRow.aliasPrivateKey, type: "ed25519" });
 
             const stored = context.subplebbit._dbHandler.queryComment(noisyPost.cid);
-            expect(stored?.author).to.deep.equal({ address: aliasSigner.address });
+            expect(stored?.author).to.deep.equal({ address: aliasSigner.address, displayName: noisyAuthor.displayName });
             expect(stored?.signature?.publicKey).to.equal(aliasSigner.publicKey);
             await expectCommentCidToUseAlias(context.publisherPlebbit, noisyPost.cid, aliasSigner);
             await noisyPost.stop();
@@ -238,7 +238,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
             await resolveWhenConditionIsTrue({ toUpdate: authoredPost, predicate: () => authoredPost.updatedAt });
 
             expect(authoredPost.author.address).to.equal(alias.address);
-            expect(authoredPost.author.displayName).to.be.undefined;
+            expect(authoredPost.author.displayName).to.equal(originalAuthor.displayName);
             expectOriginalFields();
 
             await authoredPost.stop();
@@ -842,10 +842,12 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                 sharedContext.post = await publishRandomPost(sharedContext.subplebbit.address, sharedContext.publisherPlebbit, {
                     signer: signingAuthor
                 });
+                sharedContext.postDisplayName = sharedContext.post.author.displayName;
                 await waitForStoredCommentUpdateWithAssertions(sharedContext.subplebbit, sharedContext.post);
                 sharedContext.reply = await publishRandomReply(sharedContext.post, sharedContext.publisherPlebbit, {
                     signer: signingAuthor
                 });
+                sharedContext.replyDisplayName = sharedContext.reply.author.displayName;
                 await waitForStoredCommentUpdateWithAssertions(sharedContext.subplebbit, sharedContext.reply);
                 await waitTillPostInSubplebbitPages(sharedContext.post, sharedContext.publisherPlebbit);
                 await waitTillReplyInParentPages(sharedContext.reply, sharedContext.publisherPlebbit);
@@ -898,7 +900,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                             const postInPage = page.comments.find((c) => c.cid === sharedContext.post.cid);
                             expect(postInPage).to.be.ok;
                             expect(postInPage?.author?.address).to.equal(aliasSigner.address);
-                            expect(postInPage?.author?.displayName).to.be.undefined;
+                            expect(postInPage?.author?.displayName).to.equal(sharedContext.postDisplayName);
                             expect(postInPage?.author?.wallets).to.be.undefined;
                             expect(postInPage?.author?.flair).to.be.undefined;
                             expect(postInPage?.signature?.publicKey).to.equal(aliasSigner.publicKey);
@@ -914,7 +916,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                                 typeof remoteComment.updatedAt === "number" && remoteComment.edit?.content === sharedContext.editContent
                         });
                         expect(remoteComment.author.address).to.equal(aliasSigner.address);
-                        expect(remoteComment.author.displayName).to.be.undefined;
+                        expect(remoteComment.author.displayName).to.equal(sharedContext.postDisplayName);
                         expect(remoteComment.content).to.equal(sharedContext.editContent);
                         expect(remoteComment.edit?.content).to.equal(sharedContext.editContent);
                         expect(remoteComment.edit?.signature?.publicKey).to.equal(aliasSigner.publicKey);
@@ -930,7 +932,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                             predicate: () => typeof remoteReply.updatedAt === "number"
                         });
                         expect(remoteReply.author.address).to.equal(aliasSigner.address);
-                        expect(remoteReply.author.displayName).to.be.undefined;
+                        expect(remoteReply.author.displayName).to.equal(sharedContext.replyDisplayName);
 
                         expect(remoteReply.signature.publicKey).to.equal(aliasSigner.publicKey);
                         await remoteReply.stop();
