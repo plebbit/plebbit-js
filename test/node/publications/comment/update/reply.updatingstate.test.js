@@ -20,6 +20,7 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
             let context;
 
             before(async () => {
+                // this hook times out sometimes
                 context = await createReplyParentPagesTestEnvironment({ replyDepth });
             });
 
