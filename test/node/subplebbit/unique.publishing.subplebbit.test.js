@@ -64,19 +64,19 @@ class InMemoryDbHandlerMock {
     }
 
     // anonymity alias helpers
-    queryAnonymityAliasByCommentCid() {
+    queryPseudonymityAliasByCommentCid() {
         return undefined;
     }
 
-    queryAnonymityAliasForPost() {
+    queryPseudonymityAliasForPost() {
         return undefined;
     }
 
-    queryAnonymityAliasForAuthor() {
+    queryPseudonymityAliasForAuthor() {
         return undefined;
     }
 
-    insertAnonymityAliases() {}
+    insertPseudonymityAliases() {}
 
     // comment edit helpers
     hasCommentEditWithSignatureEncoded(signatureEncoded) {

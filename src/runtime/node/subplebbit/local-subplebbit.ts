@@ -19,7 +19,7 @@ import type {
 import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
-import type { AnonymityAliasRow, PurgedCommentTableRows } from "./db-handler-types.js";
+import type { PseudonymityAliasRow, PurgedCommentTableRows } from "./db-handler-types.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
     derivePublicationFromChallengeRequest,
@@ -1117,14 +1117,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _resolveAliasPrivateKeyForCommentPublication(opts: {
-        mode: AnonymityAliasRow["mode"];
-        originalAuthorSignerPublicKey: AnonymityAliasRow["originalAuthorSignerPublicKey"];
+        mode: PseudonymityAliasRow["mode"];
+        originalAuthorSignerPublicKey: PseudonymityAliasRow["originalAuthorSignerPublicKey"];
         postCid?: string;
     }): Promise<string> {
         if (opts.mode === "per-post") {
             // For a new post (no postCid yet), always generate a fresh alias; once stored the postCid will be used for reuse.
             if (opts.postCid) {
-                const existing = this._dbHandler.queryAnonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
+                const existing = this._dbHandler.queryPseudonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
                 if (existing?.aliasPrivateKey) return existing.aliasPrivateKey;
             }
             return (await this._plebbit.createSigner()).privateKey;
@@ -1132,23 +1132,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const signer = await this._plebbit.createSigner();
             return signer.privateKey;
         } else if (opts.mode === "per-author") {
-            const existing = this._dbHandler.queryAnonymityAliasForAuthor(opts.originalAuthorSignerPublicKey);
+            const existing = this._dbHandler.queryPseudonymityAliasForAuthor(opts.originalAuthorSignerPublicKey);
             if (existing?.aliasPrivateKey) return existing.aliasPrivateKey;
             const signer = await this._plebbit.createSigner();
             return signer.privateKey;
-        } else throw Error(`Unsupported anonymityMode (${opts.mode})`);
+        } else throw Error(`Unsupported pseudonymityMode (${opts.mode})`);
     }
 
     private async _prepareCommentWithAnonymity(originalComment: CommentPubsubMessagePublication): Promise<{
         publication: CommentPubsubMessagePublication;
         anonymity?: {
-            aliasPrivateKey: AnonymityAliasRow["aliasPrivateKey"];
-            originalAuthorSignerPublicKey: AnonymityAliasRow["originalAuthorSignerPublicKey"];
-            mode: AnonymityAliasRow["mode"];
+            aliasPrivateKey: PseudonymityAliasRow["aliasPrivateKey"];
+            originalAuthorSignerPublicKey: PseudonymityAliasRow["originalAuthorSignerPublicKey"];
+            mode: PseudonymityAliasRow["mode"];
             originalComment: CommentPubsubMessagePublication;
         };
     }> {
-        const mode = this.features?.anonymityMode;
+        const mode = this.features?.pseudonymityMode;
         if (!mode) return { publication: originalComment };
 
         const originalAuthorSignerPublicKey = originalComment.signature.publicKey;
@@ -1178,7 +1178,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _prepareCommentEditWithAlias(originalEdit: CommentEditPubsubMessagePublication) {
-        const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(originalEdit.commentCid);
+        const aliasSignerOfComment = this._dbHandler.queryPseudonymityAliasByCommentCid(originalEdit.commentCid);
         if (!aliasSignerOfComment) return originalEdit;
 
         const aliasSigner = await this._plebbit.createSigner({
@@ -1267,7 +1267,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const storedComment = await this.storeComment(publication, pendingApproval);
 
             if (anonymity)
-                this._dbHandler.insertAnonymityAliases([
+                this._dbHandler.insertPseudonymityAliases([
                     {
                         commentCid: storedComment.cid,
                         aliasPrivateKey: anonymity.aliasPrivateKey,
@@ -1679,7 +1679,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const commentEditInDb = this._dbHandler.hasCommentEditWithSignatureEncoded(commentEditPublication.signature.signature);
             if (commentEditInDb) return messages.ERR_DUPLICATE_COMMENT_EDIT;
 
-            const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(commentToBeEdited.cid);
+            const aliasSignerOfComment = this._dbHandler.queryPseudonymityAliasByCommentCid(commentToBeEdited.cid);
             if (aliasSignerOfComment) {
                 const editSignedByOriginalAuthor =
                     commentEditPublication.signature.publicKey === aliasSignerOfComment.originalAuthorSignerPublicKey;

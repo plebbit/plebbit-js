@@ -10,12 +10,12 @@ export type PurgedCommentTableRows = {
 export type CommentCidWithReplies = Pick<CommentsTableRow, "cid"> & Pick<CommentUpdatesRow, "replies">;
 
 type Features = NonNullable<SubplebbitIpfsType["features"]>;
-type AnonymityMode = NonNullable<Features["anonymityMode"]>;
+type PseudonymityMode = NonNullable<Features["pseudonymityMode"]>;
 
-export type AnonymityAliasRow = {
+export type PseudonymityAliasRow = {
     commentCid: CommentsTableRow["cid"];
     aliasPrivateKey: SignerType["privateKey"];
     originalAuthorSignerPublicKey: NonNullable<SignerType["publicKey"]>;
-    mode: AnonymityMode;
+    mode: PseudonymityMode;
     insertedAt: number;
 };

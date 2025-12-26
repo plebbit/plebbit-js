@@ -72,7 +72,7 @@ export const SubplebbitFeaturesSchema = z.looseObject({
     noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
     requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
     requirePostLinkIsMedia: z.boolean().optional(), // post.link must be of media (audio, video, image)
-    anonymityMode: z.enum(["per-post", "per-reply", "per-author"]).optional()
+    pseudonymityMode: z.enum(["per-post", "per-reply", "per-author"]).optional()
 });
 
 // Local subplebbit challenge here (Challenges API)
