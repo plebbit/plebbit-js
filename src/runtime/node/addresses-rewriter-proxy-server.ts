@@ -496,9 +496,9 @@ export class AddressesRewriterProxyServer {
             this._db.saveFailedKeys(keys);
 
             if (keys.length === 0) {
-                debug(`All keys successfully provided - no failed keys to save`);
+                debug.trace(`All keys successfully provided - no failed keys to save`);
             } else {
-                debug(`Saved ${keys.length} failed keys to database`);
+                debug.trace(`Saved ${keys.length} failed keys to database`);
             }
         } catch (error) {
             debug.error("Failed to save failed keys to database:", error);
@@ -567,7 +567,7 @@ export class AddressesRewriterProxyServer {
         // Save updated failed keys to database
         this._saveFailedKeysToDatabase();
 
-        debug(
+        debug.trace(
             `Retry completed: ${successfulKeys.length} successful, ${stillFailedKeys.length} still failed, ${keysToDiscard.length} discarded`
         );
     }
