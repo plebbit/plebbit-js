@@ -72,6 +72,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     state!: SubplebbitState;
     clients: SubplebbitClientsManager["clients"];
     updateCid?: string;
+    declare ipnsName?: string;
+    declare ipnsPubsubTopic?: string; // ipns over pubsub topic
+    declare ipnsPubsubTopicRoutingCid?: string; // peers of subplebbit.ipnsPubsubTopic, use this cid with http routers to find peers of ipns-over-pubsub
     pubsubTopicRoutingCid?: string; // peers of subplebbit.pubsubTopic, use this cid with http routers to find peers of subplebbit.pubsubTopic
 
     // should be used internally
@@ -95,6 +98,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._plebbit = plebbit;
         this._setState("stopped");
         this._updatingState = "stopped";
+        this._defineIpnsAccessorProps();
 
         // these functions might get separated from their `this` when used
         this.update = this.update.bind(this);
@@ -113,6 +117,34 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         });
         this.modQueue = new ModQueuePages({ pageCids: {}, plebbit: this._plebbit, subplebbit: this, pages: undefined });
         hideClassPrivateProps(this);
+    }
+
+    protected _defineIpnsAccessorProps() {
+        Object.defineProperties(this, {
+            _ipnsName: { enumerable: false, configurable: true, writable: true, value: undefined },
+            _ipnsPubsubTopic: { enumerable: false, configurable: true, writable: true, value: undefined },
+            _ipnsPubsubTopicRoutingCid: { enumerable: false, configurable: true, writable: true, value: undefined }
+        });
+        Object.defineProperties(this, {
+            ipnsName: {
+                enumerable: true,
+                configurable: true,
+                get: () => this._getIpnsName(),
+                set: (value: string | undefined) => this._setIpnsName(value)
+            },
+            ipnsPubsubTopic: {
+                enumerable: true,
+                configurable: true,
+                get: () => this._getIpnsPubsubTopic(),
+                set: (value: string | undefined) => this._setIpnsPubsubTopic(value)
+            },
+            ipnsPubsubTopicRoutingCid: {
+                enumerable: true,
+                configurable: true,
+                get: () => this._getIpnsPubsubTopicRoutingCid(),
+                set: (value: string | undefined) => this._setIpnsPubsubTopicRoutingCid(value)
+            }
+        });
     }
 
     _updateLocalPostsInstance(
@@ -280,27 +312,27 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         } else return this._updatingState;
     }
 
-    get ipnsName(): string | undefined {
+    protected _getIpnsName(): string | undefined {
         return this._updatingSubInstanceWithListeners?.subplebbit.ipnsName ?? this._ipnsName;
     }
 
-    set ipnsName(value: string | undefined) {
+    protected _setIpnsName(value: string | undefined) {
         this._ipnsName = value;
     }
 
-    get ipnsPubsubTopic(): string | undefined {
+    protected _getIpnsPubsubTopic(): string | undefined {
         return this._updatingSubInstanceWithListeners?.subplebbit.ipnsPubsubTopic ?? this._ipnsPubsubTopic;
     }
 
-    set ipnsPubsubTopic(value: string | undefined) {
+    protected _setIpnsPubsubTopic(value: string | undefined) {
         this._ipnsPubsubTopic = value;
     }
 
-    get ipnsPubsubTopicRoutingCid(): string | undefined {
+    protected _getIpnsPubsubTopicRoutingCid(): string | undefined {
         return this._updatingSubInstanceWithListeners?.subplebbit.ipnsPubsubTopicRoutingCid ?? this._ipnsPubsubTopicRoutingCid;
     }
 
-    set ipnsPubsubTopicRoutingCid(value: string | undefined) {
+    protected _setIpnsPubsubTopicRoutingCid(value: string | undefined) {
         this._ipnsPubsubTopicRoutingCid = value;
     }
 
