@@ -72,9 +72,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     state!: SubplebbitState;
     clients: SubplebbitClientsManager["clients"];
     updateCid?: string;
-    ipnsName?: string;
-    ipnsPubsubTopic?: string; // ipns over pubsub topic
-    ipnsPubsubTopicRoutingCid?: string; // peers of subplebbit.ipnsPubsubTopic, use this cid with http routers to find peers of ipns-over-pubsub
     pubsubTopicRoutingCid?: string; // peers of subplebbit.pubsubTopic, use this cid with http routers to find peers of subplebbit.pubsubTopic
 
     // should be used internally
@@ -86,6 +83,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         "error" | "updatingstatechange" | "update" | "statechange"
     > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
     _numOfListenersForUpdatingInstance = 0;
+    protected _ipnsName?: string;
+    protected _ipnsPubsubTopic?: string;
+    protected _ipnsPubsubTopicRoutingCid?: string;
 
     // Add a private property to store the actual updatingState value
     protected _updatingState!: SubplebbitUpdatingState;
@@ -280,6 +280,30 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         } else return this._updatingState;
     }
 
+    get ipnsName(): string | undefined {
+        return this._updatingSubInstanceWithListeners?.subplebbit.ipnsName ?? this._ipnsName;
+    }
+
+    set ipnsName(value: string | undefined) {
+        this._ipnsName = value;
+    }
+
+    get ipnsPubsubTopic(): string | undefined {
+        return this._updatingSubInstanceWithListeners?.subplebbit.ipnsPubsubTopic ?? this._ipnsPubsubTopic;
+    }
+
+    set ipnsPubsubTopic(value: string | undefined) {
+        this._ipnsPubsubTopic = value;
+    }
+
+    get ipnsPubsubTopicRoutingCid(): string | undefined {
+        return this._updatingSubInstanceWithListeners?.subplebbit.ipnsPubsubTopicRoutingCid ?? this._ipnsPubsubTopicRoutingCid;
+    }
+
+    set ipnsPubsubTopicRoutingCid(value: string | undefined) {
+        this._ipnsPubsubTopicRoutingCid = value;
+    }
+
     _setState(newState: RemoteSubplebbit["state"]) {
         if (newState === this.state) return;
         this.state = newState;
@@ -471,6 +495,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (!this._updatingSubInstanceWithListeners) throw Error("should be defined at this stage");
 
         const log = Logger("plebbit-js:remote-subplebbit:stop:cleanUpUpdatingSubInstanceWithListeners");
+        const updatingSubplebbit = this._updatingSubInstanceWithListeners.subplebbit;
+        if (typeof updatingSubplebbit.ipnsName === "string") this._ipnsName = updatingSubplebbit.ipnsName;
+        if (typeof updatingSubplebbit.ipnsPubsubTopic === "string") this._ipnsPubsubTopic = updatingSubplebbit.ipnsPubsubTopic;
+        if (typeof updatingSubplebbit.ipnsPubsubTopicRoutingCid === "string")
+            this._ipnsPubsubTopicRoutingCid = updatingSubplebbit.ipnsPubsubTopicRoutingCid;
         this._updatingState = this._updatingSubInstanceWithListeners.subplebbit.updatingState; // need to capture latest updating state before removing listeners
         // this instance is subscribed to plebbit._updatingSubplebbit[address]
         // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers
