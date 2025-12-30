@@ -17,6 +17,8 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { timestamp } from "../../../../dist/node/util.js";
+import { createSigner } from "../../../../dist/node/signer/index.js";
+import { signComment } from "../../../../dist/node/signer/signatures.js";
 import signers from "../../../fixtures/signers.js";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
@@ -1414,6 +1416,16 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
             });
         });
     });
+
+    describe.sequential("Spec: existing replies keep original pseudonymityMode while new replies follow current mode", () => {
+        it("Spec: per-reply replies stay per-reply after switching to per-author", async () => {
+            await assertPseudonymityModeTransition({ initialMode: "per-reply", nextMode: "per-author" });
+        });
+
+        it("Spec: per-reply replies stay per-reply after switching to per-post", async () => {
+            await assertPseudonymityModeTransition({ initialMode: "per-reply", nextMode: "per-post" });
+        });
+    });
 });
 
 async function expectCommentCidToUseAlias(plebbit, cid, aliasSigner) {
@@ -1421,6 +1433,136 @@ async function expectCommentCidToUseAlias(plebbit, cid, aliasSigner) {
     expect(fetched?.author?.address).to.equal(aliasSigner.address);
     expect(fetched?.signature?.publicKey).to.equal(aliasSigner.publicKey);
 }
+
+const PROTOCOL_VERSION = "1.0.0";
+
+async function assertPseudonymityModeTransition({ initialMode, nextMode }) {
+    const context = await createAnonymityTransitionContext(initialMode);
+    const authorSigner = await createSigner({ privateKey: signers[0].privateKey, type: signers[0].type });
+
+    try {
+        const parentPost = await buildSignedPostPublication({
+            signer: authorSigner,
+            subplebbitAddress: context.subplebbitAddress
+        });
+        const storedParentPost = await context.subplebbit.storePublication({ comment: parentPost });
+        const postCid = storedParentPost.cid;
+
+        const originalReply = await buildSignedReplyPublication({
+            signer: authorSigner,
+            subplebbitAddress: context.subplebbitAddress,
+            postCid,
+            parentCid: postCid
+        });
+        const oldStored = await context.subplebbit.storePublication({ comment: originalReply });
+        const oldReplyCid = oldStored.cid;
+        const oldAliasRow = context.dbHandler.queryPseudonymityAliasByCommentCid(oldReplyCid);
+        expect(oldAliasRow?.mode).to.equal(initialMode);
+
+        const oldAliasSigner = await createSigner({ privateKey: oldAliasRow.aliasPrivateKey, type: "ed25519" });
+        expectStoredCommentToUseAlias(context.dbHandler, oldReplyCid, oldAliasSigner);
+
+        await context.subplebbit.edit({ features: { pseudonymityMode: nextMode } });
+        await ensureSubplebbitDbReady(context.subplebbit);
+
+        const newReply = await buildSignedReplyPublication({
+            signer: authorSigner,
+            subplebbitAddress: context.subplebbitAddress,
+            postCid,
+            parentCid: postCid
+        });
+        const newReplyStored = await context.subplebbit.storePublication({ comment: newReply });
+        const newReplyAliasRow = context.dbHandler.queryPseudonymityAliasByCommentCid(newReplyStored.cid);
+        expect(newReplyAliasRow?.mode).to.equal(nextMode);
+
+        const newReplyAliasSigner = await createSigner({ privateKey: newReplyAliasRow.aliasPrivateKey, type: "ed25519" });
+        expect(newReplyAliasRow.aliasPrivateKey).to.not.equal(oldAliasRow.aliasPrivateKey);
+        expectStoredCommentToUseAlias(context.dbHandler, newReplyStored.cid, newReplyAliasSigner);
+
+        const newPost = await buildSignedPostPublication({
+            signer: authorSigner,
+            subplebbitAddress: context.subplebbitAddress
+        });
+        const newPostStored = await context.subplebbit.storePublication({ comment: newPost });
+        const newPostAliasRow = context.dbHandler.queryPseudonymityAliasByCommentCid(newPostStored.cid);
+        expect(newPostAliasRow?.mode).to.equal(nextMode);
+
+        const newPostAliasSigner = await createSigner({ privateKey: newPostAliasRow.aliasPrivateKey, type: "ed25519" });
+        expect(newPostAliasRow.aliasPrivateKey).to.not.equal(oldAliasRow.aliasPrivateKey);
+        expectStoredCommentToUseAlias(context.dbHandler, newPostStored.cid, newPostAliasSigner);
+
+        const storedAliasAfter = context.dbHandler.queryPseudonymityAliasByCommentCid(oldReplyCid);
+        expect(storedAliasAfter?.mode).to.equal(initialMode);
+        expect(storedAliasAfter?.aliasPrivateKey).to.equal(oldAliasRow.aliasPrivateKey);
+    } finally {
+        await context.cleanup();
+    }
+}
+
+async function buildSignedReplyPublication({ signer, subplebbitAddress, postCid, parentCid }) {
+    const base = {
+        signer,
+        author: { address: signer.address },
+        subplebbitAddress,
+        timestamp: timestamp(),
+        protocolVersion: PROTOCOL_VERSION,
+        content: `transition-reply-${Date.now()}`,
+        postCid,
+        parentCid
+    };
+    const signature = await signComment(base, {});
+    const publication = { ...base, signature };
+    delete publication.signer;
+    return publication;
+}
+
+async function buildSignedPostPublication({ signer, subplebbitAddress }) {
+    const base = {
+        signer,
+        author: { address: signer.address },
+        subplebbitAddress,
+        timestamp: timestamp(),
+        protocolVersion: PROTOCOL_VERSION,
+        title: `transition-post-${Date.now()}`,
+        content: `transition-post-content-${Date.now()}`
+    };
+    const signature = await signComment(base, {});
+    const publication = { ...base, signature };
+    delete publication.signer;
+    return publication;
+}
+
+async function ensureSubplebbitDbReady(subplebbit) {
+    if (typeof subplebbit.initDbHandlerIfNeeded === "function") {
+        await subplebbit.initDbHandlerIfNeeded();
+    }
+    await subplebbit._dbHandler.initDbIfNeeded({ fileMustExist: false });
+}
+
+function expectStoredCommentToUseAlias(dbHandler, cid, aliasSigner) {
+    const stored = dbHandler.queryComment(cid);
+    expect(stored?.author?.address).to.equal(aliasSigner.address);
+    expect(stored?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+}
+
+async function createAnonymityTransitionContext(initialMode) {
+    const plebbit = await mockPlebbit();
+    const subplebbit = await createSubWithNoChallenge({}, plebbit);
+    await subplebbit.edit({ features: { pseudonymityMode: initialMode } });
+    await subplebbit._dbHandler.initDbIfNeeded({ fileMustExist: false });
+    await subplebbit._dbHandler.createOrMigrateTablesIfNeeded();
+    return {
+        subplebbit,
+        dbHandler: subplebbit._dbHandler,
+        plebbit,
+        subplebbitAddress: subplebbit.address,
+        cleanup: async () => {
+            await subplebbit.delete();
+            await plebbit.destroy();
+        }
+    };
+}
+
 
 async function createPerReplySubplebbit() {
     const publisherPlebbit = await mockPlebbit();
