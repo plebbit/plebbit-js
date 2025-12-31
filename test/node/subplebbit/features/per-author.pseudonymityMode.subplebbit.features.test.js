@@ -1038,7 +1038,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
         });
     });
 
-    describe.only("Spec: existing replies keep original pseudonymityMode while new replies follow current mode", () => {
+    describe("Spec: existing replies keep original pseudonymityMode while new replies follow current mode", () => {
         it("Spec: per-author replies stay per-author after switching to per-post", async () => {
             await assertPseudonymityModeTransition({ initialMode: "per-author", nextMode: "per-post" });
         });
