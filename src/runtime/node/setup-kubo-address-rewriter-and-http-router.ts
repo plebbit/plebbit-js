@@ -37,10 +37,7 @@ function _mergeRouterConfigs(existingConfig: any, newConfig: any) {
     };
 }
 
-async function _setProvideDhtSweepEnabledOnKuboNode(
-    kuboClient: Plebbit["clients"]["kuboRpcClients"][string],
-    sweepEnabled: boolean
-) {
+async function _setProvideDhtSweepEnabledOnKuboNode(kuboClient: Plebbit["clients"]["kuboRpcClients"][string], sweepEnabled: boolean) {
     const log = Logger("plebbit-js:plebbit:_init:retrySettingHttpRoutersOnIpfsNodes:setProvideDhtSweepEnabledOnIpfsNode");
     const configKey = "Provide.DHT.SweepEnabled";
     const url = `${kuboClient._clientOptions.url}/config?arg=${configKey}&arg=${JSON.stringify(sweepEnabled)}&json=true`;
