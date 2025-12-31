@@ -37,7 +37,7 @@ import {
     removeBlocksFromKuboNode,
     writeKuboFilesWithTimeout,
     retryKuboIpfsAddAndProvide,
-    getIpnsRecordInLocalKuboNode,
+    retryKuboBlockPutPinAndProvidePubsubTopic,
     calculateIpfsCidV0,
     calculateStringSizeSameAsIpfsAddCidV0
 } from "../../../util.js";
@@ -245,6 +245,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _updateLoopPromise?: Promise<void> = undefined;
     private _firstUpdateAfterStart: boolean = true;
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
+    private _lastPubsubTopicRoutingProvideAt?: number = undefined;
     private _mirroredStartedOrUpdatingSubplebbit?: { subplebbit: LocalSubplebbit } & Pick<
         SubplebbitEvents,
         | "error"
@@ -2425,6 +2426,31 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
+    private async _providePubsubTopicRoutingCidsIfNeeded(force = false) {
+        const log = Logger("plebbit-js:local-subplebbit:_providePubsubTopicRoutingCidsIfNeeded");
+        const reprovideIntervalMs = 6 * 60 * 60 * 1000;
+        const now = Date.now();
+        if (!force && this._lastPubsubTopicRoutingProvideAt && now - this._lastPubsubTopicRoutingProvideAt < reprovideIntervalMs) return;
+
+        const pubsubTopic = this.pubsubTopicWithfallback();
+        const topics = [pubsubTopic, this.ipnsPubsubTopic].filter((topic): topic is string => typeof topic === "string");
+        if (topics.length === 0) return;
+
+        this._lastPubsubTopicRoutingProvideAt = now;
+        const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient()._client;
+        for (const topic of topics) {
+            try {
+                await retryKuboBlockPutPinAndProvidePubsubTopic({
+                    ipfsClient: kuboRpcClient,
+                    log,
+                    pubsubTopic: topic
+                });
+            } catch (error) {
+                log.error("Failed to reprovide pubsub topic routing block", { topic, error });
+            }
+        }
+    }
+
     _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: PurgedCommentTableRows) {
         const log = Logger("plebbit-js:_addAllCidsUnderPurgedCommentToBeRemoved");
         this._cidsToUnPin.add(purgedCommentAndCommentUpdate.commentTableRow.cid);
@@ -2477,6 +2503,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         try {
             await this._listenToIncomingRequests();
+            await this._providePubsubTopicRoutingCidsIfNeeded();
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
@@ -2777,6 +2804,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._setChallengesToDefaultIfNotDefined(log);
             // Import subplebbit keys onto ipfs node
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
+            await this._providePubsubTopicRoutingCidsIfNeeded(true);
 
             this._subplebbitUpdateTrigger = true;
             this._setStartedStateWithEmission("publishing-ipns");
@@ -3108,6 +3136,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } catch (e) {
             log.error("Failed to add old page cids from subplebbit.posts to be unpinned", e);
         }
+        if (this.ipnsPubsubTopicRoutingCid) this._cidsToUnPin.add(this.ipnsPubsubTopicRoutingCid);
+        if (this.pubsubTopicRoutingCid) this._cidsToUnPin.add(this.pubsubTopicRoutingCid);
         try {
             await this.initDbHandlerIfNeeded();
             await this._dbHandler.initDbIfNeeded();

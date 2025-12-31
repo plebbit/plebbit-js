@@ -91,9 +91,11 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
 
         expect(sub.updateCid).to.be.a("string");
         expect(sub.pubsubTopicRoutingCid).to.be.a("string");
+        expect(sub.ipnsPubsubTopicRoutingCid).to.be.a("string");
         const provideToTestAgainst = [
             { label: "sub.updateCid", cid: sub.updateCid },
-            { label: "sub.pubsubTopicRoutingCid", cid: sub.pubsubTopicRoutingCid }
+            { label: "sub.pubsubTopicRoutingCid", cid: sub.pubsubTopicRoutingCid },
+            { label: "sub.ipnsPubsubTopicRoutingCid", cid: sub.ipnsPubsubTopicRoutingCid }
         ];
 
         const providerStatuses = provideToTestAgainst.map(({ cid, label }) => ({
