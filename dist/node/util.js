@@ -383,6 +383,48 @@ export const pubsubTopicToDhtKeyCid = (pubsubTopic) => {
     const cid = CID.create(1, 0x55, digest);
     return cid;
 };
+export async function retryKuboBlockPutPinAndProvidePubsubTopic({ ipfsClient: kuboRpcClient, log, pubsubTopic, inputNumOfRetries, blockPutOptions, pinAddOptions, provideOptions }) {
+    const numOfRetries = inputNumOfRetries ?? 3;
+    const bytes = new TextEncoder().encode(`floodsub:${pubsubTopic}`);
+    const expectedCid = pubsubTopicToDhtKeyCid(pubsubTopic);
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 2000
+        });
+        operation.attempt(async (currentAttempt) => {
+            try {
+                const cid = (await kuboRpcClient.block.put(bytes, {
+                    ...blockPutOptions,
+                    format: "raw",
+                    mhtype: "sha2-256",
+                    version: 1
+                }));
+                if (!cid.equals(expectedCid)) {
+                    throw new Error(`block.put CID mismatch for pubsub topic ${pubsubTopic}: expected ${String(expectedCid)} got ${String(cid)}`);
+                }
+                await kuboRpcClient.pin.add(cid, pinAddOptions);
+                try {
+                    const provideEvents = kuboRpcClient.routing.provide(cid, provideOptions);
+                    for await (const event of provideEvents) {
+                        log.trace(`Provide event for ${String(cid)}:`, event);
+                    }
+                }
+                catch (e) {
+                    log.trace("Minor Error, not a big deal: Failed to provide after block.put", e);
+                }
+                resolve(cid);
+            }
+            catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to store and provide pubsub topic block:`, error);
+                if (operation.retry(error))
+                    return;
+                reject(operation.mainError() || error);
+            }
+        });
+    });
+}
 export async function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, addOptions, provideOptions }) {
     const numOfRetries = inputNumOfRetries ?? 3;
     return new Promise((resolve, reject) => {

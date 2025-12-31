@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0 } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -85,6 +85,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._updateLoopPromise = undefined;
         this._firstUpdateAfterStart = true;
         this._internalStateUpdateId = "";
+        this._lastPubsubTopicRoutingProvideAt = undefined;
         this._mirroredStartedOrUpdatingSubplebbit = undefined; // The plebbit._startedSubplebbits we're subscribed to
         this._pendingEditProps = [];
         this._blocksToRm = [];
@@ -803,7 +804,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (opts.mode === "per-post") {
             // For a new post (no postCid yet), always generate a fresh alias; once stored the postCid will be used for reuse.
             if (opts.postCid) {
-                const existing = this._dbHandler.queryAnonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
+                const existing = this._dbHandler.queryPseudonymityAliasForPost(opts.originalAuthorSignerPublicKey, opts.postCid);
                 if (existing?.aliasPrivateKey)
                     return existing.aliasPrivateKey;
             }
@@ -814,17 +815,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return signer.privateKey;
         }
         else if (opts.mode === "per-author") {
-            const existing = this._dbHandler.queryAnonymityAliasForAuthor(opts.originalAuthorSignerPublicKey);
+            const existing = this._dbHandler.queryPseudonymityAliasForAuthor(opts.originalAuthorSignerPublicKey);
             if (existing?.aliasPrivateKey)
                 return existing.aliasPrivateKey;
             const signer = await this._plebbit.createSigner();
             return signer.privateKey;
         }
         else
-            throw Error(`Unsupported anonymityMode (${opts.mode})`);
+            throw Error(`Unsupported pseudonymityMode (${opts.mode})`);
     }
     async _prepareCommentWithAnonymity(originalComment) {
-        const mode = this.features?.anonymityMode;
+        const mode = this.features?.pseudonymityMode;
         if (!mode)
             return { publication: originalComment };
         const originalAuthorSignerPublicKey = originalComment.signature.publicKey;
@@ -835,7 +836,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             postCid
         });
         const aliasSigner = await this._plebbit.createSigner({ privateKey: aliasPrivateKey, type: "ed25519" });
-        const sanitizedAuthor = { address: aliasSigner.address };
+        const displayName = originalComment.author?.displayName;
+        const sanitizedAuthor = {
+            address: aliasSigner.address,
+            ...(displayName !== undefined ? { displayName } : {})
+        };
         const anonymizedComment = remeda.clone(originalComment);
         anonymizedComment.author = sanitizedAuthor;
         anonymizedComment.signature = await signComment({ ...anonymizedComment, signer: aliasSigner }, this._plebbit);
@@ -850,7 +855,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
     }
     async _prepareCommentEditWithAlias(originalEdit) {
-        const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(originalEdit.commentCid);
+        const aliasSignerOfComment = this._dbHandler.queryPseudonymityAliasByCommentCid(originalEdit.commentCid);
         if (!aliasSignerOfComment)
             return originalEdit;
         const aliasSigner = await this._plebbit.createSigner({
@@ -921,7 +926,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
             const storedComment = await this.storeComment(publication, pendingApproval);
             if (anonymity)
-                this._dbHandler.insertAnonymityAliases([
+                this._dbHandler.insertPseudonymityAliases([
                     {
                         commentCid: storedComment.cid,
                         aliasPrivateKey: anonymity.aliasPrivateKey,
@@ -1243,7 +1248,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentEditInDb = this._dbHandler.hasCommentEditWithSignatureEncoded(commentEditPublication.signature.signature);
             if (commentEditInDb)
                 return messages.ERR_DUPLICATE_COMMENT_EDIT;
-            const aliasSignerOfComment = this._dbHandler.queryAnonymityAliasByCommentCid(commentToBeEdited.cid);
+            const aliasSignerOfComment = this._dbHandler.queryPseudonymityAliasByCommentCid(commentToBeEdited.cid);
             if (aliasSignerOfComment) {
                 const editSignedByOriginalAuthor = commentEditPublication.signature.publicKey === aliasSignerOfComment.originalAuthorSignerPublicKey;
                 if (!editSignedByOriginalAuthor)
@@ -1819,6 +1824,31 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log("GC cleaned", gcCids, "cids out of the IPFS node");
         }
     }
+    async _providePubsubTopicRoutingCidsIfNeeded(force = false) {
+        const log = Logger("plebbit-js:local-subplebbit:_providePubsubTopicRoutingCidsIfNeeded");
+        const reprovideIntervalMs = 6 * 60 * 60 * 1000;
+        const now = Date.now();
+        if (!force && this._lastPubsubTopicRoutingProvideAt && now - this._lastPubsubTopicRoutingProvideAt < reprovideIntervalMs)
+            return;
+        const pubsubTopic = this.pubsubTopicWithfallback();
+        const topics = [pubsubTopic, this.ipnsPubsubTopic].filter((topic) => typeof topic === "string");
+        if (topics.length === 0)
+            return;
+        this._lastPubsubTopicRoutingProvideAt = now;
+        const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient()._client;
+        for (const topic of topics) {
+            try {
+                await retryKuboBlockPutPinAndProvidePubsubTopic({
+                    ipfsClient: kuboRpcClient,
+                    log,
+                    pubsubTopic: topic
+                });
+            }
+            catch (error) {
+                log.error("Failed to reprovide pubsub topic routing block", { topic, error });
+            }
+        }
+    }
     _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate) {
         const log = Logger("plebbit-js:_addAllCidsUnderPurgedCommentToBeRemoved");
         this._cidsToUnPin.add(purgedCommentAndCommentUpdate.commentTableRow.cid);
@@ -1856,6 +1886,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         try {
             await this._listenToIncomingRequests();
+            await this._providePubsubTopicRoutingCidsIfNeeded();
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
@@ -2113,6 +2144,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._setChallengesToDefaultIfNotDefined(log);
             // Import subplebbit keys onto ipfs node
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
+            await this._providePubsubTopicRoutingCidsIfNeeded(true);
             this._subplebbitUpdateTrigger = true;
             this._setStartedStateWithEmission("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
@@ -2391,6 +2423,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         catch (e) {
             log.error("Failed to add old page cids from subplebbit.posts to be unpinned", e);
         }
+        if (this.ipnsPubsubTopicRoutingCid)
+            this._cidsToUnPin.add(this.ipnsPubsubTopicRoutingCid);
+        if (this.pubsubTopicRoutingCid)
+            this._cidsToUnPin.add(this.pubsubTopicRoutingCid);
         try {
             await this.initDbHandlerIfNeeded();
             await this._dbHandler.initDbIfNeeded();

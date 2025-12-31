@@ -49,8 +49,13 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
         subplebbit: RemoteSubplebbit;
     } & Pick<SubplebbitEvents, "error" | "updatingstatechange" | "update" | "statechange">;
     _numOfListenersForUpdatingInstance: number;
+    protected _ipnsName?: string;
+    protected _ipnsPubsubTopic?: string;
+    protected _ipnsPubsubTopicRoutingCid?: string;
     protected _updatingState: SubplebbitUpdatingState;
     constructor(plebbit: Plebbit);
+    protected _defineEnumerableUpdatingState(): void;
+    protected _defineIpnsAccessorProps(): void;
     _updateLocalPostsInstance(newPosts: SubplebbitIpfsType["posts"] | SubplebbitJson["posts"] | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">): void;
     _updateLocalModQueueInstance(newModQueue: SubplebbitIpfsType["modQueue"] | SubplebbitJson["modQueue"] | Pick<NonNullable<SubplebbitIpfsType["modQueue"]>, "pageCids">): void;
     initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType): void;
@@ -61,6 +66,12 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     toJSONIpfs(): SubplebbitIpfsType;
     toJSONRpcRemote(): RpcRemoteSubplebbitType;
     get updatingState(): SubplebbitUpdatingState;
+    protected _getIpnsName(): string | undefined;
+    protected _setIpnsName(value: string | undefined): void;
+    protected _getIpnsPubsubTopic(): string | undefined;
+    protected _setIpnsPubsubTopic(value: string | undefined): void;
+    protected _getIpnsPubsubTopicRoutingCid(): string | undefined;
+    protected _setIpnsPubsubTopicRoutingCid(value: string | undefined): void;
     _setState(newState: RemoteSubplebbit["state"]): void;
     _setStateNoEmission(newState: RemoteSubplebbit["state"]): void;
     _changeStateEmitEventEmitStateChangeEvent<T extends keyof Omit<SubplebbitEvents, "statechange" | "updatingstatechange">>(opts: {
