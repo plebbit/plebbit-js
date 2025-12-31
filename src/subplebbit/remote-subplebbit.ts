@@ -99,6 +99,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._setState("stopped");
         this._updatingState = "stopped";
         this._defineIpnsAccessorProps();
+        this._defineEnumerableUpdatingState();
 
         // these functions might get separated from their `this` when used
         this.update = this.update.bind(this);
@@ -117,6 +118,16 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         });
         this.modQueue = new ModQueuePages({ pageCids: {}, plebbit: this._plebbit, subplebbit: this, pages: undefined });
         hideClassPrivateProps(this);
+    }
+
+    protected _defineEnumerableUpdatingState() {
+        const proto = Object.getPrototypeOf(this);
+        const updatingStateDescriptor = Object.getOwnPropertyDescriptor(proto, "updatingState");
+        if (!updatingStateDescriptor) return;
+        Object.defineProperty(this, "updatingState", {
+            ...updatingStateDescriptor,
+            enumerable: true
+        });
     }
 
     protected _defineIpnsAccessorProps() {

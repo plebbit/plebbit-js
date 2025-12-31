@@ -20,6 +20,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         after(async () => {
             await plebbit.destroy();
         });
+        it(`subplebbit.updatingState is included when spreading or JSON.stringify`, async () => {
+            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+            const spreadSubplebbit = { ...subplebbit };
+            const jsonSubplebbit = JSON.parse(JSON.stringify(subplebbit));
+
+            expect(spreadSubplebbit).to.have.property("updatingState", subplebbit.updatingState);
+            expect(jsonSubplebbit).to.have.property("updatingState", subplebbit.updatingState);
+        });
         it(`subplebbit.updatingState is in correct order upon updating with IPFS client and plebbit.createSubplebbit() `, async () => {
             const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
             const recordedStates = [];
