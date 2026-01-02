@@ -65,6 +65,23 @@ class InMemoryDbHandlerMock {
         return { number, postNumber: maxPostNumber + 1 };
     }
 
+    _assignNumbersForComment(commentCid) {
+        const comment = this.comments.find((row) => row.cid === commentCid);
+        if (!comment) throw new Error(`Failed to query comment row for ${commentCid}`);
+        if (comment.pendingApproval) return {};
+        if (typeof comment.number === "number") {
+            return {
+                number: comment.number,
+                ...(typeof comment.postNumber === "number" ? { postNumber: comment.postNumber } : {})
+            };
+        }
+
+        const numbers = this.getNextCommentNumbers(comment.depth);
+        comment.number = numbers.number;
+        if (typeof numbers.postNumber === "number") comment.postNumber = numbers.postNumber;
+        return numbers;
+    }
+
     queryCommentsUnderComment(parentCid) {
         return this.comments.filter((comment) => comment.parentCid === parentCid);
     }
