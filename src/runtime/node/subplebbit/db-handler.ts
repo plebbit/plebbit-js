@@ -1621,7 +1621,7 @@ export class DbHandler {
         return { number, postNumber };
     }
 
-    private _assignNumbersForComment(commentCid: string): { number?: number; postNumber?: number } {
+    _assignNumbersForComment(commentCid: string): { number?: number; postNumber?: number } {
         const commentRow = this._db
             .prepare(`SELECT depth, pendingApproval, number, postNumber FROM ${TABLES.COMMENTS} WHERE cid = ? LIMIT 1`)
             .get(commentCid) as

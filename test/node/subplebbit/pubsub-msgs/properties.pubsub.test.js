@@ -135,6 +135,7 @@ describe.sequential("Validate props of subplebbit Pubsub messages", async () => 
         expect(challengeVerifcation.challengeSuccess).to.be.false;
         expect(challengeVerifcation.encrypted).to.be.undefined;
         expect(challengeVerifcation.publication).to.be.undefined;
+        expect(challengeVerifcation.comment).to.be.undefined;
         expect(challengeVerifcation.reason).to.be.undefined;
         expect(challengeVerifcation.protocolVersion).to.be.a("string");
         expect(challengeVerifcation.signature).to.be.a("object");
@@ -154,8 +155,9 @@ describe.sequential("Validate props of subplebbit Pubsub messages", async () => 
         const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbit.address, signer: commentSigner }, plebbit);
 
         const challengeVerificationPromise = new Promise((resolve) => subplebbit.once("challengeverification", resolve));
+        const commentChallengeVerificationPromise = new Promise((resolve) => comment.once("challengeverification", resolve));
         await comment.publish();
-        const challengeVerifcation = await challengeVerificationPromise;
+        const [challengeVerifcation] = await Promise.all([challengeVerificationPromise, commentChallengeVerificationPromise]);
         expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.challengeRequestId.length).to.equal(38);
         expect(challengeVerifcation.type).to.equal("CHALLENGEVERIFICATION");
@@ -170,6 +172,10 @@ describe.sequential("Validate props of subplebbit Pubsub messages", async () => 
         expect(challengeVerifcation.comment).to.be.a("object");
         expect(challengeVerifcation.commentUpdate).to.be.a("object");
         expect(challengeVerifcation.commentUpdate.author.subplebbit).to.be.a("object");
+        expect(challengeVerifcation.commentUpdate.number).to.be.a("number");
+        expect(challengeVerifcation.commentUpdate.postNumber).to.be.a("number");
+        expect(comment.number).to.equal(challengeVerifcation.commentUpdate.number);
+        expect(comment.postNumber).to.equal(challengeVerifcation.commentUpdate.postNumber);
         expect(challengeVerifcation.reason).to.be.undefined;
         expect(challengeVerifcation.protocolVersion).to.be.a("string");
         expect(challengeVerifcation.signature).to.be.a("object");

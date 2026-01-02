@@ -76,6 +76,10 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             expect(comment.publishingState).to.equal("succeeded");
             expect(comment.cid).to.be.a("string");
             expect(challengeVerification.commentUpdate.pendingApproval).to.be.true;
+            expect(challengeVerification.commentUpdate.number).to.be.undefined;
+            expect(challengeVerification.commentUpdate.postNumber).to.be.undefined;
+            expect(comment.number).to.be.undefined;
+            expect(comment.postNumber).to.be.undefined;
             expect(Object.keys(challengeVerification.commentUpdate).sort()).to.deep.equal([
                 "author",
                 "cid",

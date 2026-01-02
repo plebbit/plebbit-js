@@ -1438,13 +1438,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const authorSubplebbit = this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
         if (!authorSubplebbit) throw Error("author.subplebbit can never be undefined after adding a comment");
+        const commentNumberPostNumber = this._dbHandler._assignNumbersForComment(commentAfterAddingToIpfs.cid);
 
         const commentUpdateOfVerificationNoSignature = <Omit<DecryptedChallengeVerification["commentUpdate"], "signature">>(
             cleanUpBeforePublishing({
                 author: { subplebbit: authorSubplebbit },
                 cid: commentAfterAddingToIpfs.cid,
                 protocolVersion: env.PROTOCOL_VERSION,
-                pendingApproval
+                pendingApproval,
+                ...commentNumberPostNumber
             })
         );
         const commentUpdate = <DecryptedChallengeVerification["commentUpdate"]>{

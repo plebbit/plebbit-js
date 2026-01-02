@@ -169,7 +169,9 @@ export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.p
     author: true,
     cid: true,
     signature: true,
-    protocolVersion: true
+    protocolVersion: true,
+    number: true,
+    postNumber: true
 })
     .merge(z.object({ pendingApproval: z.boolean().optional() }))
     .strict();

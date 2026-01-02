@@ -435,6 +435,8 @@ export class Comment
         this.protocolVersion = commentUpdate.protocolVersion;
         if ("pendingApproval" in commentUpdate) this.pendingApproval = commentUpdate.pendingApproval;
         else this.pendingApproval = false;
+        this.number = commentUpdate.number;
+        this.postNumber = commentUpdate.postNumber;
     }
 
     private _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification: DecryptedChallengeVerification) {
