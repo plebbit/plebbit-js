@@ -10,6 +10,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { describe, it } from "vitest";
 import { CID } from "kubo-rpc-client";
 import validCommentFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
+import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitSigner = signers[0];
 
@@ -149,6 +150,20 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect.fail("should not succeed");
             } catch (e) {
                 expect(e.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+            }
+        });
+
+        it(`plebbit.getComment should throw if CommentIpfs subplebbitAddress does not match the requested one`, async () => {
+            const commentIpfsCid = await addStringToIpfs(JSON.stringify(validCommentFixture));
+            const expectedSubplebbitAddress = signers[1].address;
+            expect(expectedSubplebbitAddress).to.not.equal(validCommentFixture.subplebbitAddress);
+
+            try {
+                await plebbit.getComment({ cid: commentIpfsCid, subplebbitAddress: expectedSubplebbitAddress });
+                expect.fail("should not succeed");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+                expect(e.details.commentIpfsValidation.reason).to.equal(messages.ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH);
             }
         });
 

@@ -533,9 +533,18 @@ export async function verifyCommentIpfs(opts: {
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
+    subplebbitAddressFromInstance?: CommentIpfsType["subplebbitAddress"];
 }): ReturnType<typeof verifyCommentPubsubMessage> {
-    const cacheKey = opts.calculatedCommentCid + Number(opts.resolveAuthorAddresses) + Number(opts.overrideAuthorAddressIfInvalid);
+    const cacheKey = sha256(
+        opts.calculatedCommentCid +
+            Number(opts.resolveAuthorAddresses) +
+            Number(opts.overrideAuthorAddressIfInvalid) +
+            opts.subplebbitAddressFromInstance
+    );
     if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.get(cacheKey)) return { valid: true };
+
+    if (opts.subplebbitAddressFromInstance && opts.comment.subplebbitAddress !== opts.subplebbitAddressFromInstance)
+        return { valid: false, reason: messages.ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH };
 
     const keysCasted = <(keyof CommentPubsubMessagePublication)[]>opts.comment.signature.signedPropertyNames;
 

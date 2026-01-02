@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import { describe, it } from "vitest";
+import validCommentFixture from "../../../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
 import {
     publishRandomPost,
     publishRandomReply,
@@ -17,6 +18,7 @@ import {
     waitTillReplyInParentPagesInstance
 } from "../../../../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing } from "../../../../../dist/node/signer/signatures.js";
+import { messages } from "../../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;
 
@@ -186,6 +188,10 @@ const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
     return postWithInvalidSchemaCid;
 };
 
+const addValidCommentIpfsToIpfs = async () => {
+    return addStringToIpfs(JSON.stringify(validCommentFixture));
+};
+
 const addInvalidJsonToIpfs = async () => {
     return addStringToIpfs("<html>something</html>");
 };
@@ -195,6 +201,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let invalidCommentIpfsCid;
         let cidOfInvalidJson;
         let cidOfCommentIpfsWithInvalidSchema;
+        let cidOfCommentIpfsWithMismatchedSubplebbitAddress;
         let plebbit;
         let commentUpdateWithInvalidSignatureJson;
         before(async () => {
@@ -202,6 +209,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             invalidCommentIpfsCid = await addCommentIpfsWithInvalidSignatureToIpfs();
             cidOfInvalidJson = await addInvalidJsonToIpfs();
             cidOfCommentIpfsWithInvalidSchema = await addCommentIpfsWithInvalidSchemaToIpfs();
+            cidOfCommentIpfsWithMismatchedSubplebbitAddress = await addValidCommentIpfsToIpfs();
             const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
         });
@@ -284,6 +292,37 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(createdComment.state).to.equal("stopped");
             expect(createdComment.updatingState).to.equal("failed");
             expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
+            expect(updateHasBeenEmitted).to.be.false;
+        });
+
+        it.only(`comment.update() emits error and stops updating loop if CommentIpfs subplebbitAddress does not match`, async () => {
+            const expectedSubplebbitAddress = signers[1].address;
+            expect(expectedSubplebbitAddress).to.not.equal(validCommentFixture.subplebbitAddress);
+
+            const createdComment = await plebbit.createComment({
+                cid: cidOfCommentIpfsWithMismatchedSubplebbitAddress,
+                subplebbitAddress: expectedSubplebbitAddress
+            });
+
+            const updatingStates = [];
+            createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+            const errors = [];
+            createdComment.on("error", (err) => errors.push(err));
+            let updateHasBeenEmitted = false;
+            createdComment.once("update", () => (updateHasBeenEmitted = true));
+            await createdComment.update();
+
+            await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length >= 1, eventName: "error" });
+            expect(errors.length).to.equal(1);
+            expect(errors[0].code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+            expect(errors[0].details.commentIpfsValidation.reason).to.equal(messages.ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH);
+
+            expect(createdComment.state).to.equal("stopped");
+            expect(createdComment.updatingState).to.equal("failed");
+            expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
+            expect(createdComment.raw.comment).to.be.undefined;
+            expect(createdComment.raw.commentUpdate).to.be.undefined;
+            expect(createdComment.content).to.be.undefined;
             expect(updateHasBeenEmitted).to.be.false;
         });
 
