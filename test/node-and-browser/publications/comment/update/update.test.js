@@ -295,7 +295,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(updateHasBeenEmitted).to.be.false;
         });
 
-        it.only(`comment.update() emits error and stops updating loop if CommentIpfs subplebbitAddress does not match`, async () => {
+        it(`comment.update() emits error and stops updating loop if CommentIpfs subplebbitAddress does not match`, async () => {
             const expectedSubplebbitAddress = signers[1].address;
             expect(expectedSubplebbitAddress).to.not.equal(validCommentFixture.subplebbitAddress);
 
