@@ -131,7 +131,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
             await domainPost.stop();
         });
 
-        it("Spec: anonymized publication keeps author displayName while stripping wallets/avatar/flair fields", async () => {
+        it.sequential("Spec: anonymized publication keeps author displayName while stripping wallets/avatar/flair fields", async () => {
             const noisyAuthor = {
                 address: authorSigner.address,
                 displayName: "Noisy Display Name",
