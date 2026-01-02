@@ -667,7 +667,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 log,
                 content: deterministicStringify(stats),
                 addOptions: { pin: true },
-                provideOptions: { recursive: true }
+                provideOptions: { recursive: true },
+                provideInBackground: true
             })
         ).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
@@ -743,7 +744,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log,
             content: deterministicStringify(newSubplebbitRecord), // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
             addOptions: { pin: true },
-            provideOptions: { recursive: true }
+            provideOptions: { recursive: true },
+            provideInBackground: false
         });
         if (file.size > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
             throw new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
@@ -1219,7 +1221,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                   log,
                   content: deterministicStringify(commentIpfs),
                   addOptions: { pin: true },
-                  provideOptions: { recursive: true }
+                  provideOptions: { recursive: true },
+                  provideInBackground: false
               });
 
         const commentCid = file?.path || (await calculateIpfsCidV0(deterministicStringify(commentIpfs)));
@@ -2221,7 +2224,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log,
             content: commentIpfsContent,
             addOptions: { pin: true },
-            provideOptions: { recursive: true }
+            provideOptions: { recursive: true },
+            provideInBackground: false
         });
         if (addRes.path !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
         log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");

@@ -506,7 +506,8 @@ export async function retryKuboIpfsAddAndProvide({
     content,
     inputNumOfRetries,
     addOptions,
-    provideOptions
+    provideOptions,
+    provideInBackground
 }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add" | "routing">;
     log: Logger;
@@ -514,6 +515,7 @@ export async function retryKuboIpfsAddAndProvide({
     inputNumOfRetries?: number;
     addOptions?: AddOptions;
     provideOptions?: RoutingProvideOptions;
+    provideInBackground: boolean;
 }): Promise<AddResult> {
     const numOfRetries = inputNumOfRetries ?? 3;
 
@@ -529,13 +531,21 @@ export async function retryKuboIpfsAddAndProvide({
                 const addRes = await kuboRpcClient.add(content, addOptions);
                 // I think it's not needed to provide now that the re-providing bug has been fixed
 
-                try {
-                    const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
-                    for await (const event of provideEvents) {
-                        log.trace(`Provide event for ${addRes.cid}:`, event);
+                const runProvide = async () => {
+                    try {
+                        const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
+                        for await (const event of provideEvents) {
+                            log.trace(`Provide event for ${addRes.cid}:`, event);
+                        }
+                    } catch (e) {
+                        log.trace("Minor Error, not a big deal: Failed to provide after add", e);
                     }
-                } catch (e) {
-                    log.trace("Minor Error, not a big deal: Failed to provide after add", e);
+                };
+
+                if (provideInBackground) {
+                    void runProvide();
+                } else {
+                    await runProvide();
                 }
                 resolve(addRes);
             } catch (error) {
