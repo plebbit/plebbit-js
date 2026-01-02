@@ -24,7 +24,7 @@ import signers from "../../../fixtures/signers.js";
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
-    describe.sequential("local anonymization", () => {
+    describe.concurrent("local anonymization", () => {
         let context;
         let authorSigner;
         let otherSigner;
@@ -530,6 +530,60 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
 
                 await post.stop();
                 await reply.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
+        it("Spec: banning an anonymized comment maps to original and alias author addresses in per-author mode", async () => {
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const moderator = await localContext.publisherPlebbit.createSigner();
+
+            await localContext.subplebbit.edit({ roles: { [moderator.address]: { role: "moderator" } } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: localContext.subplebbit,
+                predicate: () => typeof localContext.subplebbit.updatedAt === "number"
+            });
+
+            try {
+                const post = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit, post);
+
+                const aliasRow = localContext.subplebbit._dbHandler.queryPseudonymityAliasForAuthor(localAuthor.publicKey);
+                expect(aliasRow).to.exist;
+                const aliasSigner = await localContext.publisherPlebbit.createSigner({
+                    privateKey: aliasRow.aliasPrivateKey,
+                    type: "ed25519"
+                });
+                expect(aliasSigner.address).to.not.equal(localAuthor.address);
+
+                const banExpiresAt = timestamp() + 60;
+                const banModeration = await localContext.publisherPlebbit.createCommentModeration({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post.cid,
+                    commentModeration: { author: { banExpiresAt }, reason: "ban alias mapping test" },
+                    signer: moderator
+                });
+                await publishWithExpectedResult(banModeration, true);
+
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: () => {
+                        const originalAuthor = localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address);
+                        const aliasAuthor = localContext.subplebbit._dbHandler.querySubplebbitAuthor(aliasSigner.address);
+                        return originalAuthor?.banExpiresAt === banExpiresAt && aliasAuthor?.banExpiresAt === banExpiresAt;
+                    }
+                });
+
+                const originalAuthor = localContext.subplebbit._dbHandler.querySubplebbitAuthor(localAuthor.address);
+                const aliasAuthor = localContext.subplebbit._dbHandler.querySubplebbitAuthor(aliasSigner.address);
+                expect(originalAuthor?.banExpiresAt).to.equal(banExpiresAt);
+                expect(aliasAuthor?.banExpiresAt).to.equal(banExpiresAt);
+
+                await post.stop();
             } finally {
                 await localContext.cleanup();
             }
