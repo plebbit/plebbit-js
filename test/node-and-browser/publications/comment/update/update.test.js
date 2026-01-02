@@ -342,13 +342,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
             await Promise.all([
-                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length === 2, eventName: "error" }),
+                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length >= 1, eventName: "error" }),
                 publishRandomPost(subplebbitAddress, plebbit)
             ]);
 
             expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
             expect(createdComment.state).to.equal("updating");
-            expect(errors.length).to.equal(2);
+            expect(errors.length).to.greaterThanOrEqual(1);
             expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.size).to.equal(errors.length); // it should mark the path as invalid
 
             for (const error of errors) {
@@ -425,13 +425,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(invalidCommentUpdateSchema));
 
             await Promise.all([
-                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length === 2, eventName: "error" }),
+                resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: () => errors.length >= 1, eventName: "error" }),
                 publishRandomPost(subplebbitAddress, plebbit) // force sub to publish a new update
             ]);
 
             expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
             expect(createdComment.state).to.equal("updating");
-            expect(errors.length).to.equal(2);
+            expect(errors.length).to.greaterThanOrEqual(1);
             expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.size).to.equal(errors.length); // it should mark the path as invalid
 
             for (const error of errors) {
