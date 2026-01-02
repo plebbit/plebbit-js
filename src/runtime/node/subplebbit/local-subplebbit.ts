@@ -1006,7 +1006,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     commentToBeEdited,
                     Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS")
                 );
-                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
+                this._dbHandler.approvePendingComment({ cid: modTableRow.commentCid });
             } else {
                 const shouldPurgeDisapprovedComment = Object.keys(modTableRow.commentModeration).length === 1; // no other props were included, if so purge the comment
                 log(
@@ -1253,9 +1253,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
         }
 
-        this._dbHandler.insertComments([commentRow]);
-        if (typeof this.settings?.maxPendingApprovalCount === "number")
-            this._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(this.settings.maxPendingApprovalCount);
+        this._dbHandler.createTransaction();
+        try {
+            if (!pendingApproval) {
+                const { number, postNumber } = this._dbHandler.getNextCommentNumbers(commentRow.depth);
+                commentRow.number = number;
+                if (typeof postNumber === "number") commentRow.postNumber = postNumber;
+            }
+            this._dbHandler.insertComments([commentRow]);
+            if (typeof this.settings?.maxPendingApprovalCount === "number")
+                this._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(this.settings.maxPendingApprovalCount);
+            this._dbHandler.commitTransaction();
+        } catch (e) {
+            this._dbHandler.rollbackTransaction();
+            throw e;
+        }
         log("Inserted comment", commentRow.cid, "into db", "with props", commentRow);
 
         return { comment: commentIpfs, cid: commentCid };

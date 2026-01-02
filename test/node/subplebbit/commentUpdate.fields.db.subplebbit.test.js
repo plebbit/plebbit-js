@@ -34,6 +34,9 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
     } = {}) => {
         assert(dbHandler, "DbHandler not initialised");
         const resolvedPostCid = postCid ?? (depth === 0 ? cid : parentCid ?? nextCid("post"));
+        const pendingApproval = overrides["pendingApproval"] ?? null;
+        const shouldAssignNumbers = !pendingApproval;
+        const assignedNumbers = shouldAssignNumbers ? dbHandler.getNextCommentNumbers(depth) : {};
         const comment = {
             cid,
             authorSignerAddress,
@@ -47,7 +50,9 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
             parentCid: depth === 0 ? null : parentCid,
             signature: overrides["signature"] ?? { type: "ed25519", signature: "sig", publicKey: "pk", signedPropertyNames: [] },
             protocolVersion: PROTOCOL_VERSION,
-            pendingApproval: overrides["pendingApproval"] ?? null,
+            pendingApproval,
+            number: assignedNumbers.number ?? null,
+            postNumber: assignedNumbers.postNumber ?? null,
             insertedAt: overrides["insertedAt"] ?? timestamp,
             extraProps: overrides["extraProps"] ?? null,
             flair: overrides["flair"] ?? null,
@@ -63,7 +68,9 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
             parentCid: depth === 0 ? null : parentCid ?? null,
             postCid: resolvedPostCid,
             timestamp,
-            authorSignerAddress
+            authorSignerAddress,
+            number: assignedNumbers.number,
+            postNumber: assignedNumbers.postNumber
         };
     };
 
@@ -146,13 +153,6 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
         const comment = insertComment(options ?? {});
         insertCommentUpdate(comment);
         return comment;
-    };
-
-    const getCommentRowid = (cid) => {
-        assert(dbHandler, "DbHandler not initialised");
-        const row = dbHandler._db.prepare(`SELECT rowid as rowid FROM comments WHERE cid = ?`).get(cid);
-        assert(row, `Missing comment row for cid ${cid}`);
-        return row.rowid;
     };
 
     beforeEach(async () => {
@@ -253,16 +253,16 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
     });
 
     describe("number and postNumber", () => {
-        it("derives number from the sqlite rowid", () => {
+        it("assigns sequential number values to approved comments", () => {
             const post = createCommentWithUpdate({ depth: 0 });
             const reply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid });
 
             const postCalculated = queryCalculated(post);
             const replyCalculated = queryCalculated(reply);
 
-            expect(postCalculated.number).to.equal(getCommentRowid(post.cid));
-            expect(replyCalculated.number).to.equal(getCommentRowid(reply.cid));
-            expect(postCalculated.postNumber).to.equal(1);
+            expect(postCalculated.number).to.equal(post.number);
+            expect(replyCalculated.number).to.equal(reply.number);
+            expect(postCalculated.postNumber).to.equal(post.postNumber);
             expect(replyCalculated.postNumber).to.be.undefined;
         });
 
@@ -274,8 +274,8 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
             const firstPostCalculated = queryCalculated(firstPost);
             const secondPostCalculated = queryCalculated(secondPost);
 
-            expect(firstPostCalculated.postNumber).to.equal(1);
-            expect(secondPostCalculated.postNumber).to.equal(2);
+            expect(firstPostCalculated.postNumber).to.equal(firstPost.postNumber);
+            expect(secondPostCalculated.postNumber).to.equal(secondPost.postNumber);
         });
 
         it("never assigns postNumber to replies even if more posts are added later", () => {
@@ -285,7 +285,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
 
             const replyCalculated = queryCalculated(reply);
             expect(replyCalculated.postNumber).to.be.undefined;
-            expect(replyCalculated.number).to.equal(getCommentRowid(reply.cid));
+            expect(replyCalculated.number).to.equal(reply.number);
         });
 
         it("computes postNumber ignoring replies interleaved between posts", () => {
@@ -299,18 +299,93 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", function () {
             const postBCalc = queryCalculated(postB);
             const postCCalc = queryCalculated(postC);
 
-            expect(postACalc.postNumber).to.equal(1);
-            expect(postBCalc.postNumber).to.equal(2);
-            expect(postCCalc.postNumber).to.equal(3);
+            expect(postACalc.postNumber).to.equal(postA.postNumber);
+            expect(postBCalc.postNumber).to.equal(postB.postNumber);
+            expect(postCCalc.postNumber).to.equal(postC.postNumber);
         });
 
-        it("reuses stored number and postNumber values from commentUpdates", () => {
+        it("assigns numbers across posts and replies in insertion order", () => {
+            const postA = createCommentWithUpdate({ depth: 0 });
+            const replyA = createCommentWithUpdate({ depth: 1, parentCid: postA.cid, postCid: postA.cid });
+            const postB = createCommentWithUpdate({ depth: 0 });
+
+            const replyACalc = queryCalculated(replyA);
+            const postBCalc = queryCalculated(postB);
+
+            expect(replyACalc.number).to.equal(postA.number + 1);
+            expect(replyACalc.postNumber).to.be.undefined;
+            expect(postBCalc.number).to.equal(replyACalc.number + 1);
+            expect(postBCalc.postNumber).to.equal(postA.postNumber + 1);
+        });
+
+        it("ignores pending posts when assigning numbers and assigns them on approval", () => {
+            const pendingPost = insertComment({ depth: 0, overrides: { pendingApproval: true } });
+            insertCommentUpdate(pendingPost);
+
+            const approvedPost = createCommentWithUpdate({ depth: 0 });
+            const approvedCalc = queryCalculated(approvedPost);
+            expect(approvedCalc.number).to.equal(approvedPost.number);
+            expect(approvedCalc.postNumber).to.equal(approvedPost.postNumber);
+
+            dbHandler.approvePendingComment({ cid: pendingPost.cid });
+            const pendingCalc = queryCalculated(pendingPost);
+            expect(pendingCalc.number).to.equal(approvedPost.number + 1);
+            expect(pendingCalc.postNumber).to.equal(approvedPost.postNumber + 1);
+
+            const approvedRecalc = queryCalculated(approvedPost);
+            expect(approvedRecalc.number).to.equal(approvedPost.number);
+            expect(approvedRecalc.postNumber).to.equal(approvedPost.postNumber);
+        });
+
+        it("ignores pending replies when assigning numbers and assigns them on approval", () => {
             const post = createCommentWithUpdate({ depth: 0 });
+
+            const pendingReply = insertComment({
+                depth: 1,
+                parentCid: post.cid,
+                postCid: post.cid,
+                overrides: { pendingApproval: true }
+            });
+            insertCommentUpdate(pendingReply);
+
+            const approvedReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid });
+            const approvedCalc = queryCalculated(approvedReply);
+            expect(approvedCalc.number).to.equal(post.number + 1);
+            expect(approvedCalc.postNumber).to.be.undefined;
+
+            dbHandler.approvePendingComment({ cid: pendingReply.cid });
+            const pendingCalc = queryCalculated(pendingReply);
+            expect(pendingCalc.number).to.equal(approvedCalc.number + 1);
+            expect(pendingCalc.postNumber).to.be.undefined;
+        });
+
+        it("does not surface numbers for pending comments even if stored", () => {
+            const pendingPost = insertComment({ depth: 0, overrides: { pendingApproval: true } });
+            insertCommentUpdate(pendingPost);
+            dbHandler._db.prepare(`UPDATE comments SET number = ?, postNumber = ? WHERE cid = ?`).run(7, 3, pendingPost.cid);
+            dbHandler._db.prepare(`UPDATE commentUpdates SET number = ?, postNumber = ? WHERE cid = ?`).run(7, 3, pendingPost.cid);
+
+            const calculated = queryCalculated(pendingPost);
+            expect(calculated.number).to.be.undefined;
+            expect(calculated.postNumber).to.be.undefined;
+        });
+
+        it("returns stored numbers even when commentUpdates row is missing", () => {
+            const post = insertComment({ depth: 0 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.number).to.equal(post.number);
+            expect(calculated.postNumber).to.equal(post.postNumber);
+        });
+
+        it("prefers stored number and postNumber values from comments", () => {
+            const post = createCommentWithUpdate({ depth: 0 });
+            const commentRow = dbHandler._db.prepare(`SELECT number, postNumber FROM comments WHERE cid = ?`).get(post.cid);
             dbHandler._db.prepare(`UPDATE commentUpdates SET number = ?, postNumber = ? WHERE cid = ?`).run(42, 7, post.cid);
 
             const calculated = queryCalculated(post);
-            expect(calculated.number).to.equal(42);
-            expect(calculated.postNumber).to.equal(7);
+            expect(calculated.number).to.equal(commentRow.number);
+            expect(calculated.postNumber).to.equal(commentRow.postNumber);
         });
     });
 

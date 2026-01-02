@@ -10,6 +10,7 @@ import {
     loadAllPages,
     getCommentWithCommentUpdateProps,
     mockGatewayPlebbit,
+    publishRandomPost,
     forceLocalSubPagesToAlwaysGenerateMultipleChunks,
     publishToModQueueWithDepth,
     generateMockVote,
@@ -110,6 +111,16 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             it(`pending post should not appear in subplebbit.postUpdates`, async () => {
                 expect(subplebbit.postUpdates).to.be.undefined;
             });
+
+        it.sequential("pending approval comments do not affect number/postNumber for later approved posts", async () => {
+            const approvedPost = await publishRandomPost(subplebbit.address, remotePlebbit, { signer: modSigner });
+            const approvedPostWithUpdate = await getCommentWithCommentUpdateProps({ cid: approvedPost.cid, plebbit });
+            const expectedCommentNumber = commentInPendingApprovalDepth + 1;
+            const expectedPostNumber = commentInPendingApprovalDepth === 0 ? 1 : 2;
+
+            expect(approvedPostWithUpdate.number).to.equal(expectedCommentNumber);
+            expect(approvedPostWithUpdate.postNumber).to.equal(expectedPostNumber);
+        });
 
         it(`Should not be able to publish a vote under a pending comment`, async () => {
             const vote = await generateMockVote(commentInPendingApproval, 1, plebbit);

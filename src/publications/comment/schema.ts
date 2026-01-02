@@ -203,7 +203,9 @@ export const CommentsTableRowSchema = CommentIpfsSchema.extend({
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     extraProps: z.looseObject({}).optional(),
-    pendingApproval: z.boolean().optional()
+    pendingApproval: z.boolean().optional(),
+    number: z.number().int().positive().optional(),
+    postNumber: z.number().int().positive().optional()
 }).strict();
 
 export const CommentUpdateTableRowSchema = CommentUpdateSchema.extend({
