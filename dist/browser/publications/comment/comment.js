@@ -301,6 +301,8 @@ export class Comment extends Publication {
             this.pendingApproval = commentUpdate.pendingApproval;
         else
             this.pendingApproval = false;
+        this.number = commentUpdate.number;
+        this.postNumber = commentUpdate.postNumber;
     }
     _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification) {
         const log = Logger("plebbit-js:comment:publish:_updateCommentPropsFromDecryptedChallengeVerification");
@@ -359,7 +361,8 @@ export class Comment extends Publication {
             err.code === "ERR_INVALID_COMMENT_IPFS_SCHEMA" ||
             err.code === "ERR_CALCULATED_CID_DOES_NOT_MATCH" ||
             err.code === "ERR_OVER_DOWNLOAD_LIMIT" ||
-            err.code === "ERR_INVALID_JSON")
+            err.code === "ERR_INVALID_JSON" ||
+            err.code === "ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH")
             return false; // These errors means there's a problem with the record itself, not the loading
         if (err instanceof FailedToFetchCommentIpfsFromGatewaysError) {
             // If all gateway errors are due to the ipfs record itself, then it's a non-retriable error

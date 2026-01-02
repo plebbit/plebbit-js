@@ -340,7 +340,8 @@ export class CommentClientsManager extends PublicationClientsManager {
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             clientsManager: this,
             calculatedCommentCid: commentCid,
-            overrideAuthorAddressIfInvalid: true
+            overrideAuthorAddressIfInvalid: true,
+            subplebbitAddressFromInstance: this._comment.subplebbitAddress
         };
         const commentIpfsValidation = await verifyCommentIpfs(verificationOpts);
         if (!commentIpfsValidation.valid)

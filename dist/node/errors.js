@@ -13,6 +13,7 @@ export var messages;
     messages["ERR_COMMENT_MISSING_CID"] = "Comment is missing cid";
     messages["ERR_COMMENT_MISSING_IPFS"] = "Comment is missing CommentIpfs props";
     messages["ERR_COMMENT_MISSING_UPDATE"] = "Comment is missing CommentUpdate props";
+    messages["ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH"] = "CommentIpfs subplebbitAddress does not match the expected subplebbitAddress";
     messages["ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING"] = "You need to stop updating the subplebbit before starting it";
     messages["ERR_HELIAS_STOPPING_OR_STOPPED"] = "Helia is stopping or stopped already. You can't use any helia functions";
     messages["ERR_FAILED_TO_DIAL_ANY_PUBSUB_PEERS_FROM_DELEGATED_ROUTERS"] = "Failed to dial and connect to any IPNS-Over-Pubsub peers from delegated routers";

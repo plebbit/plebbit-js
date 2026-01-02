@@ -790,6 +790,7 @@ export declare const CommentUpdateForDisapprovedPendingComment: z.ZodObject<{
 }, z.core.$strict>;
 export declare const CommentUpdateForDisapprovedPendingCommentSignedPropertyNames: ("flair" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "updatedAt" | "locked" | "removed" | "approved")[];
 export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<{
+    number: z.ZodOptional<z.ZodNumber>;
     signature: z.ZodObject<{
         type: z.ZodString;
         signature: z.ZodString;
@@ -813,9 +814,10 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<{
     }, z.core.$loose>>;
     protocolVersion: z.ZodString;
     cid: z.ZodString;
+    postNumber: z.ZodOptional<z.ZodNumber>;
     pendingApproval: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
-export declare const CommentUpdateForChallengeVerificationSignedPropertyNames: ("author" | "protocolVersion" | "cid" | "pendingApproval")[];
+export declare const CommentUpdateForChallengeVerificationSignedPropertyNames: ("number" | "author" | "protocolVersion" | "cid" | "postNumber" | "pendingApproval")[];
 export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject<{
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -928,6 +930,8 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     authorSignerAddress: z.ZodString;
     extraProps: z.ZodOptional<z.ZodObject<{}, z.core.$loose>>;
     pendingApproval: z.ZodOptional<z.ZodBoolean>;
+    number: z.ZodOptional<z.ZodNumber>;
+    postNumber: z.ZodOptional<z.ZodNumber>;
 }, z.core.$strict>;
 export declare const CommentUpdateTableRowSchema: z.ZodObject<{
     cid: z.ZodString;

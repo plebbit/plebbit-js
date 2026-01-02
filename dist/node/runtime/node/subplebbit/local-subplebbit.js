@@ -456,7 +456,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log,
             content: deterministicStringify(stats),
             addOptions: { pin: true },
-            provideOptions: { recursive: true }
+            provideOptions: { recursive: true },
+            provideInBackground: true
         })).path;
         if (this.statsCid && statsCid !== this.statsCid)
             this._cidsToUnPin.add(this.statsCid);
@@ -519,7 +520,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log,
             content: deterministicStringify(newSubplebbitRecord), // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
             addOptions: { pin: true },
-            provideOptions: { recursive: true }
+            provideOptions: { recursive: true },
+            provideInBackground: false
         });
         if (file.size > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
             throw new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
@@ -725,7 +727,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (modTableRow.commentModeration.approved) {
                 log("commentModeration.approved=true, and therefore move comment from pending approval and add it to IPFS", "comment cid is", modTableRow.commentCid);
                 await this._addCommentRowToIPFS(commentToBeEdited, Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS"));
-                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
+                this._dbHandler.approvePendingComment({ cid: modTableRow.commentCid });
             }
             else {
                 const shouldPurgeDisapprovedComment = Object.keys(modTableRow.commentModeration).length === 1; // no other props were included, if so purge the comment
@@ -883,7 +885,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 log,
                 content: deterministicStringify(commentIpfs),
                 addOptions: { pin: true },
-                provideOptions: { recursive: true }
+                provideOptions: { recursive: true },
+                provideInBackground: false
             });
         const commentCid = file?.path || (await calculateIpfsCidV0(deterministicStringify(commentIpfs)));
         const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
@@ -907,9 +910,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
             commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
         }
-        this._dbHandler.insertComments([commentRow]);
-        if (typeof this.settings?.maxPendingApprovalCount === "number")
-            this._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(this.settings.maxPendingApprovalCount);
+        this._dbHandler.createTransaction();
+        try {
+            if (!pendingApproval) {
+                const { number, postNumber } = this._dbHandler.getNextCommentNumbers(commentRow.depth);
+                commentRow.number = number;
+                if (typeof postNumber === "number")
+                    commentRow.postNumber = postNumber;
+            }
+            this._dbHandler.insertComments([commentRow]);
+            if (typeof this.settings?.maxPendingApprovalCount === "number")
+                this._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(this.settings.maxPendingApprovalCount);
+            this._dbHandler.commitTransaction();
+        }
+        catch (e) {
+            this._dbHandler.rollbackTransaction();
+            throw e;
+        }
         log("Inserted comment", commentRow.cid, "into db", "with props", commentRow);
         return { comment: commentIpfs, cid: commentCid };
     }
@@ -1035,11 +1052,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const authorSubplebbit = this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
         if (!authorSubplebbit)
             throw Error("author.subplebbit can never be undefined after adding a comment");
+        const commentNumberPostNumber = this._dbHandler._assignNumbersForComment(commentAfterAddingToIpfs.cid);
         const commentUpdateOfVerificationNoSignature = (cleanUpBeforePublishing({
             author: { subplebbit: authorSubplebbit },
             cid: commentAfterAddingToIpfs.cid,
             protocolVersion: env.PROTOCOL_VERSION,
-            pendingApproval
+            pendingApproval,
+            ...commentNumberPostNumber
         }));
         const commentUpdate = {
             ...commentUpdateOfVerificationNoSignature,
@@ -1650,7 +1669,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log,
             content: commentIpfsContent,
             addOptions: { pin: true },
-            provideOptions: { recursive: true }
+            provideOptions: { recursive: true },
+            provideInBackground: false
         });
         if (addRes.path !== unpinnedCommentRow.cid)
             throw Error("Unable to recreate the CommentIpfs. This is a critical error");

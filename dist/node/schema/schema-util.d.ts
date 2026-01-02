@@ -103,6 +103,7 @@ export declare function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(mod
             };
             protocolVersion: string;
             cid: string;
+            number?: number | undefined;
             author?: {
                 [x: string]: unknown;
                 subplebbit?: {
@@ -121,6 +122,7 @@ export declare function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(mod
                     } | undefined;
                 } | undefined;
             } | undefined;
+            postNumber?: number | undefined;
             pendingApproval?: boolean | undefined;
         };
     }[];

@@ -425,7 +425,7 @@ export async function retryKuboBlockPutPinAndProvidePubsubTopic({ ipfsClient: ku
         });
     });
 }
-export async function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, addOptions, provideOptions }) {
+export async function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, addOptions, provideOptions, provideInBackground }) {
     const numOfRetries = inputNumOfRetries ?? 3;
     return new Promise((resolve, reject) => {
         const operation = retry.operation({
@@ -437,14 +437,22 @@ export async function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, lo
             try {
                 const addRes = await kuboRpcClient.add(content, addOptions);
                 // I think it's not needed to provide now that the re-providing bug has been fixed
-                try {
-                    const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
-                    for await (const event of provideEvents) {
-                        log.trace(`Provide event for ${addRes.cid}:`, event);
+                const runProvide = async () => {
+                    try {
+                        const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
+                        for await (const event of provideEvents) {
+                            log.trace(`Provide event for ${addRes.cid}:`, event);
+                        }
                     }
+                    catch (e) {
+                        log.trace("Minor Error, not a big deal: Failed to provide after add", e);
+                    }
+                };
+                if (provideInBackground) {
+                    void runProvide();
                 }
-                catch (e) {
-                    log.trace("Minor Error, not a big deal: Failed to provide after add", e);
+                else {
+                    await runProvide();
                 }
                 resolve(addRes);
             }

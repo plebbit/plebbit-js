@@ -220,6 +220,8 @@ export class DbHandler {
                 flair TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 pendingApproval INTEGER NULLABLE, -- BOOLEAN (0/1)
+                number INTEGER NULLABLE,
+                postNumber INTEGER NULLABLE,
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 extraProps TEXT NULLABLE, -- JSON
                 protocolVersion TEXT NOT NULL,
@@ -396,6 +398,8 @@ export class DbHandler {
             await this._purgeCommentsWithInvalidSchemaOrSignature();
             await this._purgeCommentEditsWithInvalidSchemaOrSignature();
             this._purgePublicationTablesWithDuplicateSignatures();
+            if (currentDbVersion < 29)
+                this._backfillApprovedCommentNumbers();
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
             await this.initDbIfNeeded(); // to init keyv
@@ -437,6 +441,25 @@ export class DbHandler {
     _tableExists(tableName) {
         const stmt = this._db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?");
         return !!stmt.get(tableName);
+    }
+    _backfillApprovedCommentNumbers() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_backfillApprovedCommentNumbers");
+        const comments = this._db
+            .prepare(`SELECT cid, depth FROM ${TABLES.COMMENTS} WHERE pendingApproval IS NULL OR pendingApproval != 1 ORDER BY rowid ASC`)
+            .all();
+        if (comments.length === 0)
+            return;
+        let nextNumber = 1;
+        let nextPostNumber = 1;
+        const updateStmt = this._db.prepare(`UPDATE ${TABLES.COMMENTS} SET number = ?, postNumber = ? WHERE cid = ?`);
+        const updateMany = this._db.transaction((items) => {
+            for (const comment of items) {
+                const postNumber = comment.depth === 0 ? nextPostNumber++ : null;
+                updateStmt.run(nextNumber++, postNumber, comment.cid);
+            }
+        });
+        updateMany(comments);
+        log(`Backfilled number/postNumber for ${comments.length} non-pending comments`);
     }
     _getColumnNames(tableName) {
         const results = this._db.pragma(`table_info(${tableName})`);
@@ -676,8 +699,8 @@ export class DbHandler {
         const columnNames = this._getColumnNames(TABLES.COMMENTS);
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENTS} 
-            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, pendingApproval, nsfw, extraProps, protocolVersion, insertedAt) 
-            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @pendingApproval, @nsfw, @extraProps, @protocolVersion, @insertedAt)
+            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, pendingApproval, number, postNumber, nsfw, extraProps, protocolVersion, insertedAt) 
+            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @pendingApproval, @number, @postNumber, @nsfw, @extraProps, @protocolVersion, @insertedAt)
         `);
         // Create default object with null values for all columns
         const defaults = remeda.mapToObj(columnNames, (column) => [column, null]);
@@ -1323,6 +1346,61 @@ export class DbHandler {
         const res = stmt.run(comment.cid);
         log.trace(`Removed pendingApproval for cid=${comment.cid}, changes=${res.changes}`);
     }
+    approvePendingComment(comment) {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:approvePendingComment");
+        const assignNumbers = this._db.transaction((commentCid) => {
+            this._db.prepare(`UPDATE ${TABLES.COMMENTS} SET pendingApproval = 0 WHERE cid = ?`).run(commentCid);
+            return this._assignNumbersForComment(commentCid);
+        });
+        const numbers = assignNumbers(comment.cid);
+        log.trace(`Approved pending comment cid=${comment.cid}`, numbers);
+        return numbers;
+    }
+    getNextCommentNumbers(depth) {
+        const pendingClause = this._pendingApprovalClause("c");
+        const maxNumberRow = this._db
+            .prepare(`SELECT COALESCE(MAX(number), 0) AS maxNumber FROM ${TABLES.COMMENTS} c WHERE number IS NOT NULL AND ${pendingClause}`)
+            .get();
+        const number = (maxNumberRow?.maxNumber || 0) + 1;
+        if (depth !== 0)
+            return { number };
+        const maxPostNumberRow = this._db
+            .prepare(`SELECT COALESCE(MAX(postNumber), 0) AS maxPostNumber FROM ${TABLES.COMMENTS} c WHERE postNumber IS NOT NULL AND depth = 0 AND ${pendingClause}`)
+            .get();
+        const postNumber = (maxPostNumberRow?.maxPostNumber || 0) + 1;
+        return { number, postNumber };
+    }
+    _assignNumbersForComment(commentCid) {
+        const commentRow = this._db
+            .prepare(`SELECT depth, pendingApproval, number, postNumber FROM ${TABLES.COMMENTS} WHERE cid = ? LIMIT 1`)
+            .get(commentCid);
+        if (!commentRow)
+            throw Error(`Failed to query comment row for ${commentCid}`);
+        if (commentRow.pendingApproval === 1)
+            return {};
+        if (typeof commentRow.number === "number" && commentRow.number > 0) {
+            return {
+                number: commentRow.number,
+                ...(typeof commentRow.postNumber === "number" && commentRow.postNumber > 0 ? { postNumber: commentRow.postNumber } : {})
+            };
+        }
+        const pendingClause = this._pendingApprovalClause("c");
+        const maxNumberRow = this._db
+            .prepare(`SELECT COALESCE(MAX(number), 0) AS maxNumber FROM ${TABLES.COMMENTS} c WHERE number IS NOT NULL AND ${pendingClause}`)
+            .get();
+        const number = (maxNumberRow?.maxNumber || 0) + 1;
+        let postNumber;
+        if (commentRow.depth === 0) {
+            const maxPostNumberRow = this._db
+                .prepare(`SELECT COALESCE(MAX(postNumber), 0) AS maxPostNumber FROM ${TABLES.COMMENTS} c WHERE postNumber IS NOT NULL AND depth = 0 AND ${pendingClause}`)
+                .get();
+            postNumber = (maxPostNumberRow?.maxPostNumber || 0) + 1;
+        }
+        this._db
+            .prepare(`UPDATE ${TABLES.COMMENTS} SET number = ?, postNumber = ? WHERE cid = ?`)
+            .run(number, postNumber ?? null, commentCid);
+        return { number, ...(postNumber !== undefined ? { postNumber } : {}) };
+    }
     // Remove oldest comments pending approval when exceeding the configured limit
     removeOldestPendingCommentIfWeHitMaxPendingCount(maxPendingApprovalCount) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:removeOldestPendingCommentIfWeHitMaxPendingCount");
@@ -1482,22 +1560,30 @@ export class DbHandler {
         return { approved: Boolean(result.approved) };
     }
     _calculateCommentNumbers(cid) {
-        const commentRowMeta = this._db.prepare(`SELECT rowid as rowid, depth FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid);
+        const commentRowMeta = this._db
+            .prepare(`SELECT rowid as rowid, depth, pendingApproval, number, postNumber FROM ${TABLES.COMMENTS} WHERE cid = ?`)
+            .get(cid);
         if (!commentRowMeta)
             throw Error(`Failed to query row metadata for comment ${cid}`);
-        const existingNumbers = this._db
-            .prepare(`SELECT number, postNumber FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ? LIMIT 1`)
-            .get(cid);
-        const commentNumber = typeof existingNumbers?.number === "number" && existingNumbers.number > 0 ? existingNumbers.number : commentRowMeta.rowid;
-        let postNumber = typeof existingNumbers?.postNumber === "number" && existingNumbers.postNumber > 0 ? existingNumbers.postNumber : undefined;
-        if (postNumber === undefined && commentRowMeta.depth === 0) {
-            const postNumberRow = this._db
-                .prepare(`SELECT COUNT(1) AS postCount FROM ${TABLES.COMMENTS} WHERE depth = 0 AND rowid <= ?`)
-                .get(commentRowMeta.rowid);
-            if (postNumberRow && typeof postNumberRow.postCount === "number" && postNumberRow.postCount > 0)
-                postNumber = postNumberRow.postCount;
+        if (commentRowMeta.pendingApproval === 1)
+            return {};
+        let commentNumber = typeof commentRowMeta.number === "number" && commentRowMeta.number > 0 ? commentRowMeta.number : undefined;
+        let postNumber = typeof commentRowMeta.postNumber === "number" && commentRowMeta.postNumber > 0 ? commentRowMeta.postNumber : undefined;
+        if (commentNumber === undefined || (commentRowMeta.depth === 0 && postNumber === undefined)) {
+            const existingNumbers = this._db
+                .prepare(`SELECT number, postNumber FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ? LIMIT 1`)
+                .get(cid);
+            if (commentNumber === undefined && typeof existingNumbers?.number === "number" && existingNumbers.number > 0)
+                commentNumber = existingNumbers.number;
+            if (commentRowMeta.depth === 0 && postNumber === undefined) {
+                if (typeof existingNumbers?.postNumber === "number" && existingNumbers.postNumber > 0)
+                    postNumber = existingNumbers.postNumber;
+            }
         }
-        return { number: commentNumber, ...(postNumber !== undefined ? { postNumber } : undefined) };
+        return {
+            ...(commentNumber !== undefined ? { number: commentNumber } : undefined),
+            ...(postNumber !== undefined ? { postNumber } : undefined)
+        };
     }
     queryCalculatedCommentUpdate(comment) {
         const authorSubplebbit = this.querySubplebbitAuthor(comment.authorSignerAddress);
@@ -1515,7 +1601,7 @@ export class DbHandler {
         return {
             ...(removedFromApproved ? removedFromApproved : undefined),
             cid: comment.cid,
-            number: commentNumber,
+            ...(commentNumber !== undefined ? { number: commentNumber } : undefined),
             ...(postNumber !== undefined ? { postNumber } : undefined),
             ...commentUpdateCounts,
             flair: commentModFlair?.flair || authorEdit?.flair,

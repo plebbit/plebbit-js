@@ -60,6 +60,7 @@ export declare function verifyCommentIpfs(opts: {
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
+    subplebbitAddressFromInstance?: CommentIpfsType["subplebbitAddress"];
 }): ReturnType<typeof verifyCommentPubsubMessage>;
 export declare function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages, cacheIfValid }: {
     subplebbit: SubplebbitIpfsType;

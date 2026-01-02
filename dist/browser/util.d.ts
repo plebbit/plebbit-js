@@ -57,13 +57,14 @@ export declare function retryKuboBlockPutPinAndProvidePubsubTopic({ ipfsClient: 
     pinAddOptions?: PinAddOptions;
     provideOptions?: RoutingProvideOptions;
 }): Promise<CID>;
-export declare function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, addOptions, provideOptions }: {
+export declare function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, addOptions, provideOptions, provideInBackground }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add" | "routing">;
     log: Logger;
     content: string;
     inputNumOfRetries?: number;
     addOptions?: AddOptions;
     provideOptions?: RoutingProvideOptions;
+    provideInBackground: boolean;
 }): Promise<AddResult>;
 export declare function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, options }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add">;

@@ -33,7 +33,8 @@ export class PageGenerator {
                 log: Logger("plebbit-js:page-generator:addQueuedCommentChunksToIpfs"),
                 content: deterministicStringify(modQueuePageIpfs),
                 addOptions: { pin: true },
-                provideOptions: { recursive: true }
+                provideOptions: { recursive: true },
+                provideInBackground: true
             });
             if (addRes.size > expectedSize)
                 throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
@@ -74,7 +75,8 @@ export class PageGenerator {
                 log: Logger("plebbit-js:page-generator:addCommentChunksToIpfs"),
                 content: stringifiedPageIpfs,
                 addOptions: { pin: true },
-                provideOptions: { recursive: true }
+                provideOptions: { recursive: true },
+                provideInBackground: true
             });
             if (addRes.size > curMaxPageSize)
                 throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
@@ -114,7 +116,8 @@ export class PageGenerator {
                 log: Logger("plebbit-js:page-generator:addPreloadedCommentChunksToIpfs"),
                 content: stringifiedPageIpfs,
                 addOptions: { pin: true },
-                provideOptions: { recursive: true }
+                provideOptions: { recursive: true },
+                provideInBackground: true
             });
             if (addRes.size > maximumPageSize)
                 throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {

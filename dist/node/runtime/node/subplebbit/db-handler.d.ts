@@ -85,6 +85,7 @@ export declare class DbHandler {
     };
     _createOrMigrateTablesIfNeeded(): Promise<void>;
     private _tableExists;
+    private _backfillApprovedCommentNumbers;
     private _getColumnNames;
     private _copyTable;
     private _purgePublicationTablesWithDuplicateSignatures;
@@ -135,6 +136,18 @@ export declare class DbHandler {
     }[];
     private _queryLatestAuthorEdit;
     removeCommentFromPendingApproval(comment: Pick<CommentsTableRow, "cid">): void;
+    approvePendingComment(comment: Pick<CommentsTableRow, "cid">): {
+        number?: number;
+        postNumber?: number;
+    };
+    getNextCommentNumbers(depth: number): {
+        number: number;
+        postNumber?: number;
+    };
+    _assignNumbersForComment(commentCid: string): {
+        number?: number;
+        postNumber?: number;
+    };
     removeOldestPendingCommentIfWeHitMaxPendingCount(maxPendingApprovalCount: number): void;
     purgeDisapprovedCommentsOlderThan(retentionSeconds: number): {
         cid: string;

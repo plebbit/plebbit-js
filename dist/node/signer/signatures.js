@@ -314,9 +314,14 @@ export async function verifyCommentPubsubMessage(comment, resolveAuthorAddresses
     return validation;
 }
 export async function verifyCommentIpfs(opts) {
-    const cacheKey = opts.calculatedCommentCid + Number(opts.resolveAuthorAddresses) + Number(opts.overrideAuthorAddressIfInvalid);
+    const cacheKey = sha256(opts.calculatedCommentCid +
+        Number(opts.resolveAuthorAddresses) +
+        Number(opts.overrideAuthorAddressIfInvalid) +
+        opts.subplebbitAddressFromInstance || "");
     if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.get(cacheKey))
         return { valid: true };
+    if (opts.subplebbitAddressFromInstance && opts.comment.subplebbitAddress !== opts.subplebbitAddressFromInstance)
+        return { valid: false, reason: messages.ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH };
     const keysCasted = opts.comment.signature.signedPropertyNames;
     const validRes = await verifyCommentPubsubMessage(remeda.pick(opts.comment, ["signature", ...keysCasted]), opts.resolveAuthorAddresses, opts.clientsManager, opts.overrideAuthorAddressIfInvalid);
     if (!validRes.valid)

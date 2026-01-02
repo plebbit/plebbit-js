@@ -650,6 +650,7 @@ export declare const ModQueuePageIpfsSchema: z.ZodObject<{
             previousCid: z.ZodOptional<z.ZodString>;
         }, z.core.$loose>;
         commentUpdate: z.ZodObject<{
+            number: z.ZodOptional<z.ZodNumber>;
             signature: z.ZodObject<{
                 type: z.ZodString;
                 signature: z.ZodString;
@@ -673,6 +674,7 @@ export declare const ModQueuePageIpfsSchema: z.ZodObject<{
             }, z.core.$loose>>;
             protocolVersion: z.ZodString;
             cid: z.ZodString;
+            postNumber: z.ZodOptional<z.ZodNumber>;
             pendingApproval: z.ZodOptional<z.ZodBoolean>;
         }, z.core.$loose>;
     }, z.core.$strip>>>;

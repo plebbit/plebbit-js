@@ -113,7 +113,9 @@ export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.p
     author: true,
     cid: true,
     signature: true,
-    protocolVersion: true
+    protocolVersion: true,
+    number: true,
+    postNumber: true
 })
     .merge(z.object({ pendingApproval: z.boolean().optional() }))
     .strict();
@@ -131,7 +133,9 @@ export const CommentsTableRowSchema = CommentIpfsSchema.extend({
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     extraProps: z.looseObject({}).optional(),
-    pendingApproval: z.boolean().optional()
+    pendingApproval: z.boolean().optional(),
+    number: z.number().int().positive().optional(),
+    postNumber: z.number().int().positive().optional()
 }).strict();
 export const CommentUpdateTableRowSchema = CommentUpdateSchema.extend({
     insertedAt: PlebbitTimestampSchema,
