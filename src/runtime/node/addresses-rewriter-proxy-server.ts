@@ -529,7 +529,7 @@ export class AddressesRewriterProxyServer {
         // Process each key individually to get better granular control
         for (const key of keysToRetry) {
             try {
-                debug(`Providing key to HTTP routers: ${key}`);
+                debug.trace(`Providing key to HTTP routers: ${key}`);
 
                 const events: RoutingQueryEvent[] = [];
                 for await (const event of kuboClient.routing.provide(key, { recursive: true, verbose: true })) {
@@ -538,7 +538,7 @@ export class AddressesRewriterProxyServer {
                 }
 
                 successfulKeys.push(key);
-                debug(`Successfully provided key: ${key}`);
+                debug.trace(`Successfully provided key: ${key}`);
 
                 // Log successful reprovide attempt
                 this._logReprovideAttempt(key, true, undefined, false);
