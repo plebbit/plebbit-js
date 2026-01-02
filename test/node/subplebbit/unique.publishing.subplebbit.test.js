@@ -10,22 +10,59 @@ class InMemoryDbHandlerMock {
         this.commentModerations = [];
         this.votes = [];
         this.subplebbitAuthors = new Map();
+        this._keyv = new Map([["INTERNAL_SUBPLEBBIT", {}]]);
     }
 
     // transaction helpers used by LocalSubplebbit
     createTransaction() {}
     commitTransaction() {}
+    rollbackTransaction() {}
     removeOldestPendingCommentIfWeHitMaxPendingCount() {}
     destoryConnection() {}
     markCommentsAsPublishedToPostUpdates() {}
     purgeComment() {}
     removeCommentFromPendingApproval() {}
+    approvePendingComment() {
+        return {};
+    }
+
+    async initDbIfNeeded() {}
+    async lockSubState() {}
+    async unlockSubState() {}
+    keyvHas(key) {
+        return this._keyv.has(key);
+    }
+    async keyvGet(key) {
+        return this._keyv.get(key);
+    }
+    async keyvSet(key, value) {
+        this._keyv.set(key, value);
+    }
+
+    queryAllCommentCidsAndTheirReplies() {
+        return this.comments.map((comment) => ({ cid: comment.cid }));
+    }
 
     // comment helpers
     queryLatestPostCid() {
         const posts = this.comments.filter((comment) => comment.depth === 0);
         if (posts.length === 0) return undefined;
         return posts[posts.length - 1];
+    }
+
+    getNextCommentNumbers(depth) {
+        const maxNumber = this.comments.reduce(
+            (max, comment) => (typeof comment.number === "number" ? Math.max(max, comment.number) : max),
+            0
+        );
+        const number = maxNumber + 1;
+        if (depth !== 0) return { number };
+
+        const maxPostNumber = this.comments.reduce(
+            (max, comment) => (comment.depth === 0 && typeof comment.postNumber === "number" ? Math.max(max, comment.postNumber) : max),
+            0
+        );
+        return { number, postNumber: maxPostNumber + 1 };
     }
 
     queryCommentsUnderComment(parentCid) {
