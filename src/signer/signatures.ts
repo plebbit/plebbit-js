@@ -539,7 +539,7 @@ export async function verifyCommentIpfs(opts: {
         opts.calculatedCommentCid +
             Number(opts.resolveAuthorAddresses) +
             Number(opts.overrideAuthorAddressIfInvalid) +
-            opts.subplebbitAddressFromInstance
+            opts.subplebbitAddressFromInstance || ""
     );
     if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.get(cacheKey)) return { valid: true };
 
