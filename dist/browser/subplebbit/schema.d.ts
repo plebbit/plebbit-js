@@ -55,7 +55,7 @@ export declare const SubplebbitFeaturesSchema: z.ZodObject<{
     noDownvotes: z.ZodOptional<z.ZodBoolean>;
     requirePostLink: z.ZodOptional<z.ZodBoolean>;
     requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-    anonymityMode: z.ZodOptional<z.ZodEnum<{
+    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
         "per-post": "per-post";
         "per-reply": "per-reply";
         "per-author": "per-author";
@@ -685,7 +685,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -1010,7 +1010,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             noDownvotes: z.ZodOptional<z.ZodBoolean>;
             requirePostLink: z.ZodOptional<z.ZodBoolean>;
             requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-            anonymityMode: z.ZodOptional<z.ZodEnum<{
+            pseudonymityMode: z.ZodOptional<z.ZodEnum<{
                 "per-post": "per-post";
                 "per-reply": "per-reply";
                 "per-author": "per-author";
@@ -1131,7 +1131,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -1447,7 +1447,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -1551,7 +1551,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -1661,7 +1661,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -1837,7 +1837,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -2377,7 +2377,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -2495,7 +2495,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -3035,7 +3035,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -3089,7 +3089,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -3199,7 +3199,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -3371,7 +3371,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";
@@ -3911,7 +3911,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noDownvotes: z.ZodOptional<z.ZodBoolean>;
         requirePostLink: z.ZodOptional<z.ZodBoolean>;
         requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
-        anonymityMode: z.ZodOptional<z.ZodEnum<{
+        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
             "per-post": "per-post";
             "per-reply": "per-reply";
             "per-author": "per-author";

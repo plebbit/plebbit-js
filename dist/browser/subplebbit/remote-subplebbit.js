@@ -19,6 +19,8 @@ export class RemoteSubplebbit extends TypedEmitter {
         this._plebbit = plebbit;
         this._setState("stopped");
         this._updatingState = "stopped";
+        this._defineIpnsAccessorProps();
+        this._defineEnumerableUpdatingState();
         // these functions might get separated from their `this` when used
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
@@ -33,6 +35,43 @@ export class RemoteSubplebbit extends TypedEmitter {
         });
         this.modQueue = new ModQueuePages({ pageCids: {}, plebbit: this._plebbit, subplebbit: this, pages: undefined });
         hideClassPrivateProps(this);
+    }
+    _defineEnumerableUpdatingState() {
+        const proto = Object.getPrototypeOf(this);
+        const updatingStateDescriptor = Object.getOwnPropertyDescriptor(proto, "updatingState");
+        if (!updatingStateDescriptor)
+            return;
+        Object.defineProperty(this, "updatingState", {
+            ...updatingStateDescriptor,
+            enumerable: true
+        });
+    }
+    _defineIpnsAccessorProps() {
+        Object.defineProperties(this, {
+            _ipnsName: { enumerable: false, configurable: true, writable: true, value: undefined },
+            _ipnsPubsubTopic: { enumerable: false, configurable: true, writable: true, value: undefined },
+            _ipnsPubsubTopicRoutingCid: { enumerable: false, configurable: true, writable: true, value: undefined }
+        });
+        Object.defineProperties(this, {
+            ipnsName: {
+                enumerable: true,
+                configurable: true,
+                get: () => this._getIpnsName(),
+                set: (value) => this._setIpnsName(value)
+            },
+            ipnsPubsubTopic: {
+                enumerable: true,
+                configurable: true,
+                get: () => this._getIpnsPubsubTopic(),
+                set: (value) => this._setIpnsPubsubTopic(value)
+            },
+            ipnsPubsubTopicRoutingCid: {
+                enumerable: true,
+                configurable: true,
+                get: () => this._getIpnsPubsubTopicRoutingCid(),
+                set: (value) => this._setIpnsPubsubTopicRoutingCid(value)
+            }
+        });
     }
     _updateLocalPostsInstance(newPosts) {
         const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
@@ -109,6 +148,12 @@ export class RemoteSubplebbit extends TypedEmitter {
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
             this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
+        else if ("address" in newProps && typeof newProps.address === "string" && isIpns(newProps.address)) {
+            // Address is already an IPNS name; initialize pubsub fields immediately.
+            this.ipnsName = newProps.address;
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        }
         if (!this.pubsubTopicRoutingCid) {
             if ("pubsubTopicRoutingCid" in newProps)
                 this.pubsubTopicRoutingCid = newProps.pubsubTopicRoutingCid;
@@ -181,6 +226,24 @@ export class RemoteSubplebbit extends TypedEmitter {
         }
         else
             return this._updatingState;
+    }
+    _getIpnsName() {
+        return this._updatingSubInstanceWithListeners?.subplebbit.ipnsName ?? this._ipnsName;
+    }
+    _setIpnsName(value) {
+        this._ipnsName = value;
+    }
+    _getIpnsPubsubTopic() {
+        return this._updatingSubInstanceWithListeners?.subplebbit.ipnsPubsubTopic ?? this._ipnsPubsubTopic;
+    }
+    _setIpnsPubsubTopic(value) {
+        this._ipnsPubsubTopic = value;
+    }
+    _getIpnsPubsubTopicRoutingCid() {
+        return this._updatingSubInstanceWithListeners?.subplebbit.ipnsPubsubTopicRoutingCid ?? this._ipnsPubsubTopicRoutingCid;
+    }
+    _setIpnsPubsubTopicRoutingCid(value) {
+        this._ipnsPubsubTopicRoutingCid = value;
     }
     _setState(newState) {
         if (newState === this.state)
@@ -338,6 +401,13 @@ export class RemoteSubplebbit extends TypedEmitter {
         if (!this._updatingSubInstanceWithListeners)
             throw Error("should be defined at this stage");
         const log = Logger("plebbit-js:remote-subplebbit:stop:cleanUpUpdatingSubInstanceWithListeners");
+        const updatingSubplebbit = this._updatingSubInstanceWithListeners.subplebbit;
+        if (typeof updatingSubplebbit.ipnsName === "string")
+            this._ipnsName = updatingSubplebbit.ipnsName;
+        if (typeof updatingSubplebbit.ipnsPubsubTopic === "string")
+            this._ipnsPubsubTopic = updatingSubplebbit.ipnsPubsubTopic;
+        if (typeof updatingSubplebbit.ipnsPubsubTopicRoutingCid === "string")
+            this._ipnsPubsubTopicRoutingCid = updatingSubplebbit.ipnsPubsubTopicRoutingCid;
         this._updatingState = this._updatingSubInstanceWithListeners.subplebbit.updatingState; // need to capture latest updating state before removing listeners
         // this instance is subscribed to plebbit._updatingSubplebbit[address]
         // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers

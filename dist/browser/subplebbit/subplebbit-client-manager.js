@@ -3,7 +3,7 @@ import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import * as remeda from "remeda";
 import Logger from "@plebbit/plebbit-logger";
-import { hideClassPrivateProps, timestamp } from "../util.js";
+import { hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKey, timestamp } from "../util.js";
 import pLimit from "p-limit";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
@@ -99,6 +99,13 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 }
                 catch (e) {
                     const error = e;
+                    //@ts-expect-error
+                    error.details = {
+                        //@ts-expect-error
+                        ...error.details,
+                        ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                        ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid
+                    };
                     if (!this._subplebbit._isRetriableErrorWhenLoading(error)) {
                         // critical error that can't be retried
                         if (error instanceof PlebbitError)
@@ -180,6 +187,13 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
             if (!ipnsName)
                 throw Error("Failed to resolve subplebbit address to an IPNS name");
+            // If the subplebbit address is a domain, we need to update the ipnsName and ipns pubsub props
+            // even if we fail to load the IPNS record, so that pubsub can work correctly
+            if (this._subplebbit.ipnsName !== ipnsName) {
+                this._subplebbit.ipnsName = ipnsName;
+                this._subplebbit.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(ipnsName);
+                this._subplebbit.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this._subplebbit.ipnsPubsubTopic);
+            }
             if (this._subplebbit.updateCid)
                 this._updateCidsAlreadyLoaded.add(this._subplebbit.updateCid);
             // This function should fetch SubplebbitIpfs, parse it and verify its signature
@@ -198,7 +212,14 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 }
                 catch (e) {
                     //@ts-expect-error
-                    e.details = { ...e.details, ipnsName, subAddress };
+                    e.details = {
+                        //@ts-expect-error
+                        ...e.details,
+                        ipnsName,
+                        subAddress,
+                        ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                        ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid
+                    };
                     throw e;
                 }
                 finally {
@@ -250,6 +271,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 //@ts-expect-error
                 ...e.details,
                 subplebbitIpnsName: ipnsName,
+                ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid,
                 subplebbitCid: latestSubplebbitCid
             };
             if (e instanceof PlebbitError && e.code === "ERR_OVER_DOWNLOAD_LIMIT")
@@ -266,7 +289,12 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         }
         catch (e) {
             // invalid subplebbit record
-            e.details.cidOfSubIpns = latestSubplebbitCid;
+            e.details = {
+                ...e.details,
+                cidOfSubIpns: latestSubplebbitCid,
+                ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid
+            };
             throw e;
         }
     }
@@ -293,6 +321,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                     throw new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
                         calculatedSubCidFromBody,
                         ipnsName,
+                        ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                        ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid,
                         gatewayRes,
                         gatewayUrl
                     });
@@ -302,7 +332,12 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                     subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(gatewayRes.resText));
                 }
                 catch (e) {
-                    e.details.cidOfSubIpns = calculatedSubCidFromBody;
+                    e.details = {
+                        ...e.details,
+                        cidOfSubIpns: calculatedSubCidFromBody,
+                        ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                        ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid
+                    };
                     throw e;
                 }
                 const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, calculatedSubCidFromBody);
@@ -417,7 +452,9 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             const combinedError = new FailedToFetchSubplebbitFromGatewaysError({
                 ipnsName,
                 gatewayToError,
-                subplebbitAddress: this._subplebbit.address
+                subplebbitAddress: this._subplebbit.address,
+                ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid
             });
             delete combinedError.stack;
             throw combinedError;
@@ -435,6 +472,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 ipnsName: ipnsNameOfSub,
                 addressFromGateway: subJson.address,
                 subplebbitIpnsFromGateway: subJson,
+                ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid,
                 cidOfSubIpns
             });
             return error;
@@ -451,6 +490,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         if (!updateValidity.valid) {
             const error = new PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
                 signatureValidity: updateValidity,
+                ipnsPubsubTopic: this._subplebbit.ipnsPubsubTopic,
+                ipnsPubsubTopicRoutingCid: this._subplebbit.ipnsPubsubTopicRoutingCid,
                 verificationOpts,
                 cidOfSubIpns
             });

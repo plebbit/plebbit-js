@@ -76,7 +76,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            anonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
+            pseudonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
                 "per-post": "per-post";
                 "per-reply": "per-reply";
                 "per-author": "per-author";
@@ -222,7 +222,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            anonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
+            pseudonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
                 "per-post": "per-post";
                 "per-reply": "per-reply";
                 "per-author": "per-author";
@@ -370,7 +370,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                anonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
+                pseudonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
                     "per-post": "per-post";
                     "per-reply": "per-reply";
                     "per-author": "per-author";

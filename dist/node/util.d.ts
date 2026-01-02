@@ -3,7 +3,7 @@ import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { CID } from "kubo-rpc-client";
 import type { Multiaddr } from "@multiformats/multiaddr";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, FilesRmOptions, FilesWriteOptions, RoutingProvideOptions } from "kubo-rpc-client";
+import type { AddOptions, AddResult, BlockPutOptions, BlockRmOptions, FilesRmOptions, FilesWriteOptions, PinAddOptions, RoutingProvideOptions } from "kubo-rpc-client";
 import type { DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeRequestMessageWithPostSubplebbitAuthor, DecryptedChallengeRequestMessageWithReplySubplebbitAuthor, DecryptedChallengeRequestPublication, PublicationFromDecryptedChallengeRequest, PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest } from "./pubsub-messages/types.js";
 import EventEmitter from "events";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
@@ -48,6 +48,15 @@ export declare function binaryKeyToPubsubTopic(key: Uint8Array): string;
 export declare function ipnsNameToIpnsOverPubsubTopic(ipnsName: string): string;
 export declare const pubsubTopicToDhtKey: (pubsubTopic: string) => string;
 export declare const pubsubTopicToDhtKeyCid: (pubsubTopic: string) => CID;
+export declare function retryKuboBlockPutPinAndProvidePubsubTopic({ ipfsClient: kuboRpcClient, log, pubsubTopic, inputNumOfRetries, blockPutOptions, pinAddOptions, provideOptions }: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "block" | "pin" | "routing">;
+    log: Logger;
+    pubsubTopic: string;
+    inputNumOfRetries?: number;
+    blockPutOptions?: BlockPutOptions;
+    pinAddOptions?: PinAddOptions;
+    provideOptions?: RoutingProvideOptions;
+}): Promise<CID>;
 export declare function retryKuboIpfsAddAndProvide({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, addOptions, provideOptions }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add" | "routing">;
     log: Logger;

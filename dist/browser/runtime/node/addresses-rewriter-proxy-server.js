@@ -403,10 +403,10 @@ export class AddressesRewriterProxyServer {
             const keys = Array.from(this._failedKeys);
             this._db.saveFailedKeys(keys);
             if (keys.length === 0) {
-                debug(`All keys successfully provided - no failed keys to save`);
+                debug.trace(`All keys successfully provided - no failed keys to save`);
             }
             else {
-                debug(`Saved ${keys.length} failed keys to database`);
+                debug.trace(`Saved ${keys.length} failed keys to database`);
             }
         }
         catch (error) {
@@ -464,7 +464,7 @@ export class AddressesRewriterProxyServer {
         keysToDiscard.forEach((key) => this._failedKeys.delete(key));
         // Save updated failed keys to database
         this._saveFailedKeysToDatabase();
-        debug(`Retry completed: ${successfulKeys.length} successful, ${stillFailedKeys.length} still failed, ${keysToDiscard.length} discarded`);
+        debug.trace(`Retry completed: ${successfulKeys.length} successful, ${stillFailedKeys.length} still failed, ${keysToDiscard.length} discarded`);
     }
     _logReprovideAttempt(key, success, error, blockNotLocal) {
         if (!this._loggingEnabled || !this._db) {
