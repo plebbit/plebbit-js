@@ -290,7 +290,7 @@ export class AddressesRewriterProxyServer {
             }
 
             if (!res.headersSent) {
-                debug.error("proxy error:", e, "Request options", requestOptions);
+                debug.trace("address rewriter proxy error:", e, "Request options", requestOptions);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             }
@@ -552,7 +552,7 @@ export class AddressesRewriterProxyServer {
                 // If block not found locally, discard this key - no point in retrying
                 if (isBlockNotLocal) {
                     keysToDiscard.push(key);
-                    debug(`Discarding key ${key} - block not found locally, will not retry`);
+                    debug.trace(`Discarding key ${key} - block not found locally, will not retry`);
                 } else {
                     stillFailedKeys.push(key);
                     debug.error(`Failed to provide key ${key}:`, error);
