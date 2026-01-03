@@ -82,7 +82,9 @@ function createTestSubplebbit(overrides = {}) {
             queryLatestPostCid: vi.fn().mockReturnValue(undefined),
             queryLatestCommentCid: vi.fn().mockReturnValue(undefined),
             commitTransaction: vi.fn(),
-            querySubplebbitStats: vi.fn().mockReturnValue({})
+            querySubplebbitStats: vi.fn().mockReturnValue({}),
+            keyvGet: vi.fn().mockReturnValue(undefined),
+            keyvSet: vi.fn().mockReturnValue(undefined)
         },
         _pageGenerator: {
             generateModQueuePages: vi.fn().mockResolvedValue(undefined),
