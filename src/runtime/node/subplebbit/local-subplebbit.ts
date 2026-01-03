@@ -39,7 +39,8 @@ import {
     retryKuboIpfsAddAndProvide,
     retryKuboBlockPutPinAndProvidePubsubTopic,
     calculateIpfsCidV0,
-    calculateStringSizeSameAsIpfsAddCidV0
+    calculateStringSizeSameAsIpfsAddCidV0,
+    getIpnsRecordInLocalKuboNode
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -759,11 +760,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
         if (this._firstUpdateAfterStart) await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
-        // const lastPublishedIpnsRecordData = <any | undefined>await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD]);
-        // const decodedIpnsRecord: any | undefined = lastPublishedIpnsRecordData
-        //     ? cborg.decode(new Uint8Array(Object.values(lastPublishedIpnsRecordData)))
-        //     : undefined;
-        // const ipnsSequence: BigInt | undefined = decodedIpnsRecord ? BigInt(decodedIpnsRecord.sequence) + 1n : undefined;
+        const lastPublishedIpnsRecordData = <any | undefined>await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD]);
+        const decodedIpnsRecord: any | undefined = lastPublishedIpnsRecordData
+            ? cborg.decode(new Uint8Array(Object.values(lastPublishedIpnsRecordData)))
+            : undefined;
+        const ipnsSequence: BigInt | undefined = decodedIpnsRecord ? BigInt(decodedIpnsRecord.sequence) + 1n : undefined;
         const publishRes = await kuboRpcClient._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
@@ -798,18 +799,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._subplebbitUpdateTrigger = false;
         this._firstUpdateAfterStart = false;
 
-        // try {
-        //     // this call will fail if we have http routers + kubo 0.38 and earlier
-        //     // Will probably be fixed past that
-        //     const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
+        try {
+            // this call will fail if we have http routers + kubo 0.38 and earlier
+            // Will probably be fixed past that
+            const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
 
-        //     await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
-        // } catch (e) {
-        //     log.trace(
-        //         "Failed to update IPNS record in sqlite record, not a critical error and will most likely be fixed by kubo past 0.38",
-        //         e
-        //     );
-        // }
+            await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
+        } catch (e) {
+            log.trace(
+                "Failed to update IPNS record in sqlite record, not a critical error and will most likely be fixed by kubo past 0.38",
+                e
+            );
+        }
 
         this._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
 
