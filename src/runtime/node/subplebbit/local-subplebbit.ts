@@ -769,8 +769,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             key: this.signer.ipnsKeyName,
             allowOffline: true,
             resolve: true,
-            ttl
-            // ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
+            ttl,
+            ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
@@ -801,7 +801,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         try {
             // this call will fail if we have http routers + kubo 0.38 and earlier
-            // Will probably be fixed past that
             const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
 
             await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
