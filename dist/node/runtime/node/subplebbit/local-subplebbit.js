@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0 } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0, getIpnsRecordInLocalKuboNode } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -536,17 +536,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this._firstUpdateAfterStart)
             await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
-        // const lastPublishedIpnsRecordData = <any | undefined>await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD]);
-        // const decodedIpnsRecord: any | undefined = lastPublishedIpnsRecordData
-        //     ? cborg.decode(new Uint8Array(Object.values(lastPublishedIpnsRecordData)))
-        //     : undefined;
-        // const ipnsSequence: BigInt | undefined = decodedIpnsRecord ? BigInt(decodedIpnsRecord.sequence) + 1n : undefined;
+        const lastPublishedIpnsRecordData = await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD]);
+        const decodedIpnsRecord = lastPublishedIpnsRecordData
+            ? cborg.decode(new Uint8Array(Object.values(lastPublishedIpnsRecordData)))
+            : undefined;
+        const ipnsSequence = decodedIpnsRecord ? BigInt(decodedIpnsRecord.sequence) + 1n : undefined;
         const publishRes = await kuboRpcClient._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
             resolve: true,
-            ttl
-            // ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
+            ttl,
+            ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`);
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
@@ -569,17 +569,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._pendingEditProps = this._pendingEditProps.filter((editProps) => !editIdsToIncludeInNextUpdate.includes(editProps.editId));
         this._subplebbitUpdateTrigger = false;
         this._firstUpdateAfterStart = false;
-        // try {
-        //     // this call will fail if we have http routers + kubo 0.38 and earlier
-        //     // Will probably be fixed past that
-        //     const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
-        //     await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
-        // } catch (e) {
-        //     log.trace(
-        //         "Failed to update IPNS record in sqlite record, not a critical error and will most likely be fixed by kubo past 0.38",
-        //         e
-        //     );
-        // }
+        try {
+            // this call will fail if we have http routers + kubo 0.38 and earlier
+            const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
+            await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
+        }
+        catch (e) {
+            log.trace("Failed to update IPNS record in sqlite record, not a critical error and will most likely be fixed by kubo past 0.38", e);
+        }
         this._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
         log.trace("Updated combined hash of pending comments to", this._combinedHashOfPendingCommentsCids);
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
