@@ -201,7 +201,7 @@ export class AddressesRewriterProxyServer {
         req.on("error", (err) => {
             debug.trace("Request error:", req.url, req.method, req.headers, reqBody, err);
             if (!res.headersSent) {
-                debug.error("Request error:", req.url, req.method, req.headers, reqBody, err);
+                debug.trace("Request error:", req.url, req.method, req.headers, reqBody, err);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             }
@@ -321,7 +321,7 @@ export class AddressesRewriterProxyServer {
 
             // Handle proxy response errors
             proxyRes.on("error", (err) => {
-                debug.error("Proxy response error:", err);
+                debug.trace("Proxy response error:", err);
                 if (!res.headersSent) {
                     res.writeHead(500);
                     res.end("Proxy Response Error");
@@ -555,7 +555,7 @@ export class AddressesRewriterProxyServer {
                     debug.trace(`Discarding key ${key} - block not found locally, will not retry`);
                 } else {
                     stillFailedKeys.push(key);
-                    debug.error(`Failed to provide key ${key}:`, error);
+                    debug.trace(`Failed to provide key ${key}:`, error);
                 }
             }
         }
