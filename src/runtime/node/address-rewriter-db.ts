@@ -15,6 +15,7 @@ export type RequestLogEntry = {
     url: string;
     error?: string;
     retryCount?: number;
+    bodyPreview?: string;
 };
 
 export type ReprovideLogEntry = {
@@ -73,6 +74,7 @@ export class AddressRewriterDatabase {
                     url TEXT NOT NULL,
                     error TEXT,
                     retry_count INTEGER DEFAULT 0,
+                    body_preview TEXT,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
@@ -106,6 +108,15 @@ export class AddressRewriterDatabase {
                 CREATE INDEX IF NOT EXISTS idx_reprovide_logs_key ON reprovide_logs(key);
             `);
 
+            try {
+                this._db.exec("ALTER TABLE request_logs ADD COLUMN body_preview TEXT");
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                if (!message.toLowerCase().includes("duplicate column name")) {
+                    throw error;
+                }
+            }
+
             debug(`Initialized SQLite database at ${this._dbPath}`);
         } catch (error) {
             debug.error(`Failed to initialize database at ${this._dbPath}:`, error);
@@ -128,8 +139,8 @@ export class AddressRewriterDatabase {
         const insertStmt = this._db.prepare(`
             INSERT INTO request_logs (
                 keys, received_at, transmitted_at, success, status_code, 
-                method, url, error, retry_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                method, url, error, retry_count, body_preview
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const transaction = this._db.transaction(() => {
@@ -143,7 +154,8 @@ export class AddressRewriterDatabase {
                     log.method,
                     log.url,
                     log.error || null,
-                    log.retryCount || 0
+                    log.retryCount || 0,
+                    log.bodyPreview || null
                 );
             }
         });

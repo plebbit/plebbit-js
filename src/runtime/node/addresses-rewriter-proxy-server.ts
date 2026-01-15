@@ -9,6 +9,7 @@ import { hideClassPrivateProps } from "../../util.js";
 import { RoutingQueryEvent } from "kubo-rpc-client";
 import { AddressRewriterDatabase, RequestLogEntry } from "./address-rewriter-db.js";
 const debug = Logger("plebbit-js:addresses-rewriter");
+const MAX_BODY_PREVIEW_BYTES = 4096;
 
 type AddressesRewriterOptions = {
     kuboClients: Plebbit["clients"]["kuboRpcClients"][string]["_client"][];
@@ -153,16 +154,18 @@ export class AddressesRewriterProxyServer {
             let requestLogEntry: RequestLogEntry | null = null;
             if (shouldRewrite) {
                 const keys = this._extractKeysFromRequestBody(reqBody);
-                if (keys.length > 0) {
+                const shouldLogRequest = this._loggingEnabled;
+                if (keys.length > 0 || shouldLogRequest) {
                     requestLogEntry = {
                         keys,
                         receivedAt: Date.now(),
                         success: false,
                         method: req.method || "UNKNOWN",
                         url: req.url || "/",
-                        retryCount: 0
+                        retryCount: 0,
+                        bodyPreview: shouldLogRequest ? this._createBodyPreview(reqBody) : undefined
                     };
-                    if (this._loggingEnabled) {
+                    if (shouldLogRequest) {
                         this._requestLogBuffer.push(requestLogEntry);
                     }
                 }
@@ -381,6 +384,10 @@ export class AddressesRewriterProxyServer {
                             ...remeda.flatten(swarmListeningAddresses.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
                         ]);
 
+                        if (addresses.length === 0) {
+                            throw Error(`Failed to get any addresses for peer ${peerId}`);
+                        }
+
                         this.addresses[peerId] = addresses;
                         resolve();
                     } catch (e) {
@@ -423,6 +430,14 @@ export class AddressesRewriterProxyServer {
         } catch {
             return [];
         }
+    }
+
+    private _createBodyPreview(body: string): string {
+        const buffer = Buffer.from(body, "utf8");
+        if (buffer.length <= MAX_BODY_PREVIEW_BYTES) return body;
+        const truncated = buffer.subarray(0, MAX_BODY_PREVIEW_BYTES).toString("utf8");
+        const truncatedBytes = buffer.length - MAX_BODY_PREVIEW_BYTES;
+        return `${truncated}...[truncated ${truncatedBytes} bytes]`;
     }
 
     private async _writeRequestLogs(): Promise<void> {
