@@ -66,10 +66,10 @@ const saveRedeemedVouchers = async (subplebbit, redeemedVouchers) => {
     await fs.promises.mkdir(dir, { recursive: true });
     await fs.promises.writeFile(filePath, JSON.stringify(redeemedVouchers, null, 2));
 };
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex, subplebbit) => {
-    if (!subplebbitChallengeSettings?.options?.question)
+const getChallenge = async ({ challengeSettings, challengeRequestMessage, challengeIndex, subplebbit }) => {
+    if (!challengeSettings?.options?.question)
         throw Error("No option question");
-    const vouchersString = subplebbitChallengeSettings?.options?.vouchers;
+    const vouchersString = challengeSettings?.options?.vouchers;
     if (!vouchersString || typeof vouchersString !== "string") {
         throw Error("No vouchers configured");
     }
@@ -81,8 +81,8 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         throw Error("No valid vouchers configured");
     }
     const redeemedVouchers = await loadRedeemedVouchers(subplebbit);
-    const invalidVoucherError = subplebbitChallengeSettings?.options?.invalidVoucherError || "Invalid voucher code.";
-    const alreadyRedeemedError = subplebbitChallengeSettings?.options?.alreadyRedeemedError || "This voucher has already been redeemed by another author.";
+    const invalidVoucherError = challengeSettings?.options?.invalidVoucherError || "Invalid voucher code.";
+    const alreadyRedeemedError = challengeSettings?.options?.alreadyRedeemedError || "This voucher has already been redeemed by another author.";
     const getAuthorAddress = () => {
         return (challengeRequestMessage?.comment?.author?.address ||
             challengeRequestMessage?.vote?.author?.address ||
@@ -97,7 +97,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     const challengeAnswer = challengeRequestMessage?.challengeAnswers?.[challengeIndex];
     if (challengeAnswer === undefined) {
         return {
-            challenge: subplebbitChallengeSettings?.options?.question,
+            challenge: challengeSettings?.options?.question,
             verify: async (_answer) => {
                 if (!availableVouchers.includes(_answer)) {
                     return {
@@ -145,10 +145,10 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         success: true
     };
 };
-function ChallengeFileFactory(subplebbitChallengeSettings) {
-    const question = subplebbitChallengeSettings?.options?.question;
+function ChallengeFileFactory({ challengeSettings }) {
+    const question = challengeSettings?.options?.question;
     const challenge = question;
-    const description = subplebbitChallengeSettings?.options?.description || defaultDescription;
+    const description = challengeSettings?.options?.description || defaultDescription;
     return { getChallenge, optionInputs, type, challenge, description };
 }
 export default ChallengeFileFactory;

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { GetPageParam, PageIpfsSchema, PostSortNameSchema, PostsPagesIpfsSchema, RepliesPagesIpfsSchema, ReplySortNameSchema } from "./schema";
-import type { CommentIpfsType, CommentUpdateForChallengeVerification, CommentUpdateType, CommentWithinModQueuePageJson, CommentWithinRepliesPostsPageJson } from "../publications/comment/types";
-import { JsonOfClass } from "../types";
-import { PostsPages, RepliesPages } from "./pages";
+import { GetPageParam, PageIpfsSchema, PostSortNameSchema, PostsPagesIpfsSchema, RepliesPagesIpfsSchema, ReplySortNameSchema } from "./schema.js";
+import type { CommentIpfsType, CommentUpdateForChallengeVerification, CommentUpdateType, CommentWithinModQueuePageJson, CommentWithinRepliesPostsPageJson } from "../publications/comment/types.js";
+import { JsonOfClass } from "../types.js";
+import { PostsPages, RepliesPages } from "./pages.js";
 export type PageIpfs = z.infer<typeof PageIpfsSchema>;
 export type RepliesPagesTypeIpfs = z.infer<typeof RepliesPagesIpfsSchema>;
 export type PostsPagesTypeIpfs = z.infer<typeof PostsPagesIpfsSchema>;

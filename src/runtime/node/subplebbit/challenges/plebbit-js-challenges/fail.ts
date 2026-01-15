@@ -4,9 +4,9 @@ import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
+    GetChallengeArgsInput,
     SubplebbitChallengeSetting
 } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
@@ -22,13 +22,9 @@ const type: ChallengeInput["type"] = "text/plain";
 
 const description = "A challenge that automatically fails with a custom error message.";
 
-const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number
-): Promise<ChallengeResultInput> => {
+const getChallenge = async ({ challengeSettings }: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
     // add a custom error message to display to the author
-    const error = subplebbitChallengeSettings?.options?.error;
+    const error = challengeSettings?.options?.error;
 
     // the only way to succeed the 'fail' challenge is to be excluded
     return {
@@ -37,7 +33,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
+function ChallengeFileFactory({ challengeSettings }: { challengeSettings: SubplebbitChallengeSetting }): ChallengeFileInput {
     return { getChallenge, optionInputs, type, description };
 }
 

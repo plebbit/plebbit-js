@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { CreateSignerSchema, JsonSignatureSchema } from "../schema/schema";
-import type { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, PublicationFromDecryptedChallengeRequest } from "../pubsub-messages/types";
-import type { SubplebbitIpfsType } from "../subplebbit/types";
-import type { CommentUpdateForChallengeVerification, CommentUpdateType } from "../publications/comment/types";
-import { EncryptedSchema, PubsubMessageSignatureSchema } from "../pubsub-messages/schema";
+import { CreateSignerSchema, JsonSignatureSchema } from "../schema/schema.js";
+import type { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, PublicationFromDecryptedChallengeRequest } from "../pubsub-messages/types.js";
+import type { SubplebbitIpfsType } from "../subplebbit/types.js";
+import type { CommentUpdateForChallengeVerification, CommentUpdateType } from "../publications/comment/types.js";
+import { EncryptedSchema, PubsubMessageSignatureSchema } from "../pubsub-messages/schema.js";
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 export type JsonSignature = z.infer<typeof JsonSignatureSchema>;
 export interface SignerType {

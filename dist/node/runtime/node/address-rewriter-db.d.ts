@@ -8,6 +8,7 @@ export type RequestLogEntry = {
     url: string;
     error?: string;
     retryCount?: number;
+    bodyPreview?: string;
 };
 export type ReprovideLogEntry = {
     key: string;

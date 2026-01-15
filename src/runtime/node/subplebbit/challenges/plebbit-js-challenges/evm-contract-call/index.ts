@@ -1,14 +1,11 @@
-import { LocalSubplebbit } from "../../../local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
 import type { ChainTicker } from "../../../../../../types.js";
-import type {
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
-} from "../../../../../../pubsub-messages/types.js";
+import type { PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest } from "../../../../../../pubsub-messages/types.js";
 import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
+    GetChallengeArgsInput,
     SubplebbitChallengeSetting
 } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
@@ -324,13 +321,12 @@ const validateWalletAddressWithCondition = async (props: {
     return undefined;
 };
 
-const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number,
-    subplebbit: LocalSubplebbit
-): Promise<ChallengeResultInput> => {
-    let { chainTicker, address, abi, condition, error } = subplebbitChallengeSettings?.options || {};
+const getChallenge = async ({
+    challengeSettings,
+    challengeRequestMessage,
+    subplebbit
+}: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
+    let { chainTicker, address, abi, condition, error } = challengeSettings?.options || {};
 
     if (!chainTicker) {
         throw Error("missing option chainTicker");
@@ -384,8 +380,8 @@ const getChallenge = async (
     return { success: false, error: errorString };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
-    let { chainTicker } = subplebbitChallengeSettings?.options || {};
+function ChallengeFileFactory({ challengeSettings }: { challengeSettings: SubplebbitChallengeSetting }): ChallengeFileInput {
+    let { chainTicker } = challengeSettings?.options || {};
 
     const type = <ChallengeInput["type"]>("chain/" + (chainTicker || "eth"));
     return { getChallenge, optionInputs, type, description };

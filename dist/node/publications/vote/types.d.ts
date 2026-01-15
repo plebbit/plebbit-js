@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { CreateVoteUserOptionsSchema, VoteChallengeRequestToEncryptSchema, VotePubsubMessagePublicationSchema, VoteSignedPropertyNames, VoteTablesRowSchema } from "./schema";
-import Vote from "./vote";
-import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
-import type { JsonSignature, SignerType } from "../../signer/types";
+import { CreateVoteUserOptionsSchema, VoteChallengeRequestToEncryptSchema, VotePubsubMessagePublicationSchema, VoteSignedPropertyNames, VoteTablesRowSchema } from "./schema.js";
+import Vote from "./vote.js";
+import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
+import type { JsonSignature, SignerType } from "../../signer/types.js";
 export type CreateVoteOptions = z.infer<typeof CreateVoteUserOptionsSchema>;
 export type VoteChallengeRequestToEncryptType = z.infer<typeof VoteChallengeRequestToEncryptSchema>;
 export type VoteJson = JsonOfClass<Vote>;

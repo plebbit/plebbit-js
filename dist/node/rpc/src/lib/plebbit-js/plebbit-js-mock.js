@@ -1,5 +1,5 @@
-"use strict";
 // import EventEmitter from "events";
+export {};
 // const loadingTime = 10;
 // export const simulateLoadingTime = () => new Promise((r) => setTimeout(r, loadingTime));
 // // keep a list of created and edited owner subplebbits

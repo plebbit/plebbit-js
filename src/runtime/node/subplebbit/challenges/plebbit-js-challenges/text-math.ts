@@ -2,9 +2,9 @@ import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
+    GetChallengeArgsInput,
     SubplebbitChallengeSetting
 } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
@@ -40,12 +40,8 @@ const getChallengeString = (minNumber: number, maxNumber: number, operators: ("*
     return `${firstNumber} ${operator} ${secondNumber}`;
 };
 
-const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number
-): Promise<ChallengeInput> => {
-    const difficultyString = subplebbitChallengeSettings?.options?.difficulty || "1";
+const getChallenge = async ({ challengeSettings }: GetChallengeArgsInput): Promise<ChallengeInput> => {
+    const difficultyString = challengeSettings?.options?.difficulty || "1";
     const difficulty = Number(difficultyString);
 
     let challenge: string;
@@ -71,7 +67,7 @@ const getChallenge = async (
     return { challenge, verify, type };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
+function ChallengeFileFactory({ challengeSettings }: { challengeSettings: SubplebbitChallengeSetting }): ChallengeFileInput {
     return { getChallenge, optionInputs, type, description };
 }
 

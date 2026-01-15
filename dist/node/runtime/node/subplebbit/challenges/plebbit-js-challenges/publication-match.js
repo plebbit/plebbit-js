@@ -32,7 +32,7 @@ const optionInputs = [
     }
 ];
 const type = "text/plain";
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+const getChallenge = async ({ challengeSettings, challengeRequestMessage }) => {
     // Get the publication from the challenge request
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     if (!publication) {
@@ -44,7 +44,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     // Get the matches from the options
     let matches = [];
     try {
-        const matchesStr = subplebbitChallengeSettings?.options?.matches;
+        const matchesStr = challengeSettings?.options?.matches;
         if (matchesStr) {
             matches = JSON.parse(matchesStr);
         }
@@ -60,9 +60,9 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         return { success: true };
     }
     // Get the error message
-    const error = subplebbitChallengeSettings?.options?.error || "Publication does not match required patterns.";
+    const error = challengeSettings?.options?.error || "Publication does not match required patterns.";
     // Get the matchAll option (default to true)
-    const matchAllStr = subplebbitChallengeSettings?.options?.matchAll;
+    const matchAllStr = challengeSettings?.options?.matchAll;
     const matchAll = matchAllStr !== undefined ? matchAllStr.toLowerCase() === "true" : true;
     // Check each match
     const matchResults = [];
@@ -127,8 +127,8 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
             error
         };
 };
-function ChallengeFileFactory(subplebbitChallengeSettings) {
-    const description = subplebbitChallengeSettings?.options?.description || defaultDescription;
+function ChallengeFileFactory({ challengeSettings }) {
+    const description = challengeSettings?.options?.description || defaultDescription;
     return { getChallenge, optionInputs, type, description };
 }
 export default ChallengeFileFactory;

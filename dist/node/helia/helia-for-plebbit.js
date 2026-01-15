@@ -19,6 +19,9 @@ import { connectToPubsubPeers } from "./util.js";
 const log = Logger("plebbit-js:libp2p-js");
 const libp2pJsClients = {}; // key => plebbit.clients.libp2pJsClients[key]
 const creatingLibp2pJsClients = {};
+// TODO need to call ipnsRouter.cancel when our subplebbit stops updating
+// TODO we may need to remove libp2pJsClients and creatingLibp2pJsClients, I actually don't think they're needed
+// TODO can you verify if we're already content who has a specific and we fetch the CID even though http router says it has no providers, it should be able to load the CID
 function getDelegatedRoutingFields(routers) {
     const routersObj = {};
     for (let i = 0; i < routers.length; i++) {
@@ -181,7 +184,7 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
             },
             async add(entry, // More specific types will be checked internally
             options) {
-                throw Error("Helia 'add' is not supported");
+                throw Error("Helia 'add' is not supported at the moment in plebbit-js API");
             },
             async stop(options) {
                 const clientFromMap = libp2pJsClients[plebbitOptions.key];

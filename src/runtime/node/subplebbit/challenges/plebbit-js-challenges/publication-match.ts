@@ -2,9 +2,9 @@ import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
+    GetChallengeArgsInput,
     SubplebbitChallengeSetting
 } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 import * as remeda from "remeda";
 
@@ -49,11 +49,10 @@ const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
 
 const type: ChallengeInput["type"] = "text/plain";
 
-const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number
-): Promise<ChallengeResultInput> => {
+const getChallenge = async ({
+    challengeSettings,
+    challengeRequestMessage
+}: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
     // Get the publication from the challenge request
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     if (!publication) {
@@ -66,7 +65,7 @@ const getChallenge = async (
     // Get the matches from the options
     let matches: Match[] = [];
     try {
-        const matchesStr = subplebbitChallengeSettings?.options?.matches;
+        const matchesStr = challengeSettings?.options?.matches;
         if (matchesStr) {
             matches = JSON.parse(matchesStr);
         }
@@ -83,10 +82,10 @@ const getChallenge = async (
     }
 
     // Get the error message
-    const error = subplebbitChallengeSettings?.options?.error || "Publication does not match required patterns.";
+    const error = challengeSettings?.options?.error || "Publication does not match required patterns.";
 
     // Get the matchAll option (default to true)
-    const matchAllStr = subplebbitChallengeSettings?.options?.matchAll;
+    const matchAllStr = challengeSettings?.options?.matchAll;
     const matchAll = matchAllStr !== undefined ? matchAllStr.toLowerCase() === "true" : true;
 
     // Check each match
@@ -162,8 +161,8 @@ const getChallenge = async (
         };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
-    const description = subplebbitChallengeSettings?.options?.description || defaultDescription;
+function ChallengeFileFactory({ challengeSettings }: { challengeSettings: SubplebbitChallengeSetting }): ChallengeFileInput {
+    const description = challengeSettings?.options?.description || defaultDescription;
     return { getChallenge, optionInputs, type, description };
 }
 

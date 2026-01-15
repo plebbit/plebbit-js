@@ -40,16 +40,16 @@ describe("plebbitJsChallenges", () => {
     });
 
     it("text-math challenge answer can be eval", async () => {
-        const textMath = TextMathFactory();
-        const { challenge, verify } = await textMath.getChallenge();
+        const textMath = TextMathFactory({ challengeSettings: {} });
+        const { challenge, verify } = await textMath.getChallenge({ challengeSettings: {} });
         // the challenge can be eval
         expect(await verify(String(eval(challenge)))).to.deep.equal({ success: true });
         expect(await verify("wrong")).to.deep.equal({ success: false, error: "Wrong answer." });
     });
 
     it("captcha-canvas-v3 challenge is string", async () => {
-        const captchaCanvasV3 = CaptchaCanvasV3Factory();
-        const { challenge, verify } = await captchaCanvasV3.getChallenge();
+        const captchaCanvasV3 = CaptchaCanvasV3Factory({ challengeSettings: {} });
+        const { challenge, verify } = await captchaCanvasV3.getChallenge({ challengeSettings: {} });
         // the challenge can be eval
         expect(typeof challenge).to.equal("string");
         expect(typeof verify).to.equal("function");

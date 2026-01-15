@@ -6,6 +6,7 @@ import retry from "retry";
 import { hideClassPrivateProps } from "../../util.js";
 import { AddressRewriterDatabase } from "./address-rewriter-db.js";
 const debug = Logger("plebbit-js:addresses-rewriter");
+const MAX_BODY_PREVIEW_BYTES = 4096;
 export class AddressesRewriterProxyServer {
     constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl, plebbit }) {
         this._requestLogBuffer = [];
@@ -98,16 +99,18 @@ export class AddressesRewriterProxyServer {
             let requestLogEntry = null;
             if (shouldRewrite) {
                 const keys = this._extractKeysFromRequestBody(reqBody);
-                if (keys.length > 0) {
+                const shouldLogRequest = this._loggingEnabled;
+                if (keys.length > 0 || shouldLogRequest) {
                     requestLogEntry = {
                         keys,
                         receivedAt: Date.now(),
                         success: false,
                         method: req.method || "UNKNOWN",
                         url: req.url || "/",
-                        retryCount: 0
+                        retryCount: 0,
+                        bodyPreview: shouldLogRequest ? this._createBodyPreview(reqBody) : undefined
                     };
-                    if (this._loggingEnabled) {
+                    if (shouldLogRequest) {
                         this._requestLogBuffer.push(requestLogEntry);
                     }
                 }
@@ -143,7 +146,7 @@ export class AddressesRewriterProxyServer {
         req.on("error", (err) => {
             debug.trace("Request error:", req.url, req.method, req.headers, reqBody, err);
             if (!res.headersSent) {
-                debug.error("Request error:", req.url, req.method, req.headers, reqBody, err);
+                debug.trace("Request error:", req.url, req.method, req.headers, reqBody, err);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             }
@@ -246,7 +249,7 @@ export class AddressesRewriterProxyServer {
             }
             // Handle proxy response errors
             proxyRes.on("error", (err) => {
-                debug.error("Proxy response error:", err);
+                debug.trace("Proxy response error:", err);
                 if (!res.headersSent) {
                     res.writeHead(500);
                     res.end("Proxy Response Error");
@@ -297,6 +300,9 @@ export class AddressesRewriterProxyServer {
                             ...idRes.addresses.map((addr) => addr.toString()),
                             ...remeda.flatten(swarmListeningAddresses.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
                         ]);
+                        if (addresses.length === 0) {
+                            throw Error(`Failed to get any addresses for peer ${peerId}`);
+                        }
                         this.addresses[peerId] = addresses;
                         resolve();
                     }
@@ -338,6 +344,14 @@ export class AddressesRewriterProxyServer {
         catch {
             return [];
         }
+    }
+    _createBodyPreview(body) {
+        const buffer = Buffer.from(body, "utf8");
+        if (buffer.length <= MAX_BODY_PREVIEW_BYTES)
+            return body;
+        const truncated = buffer.subarray(0, MAX_BODY_PREVIEW_BYTES).toString("utf8");
+        const truncatedBytes = buffer.length - MAX_BODY_PREVIEW_BYTES;
+        return `${truncated}...[truncated ${truncatedBytes} bytes]`;
     }
     async _writeRequestLogs() {
         if (!this._loggingEnabled || !this._db) {
@@ -455,7 +469,7 @@ export class AddressesRewriterProxyServer {
                 }
                 else {
                     stillFailedKeys.push(key);
-                    debug.error(`Failed to provide key ${key}:`, error);
+                    debug.trace(`Failed to provide key ${key}:`, error);
                 }
             }
         }

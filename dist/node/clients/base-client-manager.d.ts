@@ -1,7 +1,7 @@
 import { Plebbit } from "../plebbit/plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import type { PubsubMessage } from "../pubsub-messages/types";
+import type { PubsubMessage } from "../pubsub-messages/types.js";
 import type { ChainTicker, PubsubSubscriptionHandler, ResultOfFetchingSubplebbit } from "../types.js";
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 export type CachedTextRecordResolve = {

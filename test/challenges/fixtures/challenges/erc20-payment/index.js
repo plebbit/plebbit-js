@@ -98,9 +98,9 @@ const incrementSpentAuthorCredits = async (authorAddress, amount) => {
     // mock incrementing the total spent credit by the author
 };
 
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+const getChallenge = async ({ challengeSettings, challengeRequestMessage }) => {
     let { chainTicker, contractAddress, recipientAddress, symbol, decimals, postPrice, replyPrice, votePrice } =
-        subplebbitChallengeSettings?.options || {};
+        challengeSettings?.options || {};
     if (!chainTicker) {
         throw Error("missing option chainTicker");
     }
@@ -176,8 +176,8 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings) {
-    let { chainTicker } = subplebbitChallengeSettings?.options || {};
+function ChallengeFileFactory({ challengeSettings }) {
+    let { chainTicker } = challengeSettings?.options || {};
 
     const type = "chain/" + (chainTicker || "<chainTicker>");
     return { getChallenge, optionInputs, type };

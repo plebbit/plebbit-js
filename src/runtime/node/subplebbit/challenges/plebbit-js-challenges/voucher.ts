@@ -2,9 +2,9 @@ import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
+    GetChallengeArgsInput,
     SubplebbitChallengeSetting
 } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { LocalSubplebbit } from "../../local-subplebbit.js";
@@ -83,15 +83,15 @@ const saveRedeemedVouchers = async (subplebbit: LocalSubplebbit, redeemedVoucher
     await fs.promises.writeFile(filePath, JSON.stringify(redeemedVouchers, null, 2));
 };
 
-const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number,
-    subplebbit: LocalSubplebbit
-): Promise<ChallengeInput | ChallengeResultInput> => {
-    if (!subplebbitChallengeSettings?.options?.question) throw Error("No option question");
+const getChallenge = async ({
+    challengeSettings,
+    challengeRequestMessage,
+    challengeIndex,
+    subplebbit
+}: GetChallengeArgsInput): Promise<ChallengeInput | ChallengeResultInput> => {
+    if (!challengeSettings?.options?.question) throw Error("No option question");
 
-    const vouchersString = subplebbitChallengeSettings?.options?.vouchers;
+    const vouchersString = challengeSettings?.options?.vouchers;
     if (!vouchersString || typeof vouchersString !== "string") {
         throw Error("No vouchers configured");
     }
@@ -106,9 +106,9 @@ const getChallenge = async (
 
     const redeemedVouchers = await loadRedeemedVouchers(subplebbit);
 
-    const invalidVoucherError = subplebbitChallengeSettings?.options?.invalidVoucherError || "Invalid voucher code.";
+    const invalidVoucherError = challengeSettings?.options?.invalidVoucherError || "Invalid voucher code.";
     const alreadyRedeemedError =
-        subplebbitChallengeSettings?.options?.alreadyRedeemedError || "This voucher has already been redeemed by another author.";
+        challengeSettings?.options?.alreadyRedeemedError || "This voucher has already been redeemed by another author.";
 
     const getAuthorAddress = (): string | undefined => {
         return (
@@ -129,7 +129,7 @@ const getChallenge = async (
 
     if (challengeAnswer === undefined) {
         return {
-            challenge: subplebbitChallengeSettings?.options?.question,
+            challenge: challengeSettings?.options?.question,
             verify: async (_answer: string): Promise<ChallengeResultInput> => {
                 if (!availableVouchers.includes(_answer)) {
                     return {
@@ -186,10 +186,10 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
-    const question = subplebbitChallengeSettings?.options?.question;
+function ChallengeFileFactory({ challengeSettings }: { challengeSettings: SubplebbitChallengeSetting }): ChallengeFileInput {
+    const question = challengeSettings?.options?.question;
     const challenge = question;
-    const description = subplebbitChallengeSettings?.options?.description || defaultDescription;
+    const description = challengeSettings?.options?.description || defaultDescription;
 
     return { getChallenge, optionInputs, type, challenge, description };
 }

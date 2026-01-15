@@ -2,9 +2,9 @@ import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
+    GetChallengeArgsInput,
     SubplebbitChallengeSetting
 } from "../../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import type { SetCaptchaOption } from "captcha-canvas/dist/constants.js";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
@@ -42,18 +42,14 @@ const type: ChallengeInput["type"] = "image/png";
 
 const description = "make custom image captcha";
 
-const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number
-): Promise<ChallengeInput> => {
+const getChallenge = async ({ challengeSettings }: GetChallengeArgsInput): Promise<ChallengeInput> => {
     const { createCaptcha } = await import("captcha-canvas");
     // setCaptchaOptions https://captcha-canvas.js.org/global.html#SetCaptchaOptions
 
-    const width = subplebbitChallengeSettings?.options?.width ? Number(subplebbitChallengeSettings?.options?.width) : 300;
-    const height = subplebbitChallengeSettings?.options?.height ? Number(subplebbitChallengeSettings?.options?.height) : 100;
-    const characters = subplebbitChallengeSettings?.options?.characters ? Number(subplebbitChallengeSettings?.options?.characters) : 6;
-    const colors = subplebbitChallengeSettings?.options?.colors ? (subplebbitChallengeSettings?.options?.colors).split(",") : ["#32cf7e"];
+    const width = challengeSettings?.options?.width ? Number(challengeSettings?.options?.width) : 300;
+    const height = challengeSettings?.options?.height ? Number(challengeSettings?.options?.height) : 100;
+    const characters = challengeSettings?.options?.characters ? Number(challengeSettings?.options?.characters) : 6;
+    const colors = challengeSettings?.options?.colors ? challengeSettings?.options?.colors.split(",") : ["#32cf7e"];
 
     const setCaptchaOptions: SetCaptchaOption = {};
     if (characters) setCaptchaOptions.characters = characters;
@@ -76,7 +72,7 @@ const getChallenge = async (
     return { challenge, verify, type, caseInsensitive: true };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
+function ChallengeFileFactory({ challengeSettings }: { challengeSettings: SubplebbitChallengeSetting }): ChallengeFileInput {
     return { getChallenge, optionInputs, type, description, caseInsensitive: true };
 }
 

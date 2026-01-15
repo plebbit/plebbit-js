@@ -17,10 +17,10 @@ const optionInputs = [
 ];
 const type = "text/plain";
 const description = `Ask a question, like 'What is the password?'`;
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
-    if (!subplebbitChallengeSettings?.options?.question)
+const getChallenge = async ({ challengeSettings, challengeRequestMessage, challengeIndex }) => {
+    if (!challengeSettings?.options?.question)
         throw Error("No option question");
-    let answer = subplebbitChallengeSettings?.options?.answer;
+    let answer = challengeSettings?.options?.answer;
     if (!answer) {
         throw Error("no option answer");
     }
@@ -29,7 +29,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     // the author didn't preinclude his answer, so send him a pubsub challenge message
     if (challengeAnswer === undefined) {
         return {
-            challenge: subplebbitChallengeSettings?.options?.question,
+            challenge: challengeSettings?.options?.question,
             verify: async (_answer) => {
                 if (_answer === answer)
                     return {
@@ -55,10 +55,10 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         success: true
     };
 };
-function ChallengeFileFactory(subplebbitChallengeSettings) {
+function ChallengeFileFactory({ challengeSettings }) {
     // some challenges can prepublish the challenge so that it can be preanswered
     // in the challengeRequestMessage
-    const question = subplebbitChallengeSettings?.options?.question;
+    const question = challengeSettings?.options?.question;
     const challenge = question;
     return { getChallenge, optionInputs, type, challenge, description };
 }

@@ -83,12 +83,17 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
                 challengeIndex
             });
         }
-        const challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
+        const challengeFile = ChallengeFileFactory({ challengeSettings: subplebbitChallengeSettings });
         validateChallengeFile(challengeFile, challengeIndex, subplebbit);
         let challengeOrChallengeResult;
         try {
             // the getChallenge function could throw
-            challengeOrChallengeResult = await challengeFile.getChallenge(subplebbitChallengeSettings, challengeRequestMessage, challengeIndex, subplebbit);
+            challengeOrChallengeResult = await challengeFile.getChallenge({
+                challengeSettings: subplebbitChallengeSettings,
+                challengeRequestMessage,
+                challengeIndex,
+                subplebbit
+            });
             validateChallengeOrChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
         }
         catch (e) {
@@ -269,7 +274,7 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (subplebbitC
         try {
             const importedFile = await import(pathToFileURL(subplebbitChallengeSettings.path).href);
             const ChallengeFileFactory = ChallengeFileFactorySchema.parse(importedFile.default);
-            challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
+            challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory({ challengeSettings: subplebbitChallengeSettings }));
         }
         catch (e) {
             e.details = {
@@ -286,7 +291,7 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (subplebbitC
     // else, the challenge is included with plebbit-js
     else if (subplebbitChallengeSettings.name) {
         const ChallengeFileFactory = ChallengeFileFactorySchema.parse(plebbitJsChallenges[subplebbitChallengeSettings.name]);
-        challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
+        challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory({ challengeSettings: subplebbitChallengeSettings }));
     }
     if (!challengeFile)
         throw Error("Failed to load challenge file");

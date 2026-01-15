@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { CreateSubplebbitEditPublicationOptionsSchema, SubplebbitEditPublicationChallengeRequestToEncryptSchema, SubplebbitEditPublicationSignedPropertyNames, SubplebbitEditPubsubMessagePublicationSchema } from "./schema";
-import type { JsonSignature, SignerType } from "../../signer/types";
-import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
-import SubplebbitEdit from "./subplebbit-edit";
+import { CreateSubplebbitEditPublicationOptionsSchema, SubplebbitEditPublicationChallengeRequestToEncryptSchema, SubplebbitEditPublicationSignedPropertyNames, SubplebbitEditPubsubMessagePublicationSchema } from "./schema.js";
+import type { JsonSignature, SignerType } from "../../signer/types.js";
+import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
+import SubplebbitEdit from "./subplebbit-edit.js";
 export type CreateSubplebbitEditPublicationOptions = z.infer<typeof CreateSubplebbitEditPublicationOptionsSchema>;
 export type SubplebbitEditChallengeRequestToEncryptType = z.infer<typeof SubplebbitEditPublicationChallengeRequestToEncryptSchema>;
 export type SubplebbitEditJson = JsonOfClass<SubplebbitEdit>;

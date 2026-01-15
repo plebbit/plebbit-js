@@ -2,6 +2,7 @@ import { z } from "zod";
 import { FlairSchema } from "../schema/schema.js";
 import {
     ChallengeExcludeSchema,
+    ChallengeFileFactoryArgsSchema,
     ChallengeFileFactorySchema,
     ChallengeFileSchema,
     ChallengeFromGetChallengeSchema,
@@ -9,6 +10,7 @@ import {
     CreateNewLocalSubplebbitParsedOptionsSchema,
     CreateNewLocalSubplebbitUserOptionsSchema,
     CreateRemoteSubplebbitOptionsSchema,
+    GetChallengeArgsSchema,
     SubplebbitChallengeSchema,
     SubplebbitChallengeSettingSchema,
     SubplebbitEditOptionsSchema,
@@ -115,6 +117,14 @@ export type ChallengeFileInput = z.input<typeof ChallengeFileSchema>;
 export type ChallengeFileFactory = z.infer<typeof ChallengeFileFactorySchema>;
 
 export type ChallengeFileFactoryInput = z.input<typeof ChallengeFileFactorySchema>;
+
+export type ChallengeFileFactoryArgs = z.infer<typeof ChallengeFileFactoryArgsSchema>;
+
+export type ChallengeFileFactoryArgsInput = z.input<typeof ChallengeFileFactoryArgsSchema>;
+
+export type GetChallengeArgs = z.infer<typeof GetChallengeArgsSchema>;
+
+export type GetChallengeArgsInput = z.input<typeof GetChallengeArgsSchema>;
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
 

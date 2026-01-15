@@ -603,7 +603,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     private _serializeSettingsFromPlebbit(plebbit: Plebbit): PlebbitWsServerSettingsSerialized {
         const plebbitOptions = plebbit.parsedPlebbitOptions;
         const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
-            remeda.omit(challengeFactory({}), ["getChallenge"])
+            remeda.omit(challengeFactory({ challengeSettings: {} }), ["getChallenge"])
         );
 
         return <PlebbitWsServerSettingsSerialized>{ plebbitOptions, challenges };

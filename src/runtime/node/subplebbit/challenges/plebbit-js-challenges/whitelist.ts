@@ -2,9 +2,9 @@ import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
+    GetChallengeArgsInput,
     SubplebbitChallengeSetting
 } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
@@ -115,14 +115,13 @@ class UrlsAddressesSet {
 }
 const urlsAddressesSet = new UrlsAddressesSet();
 
-const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number
-): Promise<ChallengeResultInput> => {
+const getChallenge = async ({
+    challengeSettings,
+    challengeRequestMessage
+}: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
     // add a custom error message to display to the author
-    const error = subplebbitChallengeSettings?.options?.error;
-    const addresses = subplebbitChallengeSettings?.options?.addresses
+    const error = challengeSettings?.options?.error;
+    const addresses = challengeSettings?.options?.addresses
         ?.split(",")
         .map((u) => u.trim())
         .filter(Boolean);
@@ -131,11 +130,7 @@ const getChallenge = async (
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     if (
         !addressesSet.has(publication?.author?.address) &&
-        !(await urlsAddressesSet.has(
-            publication?.author?.address,
-            publication?.subplebbitAddress,
-            subplebbitChallengeSettings?.options?.urls
-        ))
+        !(await urlsAddressesSet.has(publication?.author?.address, publication?.subplebbitAddress, challengeSettings?.options?.urls))
     ) {
         return {
             success: false,
@@ -148,7 +143,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
+function ChallengeFileFactory({ challengeSettings }: { challengeSettings: SubplebbitChallengeSetting }): ChallengeFileInput {
     return { getChallenge, optionInputs, type, description };
 }
 

@@ -9,7 +9,6 @@ import { MemoryBlockstore } from "blockstore-core";
 import { createDelegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
 import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
-import { createIpnsFetchRouter } from "./ipns-over-pubsub-with-fetch.js";
 import { pubsub as createIpnsPubusubRouter } from "@helia/ipns/routing";
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
@@ -19,6 +18,10 @@ import { connectToPubsubPeers } from "./util.js";
 const log = Logger("plebbit-js:libp2p-js");
 const libp2pJsClients = {}; // key => plebbit.clients.libp2pJsClients[key]
 const creatingLibp2pJsClients = {};
+// TODO need to remove our
+// TODO need to call ipnsRouter.cancel when our subplebbit stops updating
+// TODO we may need to remove libp2pJsClients and creatingLibp2pJsClients, I actually don't think they're needed
+// TODO can you verify if we're already content who has a specific and we fetch the CID even though http router says it has no providers, it should be able to load the CID
 function getDelegatedRoutingFields(routers) {
     const routersObj = {};
     for (let i = 0; i < routers.length; i++) {
@@ -62,10 +65,12 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
             },
             blockstore: new MemoryBlockstore(), // TODO use indexed db here
             blockBrokers: [bitswap()],
+            // routers: [],
             start: false,
             ...plebbitOptions.heliaOptions
         };
         const helia = await createHelia(mergedHeliaInit);
+        // might need changing below
         //@ts-expect-error
         helia.routing.routers = [helia.routing.routers[0]]; // remove gateway routing
         log("Initialized libp2pjs helia with key", plebbitOptions.key, "peer id", helia.libp2p.peerId.toString());
@@ -77,10 +82,63 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
             pubsubEventHandler.emit(evt.detail.topic, msgFormatted);
         });
         const heliaFs = unixfs(helia);
+        const ipnsPubsubRouter = createIpnsPubusubRouter(helia);
         const ipnsNameResolver = ipns(helia, {
-            routers: [createIpnsFetchRouter(helia), createIpnsPubusubRouter(helia)]
+            // TODO include delegated routers here
+            routers: [
+                // createIpnsFetchRouter(helia),
+                ipnsPubsubRouter
+            ]
         });
-        ipnsNameResolver.routers = ipnsNameResolver.routers.slice(1); // remove gateway ipns routing and keep only pubsub
+        // might need to change this
+        ipnsNameResolver.routers = [ipnsPubsubRouter]; // remove gateway ipns routing and keep only pubsub
+        const waitForIpnsPubsubRecord = (ipnsNameAsPeerId, options) => {
+            const expectedKey = ipnsNameAsPeerId.toString();
+            let isCleanedUp = false;
+            let resolvePromise;
+            let rejectPromise;
+            const promise = new Promise((resolve, reject) => {
+                resolvePromise = resolve;
+                rejectPromise = reject;
+            });
+            const cleanup = () => {
+                if (isCleanedUp)
+                    return;
+                isCleanedUp = true;
+                ipnsPubsubRouter.removeEventListener("record-update", onRecordUpdate);
+                if (options?.signal && onAbort)
+                    options.signal.removeEventListener("abort", onAbort);
+            };
+            const onAbort = () => {
+                cleanup();
+                const error = new Error("IPNS resolve aborted");
+                error.name = "AbortError";
+                rejectPromise(error);
+            };
+            const onRecordUpdate = (event) => {
+                const detail = event?.detail;
+                const publicKey = detail?.publicKey;
+                if (!publicKey || typeof publicKey.toString !== "function")
+                    return;
+                if (publicKey.toString() !== expectedKey)
+                    return;
+                const recordValue = detail?.record?.value;
+                if (typeof recordValue !== "string")
+                    return;
+                cleanup();
+                resolvePromise(recordValue);
+            };
+            ipnsPubsubRouter.addEventListener("record-update", onRecordUpdate);
+            if (options?.signal) {
+                if (options.signal.aborted) {
+                    onAbort();
+                }
+                else {
+                    options.signal.addEventListener("abort", onAbort, { once: true });
+                }
+            }
+            return { promise, cleanup };
+        };
         const throwIfHeliaIsStoppingOrStopped = () => {
             if (helia.libp2p.status === "stopped" || helia.libp2p.status === "stopping")
                 throw new PlebbitError("ERR_HELIAS_STOPPING_OR_STOPPED", {
@@ -98,13 +156,24 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
                     async function* generator() {
                         const ipnsNameAsPeerId = typeof ipnsName === "string" ? peerIdFromString(ipnsName) : ipnsName;
                         log.trace("Resolving ipns name", ipnsName, "with options", options);
+                        // const waitHandle = waitForIpnsPubsubRecord(ipnsNameAsPeerId, options);
                         try {
-                            const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), {
-                                ...options,
-                                ipnsName
-                            });
-                            yield result.record.value;
-                            return;
+                            try {
+                                const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), {
+                                    ...options,
+                                    ipnsName
+                                });
+                                yield result.record.value;
+                                return;
+                            }
+                            catch (err) {
+                                const error = err;
+                                if (error.name !== "NotFoundError" && error.name !== "RecordNotFoundError")
+                                    throw err;
+                            }
+                            // const recordValue = await waitHandle.promise;
+                            // yield recordValue;
+                            // return;
                         }
                         catch (err) {
                             const error = err;
@@ -117,6 +186,9 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
                             else
                                 throw err;
                         }
+                        // finally {
+                        //     waitHandle.cleanup();
+                        // }
                     }
                     return generator();
                 }
@@ -181,7 +253,7 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
             },
             async add(entry, // More specific types will be checked internally
             options) {
-                throw Error("Helia 'add' is not supported");
+                throw Error("Helia 'add' is not supported at the moment in plebbit-js API");
             },
             async stop(options) {
                 const clientFromMap = libp2pJsClients[plebbitOptions.key];

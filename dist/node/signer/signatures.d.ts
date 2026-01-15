@@ -1,5 +1,5 @@
 import { Plebbit } from "../plebbit/plebbit.js";
-import type { ChallengeAnswerMessageSignature, ChallengeAnswerMessageType, ChallengeMessageSignature, ChallengeMessageType, ChallengeRequestMessageSignature, ChallengeRequestMessageType, ChallengeVerificationMessageSignature, ChallengeVerificationMessageType, DecryptedChallengeVerification } from "../pubsub-messages/types";
+import type { ChallengeAnswerMessageSignature, ChallengeAnswerMessageType, ChallengeMessageSignature, ChallengeMessageType, ChallengeRequestMessageSignature, ChallengeRequestMessageType, ChallengeVerificationMessageSignature, ChallengeVerificationMessageType, DecryptedChallengeVerification } from "../pubsub-messages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { messages } from "../errors.js";
 import { BaseClientsManager } from "../clients/base-client-manager.js";

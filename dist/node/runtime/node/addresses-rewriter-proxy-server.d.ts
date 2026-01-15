@@ -33,6 +33,7 @@ export declare class AddressesRewriterProxyServer {
     private _proxyRequest;
     _startUpdateAddressesLoop(): Promise<void>;
     private _extractKeysFromRequestBody;
+    private _createBodyPreview;
     private _writeRequestLogs;
     private _startRequestLogging;
     private _startFailedKeysRetry;

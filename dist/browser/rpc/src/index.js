@@ -28,7 +28,7 @@ class PlebbitWsServer extends TypedEmitter {
         this._trackedSubplebbitListeners = new WeakMap();
         this._getIpFromConnectionRequest = (req) => req.socket.remoteAddress; // we set it up here so we can mock it in tests
         this._onSettingsChange = {}; // TODO rename this to _afterSettingsChange
-        this._startedSubplebbits = {};
+        this._startedSubplebbits = {}; // TODO replace this with plebbit._startedSubplebbits
         const log = Logger("plebbit-js:PlebbitWsServer");
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
@@ -410,7 +410,7 @@ class PlebbitWsServer extends TypedEmitter {
         const plebbit = await this._getPlebbitInstance();
         const localSubs = plebbit.subplebbits;
         if (!localSubs.includes(address))
-            throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
+            throw new PlebbitError("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
         let subplebbit;
         if (this._startedSubplebbits[address] instanceof LocalSubplebbit)
             subplebbit = this._startedSubplebbits[address];
