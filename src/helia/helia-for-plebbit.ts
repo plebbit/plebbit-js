@@ -26,6 +26,10 @@ const log = Logger("plebbit-js:libp2p-js");
 const libp2pJsClients: Partial<Record<string, Libp2pJsClient>> = {}; // key => plebbit.clients.libp2pJsClients[key]
 const creatingLibp2pJsClients: Partial<Record<string, Promise<Libp2pJsClient>>> = {};
 
+// TODO need to call ipnsRouter.cancel when our subplebbit stops updating
+// TODO we may need to remove libp2pJsClients and creatingLibp2pJsClients, I actually don't think they're needed
+
+// TODO can you verify if we're already content who has a specific and we fetch the CID even though http router says it has no providers, it should be able to load the CID
 function getDelegatedRoutingFields(routers: string[]) {
     const routersObj: Record<string, ReturnType<typeof createDelegatedRoutingV1HttpApiClient>> = {};
     for (let i = 0; i < routers.length; i++) {
