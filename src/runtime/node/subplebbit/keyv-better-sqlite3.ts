@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import { Database as BetterSqlite3Database } from "better-sqlite3";
-import { PlebbitError } from "../../../plebbit-error";
+import { PlebbitError } from "../../../plebbit-error.js";
 
 export interface KeyvBetterSqlite3Options {
     /**

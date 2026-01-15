@@ -5,16 +5,21 @@ import type {
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
 } from "../../../../../pubsub-messages/types.js";
 import type { ChallengeResult, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
-import { RateLimiter } from "limiter-es6-compat";
+import * as limiterCompat from "limiter-es6-compat";
 import {
     derivePublicationFromChallengeRequest,
     isRequestPubsubPublicationOfPost,
     isRequestPubsubPublicationOfReply
 } from "../../../../../util.js";
+
+// Workaround for NodeNext moduleResolution compatibility
+const { RateLimiter } = limiterCompat as any;
+type RateLimiterInstance = InstanceType<typeof RateLimiter>;
+
 type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration" | "subplebbitEdit";
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
-const rateLimiters = new QuickLRU<string, RateLimiter>({ maxSize: 50000 });
+const rateLimiters = new QuickLRU<string, RateLimiterInstance>({ maxSize: 50000 });
 
 const getPublicationType = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): PublicationType | undefined =>
     isPost(request)
@@ -49,7 +54,7 @@ const getOrCreateRateLimiter = (
     let rateLimiter = rateLimiters.get(rateLimiterName);
     if (!rateLimiter) {
         rateLimiter = new RateLimiter({ tokensPerInterval: exclude.rateLimit, interval: "hour", fireImmediately: true });
-        //@ts-expect-error
+        // @ts-ignore - adding name property for debugging
         rateLimiter.name = rateLimiterName; // add name for debugging
         rateLimiters.set(rateLimiterName, rateLimiter);
     }
@@ -61,7 +66,7 @@ const addFilteredRateLimiter = (
     publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     publicationType: PublicationType,
     challengeSuccess: ChallengeResult["success"],
-    filteredRateLimiters: Record<string, RateLimiter>
+    filteredRateLimiters: Record<string, RateLimiterInstance>
 ) => {
     filteredRateLimiters[getRateLimiterName(exclude, publication, publicationType, challengeSuccess)] = getOrCreateRateLimiter(
         exclude,
@@ -79,7 +84,7 @@ const getRateLimitersToTest = (
     // TODO I think we need to change this
     const publication = derivePublicationFromChallengeRequest(request);
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
-    const filteredRateLimiters: Record<string, RateLimiter> = {};
+    const filteredRateLimiters: Record<string, RateLimiterInstance> = {};
 
     if (testPublicationType(exclude.publicationType, request)) {
         const publicationType = getPublicationType(request);
@@ -122,7 +127,7 @@ const getRateLimitersToAddTo = (
     challengeSuccess: ChallengeResult["success"]
 ) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
-    const filteredRateLimiters: Record<string, RateLimiter> = {};
+    const filteredRateLimiters: Record<string, RateLimiterInstance> = {};
     const publication = derivePublicationFromChallengeRequest(request);
 
     for (const exclude of excludeArray) {

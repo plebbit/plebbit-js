@@ -6,16 +6,16 @@ import {
     PostsPagesIpfsSchema,
     RepliesPagesIpfsSchema,
     ReplySortNameSchema
-} from "./schema";
+} from "./schema.js";
 import type {
     CommentIpfsType,
     CommentUpdateForChallengeVerification,
     CommentUpdateType,
     CommentWithinModQueuePageJson,
     CommentWithinRepliesPostsPageJson
-} from "../publications/comment/types";
-import { JsonOfClass } from "../types";
-import { PostsPages, RepliesPages } from "./pages";
+} from "../publications/comment/types.js";
+import { JsonOfClass } from "../types.js";
+import { PostsPages, RepliesPages } from "./pages.js";
 
 export type PageIpfs = z.infer<typeof PageIpfsSchema>;
 

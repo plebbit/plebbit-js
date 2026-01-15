@@ -1,24 +1,24 @@
 import type {
     CommentEditPubsubMessagePublication,
     CommentEditPubsubMessagePublicationWithSubplebbitAuthor
-} from "../publications/comment-edit/types";
+} from "../publications/comment-edit/types.js";
 import type {
     CommentModerationPubsubMessagePublication,
     CommentModerationPubsubMessagePublicationWithSubplebbitAuthor
-} from "../publications/comment-moderation/types";
+} from "../publications/comment-moderation/types.js";
 import type {
     CommentPubsubMessagePublication,
     CommentPubsubMessageWithSubplebbitAuthor,
     PostPubsubMessageWithSubplebbitAuthor,
     ReplyPubsubMessageWithSubplebbitAuthor
-} from "../publications/comment/types";
+} from "../publications/comment/types.js";
 import type {
     SubplebbitEditPublicationPubsubMessageWithSubplebbitAuthor,
     SubplebbitEditPubsubMessagePublication
-} from "../publications/subplebbit-edit/types";
-import type { VotePubsubMessagePublication, VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
-import type { PubsubSignature } from "../signer/types";
-import type { AuthorTypeWithCommentUpdate } from "../types";
+} from "../publications/subplebbit-edit/types.js";
+import type { VotePubsubMessagePublication, VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types.js";
+import type { PubsubSignature } from "../signer/types.js";
+import type { AuthorTypeWithCommentUpdate } from "../types.js";
 import {
     ChallengeAnswerMessageSchema,
     ChallengeAnswerMessageSignedPropertyNames,
@@ -34,7 +34,7 @@ import {
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
     DecryptedChallengeVerificationSchema
-} from "./schema";
+} from "./schema.js";
 
 import { z } from "zod";
 

@@ -1,13 +1,13 @@
-import { PlebbitError } from "../plebbit-error";
+import { PlebbitError } from "../plebbit-error.js";
 import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerificationMessageType
-} from "../pubsub-messages/types";
+} from "../pubsub-messages/types.js";
 
 import type { Comment } from "./comment/comment.js";
-import Publication from "./publication";
+import Publication from "./publication.js";
 
 export type PublicationPublishingState =
     | "stopped"

@@ -1,11 +1,11 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit.js";
-import type { InputPlebbitOptions } from "../types";
+import type { InputPlebbitOptions } from "../types.js";
 import { parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { CreateRpcSubplebbitFunctionArgumentSchema } from "../subplebbit/schema.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
-import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types";
+import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types.js";
 import { z } from "zod";
 import { PlebbitError } from "../plebbit-error.js";
 import type { AuthorAddressRpcParam, CidRpcParam } from "../clients/rpc-client/types.js";

@@ -4,10 +4,10 @@ import {
     SubplebbitEditPublicationChallengeRequestToEncryptSchema,
     SubplebbitEditPublicationSignedPropertyNames,
     SubplebbitEditPubsubMessagePublicationSchema
-} from "./schema";
-import type { JsonSignature, SignerType } from "../../signer/types";
-import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
-import SubplebbitEdit from "./subplebbit-edit";
+} from "./schema.js";
+import type { JsonSignature, SignerType } from "../../signer/types.js";
+import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
+import SubplebbitEdit from "./subplebbit-edit.js";
 
 export type CreateSubplebbitEditPublicationOptions = z.infer<typeof CreateSubplebbitEditPublicationOptionsSchema>;
 

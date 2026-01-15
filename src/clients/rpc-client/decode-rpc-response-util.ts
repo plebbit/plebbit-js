@@ -8,7 +8,7 @@ import type {
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType
-} from "../../pubsub-messages/types";
+} from "../../pubsub-messages/types.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 
 function _decodeChallengeRequestId(

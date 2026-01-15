@@ -1,11 +1,11 @@
 {
     "compilerOptions": {
         "outDir": "../dist/node",
-        "module": "ES2022",
+        "module": "NodeNext",
         "declaration": true,
         "target": "ES2021",
         "lib": ["ES2021"],
-        "moduleResolution": "Bundler",
+        "moduleResolution": "NodeNext",
         "customConditions": ["node"],
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,

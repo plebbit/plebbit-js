@@ -5,7 +5,7 @@ import {
     RpcCommentRepliesPageParamSchema,
     RpcSubplebbitAddressParamSchema,
     RpcSubplebbitPageParamSchema
-} from "./schema";
+} from "./schema.js";
 
 export type CidRpcParam = z.infer<typeof RpcCidParamSchema>;
 export type SubplebbitAddressRpcParam = z.infer<typeof RpcSubplebbitAddressParamSchema>;

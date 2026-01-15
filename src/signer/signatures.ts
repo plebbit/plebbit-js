@@ -26,7 +26,7 @@ import type {
     DecryptedChallengeVerification,
     PublicationFromDecryptedChallengeRequest,
     PubsubMessage
-} from "../pubsub-messages/types";
+} from "../pubsub-messages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { messages } from "../errors.js";
 import assert from "assert";

@@ -12,7 +12,7 @@ import {
     PlebbitError
 } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import type { PubsubMessage } from "../pubsub-messages/types";
+import type { PubsubMessage } from "../pubsub-messages/types.js";
 import type { ChainTicker, PubsubSubscriptionHandler, ResultOfFetchingSubplebbit } from "../types.js";
 import * as cborg from "cborg";
 import last from "it-last";

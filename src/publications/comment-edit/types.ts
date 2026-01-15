@@ -6,11 +6,11 @@ import {
     CommentEditPubsubMessagePublicationSchema,
     CommentEditSignedPropertyNames,
     CommentEditsTableRowSchema
-} from "./schema";
-import { CommentAuthorSchema } from "../../schema/schema";
-import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
-import type { CommentEdit } from "./comment-edit";
-import type { JsonSignature, SignerType } from "../../signer/types";
+} from "./schema.js";
+import { CommentAuthorSchema } from "../../schema/schema.js";
+import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
+import type { CommentEdit } from "./comment-edit.js";
+import type { JsonSignature, SignerType } from "../../signer/types.js";
 
 export type CommentAuthorEditOptions = z.infer<typeof CommentAuthorSchema>;
 
