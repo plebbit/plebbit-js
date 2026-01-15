@@ -99,7 +99,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         [connectionId: string]: { [subscriptionId: number]: (args: { newPlebbit: Plebbit }) => Promise<void> };
     } = {}; // TODO rename this to _afterSettingsChange
 
-    private _startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {};
+    private _startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {}; // TODO replace this with plebbit._startedSubplebbits
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
         super();
@@ -526,7 +526,8 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const plebbit = await this._getPlebbitInstance();
 
         const localSubs = plebbit.subplebbits;
-        if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
+        if (!localSubs.includes(address))
+            throw new PlebbitError("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
         let subplebbit: LocalSubplebbit;
         if (this._startedSubplebbits[address] instanceof LocalSubplebbit) subplebbit = <LocalSubplebbit>this._startedSubplebbits[address];
         else {
