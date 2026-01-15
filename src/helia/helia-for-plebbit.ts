@@ -212,7 +212,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
                 entry: Parameters<Libp2pJsClient["heliaWithKuboRpcClientFunctions"]["add"]>[0], // More specific types will be checked internally
                 options?: Parameters<Libp2pJsClient["heliaWithKuboRpcClientFunctions"]["add"]>[1]
             ): Promise<AddResult> {
-                throw Error("Helia 'add' is not supported");
+                throw Error("Helia 'add' is not supported at the moment in plebbit-js API");
             },
             async stop(options) {
                 const clientFromMap = libp2pJsClients[plebbitOptions.key];
