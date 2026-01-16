@@ -821,8 +821,8 @@ export interface DomainResolver {
 
 **Usage Example:**
 ```javascript
-// In @plebbit/resolver-ens (separate GitHub repo)
-import { DomainResolver } from '@plebbit/plebbit-js';
+// In @bitsocial/resolver-ens (separate GitHub repo)
+import { DomainResolver } from '@bitsocial/plebbit-js';
 
 export const ensResolver: DomainResolver = {
   name: 'ens',
@@ -837,10 +837,10 @@ export const ensResolver: DomainResolver = {
 };
 
 // In desktop app / plebbit-cli
-import { ensResolver } from '@plebbit/resolver-ens';
-import { snsResolver } from '@plebbit/resolver-sns';
+import { ensResolver } from '@bitsocial/resolver-ens';
+import { snsResolver } from '@bitsocial/resolver-sns';
 
-const plebbit = await Plebbit({
+const plebbit = await PKC({
   domainResolvers: [ensResolver, snsResolver],  // optional
   chainProviders: {
     eth: { urls: ['https://eth-rpc.example.com'] },
@@ -861,15 +861,15 @@ const plebbit = await Plebbit({
 
 `Plebbit.challenges` already exists as a mutable static object. External challenges:
 ```javascript
-import Plebbit from '@plebbit/plebbit-js';
-import { evmContractCallChallenge } from '@plebbit/challenge-evm-contract';
+import PKC from '@pkc/pkc-js';
+import { evmContractCallChallenge } from '@bitsocial/challenge-evm-contract';
 
-Plebbit.challenges['evm-contract-call'] = evmContractCallChallenge;
+PKC.challenges['evm-contract-call'] = evmContractCallChallenge;
 ```
 
 External challenges import types from plebbit-js:
 ```typescript
-import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from '@plebbit/plebbit-js';
+import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from '@pkc/pkc-js';
 ```
 
 ### 17.3 TODO Items
@@ -877,7 +877,7 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 **Domain Resolver System:**
 - [ ] Add `DomainResolver` and `DomainResolverResult` interfaces to `src/types.ts`
 - [ ] Add `DomainResolverSchema` to `src/schema.ts`
-- [ ] Add optional `domainResolvers` to `PlebbitOptions`
+- [ ] Add optional `domainResolvers` to `PKCOptions`
 - [ ] Refactor `src/domain-resolver.ts` to use plugin system
 - [ ] Update `src/clients/base-client-manager.ts` resolution flow
 - [ ] Add `ERR_NO_RESOLVER_FOR_TLD` error when no resolver matches
@@ -885,12 +885,12 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 - [ ] Remove hardcoded ENS/SNS logic from core
 
 **External Challenges:**
-- [ ] Remove `evm-contract-call` from `plebbitJsChallenges` in `src/runtime/node/subplebbit/challenges/index.ts`
+- [ ] Remove `evm-contract-call` from `pkcJsChallenges` in `src/runtime/node/subplebbit/challenges/index.ts`
 - [ ] Delete `src/runtime/node/subplebbit/challenges/plebbit-js-challenges/evm-contract-call/` directory
 - [ ] Export challenge types for external packages
 
 **Dependencies:**
-- [ ] Remove web3 dependencies: `viem`, `ethers`, `@bonfida/spl-name-service`, `@solana/web3.js`
+- [ ] Remove web3 dependencies: `viem`, `ethers`, `@bonfida/spl-name-service`, `@solana/web3.js` from pkc-js
 
 **Downstream Apps:**
 - [ ] Update plebbit-cli to install and register domain resolvers
@@ -900,9 +900,9 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 
 | Repository | Purpose | Dependencies |
 |------------|---------|--------------|
-| @plebbit/resolver-ens | ENS (.eth) domain resolution | viem, ethers |
-| @plebbit/resolver-sns | Solana Name Service (.sol) resolution | @bonfida/spl-name-service, @solana/web3.js |
-| @plebbit/challenge-evm-contract | EVM contract call challenge | viem |
+| @bitsocial/resolver-ens | ENS (.eth) domain resolution | viem, ethers |
+| @bitsocial/resolver-sns | Solana Name Service (.sol) resolution | @bonfida/spl-name-service, @solana/web3.js |
+| @bitsocial/challenge-evm-contract | EVM contract call challenge | viem |
 
 ### 17.5 Breaking Changes
 
