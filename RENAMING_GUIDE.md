@@ -87,6 +87,8 @@ The following dependencies are in the @plebbit namespace and need separate repos
 - [ ] `src/plebbit-error.ts` → `src/pkc-error.ts`
 - [ ] `src/helia/helia-for-plebbit.ts` → `src/helia/helia-for-pkc.ts`
 - [ ] `src/rpc/src/lib/plebbit-js/plebbit-js-mock.ts` → `src/rpc/src/lib/pkc-js/pkc-js-mock.ts`
+- [ ] `src/version.ts` - Update USER_AGENT string:
+  - `/plebbit-js:${version}/` → `/pkc-js:${version}/`
 
 ### 3.2 Subplebbit → Community Files
 - [ ] `src/subplebbit/remote-subplebbit.ts` → `src/community/remote-community.ts`
@@ -144,6 +146,8 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `class SubplebbitLibp2pJsClient` → `class CommunityLibp2pJsClient`
 - [ ] `class SubplebbitIpfsGatewayClient` → `class CommunityIpfsGatewayClient`
 - [ ] `class SubplebbitEdit` → `class CommunityEdit`
+- [ ] `class SubplebbitPostsPagesClientsManager` → `class CommunityPostsPagesClientsManager` (src/pages/pages-client-manager.ts)
+- [ ] `class SubplebbitModQueueClientsManager` → `class CommunityModQueueClientsManager` (src/pages/pages-client-manager.ts)
 
 ### 4.3 Type Definitions (src/types.ts, src/subplebbit/types.ts)
 **Plebbit types:**
@@ -157,6 +161,9 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `type PlebbitWsServerSettingsSerialized` → `type PKCWsServerSettingsSerialized`
 - [ ] `type PlebbitRpcServerEvents` → `type PKCRpcServerEvents`
 - [ ] `type PlebbitRecordToVerify` → `type PKCRecordToVerify`
+- [ ] `type IpfsSubplebbitStats` → `type IpfsCommunityStats` (src/types.ts)
+- [ ] `type PubsubSubplebbitStats` → `type PubsubCommunityStats` (src/types.ts)
+- [ ] `type ResultOfFetchingSubplebbit` → `type ResultOfFetchingCommunity` (src/types.ts)
 
 **Subplebbit types:**
 - [ ] `type SubplebbitStats` → `type CommunityStats`
@@ -185,6 +192,11 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `type SubplebbitEditOptions` → `type CommunityEditOptions`
 - [ ] `type ParsedSubplebbitEditOptions` → `type ParsedCommunityEditOptions`
 - [ ] All `*WithSubplebbitAuthor` types → `*WithCommunityAuthor`
+- [ ] `type InternalSubplebbitRecordBeforeFirstUpdateType` → `type InternalCommunityRecordBeforeFirstUpdateType` (src/subplebbit/types.ts)
+- [ ] `type InternalSubplebbitRecordAfterFirstUpdateType` → `type InternalCommunityRecordAfterFirstUpdateType` (src/subplebbit/types.ts)
+- [ ] `type RpcInternalSubplebbitRecordBeforeFirstUpdateType` → `type RpcInternalCommunityRecordBeforeFirstUpdateType` (src/subplebbit/types.ts)
+- [ ] `type RpcInternalSubplebbitRecordAfterFirstUpdateType` → `type RpcInternalCommunityRecordAfterFirstUpdateType` (src/subplebbit/types.ts)
+- [ ] `type RpcLocalSubplebbitUpdateResultType` → `type RpcLocalCommunityUpdateResultType` (src/subplebbit/types.ts)
 
 ---
 
@@ -217,7 +229,11 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `ChallengeExcludeSubplebbitSchema` → `ChallengeExcludeCommunitySchema`
 - [ ] `RpcRemoteSubplebbitUpdateEventResultSchema` → `RpcRemoteCommunityUpdateEventResultSchema`
 
-### 5.3 Schema Parser Functions (src/schema/schema-util.ts)
+### 5.3 RPC Client Schemas (src/clients/rpc-client/schema.ts)
+- [ ] `RpcSubplebbitAddressParamSchema` → `RpcCommunityAddressParamSchema`
+- [ ] `RpcSubplebbitPageParamSchema` → `RpcCommunityPageParamSchema`
+
+### 5.4 Schema Parser Functions (src/schema/schema-util.ts)
 - [ ] All `parse*PlebbitErrorIfItFails` → `parse*PKCErrorIfItFails`
 - [ ] All `parse*SubplebbitSchemaWithPlebbitErrorIfItFails` → `parse*CommunitySchemaWithPKCErrorIfItFails`
 
@@ -246,6 +262,18 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 
 ### 6.2.1 PlebbitRpcClient Internal Properties
 - [ ] `PlebbitRpcClient.subplebbits` → `PKCRpcClient.communities` (array tracking subplebbit addresses received via RPC)
+
+### 6.2.2 Utility Functions (src/runtime/node/util.ts)
+- [ ] `getDefaultSubplebbitDbConfig()` → `getDefaultCommunityDbConfig()`
+- [ ] `deleteOldSubplebbitInWindows()` → `deleteOldCommunityInWindows()`
+
+### 6.2.3 RPC Schema Utility Functions (src/clients/rpc-client/rpc-schema-util.ts)
+- [ ] `parseRpcSubplebbitAddressParam()` → `parseRpcCommunityAddressParam()`
+- [ ] `parseRpcSubplebbitPageParam()` → `parseRpcCommunityPageParam()`
+
+### 6.2.4 RPC Client Types (src/clients/rpc-client/types.ts)
+- [ ] `SubplebbitAddressRpcParam` → `CommunityAddressRpcParam`
+- [ ] `SubplebbitPageRpcParam` → `CommunityPageRpcParam`
 
 ### 6.3 Publication Properties
 - [ ] `publication.subplebbitAddress` → `publication.communityAddress`
@@ -285,6 +313,7 @@ State strings emitted via `statechange` and `publishingstatechange` events:
 - [ ] `"subplebbitschange"` → `"communitieschange"`
 - [ ] `"subplebbitUpdateNotification"` → `"communityUpdateNotification"`
 - [ ] `"subplebbitsNotification"` → `"communitiesNotification"`
+- [ ] `"publishSubplebbitEditNotification"` → `"publishCommunityEditNotification"`
 
 ### 7.3 RPC Parameter Names (Wire Protocol)
 - [ ] `RpcSubplebbitPageParamSchema.subplebbitAddress` → `communityAddress` (src/clients/rpc-client/schema.ts)
@@ -321,21 +350,108 @@ Domain resolution cache keys (minor - invalidating just causes re-resolution):
 - [ ] `FailedToFetchPageIpfsFromGatewaysError` (keep as is)
 - [ ] `FailedToFetchGenericIpfsFromGatewaysError` (keep as is)
 
-### 9.2 Error Codes (src/errors.ts) - ~45+ error codes
-Replace all error codes containing "SUBPLEBBIT" with "COMMUNITY":
+### 9.2 Error Codes (src/errors.ts)
+
+**SUBPLEBBIT → COMMUNITY error codes:**
+- [ ] `ERR_SUB_SIGNER_NOT_DEFINED` → `ERR_COMMUNITY_SIGNER_NOT_DEFINED`
+- [ ] `ERR_SUB_CAN_EITHER_RUN_OR_UPDATE` → `ERR_COMMUNITY_CAN_EITHER_RUN_OR_UPDATE`
 - [ ] `ERR_SUBPLEBBIT_MISSING_FIELD` → `ERR_COMMUNITY_MISSING_FIELD`
 - [ ] `ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS` → `ERR_COMMUNITY_OPTIONS_MISSING_ADDRESS`
 - [ ] `ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA` → `ERR_INVALID_COMMUNITY_ADDRESS_SCHEMA`
+- [ ] `ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS` → `ERR_COMMUNITY_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS`
+- [ ] `ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH` → `ERR_COMMENT_IPFS_COMMUNITY_ADDRESS_MISMATCH`
+- [ ] `ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING` → `ERR_NEED_TO_STOP_UPDATING_COMMUNITY_BEFORE_STARTING`
 - [ ] `ERR_GET_SUBPLEBBIT_TIMED_OUT` → `ERR_GET_COMMUNITY_TIMED_OUT`
 - [ ] `ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE` → `ERR_CALLED_COMMUNITY_STOP_WITHOUT_UPDATE`
+- [ ] `ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE` → `ERR_CAN_NOT_RUN_A_COMMUNITY_WITH_NO_IPFS_NODE`
+- [ ] `ERR_CAN_NOT_CREATE_A_LOCAL_SUB` → `ERR_CAN_NOT_CREATE_A_LOCAL_COMMUNITY`
+- [ ] `ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED` → `ERR_COMMUNITY_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED`
+- [ ] `ERR_UNABLE_TO_DERIVE_PUBSUB_SUBPLEBBIT_EDIT_PUBLICATION_FROM_JSONIFIED_SUBPLEBBIT_EDIT` → `ERR_UNABLE_TO_DERIVE_PUBSUB_COMMUNITY_EDIT_PUBLICATION_FROM_JSONIFIED_COMMUNITY_EDIT`
 - [ ] `ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS` → `ERR_FAILED_TO_FETCH_COMMUNITY_FROM_GATEWAYS`
+- [ ] `ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES` → `ERR_COMMUNITY_HAS_NO_POST_UPDATES`
+- [ ] `ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_INVALID_SUBPLEBBIT_RECORD` → `ERR_GATEWAY_ABORTING_LOADING_COMMUNITY_BECAUSE_SAME_INVALID_COMMUNITY_RECORD`
+- [ ] `ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_UPDATE_CID` → `ERR_GATEWAY_ABORTING_LOADING_COMMUNITY_BECAUSE_SAME_UPDATE_CID`
+- [ ] `ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD` → `ERR_GATEWAY_ABORTING_LOADING_COMMUNITY_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD`
+- [ ] `ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD` → `ERR_REMOTE_COMMUNITY_RECEIVED_ALREADY_PROCCESSED_RECORD`
+- [ ] `ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA` → `ERR_INVALID_COMMUNITY_IPFS_SCHEMA`
+- [ ] `ERR_INVALID_RPC_LOCAL_SUBPLEBBIT_UPDATE_SCHEMA` → `ERR_INVALID_RPC_LOCAL_COMMUNITY_UPDATE_SCHEMA`
+- [ ] `ERR_INVALID_RPC_SUBPLEBBIT_UPDATING_STATE_SCHEMA` → `ERR_INVALID_RPC_COMMUNITY_UPDATING_STATE_SCHEMA`
+- [ ] `ERR_INVALID_RPC_SUBPLEBBIT_STARTED_STATE_SCHEMA` → `ERR_INVALID_RPC_COMMUNITY_STARTED_STATE_SCHEMA`
+- [ ] `ERR_INVALID_RPC_ENCODED_CHALLENGE_REQUEST_WITH_SUBPLEBBIT_AUTHOR_PUBSUB_MSG_SCHEMA` → `ERR_INVALID_RPC_ENCODED_CHALLENGE_REQUEST_WITH_COMMUNITY_AUTHOR_PUBSUB_MSG_SCHEMA`
+- [ ] `ERR_INVALID_RPC_REMOTE_SUBPLEBBIT_SCHEMA` → `ERR_INVALID_RPC_REMOTE_COMMUNITY_SCHEMA`
+- [ ] `ERR_LOCAL_SUBPLEBIT_PRODUCED_INVALID_SCHEMA` → `ERR_LOCAL_COMMUNITY_PRODUCED_INVALID_SCHEMA`
+- [ ] `ERR_INVALID_CREATE_SUBPLEBBIT_ARGS_SCHEMA` → `ERR_INVALID_CREATE_COMMUNITY_ARGS_SCHEMA`
+- [ ] `ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA` → `ERR_INVALID_CREATE_REMOTE_COMMUNITY_ARGS_SCHEMA`
+- [ ] `ERR_INVALID_CREATE_SUBPLEBBIT_EDIT_ARGS_SCHEMA` → `ERR_INVALID_CREATE_COMMUNITY_EDIT_ARGS_SCHEMA`
+- [ ] `ERR_INVALID_CREATE_NEW_LOCAL_SUB_USER_OPTIONS` → `ERR_INVALID_CREATE_NEW_LOCAL_COMMUNITY_USER_OPTIONS`
+- [ ] `ERR_INVALID_SUBPLEBBIT_EDIT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA` → `ERR_INVALID_COMMUNITY_EDIT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA`
+- [ ] `ERR_SUBPLEBBIT_EDIT_OPTIONS_SCHEMA` → `ERR_COMMUNITY_EDIT_OPTIONS_SCHEMA`
+- [ ] `ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA` → `ERR_INVALID_CREATE_COMMUNITY_WITH_RPC_ARGS_SCHEMA`
+- [ ] `ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT` → (keep as is - no subplebbit in name)
+- [ ] `ERR_SUB_HAS_NO_INTERNAL_STATE` → `ERR_COMMUNITY_HAS_NO_INTERNAL_STATE`
+- [ ] `ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED` → `ERR_THE_COMMUNITY_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED`
+- [ ] `ERR_SUBPLEBBIT_IPNS_NAME_DOES_NOT_MATCH_SIGNATURE_PUBLIC_KEY` → `ERR_COMMUNITY_IPNS_NAME_DOES_NOT_MATCH_SIGNATURE_PUBLIC_KEY`
+- [ ] `ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT` → `ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_COMMUNITY`
 - [ ] `ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT` → `ERR_CHALLENGE_MSG_SIGNER_IS_NOT_COMMUNITY`
 - [ ] `ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT` → `ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_COMMUNITY`
-- [ ] `ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH` → `ERR_COMMENT_IPFS_COMMUNITY_ADDRESS_MISMATCH`
-- [ ] ... (all other ERR_*SUBPLEBBIT* → ERR_*COMMUNITY*)
-- [ ] ... (all ERR_*PLEBBIT* → ERR_*PKC*)
+- [ ] `ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE` → `ERR_LOCAL_COMMUNITY_PRODUCED_INVALID_SIGNATURE`
+- [ ] `ERR_SUBPLEBBIT_POSTS_INVALID` → `ERR_COMMUNITY_POSTS_INVALID`
+- [ ] `ERR_SUBPLEBBIT_EDIT_HAS_RESERVED_FIELD` → `ERR_COMMUNITY_EDIT_HAS_RESERVED_FIELD`
+- [ ] `ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID` → `ERR_COMMUNITY_SIGNATURE_IS_INVALID`
+- [ ] `ERR_SUBPLEBBIT_RECORD_INCLUDES_RESERVED_FIELD` → `ERR_COMMUNITY_RECORD_INCLUDES_RESERVED_FIELD`
+- [ ] `ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN` → `ERR_FAILED_TO_RESOLVE_COMMUNITY_DOMAIN`
+- [ ] `ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES` → `ERR_COMMUNITY_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES`
+- [ ] `ERR_SUBPLEBBIT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES` → `ERR_COMMUNITY_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES`
+- [ ] `ERR_SUB_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS` → `ERR_COMMUNITY_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS`
+- [ ] `ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT` → `ERR_COMMUNITY_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT`
+- [ ] `ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE` → `ERR_COMMUNITY_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE`
+- [ ] `ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID` → `ERR_COMMUNITY_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID`
+- [ ] `ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB` → `ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_COMMUNITY`
+- [ ] `ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS` → `ERR_DOMAIN_COMMUNITY_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS`
+- [ ] `ERR_SUBPLEBBIT_DOMAIN_HAS_NO_TEXT_RECORD` → `ERR_COMMUNITY_DOMAIN_HAS_NO_TEXT_RECORD`
+- [ ] `ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE` → `ERR_LOCAL_COMMUNITY_HAS_NO_SIGNER_IN_INTERNAL_STATE`
+- [ ] `ERR_SUB_STATE_LOCKED` → `ERR_COMMUNITY_STATE_LOCKED`
+- [ ] `ERR_SUB_CREATION_LOCKED` → `ERR_COMMUNITY_CREATION_LOCKED`
+- [ ] `ERR_SUB_ALREADY_STARTED` → `ERR_COMMUNITY_ALREADY_STARTED`
+- [ ] `ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD` → `ERR_LOCAL_COMMUNITY_PRODUCED_INVALID_RECORD`
+- [ ] `ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE` → `ERR_LOCAL_COMMUNITY_RECORD_TOO_LARGE`
+- [ ] `ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS` → `ERR_CAN_NOT_LOAD_DB_IF_LOCAL_COMMUNITY_ALREADY_STARTED_IN_ANOTHER_PROCESS`
+- [ ] `ERR_CAN_NOT_EDIT_A_LOCAL_SUBPLEBBIT_THAT_IS_ALREADY_STARTED_IN_ANOTHER_PROCESS` → `ERR_CAN_NOT_EDIT_A_LOCAL_COMMUNITY_THAT_IS_ALREADY_STARTED_IN_ANOTHER_PROCESS`
+- [ ] `CAN_NOT_LOAD_LOCAL_SUBPLEBBIT_IF_DB_DOES_NOT_EXIST` → `CAN_NOT_LOAD_LOCAL_COMMUNITY_IF_DB_DOES_NOT_EXIST`
+- [ ] `ERR_SUB_START_FAILED_UNKNOWN_ERROR` → `ERR_COMMUNITY_START_FAILED_UNKNOWN_ERROR`
+- [ ] `ERR_SUB_ALREADY_STARTED_IN_SAME_PLEBBIT_INSTANCE` → `ERR_COMMUNITY_ALREADY_STARTED_IN_SAME_PKC_INSTANCE`
+- [ ] `ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT` → `ERR_COMMUNITY_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT`
+- [ ] `ERR_SUB_PUBLICATION_PARENT_CID_NOT_DEFINED` → `ERR_COMMUNITY_PUBLICATION_PARENT_CID_NOT_DEFINED`
+- [ ] `ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS` → `ERR_PUBLICATION_INVALID_COMMUNITY_ADDRESS`
+- [ ] `ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED` → `ERR_COMMUNITY_PUBLICATION_PARENT_HAS_BEEN_REMOVED`
+- [ ] `ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED` → `ERR_COMMUNITY_PUBLICATION_PARENT_HAS_BEEN_DELETED`
+- [ ] `ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED` → `ERR_COMMUNITY_PUBLICATION_POST_HAS_BEEN_DELETED`
+- [ ] `ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED` → `ERR_COMMUNITY_PUBLICATION_POST_HAS_BEEN_REMOVED`
+- [ ] `ERR_SUB_PUBLICATION_POST_IS_LOCKED` → `ERR_COMMUNITY_PUBLICATION_POST_IS_LOCKED`
+- [ ] `ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG` → `ERR_COMMUNITY_FAILED_TO_DECRYPT_PUBSUB_MSG`
+- [ ] `ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY` → `ERR_COMMUNITY_COMMENT_MOD_CAN_NOT_LOCK_REPLY`
+- [ ] `ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD` → `ERR_COMMUNITY_COMMENT_EDIT_UNAUTHORIZED_FIELD`
+- [ ] `ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS` → `ERR_COMMUNITY_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS`
+- [ ] `ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN` → `ERR_COMMUNITY_EDIT_ATTEMPTED_TO_MODIFY_COMMUNITY_WITHOUT_BEING_OWNER_OR_ADMIN`
+- [ ] `ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS` → `ERR_COMMUNITY_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS`
+- [ ] `ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB` → `ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_COMMUNITY`
+- [ ] `ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING` → `ERR_RPC_CLIENT_TRYING_TO_STOP_COMMUNITY_THAT_IS_NOT_RUNNING`
+- [ ] `ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB` → `ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_COMMUNITY`
+- [ ] `ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB` → `ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_COMMUNITY`
+- [ ] `ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB` → `ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_COMMUNITY`
 
-### 9.3 Logger Prefixes
+**PLEBBIT → PKC error codes:**
+- [ ] `ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS` → `ERR_PKC_MISSING_NATIVE_FUNCTIONS`
+- [ ] `ERR_PLEBBIT_OPTION_NOT_ACCEPTED` → `ERR_PKC_OPTION_NOT_ACCEPTED`
+- [ ] `ERR_PLEBBIT_SQLITE_LONG_TERM_STORAGE_KEYV_ERROR` → `ERR_PKC_SQLITE_LONG_TERM_STORAGE_KEYV_ERROR`
+- [ ] `ERR_PLEBBIT_IS_DESTROYED` → `ERR_PKC_IS_DESTROYED`
+- [ ] `ERR_INVALID_CREATE_PLEBBIT_WS_SERVER_OPTIONS_SCHEMA` → `ERR_INVALID_CREATE_PKC_WS_SERVER_OPTIONS_SCHEMA`
+- [ ] `ERR_INVALID_CREATE_PLEBBIT_ARGS_SCHEMA` → `ERR_INVALID_CREATE_PKC_ARGS_SCHEMA`
+
+### 9.3 Index Exports (src/index.ts)
+- [ ] `plebbitJsChallenges` export → `pkcJsChallenges`
+
+### 9.4 Logger Prefixes
 Replace all logger prefixes:
 - [ ] `Logger("plebbit-js:...")` → `Logger("pkc-js:...")`
 - [ ] Examples:
@@ -876,8 +992,8 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 
 **Domain Resolver System:**
 - [ ] Add `DomainResolver` and `DomainResolverResult` interfaces to `src/types.ts`
-- [ ] Add `DomainResolverSchema` to `src/schema.ts`
-- [ ] Add optional `domainResolvers` to `PKCOptions`
+- [ ] Add `DomainResolverSchema` to `src/schema.ts` - Zod schema validating resolver structure (name, tlds array, resolve function)
+- [ ] Add optional `domainResolvers: z.array(DomainResolverSchema)` to `PKCUserOptionsSchema` - Zod will automatically throw on invalid schema during PKC instantiation
 - [ ] Refactor `src/domain-resolver.ts` to use plugin system
 - [ ] Update `src/clients/base-client-manager.ts` resolution flow
 - [ ] Add `ERR_NO_RESOLVER_FOR_TLD` error when no resolver matches
