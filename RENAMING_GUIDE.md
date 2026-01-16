@@ -228,10 +228,18 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `vote.subplebbitAddress` → `vote.communityAddress`
 - [ ] `commentEdit.subplebbitAddress` → `commentEdit.communityAddress`
 - [ ] `commentModeration.subplebbitAddress` → `commentModeration.communityAddress`
+- [ ] `publication.shortSubplebbitAddress` → `publication.shortCommunityAddress`
 
 ### 6.4 Timeout Keys (src/plebbit/plebbit.ts)
 - [ ] `"subplebbit-ipns"` → `"community-ipns"`
 - [ ] `"subplebbit-ipfs"` → `"community-ipfs"`
+
+### 6.5 State Machine States (Public API - affects downstream consumers)
+State strings emitted via `statechange` and `publishingstatechange` events:
+- [ ] `"resolving-subplebbit-address"` → `"resolving-community-address"` (src/publications/types.ts, src/publications/comment/types.ts)
+- [ ] `"fetching-subplebbit-ipns"` → `"fetching-community-ipns"`
+- [ ] `"fetching-subplebbit-ipfs"` → `"fetching-community-ipfs"`
+- [ ] Chain provider state: `"resolving-subplebbit-address"` → `"resolving-community-address"` (src/clients/chain-provider-client.ts)
 
 ---
 
@@ -253,6 +261,11 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `"subplebbitUpdateNotification"` → `"communityUpdateNotification"`
 - [ ] `"subplebbitsNotification"` → `"communitiesNotification"`
 
+### 7.3 RPC Parameter Names (Wire Protocol)
+- [ ] `RpcSubplebbitPageParamSchema.subplebbitAddress` → `communityAddress` (src/clients/rpc-client/schema.ts)
+- [ ] `getSubplebbitPage` params: `{ subplebbitAddress }` → `{ communityAddress }` (src/rpc/src/index.ts)
+- [ ] `getCommentPage` params: `{ subplebbitAddress }` → `{ communityAddress }` (src/rpc/src/index.ts)
+
 ---
 
 ## Phase 8: DNS & Protocol Changes (Breaking)
@@ -265,6 +278,11 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] **IMPORTANT:** Need to migrate existing DNS TXT records from old names to new names
 - [ ] Document migration process for users with existing records
 - [ ] Consider supporting both old and new record names during transition period
+
+### 8.3 Storage Cache Keys
+Domain resolution cache keys (minor - invalidating just causes re-resolution):
+- [ ] `${domainAddress}_subplebbit-address` → `${domainAddress}_community-address` (src/clients/base-client-manager.ts:637)
+- [ ] Note: Changing this will invalidate existing caches, causing one-time re-resolution
 
 ---
 
@@ -543,17 +561,166 @@ Publications (comments, votes, edits) have a `subplebbitAddress` field that is:
 - Stored in IPFS records that are immutable
 - Referenced throughout the codebase for routing and validation
 
+#### Technical Analysis
+
+**Key Finding: `subplebbitAddress` IS part of the cryptographically signed properties.**
+
+The signature chain works as follows:
+1. `CreatePublicationUserOptionsSchema` ([src/schema/schema.ts:84-97](src/schema/schema.ts#L84-L97)) defines `subplebbitAddress: SubplebbitAddressSchema`
+2. `CreateCommentOptionsSchema` ([src/publications/comment/schema.ts:32-47](src/publications/comment/schema.ts#L32-L47)) merges with `CreatePublicationUserOptionsSchema`
+3. `CommentSignedPropertyNames` ([src/publications/comment/schema.ts:57-59](src/publications/comment/schema.ts#L57-L59)) = `keys(CreateCommentOptionsSchema)` minus `["signer", "challengeRequest"]`
+4. Since `subplebbitAddress` is NOT in `keysToOmitFromSignedPropertyNames` ([src/signer/constants.ts:5-8](src/signer/constants.ts#L5-L8)), it IS included in the signed properties
+
+**However, signature verification is self-describing:**
+
+The verification code at [src/signer/signatures.ts:377](src/signer/signatures.ts#L377) uses the property names stored in the record itself:
+```typescript
+for (const propertyName of publicationToBeVerified.signature.signedPropertyNames) {
+    if (publicationToBeVerified[propertyName] !== undefined && publicationToBeVerified[propertyName] !== null) {
+        propsToSign[propertyName] = publicationToBeVerified[propertyName];
+    }
+}
+```
+
+This means **old records that have `subplebbitAddress` in their `signature.signedPropertyNames` will still verify correctly** as long as the `subplebbitAddress` field exists in the data being verified.
+
+#### Backwards-Compatible Implementation (Option 3 - Recommended)
+
+The transition can be done with minimal code changes:
+
+**1. Schema Layer** ([src/schema/schema.ts](src/schema/schema.ts)):
+```typescript
+// Accept either field during parsing, normalize to communityAddress internally
+export const CreatePublicationUserOptionsSchema = z.object({
+    signer: CreateSignerSchema,
+    author: AuthorPubsubSchema.partial().loose().optional(),
+    // Accept both, prefer communityAddress
+    communityAddress: CommunityAddressSchema.optional(),
+    subplebbitAddress: SubplebbitAddressSchema.optional(), // deprecated alias
+    protocolVersion: ProtocolVersionSchema.optional(),
+    timestamp: PlebbitTimestampSchema.optional(),
+    challengeRequest: z.object({...}).optional()
+}).transform((data) => {
+    // Normalize: use subplebbitAddress if communityAddress not provided
+    const address = data.communityAddress ?? data.subplebbitAddress;
+    return { ...data, communityAddress: address, subplebbitAddress: address };
+});
+```
+
+**2. Comment Instance Creation** ([src/publications/publication.ts:146-152](src/publications/publication.ts#L146-L152)):
+```typescript
+_initBaseRemoteProps(props: CommentIpfsType | PublicationFromDecryptedChallengeRequest) {
+    // Handle both old (subplebbitAddress) and new (communityAddress) records
+    const address = props.communityAddress ?? props.subplebbitAddress;
+    this.setCommunityAddress(address);
+    // ... rest unchanged
+}
+```
+
+**3. Signature Verification** ([src/signer/signatures.ts:546-547](src/signer/signatures.ts#L546-L547)):
+```typescript
+// The mismatch check needs to handle both field names
+const recordAddress = opts.comment.communityAddress ?? opts.comment.subplebbitAddress;
+if (opts.communityAddressFromInstance && recordAddress !== opts.communityAddressFromInstance)
+    return { valid: false, reason: messages.ERR_COMMENT_IPFS_COMMUNITY_ADDRESS_MISMATCH };
+```
+
+**4. New Publications**:
+- New publications will use `communityAddress` in their `signature.signedPropertyNames`
+- The signing function will sign the `communityAddress` field
+
+**5. Test Coverage**:
+- Add at least one test that loads/verifies an old record with `subplebbitAddress` to ensure backwards compatibility
+
+#### Why This Works
+
+1. **Old records**: Have `subplebbitAddress` in `signature.signedPropertyNames` → verification looks for `subplebbitAddress` field → field exists → signature valid ✓
+2. **New records**: Have `communityAddress` in `signature.signedPropertyNames` → verification looks for `communityAddress` field → field exists → signature valid ✓
+3. **Instance creation**: Always normalizes to `communityAddress` property on the class, regardless of which field was in the source data
+
+#### Database Considerations
+
+The `subplebbitAddress` column exists in multiple database tables:
+- `comments` table ([src/runtime/node/subplebbit/db-handler.ts:286](src/runtime/node/subplebbit/db-handler.ts#L286))
+- `commentEdits` table ([src/runtime/node/subplebbit/db-handler.ts:362](src/runtime/node/subplebbit/db-handler.ts#L362))
+- `commentModerations` table ([src/runtime/node/subplebbit/db-handler.ts:385](src/runtime/node/subplebbit/db-handler.ts#L385))
+
+**Key insight:** The codebase already has a pattern for handling deprecated fields via `extraProps`:
+- [db-handler.ts:595-613](src/runtime/node/subplebbit/db-handler.ts#L595-L613) shows deprecated fields being moved to `extraProps`
+- [db-handler.ts:784](src/runtime/node/subplebbit/db-handler.ts#L784) shows `extraProps` being spread back for signature verification: `{ ...commentRecord, ...commentRecord.extraProps }`
+- [db-handler.ts:2446-2451](src/runtime/node/subplebbit/db-handler.ts#L2446-L2451) shows `_spreadExtraProps` spreading values back when reading
+
+**Recommended approach: Move `subplebbitAddress` to `extraProps` + add `communityAddress` column**
+
+| Approach | Description | Pros | Cons |
+|----------|-------------|------|------|
+| **A: Keep both columns** | Add `communityAddress`, keep `subplebbitAddress` | Simple, no migration | Redundant storage, messy schema |
+| **B: extraProps migration** | Move old `subplebbitAddress` to `extraProps`, rename/add `communityAddress` column | Clean schema, follows existing pattern, signature verification works via spread | Requires DB migration |
+| **C: Rename column only** | `ALTER TABLE ... RENAME COLUMN` | Simplest | Doesn't preserve field name for signature verification |
+
+**Recommended: Option B (extraProps migration)**
+
+DB Migration:
+```typescript
+// In migration function (similar to existing pattern at db-handler.ts:595-613)
+if (currentDbVersion <= X) {
+    // For each table with subplebbitAddress:
+    // 1. Read existing extraProps JSON
+    // 2. Add subplebbitAddress to extraProps
+    // 3. Update the row
+
+    const rows = db.prepare(`SELECT cid, subplebbitAddress, extraProps FROM comments`).all();
+    for (const row of rows) {
+        const existingExtra = row.extraProps ? JSON.parse(row.extraProps) : {};
+        const newExtra = { ...existingExtra, subplebbitAddress: row.subplebbitAddress };
+        db.prepare(`UPDATE comments SET extraProps = ? WHERE cid = ?`).run(JSON.stringify(newExtra), row.cid);
+    }
+
+    // Then rename column or add new column
+    db.exec(`ALTER TABLE comments RENAME COLUMN subplebbitAddress TO communityAddress`);
+}
+```
+
+Why this works:
+1. **Old records**: `subplebbitAddress` lives in `extraProps`, gets spread back via `_spreadExtraProps()` or `{ ...record, ...record.extraProps }`
+2. **New records**: Use `communityAddress` column directly, no `subplebbitAddress` in `extraProps`
+3. **Signature verification**: Already handles this! See [db-handler.ts:784](src/runtime/node/subplebbit/db-handler.ts#L784):
+   ```typescript
+   comment: { ...commentRecord, ...commentRecord.extraProps }
+   ```
+   This spreads `subplebbitAddress` from `extraProps` back into the object before verification.
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| [src/schema/schema.ts](src/schema/schema.ts) | Add `communityAddress` field, keep `subplebbitAddress` as optional alias, add transform |
+| [src/publications/publication.ts](src/publications/publication.ts) | `_initBaseRemoteProps` - check for both fields |
+| [src/signer/signatures.ts](src/signer/signatures.ts) | Update mismatch check to handle both field names |
+| [src/publications/comment/schema.ts](src/publications/comment/schema.ts) | Update `CommentSignedPropertyNames` for new publications |
+| [src/runtime/node/subplebbit/db-handler.ts](src/runtime/node/subplebbit/db-handler.ts) | DB migration to move `subplebbitAddress` to `extraProps`, rename/add `communityAddress` column |
+| Test files | Add test with fixture using old `subplebbitAddress` format |
+
+#### Related Phases
+
+The following related changes are documented in the main phases above:
+- **Phase 6.3**: `shortSubplebbitAddress` → `shortCommunityAddress`
+- **Phase 6.5**: State machine states (`"resolving-subplebbit-address"`, etc.)
+- **Phase 7.3**: RPC parameter names
+- **Phase 8.1**: DNS TXT record names
+- **Phase 8.3**: Storage cache keys
+
 **Options:**
 
 | Option | Description | Pros | Cons |
 |--------|-------------|------|------|
 | **Option 1: Full break** | Rename to `communityAddress` everywhere | Clean slate, consistent naming | All existing publications become invalid, users lose historical content |
 | **Option 2: Alias externally** | Keep `subplebbitAddress` internally, add `communityAddress` as getter/alias | Backward compatible | Messy code, confusing for developers |
-| **Option 3: Support both** | Accept both field names during transition period | Gradual migration possible | Complex validation logic, technical debt |
+| **Option 3: Support both** | Accept both field names during transition period (see implementation above) | Gradual migration possible, minimal code changes | Complex validation logic, technical debt |
 | **Option 4: Keep field name** | Rename classes/types/methods but keep `subplebbitAddress` as wire protocol field | Preserves all existing content, least disruptive | Inconsistent naming (Community class but `subplebbitAddress` property) |
 | **Option 5: Migration script** | Create a script that republishes existing content with new `communityAddress` field, signed by a migration author |  preserves content (as copies) | Requires migration infrastructure, new signatures mean different author, different timestamps, could be complicated |
 
-**Decision:** [ ] Not yet decided
+**Decision:** [x] **Option 3: Support both** - Accept both `subplebbitAddress` and `communityAddress` field names. See "Backwards-Compatible Implementation" section above for details.
 
 ---
 
