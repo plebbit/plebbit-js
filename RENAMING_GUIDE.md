@@ -34,7 +34,11 @@ The following dependencies are in the @plebbit namespace and need separate repos
 - [ ] `@plebbit/plebbit-logger` - Note: Requires separate repo rename
 - [ ] `@plebbit/proper-lockfile` - Note: Requires separate repo rename
 
-### 1.3 Root Files
+### 1.3 RPC Package Configuration
+- [ ] **rpc/package.json** - Update keywords
+  - `"keywords": ["plebbit", "subplebbit"]` → `"keywords": ["pkc", "community"]`
+
+### 1.4 Root Files
 - [ ] **README.md** - Complete rewrite
   - Replace all "plebbit" → "pkc" (case-sensitive variations)
   - Replace all "subplebbit" → "community"
@@ -60,7 +64,9 @@ The following dependencies are in the @plebbit namespace and need separate repos
 
 ### 2.2 Test Directories
 - [ ] `test/node/subplebbit/` → `test/node/community/`
+- [ ] `test/node/plebbit/` → `test/node/pkc/`
 - [ ] `test/node-and-browser/subplebbit/` → `test/node-and-browser/community/`
+- [ ] `test/node-and-browser/plebbit/` → `test/node-and-browser/pkc/`
 - [ ] `test/fixtures/signatures/subplebbit/` → `test/fixtures/signatures/community/`
 
 ### 2.3 Data Storage Directories (Breaking Change)
@@ -94,9 +100,22 @@ The following dependencies are in the @plebbit namespace and need separate repos
 - [ ] `src/runtime/node/subplebbit/page-generator.ts` → `src/runtime/node/community/page-generator.ts`
 - [ ] `src/runtime/browser/subplebbit/local-subplebbit.ts` → `src/runtime/browser/community/local-community.ts`
 
-### 3.3 Test File Renaming
+### 3.3 Challenge System Files
+- [ ] `src/runtime/node/subplebbit/challenges/plebbit-js-challenges/index.ts` - Export rename:
+  - `plebbitJsChallenges` → `pkcJsChallenges`
+- [ ] `src/runtime/browser/subplebbit/challenges/` → `src/runtime/browser/community/challenges/`
+
+### 3.4 Test File Renaming
 All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `*.subplebbit.test.js` → `*.community.test.js`
+
+**test/node/plebbit/** (directory to be renamed to test/node/pkc/):
+- [ ] `plebbit.test.js` → `pkc.test.js`
+- [ ] `validatecomment.plebbit.test.js` → `validatecomment.pkc.test.js`
+- [ ] `started-subplebbits.test.js` → `started-communities.test.js`
+
+**test/node-and-browser/plebbit/** (directory to be renamed to test/node-and-browser/pkc/):
+- [ ] `_updatingSubplebbits.plebbit.test.js` → `_updatingCommunities.pkc.test.js`
 
 ---
 
@@ -211,6 +230,9 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `plebbit.getSubplebbit()` → `pkc.getCommunity()`
 - [ ] `plebbit.listSubplebbits()` → `pkc.listCommunities()`
 
+### 6.1.1 PlebbitWithRpcClient Internal Methods
+- [ ] `_initPlebbitRpcClients()` → `_initPKCRpcClients()`
+
 ### 6.2 Plebbit/PKC Class Properties
 - [ ] `plebbit.subplebbits` → `pkc.communities`
 - [ ] `plebbit._updatingSubplebbits` → `pkc._updatingCommunities`
@@ -221,6 +243,9 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `plebbit._userPlebbitOptions` → `pkc._userPKCOptions`
 - [ ] `plebbit._memCaches` (type change to PKCMemCaches)
 - [ ] `plebbit.clients.plebbitRpcClients` → `pkc.clients.pkcRpcClients`
+
+### 6.2.1 PlebbitRpcClient Internal Properties
+- [ ] `PlebbitRpcClient.subplebbits` → `PKCRpcClient.communities` (array tracking subplebbit addresses received via RPC)
 
 ### 6.3 Publication Properties
 - [ ] `publication.subplebbitAddress` → `publication.communityAddress`
@@ -304,6 +329,9 @@ Replace all error codes containing "SUBPLEBBIT" with "COMMUNITY":
 - [ ] `ERR_GET_SUBPLEBBIT_TIMED_OUT` → `ERR_GET_COMMUNITY_TIMED_OUT`
 - [ ] `ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE` → `ERR_CALLED_COMMUNITY_STOP_WITHOUT_UPDATE`
 - [ ] `ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS` → `ERR_FAILED_TO_FETCH_COMMUNITY_FROM_GATEWAYS`
+- [ ] `ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT` → `ERR_CHALLENGE_MSG_SIGNER_IS_NOT_COMMUNITY`
+- [ ] `ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT` → `ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_COMMUNITY`
+- [ ] `ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH` → `ERR_COMMENT_IPFS_COMMUNITY_ADDRESS_MISMATCH`
 - [ ] ... (all other ERR_*SUBPLEBBIT* → ERR_*COMMUNITY*)
 - [ ] ... (all ERR_*PLEBBIT* → ERR_*PKC*)
 
