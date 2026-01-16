@@ -778,6 +778,7 @@ Use this section to track overall progress:
 | Phase 15: Data Migration | [ ] Not Started | |
 | Phase 15.3: External Apps | [ ] Not Started | plebbit-cli, desktop apps |
 | Phase 16: Build & Verify | [ ] Not Started | |
+| Phase 17: Web3 Modularization | [ ] Not Started | Domain resolvers, EVM challenge extraction |
 
 ---
 
@@ -792,3 +793,120 @@ These repositories are outside plebbit-js but will need coordinated updates:
 | plebbit-cli | Directory migration: `.plebbit/` → `.pkc/` and `subplebbits/` → `communities/`, API updates | [ ] Not Started |
 | Desktop apps | Directory migration: `.plebbit/` → `.pkc/` and `subplebbits/` → `communities/`, API updates | [ ] Not Started |
 | DNS TXT records | Migrate plebbit-author-address → pkc-author-address, subplebbit-address → pkc-community-address | [ ] Not Started |
+
+---
+
+## Phase 17: Web3 Modularization
+
+Make plebbit-js (pkc-js) a neutral, core library that only handles IPNS/IPFS natively. Domain resolution (.eth, .sol) and EVM challenges become external plugins in separate GitHub repos.
+
+### 17.1 Domain Resolver Plugin System
+
+**DomainResolver Interface:**
+```typescript
+export interface DomainResolverResult {
+  resolvedTextRecordValue: string;
+}
+
+export interface DomainResolver {
+  name: string;
+  tlds: string[];  // e.g., ['.eth'] or ['.sol']
+  resolve: (args: {
+    domain: string;
+    txtRecordName: string;
+    plebbit: Plebbit;  // resolver can access plebbit.chainProviders, etc.
+  }) => Promise<DomainResolverResult>;
+}
+```
+
+**Usage Example:**
+```javascript
+// In @plebbit/resolver-ens (separate GitHub repo)
+import { DomainResolver } from '@plebbit/plebbit-js';
+
+export const ensResolver: DomainResolver = {
+  name: 'ens',
+  tlds: ['.eth'],
+  resolve: async ({ domain, txtRecordName, plebbit }) => {
+    // Resolver derives chain URLs from plebbit.chainProviders.eth.urls
+    const urls = plebbit.chainProviders?.eth?.urls || [];
+    // ENS resolution logic using viem/ethers
+    const value = await resolveEns(domain, txtRecordName, urls);
+    return { resolvedTextRecordValue: value };
+  }
+};
+
+// In desktop app / plebbit-cli
+import { ensResolver } from '@plebbit/resolver-ens';
+import { snsResolver } from '@plebbit/resolver-sns';
+
+const plebbit = await Plebbit({
+  domainResolvers: [ensResolver, snsResolver],  // optional
+  chainProviders: {
+    eth: { urls: ['https://eth-rpc.example.com'] },
+    sol: { urls: ['https://solana-rpc.example.com'] }
+  }
+});
+
+// If user tries to resolve a .eth domain without ensResolver registered:
+// throws ERR_NO_RESOLVER_FOR_TLD
+```
+
+**Behavior:**
+- `domainResolvers` is optional in PlebbitOptions
+- When resolving a domain, plebbit-js finds a resolver whose `tlds` includes the domain's TLD
+- If no matching resolver found, throws `ERR_NO_RESOLVER_FOR_TLD`
+
+### 17.2 External Challenge Registration
+
+`Plebbit.challenges` already exists as a mutable static object. External challenges:
+```javascript
+import Plebbit from '@plebbit/plebbit-js';
+import { evmContractCallChallenge } from '@plebbit/challenge-evm-contract';
+
+Plebbit.challenges['evm-contract-call'] = evmContractCallChallenge;
+```
+
+External challenges import types from plebbit-js:
+```typescript
+import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from '@plebbit/plebbit-js';
+```
+
+### 17.3 TODO Items
+
+**Domain Resolver System:**
+- [ ] Add `DomainResolver` and `DomainResolverResult` interfaces to `src/types.ts`
+- [ ] Add `DomainResolverSchema` to `src/schema.ts`
+- [ ] Add optional `domainResolvers` to `PlebbitOptions`
+- [ ] Refactor `src/domain-resolver.ts` to use plugin system
+- [ ] Update `src/clients/base-client-manager.ts` resolution flow
+- [ ] Add `ERR_NO_RESOLVER_FOR_TLD` error when no resolver matches
+- [ ] Export `DomainResolver` type from `src/index.ts`
+- [ ] Remove hardcoded ENS/SNS logic from core
+
+**External Challenges:**
+- [ ] Remove `evm-contract-call` from `plebbitJsChallenges` in `src/runtime/node/subplebbit/challenges/index.ts`
+- [ ] Delete `src/runtime/node/subplebbit/challenges/plebbit-js-challenges/evm-contract-call/` directory
+- [ ] Export challenge types for external packages
+
+**Dependencies:**
+- [ ] Remove web3 dependencies: `viem`, `ethers`, `@bonfida/spl-name-service`, `@solana/web3.js`
+
+**Downstream Apps:**
+- [ ] Update plebbit-cli to install and register domain resolvers
+- [ ] Update desktop apps to install and register domain resolvers
+
+### 17.4 External Repos to Create
+
+| Repository | Purpose | Dependencies |
+|------------|---------|--------------|
+| @plebbit/resolver-ens | ENS (.eth) domain resolution | viem, ethers |
+| @plebbit/resolver-sns | Solana Name Service (.sol) resolution | @bonfida/spl-name-service, @solana/web3.js |
+| @plebbit/challenge-evm-contract | EVM contract call challenge | viem |
+
+### 17.5 Breaking Changes
+
+- No default domain resolvers - pkc-js only handles IPNS/IPFS natively
+- Users must explicitly provide `domainResolvers` to resolve `.eth`/`.sol` addresses
+- `evm-contract-call` challenge no longer built-in
+- `chainProviders` still needed for RPC URLs, accessed by resolvers via plebbit instance
