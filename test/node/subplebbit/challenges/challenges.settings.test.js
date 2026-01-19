@@ -7,9 +7,10 @@ import {
     publishRandomPost,
     resolveWhenConditionIsTrue,
     itSkipIfRpc,
-    waitTillPostInSubplebbitPages
+    waitTillPostInSubplebbitPages,
+    describeIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import { describe } from "vitest";
+import { describe, it } from "vitest";
 
 describe.concurrent(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;
@@ -97,7 +98,8 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
         await subplebbit.delete();
     });
 
-    it(`Default challenges reject authors without an allowed address`, async () => {
+    it.skip(`Default challenges reject authors without an allowed address`, async () => {
+        // skip this test for now till we update mintpass
         const subplebbit = await plebbit.createSubplebbit({});
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
@@ -190,6 +192,48 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit.settings.challenges).to.deep.equal([]);
         const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
         for (const _subplebbit of [subplebbit, remoteSub]) expect(_subplebbit.challenges).to.deep.equal([]);
+
+        await subplebbit.delete();
+    });
+});
+
+describeIfRpc(`subplebbit.settings.challenges with path (RPC)`, async () => {
+    let plebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
+    it(`RPC server throws error when editing with a challenge path that doesn't exist on the server`, async () => {
+        const subplebbit = await plebbit.createSubplebbit({});
+
+        // This path exists on the client machine but not necessarily on the RPC server
+        // In RPC mode, the server tries to import this file and should fail
+        const nonExistentPath = "/path/to/nonexistent/challenge/on/server.js";
+        const challenges = [
+            {
+                path: nonExistentPath,
+                options: { question: "What is 2+2?", answer: "4" }
+            }
+        ];
+
+        try {
+            await subplebbit.edit({ settings: { challenges } });
+            expect.fail("Should have thrown an error for invalid path on RPC server");
+        } catch (error) {
+            // RPC errors come as JSON-RPC format with code -32000 and the actual error in data property
+            // The error.data should contain the message about failing to import the challenge file
+            const hasExpectedErrorCode =
+                error.code === "ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY" ||
+                error.code === "ERR_MODULE_NOT_FOUND" ||
+                (error.message && error.message.includes("Cannot find module")) ||
+                (error.data && error.data.includes("Cannot find module"));
+            expect(hasExpectedErrorCode, `Expected error related to module import, got: ${JSON.stringify(error)}`).to.be.true;
+        }
 
         await subplebbit.delete();
     });
