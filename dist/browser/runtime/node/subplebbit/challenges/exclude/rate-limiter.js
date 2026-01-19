@@ -1,7 +1,9 @@
 import QuickLRU from "quick-lru";
 import { isVote, isReply, isPost, isCommentEdit, isCommentModeration, isSubplebbitEdit, testPublicationType } from "./utils.js";
-import { RateLimiter } from "limiter-es6-compat";
+import * as limiterCompat from "limiter-es6-compat";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
+// Workaround for NodeNext moduleResolution compatibility
+const { RateLimiter } = limiterCompat;
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
 const rateLimiters = new QuickLRU({ maxSize: 50000 });
@@ -26,7 +28,7 @@ const getOrCreateRateLimiter = (exclude, publication, publicationType, challenge
     let rateLimiter = rateLimiters.get(rateLimiterName);
     if (!rateLimiter) {
         rateLimiter = new RateLimiter({ tokensPerInterval: exclude.rateLimit, interval: "hour", fireImmediately: true });
-        //@ts-expect-error
+        // @ts-ignore - adding name property for debugging
         rateLimiter.name = rateLimiterName; // add name for debugging
         rateLimiters.set(rateLimiterName, rateLimiter);
     }

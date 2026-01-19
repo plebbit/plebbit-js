@@ -533,6 +533,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         if (!this.signer.ipnsKeyName)
             throw Error("IPNS key name is not defined");
+        // after kubo 0.40 implements fetching IPNS record from local blockstore, we don't need line below anymore
         if (this._firstUpdateAfterStart)
             await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
@@ -546,7 +547,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             allowOffline: true,
             resolve: true,
             ttl,
-            ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
+            // enable below line after kubo fixes their problems with fetching IPNS records from local blockstore
+            // ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`);
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);

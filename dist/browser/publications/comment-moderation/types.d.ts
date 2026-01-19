@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { CreateCommentModerationOptionsSchema, CommentModerationPubsubMessagePublicationSchema, CommentModerationChallengeRequestToEncryptSchema, CommentModerationSignedPropertyNames, CommentModerationsTableRowSchema } from "./schema";
-import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
-import type { CommentModeration } from "./comment-moderation";
-import type { JsonSignature, SignerType } from "../../signer/types";
+import { CreateCommentModerationOptionsSchema, CommentModerationPubsubMessagePublicationSchema, CommentModerationChallengeRequestToEncryptSchema, CommentModerationSignedPropertyNames, CommentModerationsTableRowSchema } from "./schema.js";
+import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
+import type { CommentModeration } from "./comment-moderation.js";
+import type { JsonSignature, SignerType } from "../../signer/types.js";
 export type CreateCommentModerationOptions = z.infer<typeof CreateCommentModerationOptionsSchema>;
 export type CommentModerationTypeJson = JsonOfClass<CommentModeration>;
 export type CommentModerationChallengeRequestToEncrypt = z.infer<typeof CommentModerationChallengeRequestToEncryptSchema>;

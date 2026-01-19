@@ -10,16 +10,16 @@ const optionInputs = [
 ];
 const type = "text/plain";
 const description = "A challenge that automatically fails with a custom error message.";
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+const getChallenge = async ({ challengeSettings }) => {
     // add a custom error message to display to the author
-    const error = subplebbitChallengeSettings?.options?.error;
+    const error = challengeSettings?.options?.error;
     // the only way to succeed the 'fail' challenge is to be excluded
     return {
         success: false,
         error: error || `You're not allowed to publish.`
     };
 };
-function ChallengeFileFactory(subplebbitChallengeSettings) {
+function ChallengeFileFactory({ challengeSettings }) {
     return { getChallenge, optionInputs, type, description };
 }
 export default ChallengeFileFactory;

@@ -27,8 +27,8 @@ const getChallengeString = (minNumber, maxNumber, operators) => {
     }
     return `${firstNumber} ${operator} ${secondNumber}`;
 };
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
-    const difficultyString = subplebbitChallengeSettings?.options?.difficulty || "1";
+const getChallenge = async ({ challengeSettings }) => {
+    const difficultyString = challengeSettings?.options?.difficulty || "1";
     const difficulty = Number(difficultyString);
     let challenge;
     if (difficulty === 1) {
@@ -54,7 +54,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     };
     return { challenge, verify, type };
 };
-function ChallengeFileFactory(subplebbitChallengeSettings) {
+function ChallengeFileFactory({ challengeSettings }) {
     return { getChallenge, optionInputs, type, description };
 }
 export default ChallengeFileFactory;

@@ -90,17 +90,17 @@ class UrlsAddressesSet {
     }
 }
 const urlsAddressesSet = new UrlsAddressesSet();
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+const getChallenge = async ({ challengeSettings, challengeRequestMessage }) => {
     // add a custom error message to display to the author
-    const error = subplebbitChallengeSettings?.options?.error;
-    const addresses = subplebbitChallengeSettings?.options?.addresses
+    const error = challengeSettings?.options?.error;
+    const addresses = challengeSettings?.options?.addresses
         ?.split(",")
         .map((u) => u.trim())
         .filter(Boolean);
     const addressesSet = new Set(addresses);
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     if (addressesSet.has(publication?.author?.address) ||
-        (await urlsAddressesSet.has(publication?.author?.address, publication?.subplebbitAddress, subplebbitChallengeSettings?.options?.urls))) {
+        (await urlsAddressesSet.has(publication?.author?.address, publication?.subplebbitAddress, challengeSettings?.options?.urls))) {
         return {
             success: false,
             error: error || `You're blacklisted.`
@@ -110,7 +110,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         success: true
     };
 };
-function ChallengeFileFactory(subplebbitChallengeSettings) {
+function ChallengeFileFactory({ challengeSettings }) {
     return { getChallenge, optionInputs, type, description };
 }
 export default ChallengeFileFactory;

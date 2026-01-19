@@ -255,8 +255,8 @@ const validateWalletAddressWithCondition = async (props) => {
     }
     return undefined;
 };
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex, subplebbit) => {
-    let { chainTicker, address, abi, condition, error } = subplebbitChallengeSettings?.options || {};
+const getChallenge = async ({ challengeSettings, challengeRequestMessage, subplebbit }) => {
+    let { chainTicker, address, abi, condition, error } = challengeSettings?.options || {};
     if (!chainTicker) {
         throw Error("missing option chainTicker");
     }
@@ -303,8 +303,8 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     // author has failed all challenges
     return { success: false, error: errorString };
 };
-function ChallengeFileFactory(subplebbitChallengeSettings) {
-    let { chainTicker } = subplebbitChallengeSettings?.options || {};
+function ChallengeFileFactory({ challengeSettings }) {
+    let { chainTicker } = challengeSettings?.options || {};
     const type = ("chain/" + (chainTicker || "eth"));
     return { getChallenge, optionInputs, type, description };
 }

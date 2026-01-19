@@ -477,7 +477,7 @@ class PlebbitWsServer extends TypedEmitter {
     }
     _serializeSettingsFromPlebbit(plebbit) {
         const plebbitOptions = plebbit.parsedPlebbitOptions;
-        const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) => remeda.omit(challengeFactory({}), ["getChallenge"]));
+        const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) => remeda.omit(challengeFactory({ challengeSettings: {} }), ["getChallenge"]));
         return { plebbitOptions, challenges };
     }
     async settingsSubscribe(params, connectionId) {

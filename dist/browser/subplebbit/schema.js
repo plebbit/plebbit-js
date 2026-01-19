@@ -120,6 +120,12 @@ export const SubplebbitChallengeSettingSchema = z
 })
     .strict()
     .refine((challengeData) => challengeData.path || challengeData.name, "Path or name of challenge has to be defined");
+export const GetChallengeArgsSchema = z.object({
+    challengeSettings: SubplebbitChallengeSettingSchema,
+    challengeRequestMessage: z.custom(), // no need to validate because extra props may be there
+    challengeIndex: z.number().int().nonnegative(),
+    subplebbit: z.custom()
+});
 export const ChallengeFileSchema = z
     .object({
     // the result of the function exported by the challenge file
@@ -129,12 +135,7 @@ export const ChallengeFileSchema = z
     caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
     description: z.string().optional(), // describe what the challenge does to display in the UI
     getChallenge: z.function({
-        input: [
-            SubplebbitChallengeSettingSchema, // challenge settings
-            z.custom(), // challenge request to process, no need to validate because extra props may be there
-            z.number().int().nonnegative(), // challenge index
-            z.custom() // the local subplebbit instance
-        ],
+        input: [GetChallengeArgsSchema],
         output: z.promise(ResultOfGetChallengeSchema)
     })
 })
@@ -147,7 +148,10 @@ export const SubplebbitChallengeSchema = z.looseObject({
     caseInsensitive: ChallengeFileSchema.shape.caseInsensitive,
     pendingApproval: z.boolean().optional()
 });
-export const ChallengeFileFactorySchema = z.function({ input: [SubplebbitChallengeSettingSchema], output: ChallengeFileSchema });
+export const ChallengeFileFactoryArgsSchema = z.object({
+    challengeSettings: SubplebbitChallengeSettingSchema
+});
+export const ChallengeFileFactorySchema = z.function({ input: [ChallengeFileFactoryArgsSchema], output: ChallengeFileSchema });
 // Subplebbit actual schemas here
 export const SubplebbitIpfsSchema = z
     .object({

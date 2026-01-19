@@ -1,10 +1,14 @@
 import Logger from "@plebbit/plebbit-logger";
 import { createPublicClient as createViemClient, http as httpViemTransport, webSocket as webSocketViemTransport } from "viem";
-import * as chains from "viem/chains";
+import * as viemChains from "viem/chains";
 import { ethers } from "ethers";
 import { Connection as SolanaConnection, clusterApiUrl } from "@solana/web3.js";
-import { NameRegistryState, getDomainKeySync } from "@bonfida/spl-name-service";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import * as bonfidaSns from "@bonfida/spl-name-service";
 import { normalize as normalizeEnsAddress } from "viem/ens";
+// Workaround for NodeNext moduleResolution compatibility with these packages
+const chains = viemChains;
+const { NameRegistryState, getDomainKeySync } = bonfidaSns;
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { hideClassPrivateProps } from "./util.js";
 export class DomainResolver {
@@ -59,7 +63,6 @@ export class DomainResolver {
                 chain,
                 transport
             });
-            //@ts-expect-error
             this._viemClients[cacheKey] = chainClient;
             log(`Created a new viem client at chain ${chainTicker} with chain provider url ${chainProviderUrl}`);
         }
