@@ -171,7 +171,6 @@ import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
 import { iterateOverPageCidsToFindAllCids } from "../../../pages/util.js";
-import { SignerType } from "../../../signer/types.js";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
@@ -758,6 +757,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
 
         if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
+        // after kubo 0.40 implements fetching IPNS record from local blockstore, we don't need line below anymore
         if (this._firstUpdateAfterStart) await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
         const lastPublishedIpnsRecordData = <any | undefined>await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD]);
@@ -770,7 +770,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             allowOffline: true,
             resolve: true,
             ttl,
-            ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
+            // enable below line after kubo fixes their problems with fetching IPNS records from local blockstore
+            // ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
