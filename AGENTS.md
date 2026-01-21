@@ -13,3 +13,4 @@
 -   If you need to mock consider to use vitest utilities for mocking
 -   If you're gonna mock a comment, you need to create a fixture that's similar to how it looks to production like this one. For comment (CommentIpfs), look at test/fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json, while for commentUpdate look at test/fixtures/signatures/comment/commentUpdate/valid_comment_update.json
 -   Keep in mind that a comment's bytes size during publication is limited to 40kb
+-   When writing new functions, prefer a single object parameter with all args (e.g., `signComment({ comment, plebbit })` instead of `signComment(comment, plebbit)`)

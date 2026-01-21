@@ -35,7 +35,7 @@ export class CommentEdit extends Publication {
     }
     async _validateSignature() {
         const editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
-        const signatureValidity = await verifyCommentEdit(editObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyCommentEdit({ edit: editObj, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: true }); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }

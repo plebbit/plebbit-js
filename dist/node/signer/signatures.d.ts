@@ -22,26 +22,92 @@ export declare const signBufferEd25519: (bufferToSign: Uint8Array, privateKeyBas
 export declare const verifyBufferEd25519: (bufferToSign: Uint8Array, bufferSignature: Uint8Array, publicKeyBase64: string) => Promise<boolean>;
 export declare function _signJson(signedPropertyNames: JsonSignature["signedPropertyNames"], cleanedPublication: Object, // should call cleanUpBeforePublish before calling _signJson
 signer: SignerType, log: Logger): Promise<JsonSignature>;
-export declare function _signPubsubMsg(signedPropertyNames: PubsubSignature["signedPropertyNames"], msg: PubsubMsgToSign, // should call cleanUpBeforePublish before calling _signPubsubMsg
-signer: SignerType, log: Logger): Promise<PubsubSignature>;
+export declare function _signPubsubMsg({ signedPropertyNames, msg, // should call cleanUpBeforePublish before calling _signPubsubMsg
+signer, log }: {
+    signedPropertyNames: PubsubSignature["signedPropertyNames"];
+    msg: PubsubMsgToSign;
+    signer: SignerType;
+    log: Logger;
+}): Promise<PubsubSignature>;
 export declare function cleanUpBeforePublishing<T>(msg: T): T;
-export declare function signComment(comment: CommentOptionsToSign, plebbit: Plebbit): Promise<CommentPubsubMessagPublicationSignature>;
-export declare function signCommentUpdate(update: Omit<CommentUpdateType, "signature">, signer: SignerType): Promise<CommentUpdateSignature>;
-export declare function signCommentUpdateForChallengeVerification(update: Omit<DecryptedChallengeVerification["commentUpdate"], "signature">, signer: SignerType): Promise<CommentUpdateForChallengeVerificationSignature>;
-export declare function signVote(vote: VoteOptionsToSign, plebbit: Plebbit): Promise<VoteSignature>;
-export declare function signSubplebbitEdit(subplebbitEdit: SubplebbitEditPublicationOptionsToSign, plebbit: Plebbit): Promise<SubplebbitEditPublicationSignature>;
-export declare function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: Plebbit): Promise<CommentEditSignature>;
-export declare function signCommentModeration(commentMod: CommentModerationOptionsToSign, plebbit: Plebbit): Promise<CommentModerationSignature>;
-export declare function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<SubplebbitSignature>;
-export declare function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType): Promise<ChallengeRequestMessageSignature>;
-export declare function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType): Promise<ChallengeMessageSignature>;
-export declare function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType): Promise<ChallengeAnswerMessageSignature>;
-export declare function signChallengeVerification(challengeVerification: Omit<ChallengeVerificationMessageType, "signature">, signer: SignerType): Promise<ChallengeVerificationMessageSignature>;
-export declare function verifyVote(vote: VotePubsubMessagePublication, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifySubplebbitEdit(subplebbitEdit: SubplebbitEditPubsubMessagePublication, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifyCommentEdit(edit: CommentEditPubsubMessagePublication, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifyCommentModeration(moderation: CommentModerationPubsubMessagePublication, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<ValidationResult>;
-export declare function verifyCommentPubsubMessage(comment: CommentPubsubMessagePublication, resolveAuthorAddresses: boolean, clientsManager: BaseClientsManager, overrideAuthorAddressIfInvalid: boolean): Promise<({
+export declare function signComment({ comment, plebbit }: {
+    comment: CommentOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<CommentPubsubMessagPublicationSignature>;
+export declare function signCommentUpdate({ update, signer }: {
+    update: Omit<CommentUpdateType, "signature">;
+    signer: SignerType;
+}): Promise<CommentUpdateSignature>;
+export declare function signCommentUpdateForChallengeVerification({ update, signer }: {
+    update: Omit<DecryptedChallengeVerification["commentUpdate"], "signature">;
+    signer: SignerType;
+}): Promise<CommentUpdateForChallengeVerificationSignature>;
+export declare function signVote({ vote, plebbit }: {
+    vote: VoteOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<VoteSignature>;
+export declare function signSubplebbitEdit({ subplebbitEdit, plebbit }: {
+    subplebbitEdit: SubplebbitEditPublicationOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<SubplebbitEditPublicationSignature>;
+export declare function signCommentEdit({ edit, plebbit }: {
+    edit: CommentEditOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<CommentEditSignature>;
+export declare function signCommentModeration({ commentMod, plebbit }: {
+    commentMod: CommentModerationOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<CommentModerationSignature>;
+export declare function signSubplebbit({ subplebbit, signer }: {
+    subplebbit: Omit<SubplebbitIpfsType, "signature">;
+    signer: SignerType;
+}): Promise<SubplebbitSignature>;
+export declare function signChallengeRequest({ request, signer }: {
+    request: Omit<ChallengeRequestMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeRequestMessageSignature>;
+export declare function signChallengeMessage({ challengeMessage, signer }: {
+    challengeMessage: Omit<ChallengeMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeMessageSignature>;
+export declare function signChallengeAnswer({ challengeAnswer, signer }: {
+    challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeAnswerMessageSignature>;
+export declare function signChallengeVerification({ challengeVerification, signer }: {
+    challengeVerification: Omit<ChallengeVerificationMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeVerificationMessageSignature>;
+export declare function verifyVote({ vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid }: {
+    vote: VotePubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult>;
+export declare function verifySubplebbitEdit({ subplebbitEdit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid }: {
+    subplebbitEdit: SubplebbitEditPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult>;
+export declare function verifyCommentEdit({ edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid }: {
+    edit: CommentEditPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult>;
+export declare function verifyCommentModeration({ moderation, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid }: {
+    moderation: CommentModerationPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult>;
+export declare function verifyCommentPubsubMessage({ comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid }: {
+    comment: CommentPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<({
     valid: true;
 } & {
     derivedAddress?: string;
@@ -81,10 +147,24 @@ export declare function verifyCommentUpdate({ update, resolveAuthorAddresses, cl
     validatePages: boolean;
     validateUpdateSignature: boolean;
 }): Promise<ValidationResult>;
-export declare function verifyChallengeRequest(request: ChallengeRequestMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
-export declare function verifyChallengeMessage(challenge: ChallengeMessageType, pubsubTopic: string, validateTimestampRange: boolean): Promise<ValidationResult>;
-export declare function verifyChallengeAnswer(answer: ChallengeAnswerMessageType, validateTimestampRange: boolean): Promise<ValidationResult>;
-export declare function verifyChallengeVerification(verification: ChallengeVerificationMessageType, pubsubTopic: string, validateTimestampRange: boolean): Promise<ValidationResult>;
+export declare function verifyChallengeRequest({ request, validateTimestampRange }: {
+    request: ChallengeRequestMessageType;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult>;
+export declare function verifyChallengeMessage({ challenge, pubsubTopic, validateTimestampRange }: {
+    challenge: ChallengeMessageType;
+    pubsubTopic: string;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult>;
+export declare function verifyChallengeAnswer({ answer, validateTimestampRange }: {
+    answer: ChallengeAnswerMessageType;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult>;
+export declare function verifyChallengeVerification({ verification, pubsubTopic, validateTimestampRange }: {
+    verification: ChallengeVerificationMessageType;
+    pubsubTopic: string;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult>;
 type ParentCommentForVerifyingPages = Pick<CommentIpfsWithCidPostCidDefined, "cid" | "depth" | "postCid"> | Pick<CommentIpfsWithCidDefined, "postCid"> | {
     cid: undefined;
     depth: -1;

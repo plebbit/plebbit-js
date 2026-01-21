@@ -22,7 +22,7 @@ describeSkipIfRpc.concurrent("Sign subplebbit", async () => {
         const subFixture = remeda.clone(validSubplebbitFixture);
         const subFixtureClone = remeda.clone(subFixture);
         delete subFixtureClone["signature"];
-        const signature = await signSubplebbit(subFixtureClone, signers[0]);
+        const signature = await signSubplebbit({ subplebbit: subFixtureClone, signer: signers[0] });
         expect(signature.signature).to.equal(subFixture.signature.signature);
         expect(signature.publicKey).to.equal(subFixture.signature.publicKey);
         expect(signature.signedPropertyNames.sort()).to.deep.equal(subFixture.signature.signedPropertyNames.sort());
@@ -33,7 +33,7 @@ describeSkipIfRpc.concurrent("Sign subplebbit", async () => {
         const subjsonIpfs = subplebbit.toJSONIpfs();
         const subplebbitToSign = { ...cleanUpBeforePublishing(subjsonIpfs), posts: removeUndefinedValuesRecursively(subjsonIpfs.posts) };
         delete subplebbitToSign["signature"];
-        subplebbitToSign.signature = await signSubplebbit(subplebbitToSign, signers[0], plebbit);
+        subplebbitToSign.signature = await signSubplebbit({ subplebbit: subplebbitToSign, signer: signers[0] });
         expect(subplebbitToSign.signature).to.deep.equal(subplebbit.signature);
 
         const verification = await verifySubplebbit({
@@ -192,7 +192,7 @@ describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
         const subFixture = remeda.clone(validSubplebbitFixture);
         const subFixtureClone = remeda.clone(subFixture);
         subFixtureClone.extraProp = "1234";
-        const signature = await signSubplebbit(subFixtureClone, signers[0]);
+        const signature = await signSubplebbit({ subplebbit: subFixtureClone, signer: signers[0] });
         expect(signature.signature).to.equal(subFixture.signature.signature);
         expect(signature.publicKey).to.equal(subFixture.signature.publicKey);
         expect(signature.signedPropertyNames.sort()).to.deep.equal(subFixture.signature.signedPropertyNames.sort());

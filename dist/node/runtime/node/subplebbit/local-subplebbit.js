@@ -512,7 +512,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._updateDbInternalState({ modQueue: undefined });
             this.modQueue.resetPages();
         }
-        const signature = await signSubplebbit(newIpns, this.signer);
+        const signature = await signSubplebbit({ subplebbit: newIpns, signer: this.signer });
         const newSubplebbitRecord = { ...newIpns, signature };
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
         const file = await retryKuboIpfsAddAndProvide({
@@ -844,7 +844,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
         const anonymizedComment = remeda.clone(originalComment);
         anonymizedComment.author = sanitizedAuthor;
-        anonymizedComment.signature = await signComment({ ...anonymizedComment, signer: aliasSigner }, this._plebbit);
+        anonymizedComment.signature = await signComment({ comment: { ...anonymizedComment, signer: aliasSigner }, plebbit: this._plebbit });
         return {
             publication: anonymizedComment,
             anonymity: {
@@ -865,7 +865,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         });
         const commentEditSignedByAlias = remeda.clone(originalEdit);
         commentEditSignedByAlias.author = { address: aliasSigner.address };
-        commentEditSignedByAlias.signature = await signCommentEdit({ ...commentEditSignedByAlias, signer: aliasSigner }, this._plebbit);
+        commentEditSignedByAlias.signature = await signCommentEdit({ edit: { ...commentEditSignedByAlias, signer: aliasSigner }, plebbit: this._plebbit });
         return commentEditSignedByAlias;
     }
     async storeComment(commentPubsub, pendingApproval) {
@@ -972,15 +972,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async _respondWithErrorIfSignatureOfPublicationIsInvalid(request) {
         let validity;
         if (request.comment)
-            validity = await verifyCommentPubsubMessage(request.comment, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+            validity = await verifyCommentPubsubMessage({ comment: request.comment, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
         else if (request.commentEdit)
-            validity = await verifyCommentEdit(request.commentEdit, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+            validity = await verifyCommentEdit({ edit: request.commentEdit, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
         else if (request.vote)
-            validity = await verifyVote(request.vote, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+            validity = await verifyVote({ vote: request.vote, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
         else if (request.commentModeration)
-            validity = await verifyCommentModeration(request.commentModeration, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+            validity = await verifyCommentModeration({
+                moderation: request.commentModeration,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
         else if (request.subplebbitEdit)
-            validity = await verifySubplebbitEdit(request.subplebbitEdit, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+            validity = await verifySubplebbitEdit({
+                subplebbitEdit: request.subplebbitEdit,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
         else
             throw Error("Can't detect the type of publication");
         if (!validity.valid) {
@@ -1001,7 +1011,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         });
         const challengeMessage = {
             ...toSignChallenge,
-            signature: await signChallengeMessage(toSignChallenge, this.signer)
+            signature: await signChallengeMessage({ challengeMessage: toSignChallenge, signer: this.signer })
         };
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
         this._clientsManager.updateKuboRpcPubsubState("publishing-challenge", pubsubClient.url);
@@ -1030,7 +1040,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         });
         const challengeVerification = {
             ...toSignVerification,
-            signature: await signChallengeVerification(toSignVerification, this.signer)
+            signature: await signChallengeVerification({ challengeVerification: toSignVerification, signer: this.signer })
         };
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
         this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
@@ -1061,7 +1071,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }));
         const commentUpdate = {
             ...commentUpdateOfVerificationNoSignature,
-            signature: await signCommentUpdateForChallengeVerification(commentUpdateOfVerificationNoSignature, this.signer)
+            signature: await signCommentUpdateForChallengeVerification({ update: commentUpdateOfVerificationNoSignature, signer: this.signer })
         };
         const toEncrypt = { comment: commentAfterAddingToIpfs.comment, commentUpdate };
         const encrypted = await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify(toEncrypt), this.signer.privateKey, request.signature.publicKey);
@@ -1095,7 +1105,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             });
             const challengeVerification = {
                 ...toSignMsg,
-                signature: await signChallengeVerification(toSignMsg, this.signer)
+                signature: await signChallengeVerification({ challengeVerification: toSignMsg, signer: this.signer })
             };
             const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
             this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
@@ -1311,7 +1321,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()] = true;
         }
         this._ongoingChallengeExchanges.set(request.challengeRequestId.toString(), true);
-        const requestSignatureValidation = await verifyChallengeRequest(request, true);
+        const requestSignatureValidation = await verifyChallengeRequest({ request, validateTimestampRange: true });
         if (!requestSignatureValidation.valid)
             throw new PlebbitError(getErrorCodeFromMessage(requestSignatureValidation.reason), {
                 challengeRequest: remeda.omit(request, ["encrypted"])
@@ -1416,7 +1426,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!this._ongoingChallengeExchanges.has(challengeAnswer.challengeRequestId.toString()))
             // Respond with error to answers without challenge request
             return this._publishFailedChallengeVerification({ reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST }, challengeAnswer.challengeRequestId);
-        const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer, true);
+        const answerSignatureValidation = await verifyChallengeAnswer({ answer: challengeAnswer, validateTimestampRange: true });
         if (!answerSignatureValidation.valid) {
             this._cleanUpChallengeAnswerPromise(challengeAnswer.challengeRequestId.toString());
             this._ongoingChallengeExchanges.delete(challengeAnswer.challengeRequestId.toString());
@@ -1536,7 +1546,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._addOldPageCidsToCidsToUnpin(storedCommentUpdate?.replies, commentUpdatePriorToSigning.replies).catch((err) => log.error("Failed to add old page cids of comment.replies to _cidsToUnpin", err));
         const newCommentUpdate = {
             ...commentUpdatePriorToSigning,
-            signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
+            signature: await signCommentUpdate({ update: commentUpdatePriorToSigning, signer: this.signer })
         };
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
         const newPostUpdateBucket = comment.depth === 0 ? this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= comment.timestamp) : undefined;

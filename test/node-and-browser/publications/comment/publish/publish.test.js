@@ -275,7 +275,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 title: "Mock Post - 1690130836.1711266" + Math.random()
             };
 
-            props.signature = await signComment({ ...props, signer }, plebbit);
+            props.signature = await signComment({ comment: { ...props, signer }, plebbit });
             const post = await plebbit.createComment(props);
             expect(post.signature).to.deep.equal(props.signature);
             await publishWithExpectedResult(post, true);

@@ -22,7 +22,7 @@ describe("Sign commentedit", async () => {
             protocolVersion: "1.0.0"
         };
 
-        editSignature = await signCommentEdit(editProps, plebbit);
+        editSignature = await signCommentEdit({ edit: editProps, plebbit });
     });
 
     after(async () => {
@@ -33,12 +33,12 @@ describe("Sign commentedit", async () => {
         const commentEdit = await plebbit.createCommentEdit(editProps);
         expect(commentEdit.signature).to.deep.equal(editSignature);
 
-        const verification = await verifyCommentEdit(
-            remeda.omit({ ...editProps, signature: editSignature }, ["signer"]),
-            plebbit.resolveAuthorAddresses,
-            plebbit._clientsManager,
-            false
-        );
+        const verification = await verifyCommentEdit({
+            edit: remeda.omit({ ...editProps, signature: editSignature }, ["signer"]),
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -46,7 +46,7 @@ describe("Sign commentedit", async () => {
         const cloneEdit = remeda.clone(editProps);
         cloneEdit.author.address = "gibbreish";
         try {
-            await signCommentEdit({ ...cloneEdit, signer: signers[7] }, plebbit);
+            await signCommentEdit({ edit: { ...cloneEdit, signer: signers[7] }, plebbit });
             expect.fail("Should have thrown");
         } catch (e) {
             expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER");
@@ -56,7 +56,7 @@ describe("Sign commentedit", async () => {
         const cloneEdit = remeda.clone(editProps);
         cloneEdit.author.address = undefined;
         try {
-            await signCommentEdit({ ...cloneEdit, signer: signers[7] }, plebbit);
+            await signCommentEdit({ edit: { ...cloneEdit, signer: signers[7] }, plebbit });
             expect.fail("Should have thrown");
         } catch (e) {
             expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_UNDEFINED");
@@ -73,27 +73,27 @@ describeSkipIfRpc("Verify CommentEdit", async () => {
     });
     it(`Valid CommentEdit signature fixture is validated correctly`, async () => {
         const edit = remeda.clone(validCommentEditFixture);
-        const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
+        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid CommentEdit signature gets invalidated correctly`, async () => {
         const edit = remeda.clone(validCommentEditFixture);
         edit.reason += "1234"; // Should invalidate comment edit
-        const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
+        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyCommentEdit invalidates a commentEdit with author.address not a domain or IPNS`, async () => {
         const edit = remeda.clone(validCommentEditFixture);
         edit.author.address = "gibbresish"; // Not a domain or IPNS
-        const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
+        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyCommentEdit invalidates a commentEdit with author.address = undefined", async () => {
         const edit = remeda.clone(validCommentEditFixture);
         edit.author.address = undefined; // Not a domain or IPNS
-        const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
+        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });
     });
 });

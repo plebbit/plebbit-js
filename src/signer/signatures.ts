@@ -167,12 +167,17 @@ export async function _signJson(
     };
 }
 
-export async function _signPubsubMsg(
-    signedPropertyNames: PubsubSignature["signedPropertyNames"],
-    msg: PubsubMsgToSign, // should call cleanUpBeforePublish before calling _signPubsubMsg
-    signer: SignerType,
-    log: Logger
-): Promise<PubsubSignature> {
+export async function _signPubsubMsg({
+    signedPropertyNames,
+    msg, // should call cleanUpBeforePublish before calling _signPubsubMsg
+    signer,
+    log
+}: {
+    signedPropertyNames: PubsubSignature["signedPropertyNames"];
+    msg: PubsubMsgToSign;
+    signer: SignerType;
+    log: Logger;
+}): Promise<PubsubSignature> {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
     // we assume here that pubsub msg already has been cleaned
@@ -203,7 +208,13 @@ export function cleanUpBeforePublishing<T>(msg: T): T {
     return removeNullUndefinedEmptyObjectsValuesRecursively(msg);
 }
 
-export async function signComment(comment: CommentOptionsToSign, plebbit: Plebbit): Promise<CommentPubsubMessagPublicationSignature> {
+export async function signComment({
+    comment,
+    plebbit
+}: {
+    comment: CommentOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<CommentPubsubMessagPublicationSignature> {
     const log = Logger("plebbit-js:signatures:signComment");
     await _validateAuthorAddressBeforeSigning(comment.author, comment.signer, plebbit);
     return <CommentPubsubMessagPublicationSignature>(
@@ -211,7 +222,13 @@ export async function signComment(comment: CommentOptionsToSign, plebbit: Plebbi
     );
 }
 
-export async function signCommentUpdate(update: Omit<CommentUpdateType, "signature">, signer: SignerType): Promise<CommentUpdateSignature> {
+export async function signCommentUpdate({
+    update,
+    signer
+}: {
+    update: Omit<CommentUpdateType, "signature">;
+    signer: SignerType;
+}): Promise<CommentUpdateSignature> {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
     return <CommentUpdateSignature>(
@@ -219,10 +236,13 @@ export async function signCommentUpdate(update: Omit<CommentUpdateType, "signatu
     );
 }
 
-export async function signCommentUpdateForChallengeVerification(
-    update: Omit<DecryptedChallengeVerification["commentUpdate"], "signature">,
-    signer: SignerType
-): Promise<CommentUpdateForChallengeVerificationSignature> {
+export async function signCommentUpdateForChallengeVerification({
+    update,
+    signer
+}: {
+    update: Omit<DecryptedChallengeVerification["commentUpdate"], "signature">;
+    signer: SignerType;
+}): Promise<CommentUpdateForChallengeVerificationSignature> {
     const log = Logger("plebbit-js:signatures:signCommentUpdateForChallengeVerification");
     // Not sure, should we validate update.authorEdit here?
     return <CommentUpdateForChallengeVerificationSignature>(
@@ -230,16 +250,25 @@ export async function signCommentUpdateForChallengeVerification(
     );
 }
 
-export async function signVote(vote: VoteOptionsToSign, plebbit: Plebbit): Promise<VoteSignature> {
+export async function signVote({
+    vote,
+    plebbit
+}: {
+    vote: VoteOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<VoteSignature> {
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorAddressBeforeSigning(vote.author, vote.signer, plebbit);
     return <VoteSignature>await _signJson(VoteSignedPropertyNames, vote, vote.signer, log);
 }
 
-export async function signSubplebbitEdit(
-    subplebbitEdit: SubplebbitEditPublicationOptionsToSign,
-    plebbit: Plebbit
-): Promise<SubplebbitEditPublicationSignature> {
+export async function signSubplebbitEdit({
+    subplebbitEdit,
+    plebbit
+}: {
+    subplebbitEdit: SubplebbitEditPublicationOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<SubplebbitEditPublicationSignature> {
     const log = Logger("plebbit-js:signatures:signSubplebbitEdit");
     await _validateAuthorAddressBeforeSigning(subplebbitEdit.author, subplebbitEdit.signer, plebbit);
     return <SubplebbitEditPublicationSignature>(
@@ -247,7 +276,13 @@ export async function signSubplebbitEdit(
     );
 }
 
-export async function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: Plebbit): Promise<CommentEditSignature> {
+export async function signCommentEdit({
+    edit,
+    plebbit
+}: {
+    edit: CommentEditOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<CommentEditSignature> {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorAddressBeforeSigning(edit.author, edit.signer, plebbit);
     return <CommentEditSignature>(
@@ -255,69 +290,100 @@ export async function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: P
     );
 }
 
-export async function signCommentModeration(
-    commentMod: CommentModerationOptionsToSign,
-    plebbit: Plebbit
-): Promise<CommentModerationSignature> {
+export async function signCommentModeration({
+    commentMod,
+    plebbit
+}: {
+    commentMod: CommentModerationOptionsToSign;
+    plebbit: Plebbit;
+}): Promise<CommentModerationSignature> {
     const log = Logger("plebbit-js:signatures:signCommentModeration");
     await _validateAuthorAddressBeforeSigning(commentMod.author, commentMod.signer, plebbit);
     return <CommentModerationSignature>await _signJson(CommentModerationSignedPropertyNames, commentMod, commentMod.signer, log);
 }
 
-export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<SubplebbitSignature> {
+export async function signSubplebbit({
+    subplebbit,
+    signer
+}: {
+    subplebbit: Omit<SubplebbitIpfsType, "signature">;
+    signer: SignerType;
+}): Promise<SubplebbitSignature> {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
     return <SubplebbitSignature>(
         await _signJson(<JsonSignature["signedPropertyNames"]>SubplebbitSignedPropertyNames, subplebbit, signer, log)
     );
 }
 
-export async function signChallengeRequest(
-    request: Omit<ChallengeRequestMessageType, "signature">,
-    signer: SignerType
-): Promise<ChallengeRequestMessageSignature> {
+export async function signChallengeRequest({
+    request,
+    signer
+}: {
+    request: Omit<ChallengeRequestMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeRequestMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
     return <ChallengeRequestMessageSignature>(
-        await _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeRequestMessageSignedPropertyNames, request, signer, log)
+        await _signPubsubMsg({
+            signedPropertyNames: <PubsubSignature["signedPropertyNames"]>ChallengeRequestMessageSignedPropertyNames,
+            msg: request,
+            signer,
+            log
+        })
     );
 }
 
-export async function signChallengeMessage(
-    challengeMessage: Omit<ChallengeMessageType, "signature">,
-    signer: SignerType
-): Promise<ChallengeMessageSignature> {
+export async function signChallengeMessage({
+    challengeMessage,
+    signer
+}: {
+    challengeMessage: Omit<ChallengeMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
     return <ChallengeMessageSignature>(
-        await _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeMessageSignedPropertyNames, challengeMessage, signer, log)
+        await _signPubsubMsg({
+            signedPropertyNames: <PubsubSignature["signedPropertyNames"]>ChallengeMessageSignedPropertyNames,
+            msg: challengeMessage,
+            signer,
+            log
+        })
     );
 }
 
-export async function signChallengeAnswer(
-    challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">,
-    signer: SignerType
-): Promise<ChallengeAnswerMessageSignature> {
+export async function signChallengeAnswer({
+    challengeAnswer,
+    signer
+}: {
+    challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeAnswerMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
     return <ChallengeAnswerMessageSignature>(
-        await _signPubsubMsg(
-            <PubsubSignature["signedPropertyNames"]>ChallengeAnswerMessageSignedPropertyNames,
-            challengeAnswer,
+        await _signPubsubMsg({
+            signedPropertyNames: <PubsubSignature["signedPropertyNames"]>ChallengeAnswerMessageSignedPropertyNames,
+            msg: challengeAnswer,
             signer,
             log
-        )
+        })
     );
 }
 
-export async function signChallengeVerification(
-    challengeVerification: Omit<ChallengeVerificationMessageType, "signature">,
-    signer: SignerType
-): Promise<ChallengeVerificationMessageSignature> {
+export async function signChallengeVerification({
+    challengeVerification,
+    signer
+}: {
+    challengeVerification: Omit<ChallengeVerificationMessageType, "signature">;
+    signer: SignerType;
+}): Promise<ChallengeVerificationMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
     return <ChallengeVerificationMessageSignature>(
-        await _signPubsubMsg(
-            <PubsubSignature["signedPropertyNames"]>ChallengeVerificationMessageSignedPropertyNames,
-            challengeVerification,
+        await _signPubsubMsg({
+            signedPropertyNames: <PubsubSignature["signedPropertyNames"]>ChallengeVerificationMessageSignedPropertyNames,
+            msg: challengeVerification,
             signer,
             log
-        )
+        })
     );
 }
 
@@ -442,12 +508,17 @@ const _verifyPublicationSignatureAndAuthor = async (
     return res;
 };
 
-export async function verifyVote(
-    vote: VotePubsubMessagePublication,
-    resolveAuthorAddresses: boolean,
-    clientsManager: BaseClientsManager,
-    overrideAuthorAddressIfInvalid: boolean
-): Promise<ValidationResult> {
+export async function verifyVote({
+    vote,
+    resolveAuthorAddresses,
+    clientsManager,
+    overrideAuthorAddressIfInvalid
+}: {
+    vote: VotePubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(vote))
         return { valid: false, reason: messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
@@ -456,12 +527,17 @@ export async function verifyVote(
     return { valid: true };
 }
 
-export async function verifySubplebbitEdit(
-    subplebbitEdit: SubplebbitEditPubsubMessagePublication,
-    resolveAuthorAddresses: boolean,
-    clientsManager: BaseClientsManager,
-    overrideAuthorAddressIfInvalid: boolean
-): Promise<ValidationResult> {
+export async function verifySubplebbitEdit({
+    subplebbitEdit,
+    resolveAuthorAddresses,
+    clientsManager,
+    overrideAuthorAddressIfInvalid
+}: {
+    subplebbitEdit: SubplebbitEditPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(subplebbitEdit))
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
@@ -475,12 +551,17 @@ export async function verifySubplebbitEdit(
     return { valid: true };
 }
 
-export async function verifyCommentEdit(
-    edit: CommentEditPubsubMessagePublication,
-    resolveAuthorAddresses: boolean,
-    clientsManager: BaseClientsManager,
-    overrideAuthorAddressIfInvalid: boolean
-): Promise<ValidationResult> {
+export async function verifyCommentEdit({
+    edit,
+    resolveAuthorAddresses,
+    clientsManager,
+    overrideAuthorAddressIfInvalid
+}: {
+    edit: CommentEditPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(edit))
         return { valid: false, reason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
@@ -489,12 +570,17 @@ export async function verifyCommentEdit(
     return { valid: true };
 }
 
-export async function verifyCommentModeration(
-    moderation: CommentModerationPubsubMessagePublication,
-    resolveAuthorAddresses: boolean,
-    clientsManager: BaseClientsManager,
-    overrideAuthorAddressIfInvalid: boolean
-): Promise<ValidationResult> {
+export async function verifyCommentModeration({
+    moderation,
+    resolveAuthorAddresses,
+    clientsManager,
+    overrideAuthorAddressIfInvalid
+}: {
+    moderation: CommentModerationPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(moderation))
         return { valid: false, reason: messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
@@ -508,12 +594,17 @@ export async function verifyCommentModeration(
     return { valid: true };
 }
 
-export async function verifyCommentPubsubMessage(
-    comment: CommentPubsubMessagePublication,
-    resolveAuthorAddresses: boolean,
-    clientsManager: BaseClientsManager,
-    overrideAuthorAddressIfInvalid: boolean
-) {
+export async function verifyCommentPubsubMessage({
+    comment,
+    resolveAuthorAddresses,
+    clientsManager,
+    overrideAuthorAddressIfInvalid
+}: {
+    comment: CommentPubsubMessagePublication;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+}) {
     if (!_allFieldsOfRecordInSignedPropertyNames(comment))
         return { valid: false, reason: messages.ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const validation = await _verifyPublicationSignatureAndAuthor(
@@ -548,12 +639,12 @@ export async function verifyCommentIpfs(opts: {
 
     const keysCasted = <(keyof CommentPubsubMessagePublication)[]>opts.comment.signature.signedPropertyNames;
 
-    const validRes = await verifyCommentPubsubMessage(
-        remeda.pick(opts.comment, ["signature", ...keysCasted]),
-        opts.resolveAuthorAddresses,
-        opts.clientsManager,
-        opts.overrideAuthorAddressIfInvalid
-    );
+    const validRes = await verifyCommentPubsubMessage({
+        comment: remeda.pick(opts.comment, ["signature", ...keysCasted]),
+        resolveAuthorAddresses: opts.resolveAuthorAddresses,
+        clientsManager: opts.clientsManager,
+        overrideAuthorAddressIfInvalid: opts.overrideAuthorAddressIfInvalid
+    });
 
     if (!validRes.valid) return validRes;
     const shouldCache = !("derivedAddress" in validRes && opts.overrideAuthorAddressIfInvalid);
@@ -758,10 +849,13 @@ async function _validateChallengeRequestId(msg: ChallengeRequestMessageType | Ch
     else return { valid: true };
 }
 
-export async function verifyChallengeRequest(
-    request: ChallengeRequestMessageType,
-    validateTimestampRange: boolean
-): Promise<ValidationResult> {
+export async function verifyChallengeRequest({
+    request,
+    validateTimestampRange
+}: {
+    request: ChallengeRequestMessageType;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(request))
         return { valid: false, reason: messages.ERR_CHALLENGE_REQUEST_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
@@ -774,11 +868,15 @@ export async function verifyChallengeRequest(
     return _validateSignatureOfPubsubMsg(request);
 }
 
-export async function verifyChallengeMessage(
-    challenge: ChallengeMessageType,
-    pubsubTopic: string,
-    validateTimestampRange: boolean
-): Promise<ValidationResult> {
+export async function verifyChallengeMessage({
+    challenge,
+    pubsubTopic,
+    validateTimestampRange
+}: {
+    challenge: ChallengeMessageType;
+    pubsubTopic: string;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(challenge))
         return { valid: false, reason: messages.ERR_CHALLENGE_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
@@ -790,10 +888,13 @@ export async function verifyChallengeMessage(
     return _validateSignatureOfPubsubMsg(challenge);
 }
 
-export async function verifyChallengeAnswer(
-    answer: ChallengeAnswerMessageType,
-    validateTimestampRange: boolean
-): Promise<ValidationResult> {
+export async function verifyChallengeAnswer({
+    answer,
+    validateTimestampRange
+}: {
+    answer: ChallengeAnswerMessageType;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(answer))
         return { valid: false, reason: messages.ERR_CHALLENGE_ANSWER_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
@@ -806,11 +907,15 @@ export async function verifyChallengeAnswer(
     return _validateSignatureOfPubsubMsg(answer);
 }
 
-export async function verifyChallengeVerification(
-    verification: ChallengeVerificationMessageType,
-    pubsubTopic: string,
-    validateTimestampRange: boolean
-): Promise<ValidationResult> {
+export async function verifyChallengeVerification({
+    verification,
+    pubsubTopic,
+    validateTimestampRange
+}: {
+    verification: ChallengeVerificationMessageType;
+    pubsubTopic: string;
+    validateTimestampRange: boolean;
+}): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(verification))
         return { valid: false, reason: messages.ERR_CHALLENGE_VERIFICATION_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 

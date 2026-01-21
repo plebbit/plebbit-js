@@ -1068,12 +1068,12 @@ export class Comment
 
     private async _validateSignature() {
         const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub
-        const signatureValidity = await verifyCommentPubsubMessage(
-            commentObj,
-            this._plebbit.resolveAuthorAddresses,
-            this._clientsManager,
-            true
-        ); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyCommentPubsubMessage({
+            comment: commentObj,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            overrideAuthorAddressIfInvalid: true
+        }); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throw new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 

@@ -734,7 +734,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this.modQueue.resetPages();
         }
 
-        const signature = await signSubplebbit(newIpns, this.signer);
+        const signature = await signSubplebbit({ subplebbit: newIpns, signer: this.signer });
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
 
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
@@ -1172,7 +1172,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const anonymizedComment = remeda.clone(originalComment);
 
         anonymizedComment.author = sanitizedAuthor;
-        anonymizedComment.signature = await signComment({ ...anonymizedComment, signer: aliasSigner }, this._plebbit);
+        anonymizedComment.signature = await signComment({ comment: { ...anonymizedComment, signer: aliasSigner }, plebbit: this._plebbit });
 
         return {
             publication: anonymizedComment,
@@ -1195,7 +1195,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         });
         const commentEditSignedByAlias = remeda.clone(originalEdit);
         commentEditSignedByAlias.author = { address: aliasSigner.address };
-        commentEditSignedByAlias.signature = await signCommentEdit({ ...commentEditSignedByAlias, signer: aliasSigner }, this._plebbit);
+        commentEditSignedByAlias.signature = await signCommentEdit({ edit: { ...commentEditSignedByAlias, signer: aliasSigner }, plebbit: this._plebbit });
 
         return commentEditSignedByAlias;
     }
@@ -1321,24 +1321,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _respondWithErrorIfSignatureOfPublicationIsInvalid(request: DecryptedChallengeRequestMessageType): Promise<void> {
         let validity: ValidationResult;
         if (request.comment)
-            validity = await verifyCommentPubsubMessage(request.comment, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+            validity = await verifyCommentPubsubMessage({ comment: request.comment, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
         else if (request.commentEdit)
-            validity = await verifyCommentEdit(request.commentEdit, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
-        else if (request.vote) validity = await verifyVote(request.vote, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+            validity = await verifyCommentEdit({ edit: request.commentEdit, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
+        else if (request.vote) validity = await verifyVote({ vote: request.vote, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
         else if (request.commentModeration)
-            validity = await verifyCommentModeration(
-                request.commentModeration,
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                false
-            );
+            validity = await verifyCommentModeration({
+                moderation: request.commentModeration,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
         else if (request.subplebbitEdit)
-            validity = await verifySubplebbitEdit(
-                request.subplebbitEdit,
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                false
-            );
+            validity = await verifySubplebbitEdit({
+                subplebbitEdit: request.subplebbitEdit,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
         else throw Error("Can't detect the type of publication");
 
         if (!validity.valid) {
@@ -1368,7 +1368,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const challengeMessage = <ChallengeMessageType>{
             ...toSignChallenge,
-            signature: await signChallengeMessage(toSignChallenge, this.signer)
+            signature: await signChallengeMessage({ challengeMessage: toSignChallenge, signer: this.signer })
         };
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
 
@@ -1409,7 +1409,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const challengeVerification = <ChallengeVerificationMessageType>{
             ...toSignVerification,
-            signature: await signChallengeVerification(toSignVerification, this.signer)
+            signature: await signChallengeVerification({ challengeVerification: toSignVerification, signer: this.signer })
         };
 
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
@@ -1452,7 +1452,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
         const commentUpdate = <DecryptedChallengeVerification["commentUpdate"]>{
             ...commentUpdateOfVerificationNoSignature,
-            signature: await signCommentUpdateForChallengeVerification(commentUpdateOfVerificationNoSignature, this.signer)
+            signature: await signCommentUpdateForChallengeVerification({ update: commentUpdateOfVerificationNoSignature, signer: this.signer })
         };
 
         const toEncrypt = <DecryptedChallengeVerification>{ comment: commentAfterAddingToIpfs.comment, commentUpdate };
@@ -1500,7 +1500,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             });
             const challengeVerification = <ChallengeVerificationMessageType>{
                 ...toSignMsg,
-                signature: await signChallengeVerification(toSignMsg, this.signer)
+                signature: await signChallengeVerification({ challengeVerification: toSignMsg, signer: this.signer })
             };
 
             const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
@@ -1761,7 +1761,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()] = true;
         }
         this._ongoingChallengeExchanges.set(request.challengeRequestId.toString(), true);
-        const requestSignatureValidation = await verifyChallengeRequest(request, true);
+        const requestSignatureValidation = await verifyChallengeRequest({ request, validateTimestampRange: true });
         if (!requestSignatureValidation.valid)
             throw new PlebbitError(getErrorCodeFromMessage(requestSignatureValidation.reason), {
                 challengeRequest: remeda.omit(request, ["encrypted"])
@@ -1900,7 +1900,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 { reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST },
                 challengeAnswer.challengeRequestId
             );
-        const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer, true);
+        const answerSignatureValidation = await verifyChallengeAnswer({ answer: challengeAnswer, validateTimestampRange: true });
 
         if (!answerSignatureValidation.valid) {
             this._cleanUpChallengeAnswerPromise(challengeAnswer.challengeRequestId.toString());
@@ -2060,7 +2060,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const newCommentUpdate: CommentUpdateType = {
             ...commentUpdatePriorToSigning,
-            signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
+            signature: await signCommentUpdate({ update: commentUpdatePriorToSigning, signer: this.signer })
         };
 
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);

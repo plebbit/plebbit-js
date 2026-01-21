@@ -1188,7 +1188,7 @@ async function buildSignedReplyPublication({ signer, subplebbitAddress, postCid,
         postCid,
         parentCid
     };
-    const signature = await signComment(base, {});
+    const signature = await signComment({ comment: base, plebbit: {} });
     const publication = { ...base, signature };
     delete publication.signer;
     return publication;
@@ -1204,7 +1204,7 @@ async function buildSignedPostPublication({ signer, subplebbitAddress }) {
         title: `transition-post-${Date.now()}`,
         content: `transition-post-content-${Date.now()}`
     };
-    const signature = await signComment(base, {});
+    const signature = await signComment({ comment: base, plebbit: {} });
     const publication = { ...base, signature };
     delete publication.signer;
     return publication;

@@ -51,14 +51,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`valid challengerequest fixture from previous version can be validated`, async () => {
             const request = parsePubsubMsgFixture(remeda.clone(validChallengeRequestFixture));
-            const verificaiton = await verifyChallengeRequest(request, false);
+            const verificaiton = await verifyChallengeRequest({ request, validateTimestampRange: false });
             expect(verificaiton).to.deep.equal({ valid: true });
         });
 
         it(`challenge request with challengeRequestId that is not derived from signer is invalidated`, async () => {
             const request = parsePubsubMsgFixture(remeda.clone(validChallengeRequestFixture));
             request.challengeRequestId[0] += 1; // Invalidate challengeRequestId
-            const verificaiton = await verifyChallengeRequest(request, false);
+            const verificaiton = await verifyChallengeRequest({ request, validateTimestampRange: false });
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
         });
 
@@ -74,8 +74,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             ]);
             challengeRequestToEdit.timestamp = timestamp() - 6 * 60; // Should be invalidated now
             const signer = Object.values(comment._challengeExchanges)[0].signer;
-            challengeRequestToEdit.signature = await signChallengeRequest(challengeRequestToEdit, signer);
-            const verificaiton = await verifyChallengeRequest(challengeRequestToEdit, true);
+            challengeRequestToEdit.signature = await signChallengeRequest({ request: challengeRequestToEdit, signer });
+            const verificaiton = await verifyChallengeRequest({ request: challengeRequestToEdit, validateTimestampRange: true });
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED });
         });
 
@@ -86,7 +86,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await comment.publish();
             const challengeRequest = await challengeRequestPromise;
             const requestToValidate = remeda.omit(challengeRequest, ["comment", "challengeAnswers", "challengeCommentCids"]);
-            const verificaiton = await verifyChallengeRequest(requestToValidate);
+            const verificaiton = await verifyChallengeRequest({ request: requestToValidate });
             expect(verificaiton).to.deep.equal({ valid: true });
         });
 
@@ -108,7 +108,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );
 
-            challengeRequestToModify.signature = await signChallengeRequest(challengeRequestToModify, pubsubSigner);
+            challengeRequestToModify.signature = await signChallengeRequest({ request: challengeRequestToModify, signer: pubsubSigner });
 
             try {
                 await originalPublish(
@@ -145,12 +145,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubRequestToEncrypt()));
 
             expect(
-                await verifyCommentPubsubMessage(commentObjToEncrypt.comment, plebbit.resolveAuthorAddresses, comment._clientsManager, true)
+                await verifyCommentPubsubMessage({ comment: commentObjToEncrypt.comment, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: comment._clientsManager, overrideAuthorAddressIfInvalid: true })
             ).to.deep.equal({
                 valid: true
             });
             commentObjToEncrypt.comment.timestamp += 1; // Should invalidate signature
-            expect(await verifyCommentPubsubMessage(commentObjToEncrypt.comment, false, comment._clientsManager, false)).to.deep.equal({
+            expect(await verifyCommentPubsubMessage({ comment: commentObjToEncrypt.comment, resolveAuthorAddresses: false, clientsManager: comment._clientsManager, overrideAuthorAddressIfInvalid: false })).to.deep.equal({
                 valid: false,
                 reason: messages.ERR_SIGNATURE_IS_INVALID
             });
@@ -164,7 +164,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 comment._subplebbit.encryption.publicKey
             );
 
-            challengeRequestToModify.signature = await signChallengeRequest(challengeRequestToModify, pubsubSigner);
+            challengeRequestToModify.signature = await signChallengeRequest({ request: challengeRequestToModify, signer: pubsubSigner });
 
             await comment._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, challengeRequestToModify);
 
@@ -190,7 +190,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "challengeAnswers"
             ]);
             requestWithInvalidSignature.acceptedChallengeTypes.push("test"); // Signature should be invalid after
-            const verificaiton = await verifyChallengeRequest(requestWithInvalidSignature);
+            const verificaiton = await verifyChallengeRequest({ request: requestWithInvalidSignature });
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
 
             await plebbit._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, requestWithInvalidSignature);
@@ -225,20 +225,20 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`valid challengemessage fixture from previous version can be validated`, async () => {
             const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
-            const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
+            const verificaiton = await verifyChallengeMessage({ challenge, pubsubTopic: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
             expect(verificaiton).to.deep.equal({ valid: true });
         });
 
         it(`Invalid ChallengeMessage gets invalidated correctly`, async () => {
             const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
             challenge.timestamp -= 1234; // Should invalidate signature
-            const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
+            const verificaiton = await verifyChallengeMessage({ challenge, pubsubTopic: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
 
         it(`challenge message signed by other than subplebbit.pubsubTopic is invalidated`, async () => {
             const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
-            const verificaiton = await verifyChallengeMessage(challenge, (await plebbit.createSigner()).address); // Random pubsub topic
+            const verificaiton = await verifyChallengeMessage({ challenge, pubsubTopic: (await plebbit.createSigner()).address }); // Random pubsub topic
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT });
         });
         it(`Valid live challengemessage gets validated correctly`, async () => {
@@ -251,7 +251,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const challengePubsubMsgNoExtraProps = remeda.omit(challengePubsubMsg, ["challenges"]);
 
-            const verification = await verifyChallengeMessage(challengePubsubMsgNoExtraProps, mathCliSubplebbitAddress);
+            const verification = await verifyChallengeMessage({ challenge: challengePubsubMsgNoExtraProps, pubsubTopic: mathCliSubplebbitAddress });
             expect(verification).to.deep.equal({ valid: true });
         });
     });
@@ -269,14 +269,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`valid challengeanswer fixture from previous version can be validated`, async () => {
             const answer = parsePubsubMsgFixture(remeda.clone(validChallengeAnswerFixture));
-            const verificaiton = await verifyChallengeAnswer(answer);
+            const verificaiton = await verifyChallengeAnswer({ answer });
             expect(verificaiton).to.deep.equal({ valid: true });
         });
 
         it(`challenge answer with challengeRequestId that is not derived from signer is invalidated`, async () => {
             const answer = parsePubsubMsgFixture(remeda.clone(validChallengeAnswerFixture));
             answer.challengeRequestId[0] += 1; // Invalidate challenge request id
-            const verificaiton = await verifyChallengeAnswer(answer);
+            const verificaiton = await verifyChallengeAnswer({ answer });
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
         });
 
@@ -289,7 +289,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const challengeAnswerPubsubMsg = await new Promise((resolve) => comment.once("challengeanswer", resolve));
             const challengeAnswerPubsubMsgNoExtraProps = remeda.omit(challengeAnswerPubsubMsg, ["challengeAnswers"]);
-            const verificaiton = await verifyChallengeAnswer(challengeAnswerPubsubMsgNoExtraProps);
+            const verificaiton = await verifyChallengeAnswer({ answer: challengeAnswerPubsubMsgNoExtraProps });
             expect(verificaiton).to.deep.equal({ valid: true });
         });
 
@@ -319,12 +319,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const pubsubSigner = Object.values(comment._challengeExchanges)[0].signer;
             const challengeAnswer = {
                 ...toSignAnswer,
-                signature: await signChallengeAnswer(toSignAnswer, pubsubSigner)
+                signature: await signChallengeAnswer({ answer: toSignAnswer, signer: pubsubSigner })
             };
-            expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
+            expect(await verifyChallengeAnswer({ answer: challengeAnswer })).to.deep.equal({ valid: true });
 
             challengeAnswer.timestamp += 123; // Invalidate signature
-            const verification = await verifyChallengeAnswer(challengeAnswer);
+            const verification = await verifyChallengeAnswer({ answer: challengeAnswer });
             expect(verification).to.deep.equal({
                 valid: false,
                 reason: messages.ERR_SIGNATURE_IS_INVALID
@@ -368,7 +368,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     pubsubSigner.privateKey,
                     signers[5].publicKey // Use a public key that cannot be decrypted for the sub
                 );
-                challengeAnswerToModify.signature = await signChallengeAnswer(challengeAnswerToModify, pubsubSigner);
+                challengeAnswerToModify.signature = await signChallengeAnswer({ answer: challengeAnswerToModify, signer: pubsubSigner });
                 await originalPublish(
                     comment._subplebbit.pubsubTopic,
                     challengeAnswerToModify,
@@ -405,9 +405,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             );
             const challengeAnswer = {
                 ...toSignAnswer,
-                signature: await signChallengeAnswer(toSignAnswer, pubsubSigner)
+                signature: await signChallengeAnswer({ answer: toSignAnswer, signer: pubsubSigner })
             };
-            expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
+            expect(await verifyChallengeAnswer({ answer: challengeAnswer })).to.deep.equal({ valid: true });
 
             await plebbit._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, challengeAnswer);
 
@@ -445,7 +445,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it(`valid challengeverification fixture from previous version can be validated`, async () => {
             const challengeVerification = parsePubsubMsgFixture(remeda.clone(validChallengeVerificationFixture));
-            const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
+            const verificaiton = await verifyChallengeVerification({ verification: challengeVerification, pubsubTopic: signers[0].address });
             expect(verificaiton).to.deep.equal({ valid: true });
         });
         it(`Valid live challengeverification gets validated correctly`, async () => {
@@ -454,13 +454,13 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const challengeVerification = await new Promise((resolve) => comment.once("challengeverification", resolve));
             const challengeVerificationNoExtraProps = remeda.omit(challengeVerification, ["comment", "commentUpdate"]);
-            const verification = await verifyChallengeVerification(challengeVerificationNoExtraProps, signers[0].address);
+            const verification = await verifyChallengeVerification({ verification: challengeVerificationNoExtraProps, pubsubTopic: signers[0].address });
             expect(verification).to.deep.equal({ valid: true });
         });
         it(`Invalid challengeverification gets invalidated correctly`, async () => {
             const challengeVerification = parsePubsubMsgFixture(remeda.clone(validChallengeVerificationFixture));
             challengeVerification.timestamp -= 1234; // Invalidate signature
-            const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
+            const verificaiton = await verifyChallengeVerification({ verification: challengeVerification, pubsubTopic: signers[0].address });
             expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
     });

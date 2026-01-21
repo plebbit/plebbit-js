@@ -430,7 +430,7 @@ export class PageGenerator {
         });
         const commentUpdate = <ModQueueCommentInPage["commentUpdate"]>{
             ...commentUpdateOfVerificationNoSignature,
-            signature: await signCommentUpdateForChallengeVerification(commentUpdateOfVerificationNoSignature, this._subplebbit.signer)
+            signature: await signCommentUpdateForChallengeVerification({ update: commentUpdateOfVerificationNoSignature, signer: this._subplebbit.signer })
         };
         const commentIpfs = deriveCommentIpfsFromCommentTableRow(queuedComment);
         return { comment: commentIpfs, commentUpdate };

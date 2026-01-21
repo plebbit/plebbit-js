@@ -94,7 +94,7 @@ class Publication extends TypedEmitter {
         const log = Logger("plebbit-js:publication:_handleIncomingChallengePubsubMessage");
         if (Object.values(this._challengeExchanges).some((exchange) => exchange.challenge))
             return; // We only process one challenge
-        const challengeMsgValidity = await verifyChallengeMessage(msg, this._pubsubTopicWithfallback(), true);
+        const challengeMsgValidity = await verifyChallengeMessage({ challenge: msg, pubsubTopic: this._pubsubTopicWithfallback(), validateTimestampRange: true });
         if (!challengeMsgValidity.valid) {
             const error = new PlebbitError("ERR_CHALLENGE_SIGNATURE_IS_INVALID", {
                 pubsubMsg: msg,
@@ -164,7 +164,7 @@ class Publication extends TypedEmitter {
         const log = Logger("plebbit-js:publication:_handleIncomingChallengeVerificationPubsubMessage");
         if (this._challengeExchanges[msg.challengeRequestId.toString()].challengeVerification)
             return;
-        const signatureValidation = await verifyChallengeVerification(msg, this._pubsubTopicWithfallback(), true);
+        const signatureValidation = await verifyChallengeVerification({ verification: msg, pubsubTopic: this._pubsubTopicWithfallback(), validateTimestampRange: true });
         if (!signatureValidation.valid) {
             const error = new PlebbitError("ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID", {
                 pubsubMsg: msg,
@@ -315,7 +315,7 @@ class Publication extends TypedEmitter {
         });
         const answerMsgToPublish = {
             ...toSignAnswer,
-            signature: await signChallengeAnswer(toSignAnswer, challengeExchange.signer)
+            signature: await signChallengeAnswer({ challengeAnswer: toSignAnswer, signer: challengeExchange.signer })
         };
         // TODO should be handling multiple providers with publishing challenge answer?
         // For now, let's just publish to the provider that got us the challenge and its request
@@ -598,7 +598,7 @@ class Publication extends TypedEmitter {
         // No validation for now, we might add in the future
         return {
             ...toSignMsg,
-            signature: await signChallengeRequest(toSignMsg, pubsubSigner)
+            signature: await signChallengeRequest({ request: toSignMsg, signer: pubsubSigner })
         };
     }
     _didWeReceiveChallengeOrChallengeVerification() {

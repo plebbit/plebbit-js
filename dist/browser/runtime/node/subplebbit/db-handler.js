@@ -612,7 +612,7 @@ export class DbHandler {
                 ...commentEditRecord.signature.signedPropertyNames,
                 "signature"
             ]);
-            const validRes = await verifyCommentEdit(commentEditPubsub, false, this._subplebbit._clientsManager, false);
+            const validRes = await verifyCommentEdit({ edit: commentEditPubsub, resolveAuthorAddresses: false, clientsManager: this._subplebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
             if (!validRes.valid && validRes.reason === messages.ERR_SIGNATURE_IS_INVALID) {
                 log.error(`Comment edit (${commentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB has invalid signature due to ${validRes.reason}. Removing comment edit entry.`);
                 this._deleteCommentEditRow(rawCommentEditRecord.rowid);

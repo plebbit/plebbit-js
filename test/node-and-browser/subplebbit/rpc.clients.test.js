@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             const record = JSON.parse(JSON.stringify(actualSub.raw.subplebbitIpfs));
             record.address = newIpns.signer.address;
             delete record["posts"];
-            record.signature = await signSubplebbit(record, newIpns.signer);
+            record.signature = await signSubplebbit({ subplebbit: record, signer: newIpns.signer });
 
             await newIpns.publishToIpns(JSON.stringify(record));
 

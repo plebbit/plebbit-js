@@ -746,7 +746,10 @@ export async function overrideCommentInstancePropsAndSign(comment, props) {
         //@ts-expect-error
         comment[optionKey] = pubsubPublication[optionKey] = props[optionKey];
     }
-    comment.signature = pubsubPublication.signature = await signComment(removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }), comment._plebbit);
+    comment.signature = pubsubPublication.signature = await signComment({
+        comment: removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }),
+        plebbit: comment._plebbit
+    });
     comment.raw.pubsubMessageToPublish = pubsubPublication;
     disableValidationOfSignatureBeforePublishing(comment);
 }
@@ -756,7 +759,10 @@ export async function overrideCommentEditInstancePropsAndSign(commentEdit, props
     //@ts-expect-error
     for (const optionKey of Object.keys(props))
         commentEdit[optionKey] = props[optionKey];
-    commentEdit.signature = await signCommentEdit(removeUndefinedValuesRecursively({ ...commentEdit.toJSONPubsubMessagePublication(), signer: commentEdit.signer }), commentEdit._plebbit);
+    commentEdit.signature = await signCommentEdit({
+        edit: removeUndefinedValuesRecursively({ ...commentEdit.toJSONPubsubMessagePublication(), signer: commentEdit.signer }),
+        plebbit: commentEdit._plebbit
+    });
     disableValidationOfSignatureBeforePublishing(commentEdit);
 }
 export async function setExtraPropOnCommentAndSign(comment, extraProps, includeExtraPropInSignedPropertyNames) {
@@ -803,7 +809,7 @@ export async function setExtraPropOnChallengeRequestAndSign(publication, extraPr
         if (includeExtraPropsInRequestSignedPropertyNames)
             signedPropertyNames.push(...Object.keys(extraProps));
         const requestWithExtraProps = { ...requestWithoutSignature, ...extraProps };
-        const signature = await _signPubsubMsg(signedPropertyNames, requestWithExtraProps, signer, log);
+        const signature = await _signPubsubMsg({ signedPropertyNames, msg: requestWithExtraProps, signer, log });
         return { ...requestWithExtraProps, signature };
     };
 }
@@ -827,7 +833,7 @@ export async function publishChallengeAnswerMessageWithExtraProps(publication, c
     if (includeExtraPropsInChallengeSignedPropertyNames)
         signedPropertyNames.push(...Object.keys(extraProps));
     Object.assign(toSignAnswer, extraProps);
-    const signature = await _signPubsubMsg(signedPropertyNames, toSignAnswer, signer, log);
+    const signature = await _signPubsubMsg({ signedPropertyNames, msg: toSignAnswer, signer, log });
     //@ts-expect-error
     await publishOverPubsub(publication._subplebbit.pubsubTopic, { ...toSignAnswer, signature });
 }
@@ -847,7 +853,12 @@ export async function publishChallengeMessageWithExtraProps(publication, pubsubS
     if (includeExtraPropsInChallengeSignedPropertyNames)
         signedPropertyNames.push(...Object.keys(extraProps));
     Object.assign(toSignChallenge, extraProps);
-    const signature = await _signPubsubMsg(signedPropertyNames, toSignChallenge, pubsubSigner, log);
+    const signature = await _signPubsubMsg({
+        signedPropertyNames: signedPropertyNames,
+        msg: toSignChallenge,
+        signer: pubsubSigner,
+        log
+    });
     await publishOverPubsub(pubsubSigner.address, { ...toSignChallenge, signature });
 }
 export async function publishChallengeVerificationMessageWithExtraProps(publication, pubsubSigner, extraProps, includeExtraPropsInChallengeSignedPropertyNames) {
@@ -866,7 +877,12 @@ export async function publishChallengeVerificationMessageWithExtraProps(publicat
     if (includeExtraPropsInChallengeSignedPropertyNames)
         signedPropertyNames.push(...Object.keys(extraProps));
     Object.assign(toSignChallengeVerification, extraProps);
-    const signature = await _signPubsubMsg(signedPropertyNames, toSignChallengeVerification, pubsubSigner, log);
+    const signature = await _signPubsubMsg({
+        signedPropertyNames: signedPropertyNames,
+        msg: toSignChallengeVerification,
+        signer: pubsubSigner,
+        log
+    });
     await publishOverPubsub(pubsubSigner.address, { ...toSignChallengeVerification, signature });
 }
 export async function publishChallengeVerificationMessageWithEncryption(publication, pubsubSigner, toEncrypt, verificationProps) {
@@ -884,7 +900,7 @@ export async function publishChallengeVerificationMessageWithEncryption(publicat
     const publicKey = Buffer.from(challengeRequest.signature.publicKey).toString("base64");
     const encrypted = await encryptEd25519AesGcm(JSON.stringify(toEncrypt), pubsubSigner.privateKey, publicKey);
     toSignChallengeVerification.encrypted = encrypted;
-    const signature = await signChallengeVerification(toSignChallengeVerification, pubsubSigner);
+    const signature = await signChallengeVerification({ challengeVerification: toSignChallengeVerification, signer: pubsubSigner });
     await publishOverPubsub(pubsubSigner.address, { ...toSignChallengeVerification, signature });
 }
 export async function addStringToIpfs(content) {
@@ -1085,7 +1101,7 @@ export async function createMockedSubplebbitIpns(subplebbitOpts) {
     }; // default sub, will be using its props
     if (!subplebbitRecord.posts)
         delete subplebbitRecord.posts;
-    subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
+    subplebbitRecord.signature = await signSubplebbit({ subplebbit: subplebbitRecord, signer: ipnsObj.signer });
     await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
     await ipnsObj.plebbit.destroy();
     return { subplebbitRecord, ipnsObj };
@@ -1105,7 +1121,7 @@ export async function createStaticSubplebbitRecordForComment(opts) {
         };
         if (!subplebbitRecord.posts)
             delete subplebbitRecord.posts;
-        subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
+        subplebbitRecord.signature = await signSubplebbit({ subplebbit: subplebbitRecord, signer: ipnsObj.signer });
         if (invalidateSubplebbitSignature)
             subplebbitRecord.updatedAt = (subplebbitRecord.updatedAt || timestamp()) + 1234;
         await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));

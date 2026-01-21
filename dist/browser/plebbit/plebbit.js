@@ -340,7 +340,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             // we're creating a new comment to sign and publish here
             const fieldsFilled = await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
-            const signature = await signComment(cleanedFieldsFilled, this);
+            const signature = await signComment({ comment: cleanedFieldsFilled, plebbit: this });
             const signedComment = {
                 ...remeda.pick(cleanedFieldsFilled, signature.signedPropertyNames),
                 signature
@@ -529,7 +529,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             const parsedOptions = parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(options);
             const finalOptions = await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signature = await signVote(cleanedFinalOptions, this);
+            const signature = await signVote({ vote: cleanedFinalOptions, plebbit: this });
             const signedVote = {
                 ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
                 signature
@@ -565,7 +565,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             const parsedOptions = parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItFails(options);
             const finalOptions = await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signature = await signCommentEdit(cleanedFinalOptions, this);
+            const signature = await signCommentEdit({ edit: cleanedFinalOptions, plebbit: this });
             const signedEdit = {
                 ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
                 signature
@@ -601,7 +601,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             const parsedOptions = parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails(options);
             const finalOptions = (await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log));
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signature = await signCommentModeration(cleanedFinalOptions, this);
+            const signature = await signCommentModeration({ commentMod: cleanedFinalOptions, plebbit: this });
             const signedMod = {
                 ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
                 signature
@@ -637,7 +637,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             const parsedOptions = parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails(options);
             const finalOptions = (await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log));
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signature = await signSubplebbitEdit(cleanedFinalOptions, this);
+            const signature = await signSubplebbitEdit({ subplebbitEdit: cleanedFinalOptions, plebbit: this });
             const signedSubplebbitEdit = {
                 ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
                 signature

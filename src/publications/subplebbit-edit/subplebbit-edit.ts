@@ -50,12 +50,12 @@ class SubplebbitEdit extends Publication implements SubplebbitEditPubsubMessageP
 
     private async _validateSignature() {
         const subplebbitEditObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringified here to simulate a message sent through IPNS/PUBSUB
-        const signatureValidity = await verifySubplebbitEdit(
-            subplebbitEditObj,
-            this._plebbit.resolveAuthorAddresses,
-            this._clientsManager,
-            true
-        ); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifySubplebbitEdit({
+            subplebbitEdit: subplebbitEditObj,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            overrideAuthorAddressIfInvalid: true
+        }); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
