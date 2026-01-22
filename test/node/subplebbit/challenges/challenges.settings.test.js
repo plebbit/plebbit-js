@@ -92,13 +92,13 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
             });
             expect(_subplebbit.challenges[0].challenge).to.be.undefined;
             expect(_subplebbit.challenges[1].challenge).to.be.undefined;
-            expect(_subplebbit.challenges[2].challenge).to.equal(defaultMintpassChallengeUrl);
+            expect(_subplebbit.challenges[2].challenge).to.be.undefined;
         }
         // clean up
         await subplebbit.delete();
     });
 
-    it.skip(`Default challenges reject authors without an allowed address`, async () => {
+    it(`Default challenges reject authors without an allowed address`, async () => {
         // skip this test for now till we update mintpass
         const subplebbit = await plebbit.createSubplebbit({});
         await subplebbit.start();
