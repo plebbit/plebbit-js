@@ -319,7 +319,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const pubsubSigner = Object.values(comment._challengeExchanges)[0].signer;
             const challengeAnswer = {
                 ...toSignAnswer,
-                signature: await signChallengeAnswer({ answer: toSignAnswer, signer: pubsubSigner })
+                signature: await signChallengeAnswer({ challengeAnswer: toSignAnswer, signer: pubsubSigner })
             };
             expect(await verifyChallengeAnswer({ answer: challengeAnswer })).to.deep.equal({ valid: true });
 
@@ -368,7 +368,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     pubsubSigner.privateKey,
                     signers[5].publicKey // Use a public key that cannot be decrypted for the sub
                 );
-                challengeAnswerToModify.signature = await signChallengeAnswer({ answer: challengeAnswerToModify, signer: pubsubSigner });
+                challengeAnswerToModify.signature = await signChallengeAnswer({ challengeAnswer: challengeAnswerToModify, signer: pubsubSigner });
                 await originalPublish(
                     comment._subplebbit.pubsubTopic,
                     challengeAnswerToModify,
@@ -405,7 +405,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             );
             const challengeAnswer = {
                 ...toSignAnswer,
-                signature: await signChallengeAnswer({ answer: toSignAnswer, signer: pubsubSigner })
+                signature: await signChallengeAnswer({ challengeAnswer: toSignAnswer, signer: pubsubSigner })
             };
             expect(await verifyChallengeAnswer({ answer: challengeAnswer })).to.deep.equal({ valid: true });
 
