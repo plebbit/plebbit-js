@@ -16,6 +16,7 @@ import { Buffer } from "buffer";
 import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
 import env from "../version.js";
 import { PlebbitError } from "../plebbit-error.js";
+import last from "it-last";
 export function createPendingApprovalChallenge(overrides = {}) {
     const { options, exclude, ...rest } = overrides;
     return {
@@ -1068,6 +1069,15 @@ export async function createNewIpns() {
             key: signer.address,
             allowOffline: true
         });
+        // Verify the IPNS record is resolvable before returning
+        // This ensures Kubo's cache is properly synced for RPC tests
+        const resolvedCid = await last(ipfsClient._client.name.resolve(signer.address, {
+            nocache: false, // Allow cache to be used
+            timeout: 5000 // 5 second timeout for verification
+        }));
+        if (!resolvedCid) {
+            throw new Error(`Failed to verify IPNS resolution for ${signer.address}`);
+        }
     };
     return {
         signer,

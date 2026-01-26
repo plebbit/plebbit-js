@@ -76,6 +76,7 @@ import type { PageIpfs, PageTypeJson, PostsPagesTypeIpfs, RepliesPagesTypeIpfs }
 import { PlebbitError } from "../plebbit-error.js";
 import { messages } from "../errors.js";
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../publications/comment/comment-client-manager.js";
+import last from "it-last";
 
 interface MockPlebbitOptions {
     plebbitOptions?: InputPlebbitOptions;
@@ -1451,6 +1452,17 @@ export async function createNewIpns() {
             key: signer.address,
             allowOffline: true
         });
+
+        // Verify the IPNS record is resolvable before returning
+        // This ensures Kubo's cache is properly synced for RPC tests
+        const resolvedCid = await last(ipfsClient._client.name.resolve(signer.address, {
+            nocache: false,  // Allow cache to be used
+            timeout: 5000    // 5 second timeout for verification
+        }));
+
+        if (!resolvedCid) {
+            throw new Error(`Failed to verify IPNS resolution for ${signer.address}`);
+        }
     };
 
     return {
