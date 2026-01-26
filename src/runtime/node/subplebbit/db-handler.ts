@@ -1304,17 +1304,23 @@ export class DbHandler {
                 UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_replies_json srj ON c.cid = srj.cid
             ),
             authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM base_updates),
+            author_comments AS (
+                SELECT c.* FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+            ),
+            comments_needing_update AS (
+                SELECT * FROM base_updates
+                UNION SELECT * FROM author_comments
+            ),
             parent_chain AS (
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN base_updates bu ON p.cid = bu.parentCid
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN comments_needing_update cnu ON p.cid = cnu.parentCid
                 WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
                 UNION
                 SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
                 WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
             ),
             all_updates AS (
-                SELECT cid FROM base_updates UNION SELECT cid FROM parent_chain
-                UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                SELECT cid FROM comments_needing_update UNION SELECT cid FROM parent_chain
             )
             SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
             WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)

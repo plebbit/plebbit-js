@@ -830,6 +830,389 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         );
     });
 
+    it("includes parents of author_to_update comments even when parent is by different author", async () => {
+        // Setup: Author A has comments under parents by different authors (B and C)
+        // When author A's comment gets a vote, ALL of A's comments are updated via authors_to_update
+        // But the PARENTS by B and C must also be included to avoid stale replies cascade
+        //
+        // Key: The parent commentUpdates must have insertedAt AFTER their children were inserted,
+        // otherwise the parents get picked up via "new child" detection instead of parent_chain.
+
+        const baseTimestamp = currentTimestamp();
+        const authorA = "12D3KooWAuthorA";
+        const authorB = "12D3KooWAuthorB";
+        const authorC = "12D3KooWAuthorC";
+
+        // Post by author B
+        const postByB = insertComment({
+            timestamp: baseTimestamp,
+            overrides: { authorSignerAddress: authorB, author: { address: authorB }, insertedAt: baseTimestamp }
+        });
+
+        // Post by author C
+        const postByC = insertComment({
+            timestamp: baseTimestamp + 1,
+            overrides: { authorSignerAddress: authorC, author: { address: authorC }, insertedAt: baseTimestamp + 1 }
+        });
+
+        // Reply by author A under post by B
+        const replyA1 = insertComment({
+            depth: 1,
+            parentCid: postByB.cid,
+            postCid: postByB.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 2 }
+        });
+
+        // Reply by author A under post by C
+        const replyA2 = insertComment({
+            depth: 1,
+            parentCid: postByC.cid,
+            postCid: postByC.cid,
+            timestamp: baseTimestamp + 3,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 3 }
+        });
+
+        // Now insert commentUpdates for all comments AFTER all comments are inserted
+        // This simulates a "steady state" where everything has been published
+        // Must set lastChildCid correctly or stale_last_child_cids will trigger
+        const steadyStateTime = baseTimestamp + 100;
+
+        insertCommentUpdate(postByB, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime,
+            insertedAt: steadyStateTime,
+            childCount: 1,
+            replyCount: 1,
+            lastChildCid: replyA1.cid
+        });
+
+        insertCommentUpdate(postByC, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 1,
+            insertedAt: steadyStateTime + 1,
+            childCount: 1,
+            replyCount: 1,
+            lastChildCid: replyA2.cid
+        });
+
+        insertCommentUpdate(replyA1, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 2,
+            insertedAt: steadyStateTime + 2
+        });
+
+        insertCommentUpdate(replyA2, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 3,
+            insertedAt: steadyStateTime + 3
+        });
+
+        // Now trigger an update for author A by inserting a vote on replyA1
+        const voteInsertedAt = steadyStateTime + 10;
+        insertVote(replyA1, { insertedAt: voteInsertedAt });
+
+        const cids = commentCidsNeedingUpdate();
+
+        // replyA1 should be included (has new vote)
+        expect(cids).to.include(replyA1.cid, "replyA1 should be included because it has a new vote");
+
+        // replyA2 should be included (same author as replyA1)
+        expect(cids).to.include(replyA2.cid, "replyA2 should be included because author A needs author.subplebbit update");
+
+        // postByB should be included (parent of replyA1 which is in base_updates via vote)
+        expect(cids).to.include(postByB.cid, "postByB should be included as parent of replyA1");
+
+        // CRITICAL: postByC should ALSO be included (parent of replyA2 which is added via authors_to_update)
+        // This is the bug - currently postByC is NOT included because parent_chain only comes from base_updates
+        expect(cids).to.include(
+            postByC.cid,
+            "postByC should be included as parent of replyA2 (replyA2 is added via authors_to_update)"
+        );
+    });
+
+    it("includes deep ancestor chain for author comments added via authors_to_update", async () => {
+        // When author A's comment at depth 3 is added via authors_to_update,
+        // all ancestors (depth 2, 1, 0) should be included
+
+        const baseTimestamp = currentTimestamp();
+        const authorA = "12D3KooWAuthorA";
+        const authorB = "12D3KooWAuthorB";
+        const authorC = "12D3KooWAuthorC";
+        const authorD = "12D3KooWAuthorD";
+        const steadyStateTime = baseTimestamp + 100;
+
+        // Post by author B (depth 0)
+        const post = insertComment({
+            timestamp: baseTimestamp,
+            overrides: { authorSignerAddress: authorB, author: { address: authorB }, insertedAt: baseTimestamp }
+        });
+
+        // Reply by author C (depth 1)
+        const depth1Reply = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { authorSignerAddress: authorC, author: { address: authorC }, insertedAt: baseTimestamp + 1 }
+        });
+
+        // Reply by author D (depth 2)
+        const depth2Reply = insertComment({
+            depth: 2,
+            parentCid: depth1Reply.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { authorSignerAddress: authorD, author: { address: authorD }, insertedAt: baseTimestamp + 2 }
+        });
+
+        // Reply by author A (depth 3) - this is the one that will be added via authors_to_update
+        const depth3Reply = insertComment({
+            depth: 3,
+            parentCid: depth2Reply.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 3,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 3 }
+        });
+
+        // Another post by author A (depth 0) - the trigger comment
+        const triggerPost = insertComment({
+            timestamp: baseTimestamp + 4,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 4 }
+        });
+
+        // Insert all commentUpdates in steady state
+        insertCommentUpdate(post, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime,
+            insertedAt: steadyStateTime,
+            childCount: 1,
+            replyCount: 1,
+            lastChildCid: depth1Reply.cid
+        });
+
+        insertCommentUpdate(depth1Reply, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 1,
+            insertedAt: steadyStateTime + 1,
+            childCount: 1,
+            replyCount: 1,
+            lastChildCid: depth2Reply.cid
+        });
+
+        insertCommentUpdate(depth2Reply, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 2,
+            insertedAt: steadyStateTime + 2,
+            childCount: 1,
+            replyCount: 1,
+            lastChildCid: depth3Reply.cid
+        });
+
+        insertCommentUpdate(depth3Reply, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 3,
+            insertedAt: steadyStateTime + 3
+        });
+
+        insertCommentUpdate(triggerPost, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 4,
+            insertedAt: steadyStateTime + 4
+        });
+
+        // Trigger update for author A by inserting a vote on triggerPost
+        const voteInsertedAt = steadyStateTime + 10;
+        insertVote(triggerPost, { insertedAt: voteInsertedAt });
+
+        const cids = commentCidsNeedingUpdate();
+
+        // triggerPost and depth3Reply should be included (author A's comments)
+        expect(cids).to.include(triggerPost.cid, "triggerPost should be included (has new vote)");
+        expect(cids).to.include(depth3Reply.cid, "depth3Reply should be included (author A via authors_to_update)");
+
+        // All ancestors of depth3Reply should be included
+        expect(cids).to.include(depth2Reply.cid, "depth2Reply should be included as parent of depth3Reply");
+        expect(cids).to.include(depth1Reply.cid, "depth1Reply should be included as ancestor of depth3Reply");
+        expect(cids).to.include(post.cid, "post should be included as ancestor of depth3Reply");
+    });
+
+    it("does not include pending approval comments in authors_to_update cascade", async () => {
+        // If an author has a pending approval comment, it should not be included
+        // when their other comments trigger an update
+
+        const baseTimestamp = currentTimestamp();
+        const authorA = "12D3KooWAuthorA";
+        const authorB = "12D3KooWAuthorB";
+        const steadyStateTime = baseTimestamp + 100;
+
+        // Post by author B
+        const postByB = insertComment({
+            timestamp: baseTimestamp,
+            overrides: { authorSignerAddress: authorB, author: { address: authorB }, insertedAt: baseTimestamp }
+        });
+
+        // Approved reply by author A
+        const approvedReply = insertComment({
+            depth: 1,
+            parentCid: postByB.cid,
+            postCid: postByB.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 1 }
+        });
+
+        // Pending approval reply by author A (under a different parent to isolate the test)
+        const anotherPost = insertComment({
+            timestamp: baseTimestamp + 2,
+            overrides: { authorSignerAddress: authorB, author: { address: authorB }, insertedAt: baseTimestamp + 2 }
+        });
+
+        const pendingReply = insertComment({
+            depth: 1,
+            parentCid: anotherPost.cid,
+            postCid: anotherPost.cid,
+            timestamp: baseTimestamp + 3,
+            overrides: {
+                authorSignerAddress: authorA,
+                author: { address: authorA },
+                insertedAt: baseTimestamp + 3,
+                pendingApproval: 1
+            }
+        });
+
+        // Insert commentUpdates in steady state
+        insertCommentUpdate(postByB, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime,
+            insertedAt: steadyStateTime,
+            childCount: 1,
+            replyCount: 1,
+            lastChildCid: approvedReply.cid
+        });
+
+        insertCommentUpdate(approvedReply, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 1,
+            insertedAt: steadyStateTime + 1
+        });
+
+        insertCommentUpdate(anotherPost, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 2,
+            insertedAt: steadyStateTime + 2,
+            childCount: 0, // pending reply not counted
+            replyCount: 0
+        });
+
+        insertCommentUpdate(pendingReply, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 3,
+            insertedAt: steadyStateTime + 3
+        });
+
+        // Trigger update for author A
+        const voteInsertedAt = steadyStateTime + 10;
+        insertVote(approvedReply, { insertedAt: voteInsertedAt });
+
+        const cids = commentCidsNeedingUpdate();
+
+        // approvedReply should be included
+        expect(cids).to.include(approvedReply.cid, "approvedReply should be included (has new vote)");
+
+        // pendingReply should NOT be included (pending approval)
+        expect(cids).to.not.include(pendingReply.cid, "pendingReply should NOT be included (pending approval)");
+
+        // anotherPost should NOT be included (its only child is pending, so no parent chain needed)
+        expect(cids).to.not.include(anotherPost.cid, "anotherPost should NOT be included (no approved children needing update)");
+    });
+
+    it("handles authors with multiple comments under same parent correctly", async () => {
+        // If author A has multiple comments under the same parent,
+        // the parent should only be included once
+
+        const baseTimestamp = currentTimestamp();
+        const authorA = "12D3KooWAuthorA";
+        const authorB = "12D3KooWAuthorB";
+        const steadyStateTime = baseTimestamp + 100;
+
+        // Post by author B
+        const post = insertComment({
+            timestamp: baseTimestamp,
+            overrides: { authorSignerAddress: authorB, author: { address: authorB }, insertedAt: baseTimestamp }
+        });
+
+        // Multiple replies by author A under same post
+        const replyA1 = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 1 }
+        });
+
+        const replyA2 = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 2 }
+        });
+
+        const replyA3 = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 3,
+            overrides: { authorSignerAddress: authorA, author: { address: authorA }, insertedAt: baseTimestamp + 3 }
+        });
+
+        // Insert commentUpdates in steady state
+        insertCommentUpdate(post, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime,
+            insertedAt: steadyStateTime,
+            childCount: 3,
+            replyCount: 3,
+            lastChildCid: replyA3.cid
+        });
+
+        insertCommentUpdate(replyA1, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 1,
+            insertedAt: steadyStateTime + 1
+        });
+
+        insertCommentUpdate(replyA2, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 2,
+            insertedAt: steadyStateTime + 2
+        });
+
+        insertCommentUpdate(replyA3, {
+            publishedToPostUpdatesMFS: 1,
+            updatedAt: steadyStateTime + 3,
+            insertedAt: steadyStateTime + 3
+        });
+
+        // Trigger update for author A
+        const voteInsertedAt = steadyStateTime + 10;
+        insertVote(replyA1, { insertedAt: voteInsertedAt });
+
+        const cids = commentCidsNeedingUpdate();
+
+        // All of author A's replies should be included
+        expect(cids).to.include(replyA1.cid, "replyA1 should be included");
+        expect(cids).to.include(replyA2.cid, "replyA2 should be included");
+        expect(cids).to.include(replyA3.cid, "replyA3 should be included");
+
+        // Parent should be included exactly once
+        expect(cids).to.include(post.cid, "post should be included as parent");
+
+        // Count occurrences of post.cid - should be exactly 1
+        const postOccurrences = cids.filter((cid) => cid === post.cid).length;
+        expect(postOccurrences).to.equal(1, "post should appear exactly once in the result");
+    });
+
     it("includes post ancestor when replies JSON is stale even if all updates were already published", async () => {
         const baseTimestamp = currentTimestamp();
         const post = insertComment({ timestamp: baseTimestamp, overrides: { insertedAt: baseTimestamp } });
