@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     publishRandomPost,
@@ -19,13 +20,13 @@ import { v4 as uuidV4 } from "uuid";
 
 describe(`subplebbit.start`, async () => {
     let plebbit, subplebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
-    after(async () => await plebbit.destroy());
+    afterAll(async () => await plebbit.destroy());
 
     it(`Started Sub can receive publications sequentially`, async () => {
         await publishRandomPost(subplebbit.address, plebbit);
@@ -140,12 +141,12 @@ describe(`subplebbit.start`, async () => {
 
 describe(`subplebbit.started`, async () => {
     let plebbit, sub;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         sub = await createSubWithNoChallenge({}, plebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await sub.delete();
     });
 
@@ -184,7 +185,7 @@ describe(`subplebbit.started`, async () => {
 });
 describe(`Start lock`, async () => {
     let plebbit, dataPath;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         if (Object.keys(plebbit.clients.plebbitRpcClients).length > 0) {
             dataPath = path.join(process.env.PWD, ".plebbit-rpc-server");
@@ -424,7 +425,7 @@ describe(`Start lock`, async () => {
 
 describe(`Publish loop resiliency`, async () => {
     let plebbit, subplebbit, remotePlebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitV2({ stubStorage: false });
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -432,7 +433,7 @@ describe(`Publish loop resiliency`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();

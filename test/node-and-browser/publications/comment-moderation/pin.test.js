@@ -14,7 +14,7 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = "plebbit.eth";
 const roles = [
@@ -60,7 +60,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 );
             }
         };
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             await populateSub(sub);
@@ -88,7 +88,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -286,7 +286,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => post.replyCount > 5 });
             }
         };
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
@@ -304,7 +304,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             );
         });
 
-        after(async () => await plebbit.destroy());
+        afterAll(async () => await plebbit.destroy());
 
         it(`Mod can pin reply`, async () => {
             const pinEdit = await plebbit.createCommentModeration({

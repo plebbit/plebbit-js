@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import Plebbit from "../../dist/node/index.js";
 import { createSubWithNoChallenge, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util.js";
@@ -14,13 +15,13 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
 
     let plebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         mockHttpRouter = new MockHttpRouter();
         await mockHttpRouter.start();
         httpRouterUrls = [mockHttpRouter.url];
     });
 
-    after(async () => {
+    afterAll(async () => {
         try {
             await plebbit.destroy();
         } catch {}

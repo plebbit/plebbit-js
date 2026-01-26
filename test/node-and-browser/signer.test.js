@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { mockPlebbitNoDataPathWithOnlyKuboClient } from "../../dist/node/test/test-util.js";
 import fixtureSigners from "../fixtures/signers.js";
@@ -8,13 +9,13 @@ const authorSignerFixture = fixtureSigners[1];
 
 describe("signer (node and browser)", async () => {
     let plebbit, authorSigner, randomSigner;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
         randomSigner = await plebbit.createSigner();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -24,7 +25,7 @@ describe("signer (node and browser)", async () => {
         const buffer = Buffer.from(string);
         let bufferSignature, uint8arraySignature;
 
-        before(async () => {
+        beforeAll(async () => {
             bufferSignature = await signBufferEd25519(buffer, authorSigner.privateKey);
             uint8arraySignature = await signBufferEd25519(uint8array, authorSigner.privateKey);
             expect(bufferSignature).to.deep.equal(uint8arraySignature);

@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -16,14 +17,14 @@ describe(`Modqueue limits`, () => {
     let subplebbit;
     const pendingComments = [];
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => Boolean(subplebbit.updatedAt) });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

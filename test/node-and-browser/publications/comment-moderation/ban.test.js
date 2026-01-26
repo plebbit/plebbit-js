@@ -10,7 +10,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { timestamp } from "../../../../dist/node/util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -23,7 +23,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Banning authors`, async () => {
         let plebbit, commentToBeBanned, authorBanExpiresAt, reasonOfBan;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit);
             await commentToBeBanned.update();
@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             reasonOfBan = "Just so " + Date.now();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

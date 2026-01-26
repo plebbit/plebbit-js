@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
@@ -17,11 +18,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
     const clientFieldName = clientsFieldName[config.testConfigCode];
     describe(`comment.replies.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -66,11 +67,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`comment.replies.clients.ipfsGateways - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
         it(`comment.replies.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
@@ -156,14 +157,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
     describe(`comment.replies.clients.plebbitRpcClients - ${config.name}`, async () => {
         let plebbit;
         let commentCid;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
             commentCid = subplebbit.posts.pages.hot.comments[0].cid;
             expect(commentCid).to.be.a("string");
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

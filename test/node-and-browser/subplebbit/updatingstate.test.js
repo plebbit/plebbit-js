@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import {
     publishRandomPost,
     publishSubplebbitRecordWithExtraProp,
@@ -14,10 +14,10 @@ import {
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe.concurrent(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
         it(`subplebbit.updatingState is included when spreading or JSON.stringify`, async () => {
@@ -145,10 +145,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -227,10 +227,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
         it(`updating states is in correct order upon updating with gateway`, async () => {

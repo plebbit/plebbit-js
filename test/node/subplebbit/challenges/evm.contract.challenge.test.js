@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     generateMockPost,
@@ -42,7 +43,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
     let viemAccount;
     const viemEthFake = {};
     const viemMaticFake = {};
-    before(async () => {
+    beforeAll(async () => {
         const ethRpcUrl = `https://Fake${uuidV4()}eth.com`;
         const maticRpcUrl = `https://Fake${uuidV4()}matic.com`;
         plebbit = await mockPlebbitV2({
@@ -72,7 +73,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemAccount = privateKeyToAccount(privateKey);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await sub.delete();
         viemSandbox.restore();
         delete plebbit._domainResolver._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]];

@@ -10,7 +10,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
@@ -20,7 +20,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Test upvote - ${config.name}`, async () => {
         let plebbit, postToVote, replyToVote, signer;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
             signer = await plebbit.createSigner();
             postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: () => typeof replyToVote.updatedAt === "number" });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

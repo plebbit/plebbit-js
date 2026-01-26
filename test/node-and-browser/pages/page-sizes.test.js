@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     addStringToIpfs,
@@ -72,11 +73,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describeSkipIfRpc.concurrent(`Page size loading tests - ${config.name}`, async () => {
         let plebbit, mockSubplebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

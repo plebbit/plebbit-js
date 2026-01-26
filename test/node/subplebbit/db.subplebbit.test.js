@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
@@ -68,11 +69,11 @@ const copyDbToDataPath = async (databaseObj, plebbit) => {
 describeSkipIfRpc.sequential(`DB importing`, async () => {
     let plebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

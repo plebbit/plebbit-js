@@ -13,19 +13,19 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../dist/node/util.js";
 import signers from "../../fixtures/signers.js";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import * as remeda from "remeda";
 describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
     let plebbit, remotePlebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit({});
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
         await remotePlebbit.destroy();
     });

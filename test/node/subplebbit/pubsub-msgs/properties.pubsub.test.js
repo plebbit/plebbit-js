@@ -6,10 +6,10 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 describe.sequential("Validate props of subplebbit Pubsub messages", async () => {
     let plebbit, subplebbit, commentSigner;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.createSubplebbit();
         const challenges = [{ name: "question", options: { question: "1+1=?", answer: "2" } }];
@@ -20,7 +20,7 @@ describe.sequential("Validate props of subplebbit Pubsub messages", async () => 
         commentSigner = await plebbit.createSigner(); // We're using the same signer for publishing so that publication.author.subplebbit is defined
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

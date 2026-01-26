@@ -1,13 +1,13 @@
 import { expect } from "chai";
 import { mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 describe.concurrent(`Subplebbit.updateCid`, async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

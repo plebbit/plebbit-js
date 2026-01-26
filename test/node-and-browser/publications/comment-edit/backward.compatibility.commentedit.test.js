@@ -8,7 +8,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -23,14 +23,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         let plebbit;
         let commentToEdit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToEdit = await publishRandomPost(signers[0].address, plebbit);
             await commentToEdit.update();
             await resolveWhenConditionIsTrue({ toUpdate: commentToEdit, predicate: () => typeof commentToEdit.updatedAt === "number" });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

@@ -15,7 +15,7 @@ import signers from "../../../../fixtures/signers.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { messages } from "../../../../../dist/node/errors.js";
 import { testCommentFieldsInPageJson } from "../../../pages/pages-test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
@@ -24,7 +24,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let plebbit, subplebbit;
         let post, firstLevelReply, secondLevelReply, thirdLevelReply;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
             post = await publishRandomPost(subplebbit.address, plebbit);
@@ -32,7 +32,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -80,14 +80,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     let plebbit, reply, subplebbit;
     describe.concurrent(`reply.replies - ${config.name}`, async () => {
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const post = await publishRandomPost(subplebbitAddress, plebbit);
             reply = await publishRandomReply(post, plebbit);
             await reply.update();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -139,12 +139,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("comment.replies - " + config.name, async () => {
         let plebbit, post;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -184,7 +184,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("replies.validatePage validation tests", async () => {
         let plebbit, postWithReplies;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise({ validatePages: false });
             postWithReplies = await publishRandomPost(subplebbitAddress, plebbit);
             const reply = await publishRandomReply(postWithReplies, plebbit);
@@ -195,7 +195,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await postWithReplies.stop();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

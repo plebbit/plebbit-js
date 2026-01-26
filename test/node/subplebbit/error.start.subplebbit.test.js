@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -10,11 +11,11 @@ import {
 } from "../../../dist/node/test/test-util.js";
 describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

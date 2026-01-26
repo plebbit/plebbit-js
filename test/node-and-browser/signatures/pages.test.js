@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import { verifyPage } from "../../../dist/node/signer/signatures.js";
@@ -42,12 +43,12 @@ const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, pare
 
 describeSkipIfRpc(`verify pages`, async () => {
     let plebbit, subplebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit({ address: subAddress });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -107,7 +108,7 @@ describeSkipIfRpc(`verify pages`, async () => {
     });
 
     describe(`A sub owner changing any of comment fields in page will invalidate`, async () => {
-        before(async () => {
+        beforeAll(async () => {
             const page = remeda.clone(validPageIpfsFixture);
             const verificaiton = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);
             expect(verificaiton).to.deep.equal({ valid: true });

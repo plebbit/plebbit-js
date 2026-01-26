@@ -6,16 +6,16 @@ import {
     createSubWithNoChallenge
 } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 
 // when it comes to _startedSubplebbits with RPC, we need to test it differently
 // localSubplebbit.update() will not use _startedSubplebbits, it will create a new subscription and let the RPC server handle the rest
 describe.concurrent(`plebbit._startedSubplebbits`, () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
     });
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

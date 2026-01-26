@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -158,7 +159,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let plebbit;
         let subplebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await mockPlebbit();
             subplebbit = await plebbit.createSubplebbit();
             subplebbit.setMaxListeners(100);
@@ -166,7 +167,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.updatedAt });
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (subplebbit) await subplebbit.delete();
             if (plebbit) await plebbit.destroy();
         });
@@ -186,7 +187,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let parentUpdateAfterPurge;
         let parentUpdateAfterRefresh;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             disapprovedComment = await createDisapprovedComment(ctx);
             parentCid = disapprovedComment.parentCid;
@@ -202,7 +203,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             }
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -250,7 +251,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let commentBeforeModeration;
         let parentUpdateAfterImmediatePurge;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds: ONE_MINUTE });
             const pending = await publishToModQueueWithDepth({
                 subplebbit: ctx.subplebbit,
@@ -284,7 +285,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 : undefined;
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -322,7 +323,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let postUpdatesBucket;
         let postUpdatesPath;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             disapprovedPost = await createDisapprovedComment(ctx, {
                 depth: 0,
@@ -343,7 +344,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             await ctx.subplebbit._purgeDisapprovedCommentsOlderThan();
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -374,7 +375,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let commentCid;
         let commentBeforeModeration;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds: ONE_MINUTE });
             const pending = await publishToModQueueWithDepth({
                 subplebbit: ctx.subplebbit,
@@ -402,7 +403,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             });
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -421,7 +422,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let commentBeforePurge;
         let commentAfterPurge;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             const approved = await createApprovedComment(ctx);
             commentCid = approved.cid;
@@ -431,7 +432,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             commentAfterPurge = ctx.subplebbit._dbHandler.queryComment(commentCid);
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -455,7 +456,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let commentBeforePurge;
         let commentAfterPurge;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             const approved = await createApprovedComment(ctx, { depth: 0 });
             commentCid = approved.cid;
@@ -465,7 +466,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             commentAfterPurge = ctx.subplebbit._dbHandler.queryComment(commentCid);
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -487,14 +488,14 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let ctx;
         let disapprovedComment;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             disapprovedComment = await createDisapprovedComment(ctx);
             backdateAllDisapprovals(ctx, disapprovedComment.cid, retentionSeconds - 5);
             ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -509,13 +510,13 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let ctx;
         let disapprovedComment;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             disapprovedComment = await createDisapprovedComment(ctx);
             backdateAllDisapprovals(ctx, disapprovedComment.cid, retentionSeconds + 20);
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -543,7 +544,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let ctx;
         let disapprovedComment;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             disapprovedComment = await createDisapprovedComment(ctx, {
                 moderationProps: { approved: false, reason: "first disapproval" }
@@ -573,7 +574,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -588,7 +589,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let ctx;
         let disapprovedComment;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             disapprovedComment = await createDisapprovedComment(ctx);
             await setPendingApproval(ctx, disapprovedComment.cid, true);
@@ -613,7 +614,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 
@@ -628,7 +629,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
         let ctx;
         let disapprovedComment;
 
-        before(async () => {
+        beforeAll(async () => {
             ctx = await createTestContext({ retentionSeconds });
             disapprovedComment = await createDisapprovedComment(ctx);
             ctx.subplebbit._dbHandler._db.prepare(`DELETE FROM commentModerations WHERE commentCid = ?`).run(disapprovedComment.cid);
@@ -636,7 +637,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
             ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (ctx) await ctx.cleanup();
         });
 

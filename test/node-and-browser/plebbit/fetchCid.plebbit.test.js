@@ -7,17 +7,17 @@ import {
     mockGatewayPlebbit,
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const fixtureSigner = signers[0];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.fetchCid - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

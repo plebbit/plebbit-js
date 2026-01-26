@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../fixtures/signers.js";
 import { messages } from "../../dist/node/errors.js";
@@ -59,7 +60,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
     // We don't need to test resolving solana domains anymore
     describe.skip(`Resolving solana domains`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await mockPlebbitV2({
                 plebbitOptions: { chainProviders: { sol: { urls: ["web3.js"], chainId: -1 } } },
                 forceMockPubsub: true,
@@ -68,7 +69,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
             }); // Should not mock resolver
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -94,11 +95,11 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
 
 describe("Comments with Authors as domains", async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -173,13 +174,13 @@ describe("Comments with Authors as domains", async () => {
 
 describe(`Vote with authors as domains`, async () => {
     let plebbit, subplebbit, comment;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
         comment = await publishRandomPost(subplebbit.address, plebbit, {}, false);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

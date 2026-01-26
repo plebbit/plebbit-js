@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
@@ -12,11 +13,11 @@ const subplebbitAddress = signers[0].address;
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
     describe(`comment.clients.plebbitRpcClients`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

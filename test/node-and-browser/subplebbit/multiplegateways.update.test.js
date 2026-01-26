@@ -11,7 +11,7 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`Test fetching subplebbit record from multiple gateways`, async () => {
@@ -36,10 +36,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             return subRecord;
         };
         let regularKuboPlebbit;
-        before(async () => {
+        beforeAll(async () => {
             regularKuboPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         });
-        after(async () => {
+        afterAll(async () => {
             await regularKuboPlebbit.destroy();
         });
 

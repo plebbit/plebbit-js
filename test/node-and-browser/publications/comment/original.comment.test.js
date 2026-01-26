@@ -5,17 +5,17 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`comment.original - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

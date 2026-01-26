@@ -14,18 +14,18 @@ import {
     findReplyInParentCommentPagesInstancePreloadedAndPageCids
 } from "../../../../dist/node/test/test-util.js";
 import validCommentWithRepliesFixture from "../../../fixtures/signatures/comment/valid_comment_with_replies_raw.json" with { type: "json" };
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import { calculateIpfsCidV0 } from "../../../../dist/node/util.js";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.createComment - Remote (${config.name})`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

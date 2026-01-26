@@ -12,7 +12,7 @@ import {
 import { PlebbitError } from "../../../dist/node/plebbit-error.js";
 import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 
 const cloneCommentInstance = (source) => {
     const clone = source.__proto__ ? Object.assign(Object.create(Object.getPrototypeOf(source)), source) : { ...source };
@@ -36,7 +36,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
             replyFromBestPage,
             publisherEnv;
 
-        before(async () => {
+        beforeAll(async () => {
             publisherEnv = await createValidateCommentTestEnvironment();
             remotePlebbit = await config.plebbitInstancePromise();
             subplebbit = await remotePlebbit.getSubplebbit({ address: publisherEnv.subplebbitAddress });
@@ -88,7 +88,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
             expect(replyFromBestPage, "Failed to get a reply from the 'best' page").to.exist;
         });
 
-        after(async () => {
+        afterAll(async () => {
             if (postCommentInstance) await postCommentInstance.stop();
             if (postWithRepliesInstance) await postWithRepliesInstance.stop();
             if (remotePlebbit) await remotePlebbit.destroy();

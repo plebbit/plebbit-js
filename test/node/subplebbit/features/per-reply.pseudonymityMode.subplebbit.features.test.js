@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import {
     createSubWithNoChallenge,
     describeSkipIfRpc,
@@ -29,13 +29,13 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
         let authorSigner;
         let otherSigner;
 
-        before(async () => {
+        beforeAll(async () => {
             context = await createPerReplySubplebbit();
             authorSigner = await context.publisherPlebbit.createSigner();
             otherSigner = await context.publisherPlebbit.createSigner();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await context.cleanup();
         });
 
@@ -1120,7 +1120,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
             let signingAuthor;
             let replyAliasSigner;
 
-            before(async () => {
+            beforeAll(async () => {
                 sharedContext = await createPerReplySubplebbit();
                 signingAuthor = await sharedContext.publisherPlebbit.createSigner();
 
@@ -1156,7 +1156,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 });
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await sharedContext?.post?.stop();
                 await sharedContext?.firstReply?.stop();
                 await sharedContext?.secondReply?.stop();
@@ -1167,14 +1167,14 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 describe(`${config.name} - preloaded`, () => {
                     let remotePlebbit;
 
-                    before(async () => {
+                    beforeAll(async () => {
                         remotePlebbit = await config.plebbitInstancePromise();
                         await waitTillPostInSubplebbitPages(sharedContext.post, remotePlebbit);
                         await waitTillReplyInParentPages(sharedContext.firstReply, remotePlebbit);
                         await waitTillReplyInParentPages(sharedContext.secondReply, remotePlebbit);
                     });
 
-                    after(async () => {
+                    afterAll(async () => {
                         await remotePlebbit?.destroy();
                     });
 
@@ -1246,7 +1246,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
             let paginatedForcedChunkingCleanup;
             let nestedForcedChunkingCleanup;
 
-            before(async () => {
+            beforeAll(async () => {
                 paginatedContext = await createPerReplySubplebbit();
                 paginatedSigningAuthor = await paginatedContext.publisherPlebbit.createSigner();
 
@@ -1321,7 +1321,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 });
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await paginatedContext?.post?.stop();
                 await paginatedContext?.firstReply?.stop();
                 await paginatedContext?.secondReply?.stop();
@@ -1335,7 +1335,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 describe(`${config.name} - paginated`, () => {
                     let remotePlebbit;
 
-                    before(async () => {
+                    beforeAll(async () => {
                         remotePlebbit = await config.plebbitInstancePromise();
                         await waitTillPostInSubplebbitPages(paginatedContext.post, remotePlebbit);
                         await waitTillReplyInParentPages(paginatedContext.firstReply, remotePlebbit);
@@ -1343,7 +1343,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                         await waitTillReplyInParentPages(paginatedContext.firstNestedReply, remotePlebbit);
                     });
 
-                    after(async () => {
+                    afterAll(async () => {
                         await remotePlebbit.destroy();
                     });
 

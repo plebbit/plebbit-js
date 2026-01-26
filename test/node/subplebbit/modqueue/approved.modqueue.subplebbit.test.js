@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import {
     mockPlebbit,
     publishWithExpectedResult,
@@ -20,7 +20,7 @@ for (const pendingCommentDepth of depthsToTest) {
     describeSkipIfRpc.concurrent(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
         let plebbit, subplebbit, approvedComment, modSigner, remotePlebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await mockPlebbit();
             remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
             subplebbit = await plebbit.createSubplebbit();
@@ -55,7 +55,7 @@ for (const pendingCommentDepth of depthsToTest) {
             await approvedComment.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await subplebbit.delete();
             await plebbit.destroy();
             await remotePlebbit.destroy();

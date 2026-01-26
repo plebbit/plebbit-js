@@ -21,7 +21,7 @@ import { CID } from "kubo-rpc-client";
 import * as remeda from "remeda";
 import { findCommentInPageInstanceRecursively } from "../../../../dist/node/pages/util.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[6].address;
 const roles = [
@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             let replyCountOfParentOfPurgedComment; // undefined if commentDepth is 0
             let remotePlebbitIpfs;
             let updateCidOfSubplebbitWithPurgedComment;
-            before(async () => {
+            beforeAll(async () => {
                 plebbit = await config.plebbitInstancePromise();
                 remotePlebbitIpfs = await mockPlebbitNoDataPathWithOnlyKuboClientNoAdd(); // this instance is connected to the same IPFS node as the sub
                 const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
@@ -92,7 +92,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(purgedCommentInPage).to.exist;
                 updateCidOfSubplebbitWithPurgedComment = sub.updateCid;
             });
-            after(async () => {
+            afterAll(async () => {
                 await plebbit.destroy();
                 await remotePlebbitIpfs.destroy();
             });

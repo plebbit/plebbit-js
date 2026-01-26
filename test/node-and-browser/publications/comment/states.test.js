@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import { generateMockPost, getAvailablePlebbitConfigsToTestAgainst, publishRandomPost } from "../../../../dist/node/test/test-util.js";
@@ -6,12 +7,12 @@ const subplebbitAddress = signers[0].address;
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`comment.state - ${config.name}`, async () => {
         let plebbit, comment;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             comment = await generateMockPost(subplebbitAddress, plebbit);
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

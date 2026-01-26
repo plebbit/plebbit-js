@@ -5,16 +5,16 @@ import {
     publishWithExpectedResult
 } from "../../../../../dist/node/test/test-util.js";
 import signers from "../../../../fixtures/signers.js";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Pubsub request fields in plebbit.createComment - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

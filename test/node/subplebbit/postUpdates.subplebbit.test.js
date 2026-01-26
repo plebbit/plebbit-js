@@ -13,14 +13,14 @@ import {
     publishCommentWithDepth
 } from "../../../dist/node/test/test-util.js";
 import Logger from "@plebbit/plebbit-logger";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const depthsToTest = [1, 2, 3, 5, 15, 30];
 
 describeSkipIfRpc("subplebbit.postUpdates", async () => {
     let plebbit, subplebbit, remotePlebbit;
     const replyCidByDepth = {};
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         subplebbit.setMaxListeners(200);
@@ -35,7 +35,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await remotePlebbit.destroy();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         for (const depth of Object.keys(replyCidByDepth)) delete replyCidByDepth[depth];

@@ -1,3 +1,4 @@
+import { beforeAll } from "vitest";
 import { expect } from "chai";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
@@ -24,7 +25,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         afterEach(async () => {
             await plebbit.destroy();
         });
-        before(async () => {
+        beforeAll(async () => {
             const plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
 

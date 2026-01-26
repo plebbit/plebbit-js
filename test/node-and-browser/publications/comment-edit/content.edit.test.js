@@ -9,7 +9,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[10].address;
 const roles = [
@@ -22,14 +22,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("Editing comment.content - " + config.name, async () => {
         let plebbit, commentToBeEdited, originalContent;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToBeEdited = await publishRandomPost(subplebbitAddress, plebbit, { content: "original content" });
             originalContent = remeda.clone(commentToBeEdited.content);
             await commentToBeEdited.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

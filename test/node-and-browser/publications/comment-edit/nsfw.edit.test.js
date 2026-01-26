@@ -9,7 +9,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { verifyCommentIpfs, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -21,13 +21,13 @@ const roles = [
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Authors can mark their own comment as nsfw - ${config.name}`, async () => {
         let plebbit, authorPost;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             authorPost = await publishRandomPost(subplebbitAddress, plebbit);
             await authorPost.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -138,13 +138,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Mods marking their own comment as nsfw - ${config.name}`, async () => {
         let plebbit, modPost;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
             await modPost.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

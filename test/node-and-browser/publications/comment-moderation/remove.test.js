@@ -13,7 +13,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[7].address; // this sub is dedicated for removing
 const roles = [
@@ -25,14 +25,14 @@ const roles = [
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Removing post - ${config.name}`, async () => {
         let plebbit, postToRemove, postReply;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             postToRemove = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post to be removed" });
             postToRemove.on("updatingstatechange", console.log);
             postReply = await publishRandomReply(postToRemove, plebbit, { content: "reply under removed post" });
             await postToRemove.update();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -151,7 +151,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Mods removing their own posts - ${config.name}`, async () => {
         let plebbit, modPost;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             modPost = await publishRandomPost(subplebbitAddress, plebbit, {
                 signer: roles[2].signer,
@@ -160,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await modPost.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -186,7 +186,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
     describe.concurrent(`Removing reply`, async () => {
         let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post with removed reply under it" });
             replyToBeRemoved = await publishRandomReply(post, plebbit, { content: "reply to be removed" });
@@ -198,7 +198,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             ]);
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

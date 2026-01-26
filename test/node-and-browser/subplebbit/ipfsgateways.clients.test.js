@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import {
@@ -14,11 +15,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
         // All tests below use Plebbit instance that doesn't have clients.kuboRpcClients
         let gatewayPlebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             gatewayPlebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await gatewayPlebbit.destroy();
         });
 

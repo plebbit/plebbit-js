@@ -14,18 +14,18 @@ import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
 import { testPageCommentsIfSortedCorrectly } from "../../../node-and-browser/pages/pages-test-util.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const remotePlebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 describe("local subplebbit.posts pagination coverage", () => {
     let plebbit, publisherSubplebbit, newPost, cleanup;
 
-    before(async () => {
+    beforeAll(async () => {
         ({ plebbit, publisherSubplebbit, newPost, cleanup } = await createLocalSubplebbitWithPageCids());
     });
 
-    after(async () => {
+    afterAll(async () => {
         await cleanup();
     });
 
@@ -33,7 +33,7 @@ describe("local subplebbit.posts pagination coverage", () => {
         describe(`local subplebbit.posts pagination coverage with plebbit config ${remotePlebbitConfig.name}`, async () => {
             let remotePlebbit;
             let remoteSubplebbit;
-            before(async () => {
+            beforeAll(async () => {
                 remotePlebbit = await remotePlebbitConfig.plebbitInstancePromise();
                 remoteSubplebbit = await remotePlebbit.getSubplebbit({ address: publisherSubplebbit.address });
                 await remoteSubplebbit.update();
@@ -44,7 +44,7 @@ describe("local subplebbit.posts pagination coverage", () => {
                         Boolean(remoteSubplebbit.posts.pages.hot?.comments?.length)
                 });
             });
-            after(async () => {
+            afterAll(async () => {
                 await remotePlebbit.destroy();
             });
             it(`Newly published post appears on all pages`, async () => {

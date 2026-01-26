@@ -14,16 +14,16 @@ import {
 } from "../../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../../dist/node/errors.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 describe.sequential(`Client side verification`, async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -58,12 +58,12 @@ describe.sequential(`Client side verification`, async () => {
 
 describe.concurrent("Subplebbit rejection of incorrect values of fields", async () => {
     let plebbit, post;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -169,11 +169,11 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
 
 describe.concurrent(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -211,11 +211,11 @@ describe.concurrent(`Posts with forbidden fields are rejected during challenge e
 
 describe("Posts with forbidden author fields are rejected", async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -9,12 +10,12 @@ import {
 
 describe(`subplebbit.startedState`, async () => {
     let plebbit, subplebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

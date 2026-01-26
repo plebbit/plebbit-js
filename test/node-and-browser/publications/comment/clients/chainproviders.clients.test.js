@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
@@ -15,7 +16,7 @@ const subplebbitAddress = signers[0].address;
 
 describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitV2({
             plebbitOptions: { dataPath: undefined },
             forceMockPubsub: false,
@@ -23,7 +24,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
             mockResolve: true
         });
     });
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
     it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {

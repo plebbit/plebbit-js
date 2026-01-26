@@ -1,7 +1,4 @@
 // Setup file for Vitest browser tests
-// Add Mocha-style aliases that some tests use
-globalThis.before = globalThis.beforeAll;
-globalThis.after = globalThis.afterAll;
 
 const debugNamespaces = typeof process !== "undefined" ? process?.env?.DEBUG : undefined;
 if (typeof window !== "undefined" && window.localStorage && debugNamespaces) {

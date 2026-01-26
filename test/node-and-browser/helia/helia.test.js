@@ -8,7 +8,7 @@ import {
     addStringToIpfs
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub is connected to a plebbit instance whose pubsub is not mocked
 
 // should connect to a kubo node and exchange pubsub messages with it
@@ -19,11 +19,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
     describe(`Test publishing pubsub in real environment - ${config.name}`, async () => {
         let plebbit, publishedPost;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise({ forceMockPubsub: false });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

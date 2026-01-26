@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { mockRemotePlebbit, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
@@ -10,11 +11,11 @@ import { removeUndefinedValuesRecursively } from "../../../dist/node/util.js";
 // Clients of RPC will trust the response of RPC and won't validate
 describeSkipIfRpc.concurrent("Sign subplebbit", async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -53,11 +54,11 @@ describeSkipIfRpc.concurrent("Sign subplebbit", async () => {
 describeSkipIfRpc.concurrent("Verify subplebbit", async () => {
     let plebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

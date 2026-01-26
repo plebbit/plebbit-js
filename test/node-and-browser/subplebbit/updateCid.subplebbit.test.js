@@ -4,20 +4,20 @@ import {
     resolveWhenConditionIsTrue,
     createMockedSubplebbitIpns
 } from "../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) =>
     describe(`subplebbit.updateCid (Remote) - ${config.name}`, async () => {
         let plebbit;
         let subAddress;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             const ipnsObj = await createMockedSubplebbitIpns({});
             subAddress = ipnsObj.subplebbitRecord.address;
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

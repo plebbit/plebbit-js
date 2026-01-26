@@ -6,7 +6,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 
 const getGatewayBaseUrl = (gatewayPlebbit) => {
     const [gatewayUrl] = gatewayPlebbit.ipfsGatewayUrls || [];
@@ -110,7 +110,7 @@ describeSkipIfRpc.concurrent("Gateway loading of local subplebbit IPNS", async (
     let kuboPlebbit;
     let latestUpdateCid;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         gatewayPlebbit = await mockGatewayPlebbit();
         gatewayPlebbit.on("error", (err) => console.error("gatewayPlebbit error event", err));
@@ -140,7 +140,7 @@ describeSkipIfRpc.concurrent("Gateway loading of local subplebbit IPNS", async (
         latestUpdateCid = subplebbit.updateCid;
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await gatewayPlebbit.destroy();

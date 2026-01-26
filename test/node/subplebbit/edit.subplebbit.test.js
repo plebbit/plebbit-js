@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     publishRandomPost,
@@ -24,7 +25,7 @@ import { v4 as uuidV4 } from "uuid";
 
 describeSkipIfRpc(`subplebbit.edit`, async () => {
     let plebbit, remotePlebbit, subplebbit, postToPublishAfterEdit, ethAddress;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
         remotePlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true, remotePlebbit: true });
 
@@ -52,7 +53,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         await publishRandomPost(subplebbit.address, plebbit);
     });
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.stop();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -172,7 +173,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         plebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -424,7 +425,7 @@ describe(`Edit misc`, async () => {
 describe(`Editing subplebbit.roles`, async () => {
     let plebbit, sub, remotePlebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         sub = await plebbit.createSubplebbit();
@@ -432,7 +433,7 @@ describe(`Editing subplebbit.roles`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => Boolean(sub.updatedAt) });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await sub.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -498,7 +499,7 @@ describe(`Editing subplebbit.roles`, async () => {
 describeIfRpc(`subplebbit.edit (RPC)`, async () => {
     let plebbit, subplebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         const signer = await plebbit.createSigner();
         subplebbit = await plebbit.createSubplebbit({ signer });
@@ -507,7 +508,7 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { describeSkipIfRpc, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../../dist/node/test/test-util.js";
@@ -9,7 +10,7 @@ import validVoteFixture from "../../fixtures/valid_vote.json" with { type: "json
 
 describe.concurrent("Sign Vote", async () => {
     let plebbit, subplebbit, voteProps, voteSignature;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
 
@@ -23,7 +24,7 @@ describe.concurrent("Sign Vote", async () => {
         voteSignature = await signVote({ vote: { ...voteProps, signer: signers[7] }, plebbit });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -62,11 +63,11 @@ describe.concurrent("Sign Vote", async () => {
 // Clients of RPC will trust the response of RPC and won't validate
 describeSkipIfRpc.concurrent("Verify vote", async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

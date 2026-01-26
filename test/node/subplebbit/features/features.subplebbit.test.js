@@ -12,11 +12,11 @@ import {
     publishRandomReply
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 describe(`subplebbit.features.requirePostLink`, async () => {
     let plebbit, remotePlebbit, subplebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -24,7 +24,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -60,7 +60,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
 
 describe.concurrent(`subplebbit.features.requirePostLinkIsMedia`, async () => {
     let plebbit, remotePlebbit, subplebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -68,7 +68,7 @@ describe.concurrent(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -104,7 +104,7 @@ describe.concurrent(`subplebbit.features.requirePostLinkIsMedia`, async () => {
 describe.concurrent(`subplebbit.features.noUpvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -115,7 +115,7 @@ describe.concurrent(`subplebbit.features.noUpvotes`, async () => {
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -149,7 +149,7 @@ describe.concurrent(`subplebbit.features.noUpvotes`, async () => {
 describe.concurrent(`subplebbit.features.noDownvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -160,7 +160,7 @@ describe.concurrent(`subplebbit.features.noDownvotes`, async () => {
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -194,7 +194,7 @@ describe.concurrent(`subplebbit.features.noDownvotes`, async () => {
 describe.concurrent(`subplebbit.features.noPostDownvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -207,7 +207,7 @@ describe.concurrent(`subplebbit.features.noPostDownvotes`, async () => {
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -237,7 +237,7 @@ describe.concurrent(`subplebbit.features.noPostDownvotes`, async () => {
 describe.concurrent(`subplebbit.features.noPostUpvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -250,7 +250,7 @@ describe.concurrent(`subplebbit.features.noPostUpvotes`, async () => {
         postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -281,7 +281,7 @@ describe.concurrent(`subplebbit.features.noPostUpvotes`, async () => {
 describe.concurrent(`subplebbit.features.noReplyDownvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn, replyToVoteOn;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -296,7 +296,7 @@ describe.concurrent(`subplebbit.features.noReplyDownvotes`, async () => {
         replyToVoteOn = await publishRandomReply(postToVoteOn, remotePlebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();
@@ -324,7 +324,7 @@ describe.concurrent(`subplebbit.features.noReplyDownvotes`, async () => {
 describe.concurrent(`subplebbit.features.noReplyUpvotes`, async () => {
     let plebbit, subplebbit, remotePlebbit, postToVoteOn, replyToVoteOn;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -339,7 +339,7 @@ describe.concurrent(`subplebbit.features.noReplyUpvotes`, async () => {
         replyToVoteOn = await publishRandomReply(postToVoteOn, remotePlebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
         await remotePlebbit.destroy();

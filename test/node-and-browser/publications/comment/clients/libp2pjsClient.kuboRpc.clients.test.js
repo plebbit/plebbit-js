@@ -10,7 +10,7 @@ import {
     resolveWhenConditionIsTrue,
     mockPostToReturnSpecificCommentUpdate
 } from "../../../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 const clientsFieldName = {
@@ -22,11 +22,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
     const clientFieldName = clientsFieldName[config.testConfigCode];
     describe(`comment.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

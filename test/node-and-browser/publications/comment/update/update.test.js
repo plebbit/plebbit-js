@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import validCommentFixture from "../../../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
 import {
     publishRandomPost,
@@ -28,11 +28,11 @@ const subplebbitAddress = signers[0].address;
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`comment.update - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -204,7 +204,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let cidOfCommentIpfsWithMismatchedSubplebbitAddress;
         let plebbit;
         let commentUpdateWithInvalidSignatureJson;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             invalidCommentIpfsCid = await addCommentIpfsWithInvalidSignatureToIpfs();
             cidOfInvalidJson = await addInvalidJsonToIpfs();
@@ -214,7 +214,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

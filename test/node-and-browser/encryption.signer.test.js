@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import fixtureSigners from "../fixtures/signers.js";
 const authorSignerFixture = fixtureSigners[1];
@@ -12,19 +13,19 @@ import * as ed from "@noble/ed25519";
 describe("encryption", () => {
     let plebbit, authorSigner;
 
-    before(async function () {
+    beforeAll(async function () {
         plebbit = await mockRemotePlebbit();
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
     describe("encrypt and decrypt string with aes-gcm", async () => {
         describe("generated key", () => {
             let key, ciphertext, iv, tag;
-            before(async () => {
+            beforeAll(async () => {
                 // key must be 16 bytes for aes-gcm 128
                 key = ed.utils.randomPrivateKey().slice(0, 16);
                 const res = await encryptStringAesGcm(JSON.stringify(fixtureComment), key);
@@ -65,7 +66,7 @@ describe("encryption", () => {
             describe("encrypt the word 'string'", () => {
                 const string = "string";
                 let ciphertext, tag, resIv;
-                before(async () => {
+                beforeAll(async () => {
                     const res = await encryptStringAesGcm(string, key, iv);
                     ciphertext = res.ciphertext;
                     tag = res.tag;
@@ -101,7 +102,7 @@ describe("encryption", () => {
             describe("encrypt an emoji", () => {
                 const emoji = "🤡";
                 let ciphertext, tag;
-                before(async () => {
+                beforeAll(async () => {
                     const res = await encryptStringAesGcm(emoji, key, iv);
                     ciphertext = res.ciphertext;
                     tag = res.tag;
@@ -129,7 +130,7 @@ describe("encryption", () => {
     describe("encrypt and decrypt publication with ed25519 + aes-gcm", () => {
         let encryptedPublication;
 
-        before(async () => {
+        beforeAll(async () => {
             encryptedPublication = await encryptEd25519AesGcm(
                 JSON.stringify(fixtureComment),
                 authorSignerFixture.privateKey,

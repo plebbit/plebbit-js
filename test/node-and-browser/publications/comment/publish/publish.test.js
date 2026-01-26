@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
-import { it, describe } from "vitest";
+import { it, describe, beforeAll, afterAll } from "vitest";
 import {
     generateMockPost,
     publishRandomReply,
@@ -22,13 +22,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("publishing posts - " + config.name, async () => {
         let plebbit, sub;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             await sub.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -286,11 +286,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Publishing replies - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => await plebbit.destroy());
+        afterAll(async () => await plebbit.destroy());
 
         it(`Can publish a reply with title, content and link defined`, async () => {
             const title = `Test title on Comment ${Date.now()} ${Math.random()}`;

@@ -1,3 +1,4 @@
+import { beforeAll } from "vitest";
 import { expect } from "chai";
 import {
     getPendingChallengesOrChallengeVerification,
@@ -131,7 +132,7 @@ describe("getChallengeVerification", () => {
         challengeAnswers: [undefined, undefined, undefined, undefined, undefined, "password"]
     };
 
-    before(async () => {
+    beforeAll(async () => {
         subplebbit._plebbit = await Plebbit();
     });
 

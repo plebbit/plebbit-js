@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -25,7 +26,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
     let plebbitDifferentIpfs;
     let remotePlebbit;
     let postWithExtraProps;
-    before(async () => {
+    beforeAll(async () => {
         const plebbit = await mockPlebbit();
         subBeforeMigration = await createSubWithNoChallenge({}, plebbit);
         await subBeforeMigration.start();
@@ -71,7 +72,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         await waitTillReplyInParentPages(replyOfPostWithExtraProps, remotePlebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subAfterMigration.delete();
         await plebbitDifferentIpfs.destroy();
         await remotePlebbit.destroy();

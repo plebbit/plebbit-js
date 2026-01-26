@@ -7,7 +7,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 const roles = [
@@ -21,12 +21,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let plebbit;
         let commentToMod;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToMod = await publishRandomPost(subplebbitAddress, plebbit);
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -106,11 +106,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Changing multiple fields simultaneously in one CommentModeration - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -159,11 +159,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Changing multiple fields in separate comment moderations`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

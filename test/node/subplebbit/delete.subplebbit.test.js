@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { itSkipIfRpc, mockPlebbitV2, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 
@@ -6,13 +7,13 @@ import fs from "fs";
 
 describe(`subplebbit.delete`, async () => {
     let plebbit, sub;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitV2({ forceMockPubsub: true, stubStorage: false });
 
         sub = await plebbit.createSubplebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

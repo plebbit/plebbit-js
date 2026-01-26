@@ -10,7 +10,7 @@ import {
     waitTillPostInSubplebbitPages,
     describeIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 describe.concurrent(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;
@@ -61,12 +61,12 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
     const defaultMintpassChallengeUrl = "https://mintpass.org/request/{authorAddress}?hide-nft=true&hide-address=true";
     const mintpassMissingWalletError = "Author wallet address is not defined. Please set your wallet address in settings.";
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
         await remotePlebbit.destroy();
     });
@@ -200,11 +200,11 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
 describeIfRpc(`subplebbit.settings.challenges with path (RPC)`, async () => {
     let plebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

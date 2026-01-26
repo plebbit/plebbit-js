@@ -8,14 +8,14 @@ import {
     publishRandomPost,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 describe.concurrent(`subplebbit.update - Local subs`, async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

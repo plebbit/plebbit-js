@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     createSubWithNoChallenge,
@@ -13,7 +14,7 @@ describeSkipIfRpc(`Generation of new IPNS records`, async () => {
     let numberOfEmittedUpdates = 0;
     let numberOfEmittedUpdatesWithUpdatedAt = 0;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         kuboRpcClientOfSubplebbit = Object.values(plebbit.clients.kuboRpcClients)[0];
 
@@ -31,7 +32,7 @@ describeSkipIfRpc(`Generation of new IPNS records`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
@@ -8,7 +9,7 @@ import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/si
 import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" with { type: "json" };
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
         editProps = {
@@ -25,7 +26,7 @@ describe("Sign commentedit", async () => {
         editSignature = await signCommentEdit({ edit: editProps, plebbit });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -67,7 +68,7 @@ describe("Sign commentedit", async () => {
 // Clients of RPC will trust the response of RPC and won't validate
 describeSkipIfRpc("Verify CommentEdit", async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         await plebbit.createCommentEdit(validCommentEditFixture); // should throw if it has an invalid schema
     });

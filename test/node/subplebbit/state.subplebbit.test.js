@@ -1,15 +1,16 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { mockPlebbit, createSubWithNoChallenge } from "../../../dist/node/test/test-util.js";
 
 import signers from "../../fixtures/signers.js";
 describe(`subplebbit.state`, async () => {
     let plebbit, subplebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

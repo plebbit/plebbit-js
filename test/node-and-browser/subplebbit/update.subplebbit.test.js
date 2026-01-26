@@ -14,18 +14,18 @@ import { convertBase58IpnsNameToBase36Cid } from "../../../dist/node/signer/util
 
 import * as remeda from "remeda";
 import { _signJson } from "../../../dist/node/signer/signatures.js";
-import { describe, it, vi } from "vitest";
+import { describe, it, vi, beforeAll, afterAll } from "vitest";
 
 const ensSubplebbitSigner = signers[3];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("subplebbit.update (remote) - " + config.name, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

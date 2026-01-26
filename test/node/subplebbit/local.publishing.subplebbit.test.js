@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -13,7 +14,7 @@ describeSkipIfRpc("Local publishing to subplebbit", async () => {
     const receivedPubsubMessages = [];
     let pubsubTopic;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.createSubplebbit();
         const challenges = [{ name: "question", options: { question: "1+1=?", answer: "2" } }];
@@ -37,7 +38,7 @@ describeSkipIfRpc("Local publishing to subplebbit", async () => {
         });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

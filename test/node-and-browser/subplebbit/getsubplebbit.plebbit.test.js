@@ -10,7 +10,7 @@ import {
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
 import { convertBase58IpnsNameToBase36Cid } from "../../../dist/node/signer/util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const ensSubplebbitAddress = "plebbit.eth";
 const subplebbitSigner = signers[0];
@@ -18,11 +18,11 @@ const subplebbitSigner = signers[0];
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.getSubplebbit (Remote) - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

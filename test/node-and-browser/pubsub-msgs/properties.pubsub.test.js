@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { generatePostToAnswerMathQuestion, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
@@ -10,11 +10,11 @@ const mathCliSubplebbitAddress = signers[1].address;
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe.concurrent(`Validate props of publication Pubsub messages - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

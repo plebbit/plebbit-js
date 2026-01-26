@@ -7,7 +7,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 import * as remeda from "remeda";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -19,11 +19,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.createSubplebbitEdit - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -87,11 +87,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Editing a subplebbit remotely as a non admin/owner - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -129,11 +129,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         let editProps;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -199,11 +199,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let newRoleAddress;
         let editProps = {};
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

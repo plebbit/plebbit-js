@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { describeSkipIfRpc, generateMockPost, mockPlebbit } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
@@ -192,7 +193,7 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         expect(unique(commentModSignatures), "Duplicate comment moderation signatures stored in mock DB").to.be.true;
     };
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.createSubplebbit();
         originalEdit = subplebbit.edit;
@@ -219,7 +220,7 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         expectNoDuplicateSignatures();
     });
 
-    after(async () => {
+    afterAll(async () => {
         if (subplebbit) await subplebbit.delete();
         if (plebbit) await plebbit.destroy();
     });

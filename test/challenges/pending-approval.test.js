@@ -1,3 +1,4 @@
+import { beforeAll } from "vitest";
 import { expect } from "chai";
 import {
     getChallengeVerification,
@@ -19,7 +20,7 @@ const createSubplebbitWithChallenges = async (plebbitInstance, challengeSettings
 describe("pending approval", () => {
     let plebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await Plebbit();
     });
 

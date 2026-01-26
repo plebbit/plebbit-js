@@ -7,7 +7,7 @@ import {
     isPlebbitFetchingUsingGateways
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 import { CID } from "kubo-rpc-client";
 import validCommentFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
 import { messages } from "../../../../dist/node/errors.js";
@@ -17,11 +17,11 @@ const subplebbitSigner = signers[0];
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.getComment - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

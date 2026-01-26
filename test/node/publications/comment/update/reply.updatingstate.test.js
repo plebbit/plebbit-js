@@ -10,7 +10,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const plebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 const replyDepthsToTest = [1, 2, 3, 5, 15, 30];
 
@@ -19,12 +19,12 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
         describe.concurrent(`reply depth ${replyDepth}`, () => {
             let context;
 
-            before(async () => {
+            beforeAll(async () => {
                 // this hook times out sometimes
                 context = await createReplyParentPagesTestEnvironment({ replyDepth });
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await context.cleanup();
             });
 

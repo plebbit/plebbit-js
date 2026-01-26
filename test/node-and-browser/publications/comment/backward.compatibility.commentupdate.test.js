@@ -16,7 +16,7 @@ import { _signJson } from "../../../../dist/node/signer/signatures.js";
 import validCommentUpdateFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
@@ -27,7 +27,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         let plebbit, post, subplebbit;
         const extraProps = { extraPropUpdate: "1234" };
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
@@ -37,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await post.stop();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -213,11 +213,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
     describe.concurrent(`Extra props in decryptedChallengeVerification.commentUpdate - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

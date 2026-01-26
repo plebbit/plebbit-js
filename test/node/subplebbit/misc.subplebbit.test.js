@@ -13,20 +13,20 @@ import {
     describeIfRpc,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
-import { describe } from "vitest";
+import { describe, beforeAll, afterAll } from "vitest";
 
 import signers from "../../fixtures/signers.js";
 
 describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     let plebbit, sub;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await sub.delete();
         await plebbit.destroy();
     });
@@ -103,12 +103,12 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
 
 describe(`subplebbit.pubsubTopic`, async () => {
     let subplebbit, plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });
@@ -131,7 +131,7 @@ describe(`subplebbit.pubsubTopic`, async () => {
 describe.skip(`comment.link`, async () => {
     let plebbit, subplebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.edit({ settings: { ...subplebbit.settings, fetchThumbnailUrls: true } });
@@ -141,7 +141,7 @@ describe.skip(`comment.link`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });
@@ -225,11 +225,11 @@ describe.skip(`comment.link`, async () => {
 
 describe.concurrent(`subplebbit.clients (Local)`, async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -335,11 +335,11 @@ describe.concurrent(`subplebbit.clients (Local)`, async () => {
 
     describeSkipIfRpc.concurrent(`subplebbit.clients.chainProviders`, async () => {
         let mockSub;
-        before(async () => {
+        beforeAll(async () => {
             mockSub = await createSubWithNoChallenge({}, plebbit);
         });
 
-        after(async () => {
+        afterAll(async () => {
             await mockSub.delete();
         });
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {

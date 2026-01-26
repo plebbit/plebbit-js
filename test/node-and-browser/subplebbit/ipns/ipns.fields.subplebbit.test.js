@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     resolveWhenConditionIsTrue,
@@ -195,13 +196,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`subplebbit.{ipnsName, ipnsPubsubTopic, ipnsPubsubTopicRoutingCid, pubsubTopicRoutingCid} on create`, async () => {
         let plebbit;
         let subplebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             subplebbit = await plebbit.createSubplebbit({ address: ipnsB58 });
             expect(subplebbit.updatedAt).to.be.undefined;
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -215,7 +216,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`subplebbit.{ipnsName, ipnsPubsubTopic, ipnsPubsubTopicRoutingCid, pubsubTopicRoutingCid}`, async () => {
         let plebbit;
         let subplebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             subplebbit = await plebbit.createSubplebbit({ address: ipnsB58 });
 
@@ -223,7 +224,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.updatedAt });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

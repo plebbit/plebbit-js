@@ -13,7 +13,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[8].address;
 const roles = [
@@ -26,7 +26,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("Deleting a post - " + config.name, async () => {
         let plebbit, postToDelete, modPostToDelete, postReply;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             [postToDelete, modPostToDelete] = await Promise.all([
                 publishRandomPost(subplebbitAddress, plebbit),
@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await postReply.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
         it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
@@ -172,14 +172,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("Deleting a reply - " + config.name, async () => {
         let plebbit, replyToDelete, post, replyUnderDeletedReply;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
             replyToDelete = await publishRandomReply(post, plebbit);
             replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit);
             await Promise.all([replyToDelete.update(), post.update()]);
         });
-        after(async () => {
+        afterAll(async () => {
             await post.stop();
             await replyToDelete.stop();
             await plebbit.destroy();

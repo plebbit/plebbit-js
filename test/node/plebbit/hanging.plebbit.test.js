@@ -1,6 +1,6 @@
 import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import { resolveHangingScenarioModule } from "../../../dist/node/test/node/hanging-test/scenarios/hanging-test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll } from "vitest";
 
 const DESTROY_TIMEOUT_MS = (() => {
     const parsed = Number(process.env.HANGING_TEST_TIMEOUT_MS);
@@ -18,7 +18,7 @@ if (!scenarioDefinitions.length) {
 
 let runHangingScenarioInChildProcess;
 
-before(async () => {
+beforeAll(async () => {
     ({ runHangingScenarioInChildProcess } = await import("../../../dist/node/runtime/node/test/helpers/run-hanging-node.js"));
 });
 

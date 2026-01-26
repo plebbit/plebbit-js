@@ -7,7 +7,7 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const subplebbitAddress = signers[0].address;
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -19,13 +19,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Mods marking an author comment as spoiler - ${config.name}`, async () => {
         let plebbit, randomPost;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             randomPost = await publishRandomPost(subplebbitAddress, plebbit);
             await randomPost.update();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

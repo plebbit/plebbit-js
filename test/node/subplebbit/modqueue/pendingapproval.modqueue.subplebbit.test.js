@@ -20,7 +20,7 @@ import {
     describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const depthsToTest = [0, 1, 2, 3, 10];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } }; // this should get comment to be successful with challenge, thus sending it to modqueue
@@ -34,7 +34,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         let modSigner;
         let subplebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await mockPlebbit();
             remotePlebbit = await mockGatewayPlebbit();
             subplebbit = await plebbit.createSubplebbit();
@@ -52,7 +52,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await subplebbit.delete();
             await plebbit.destroy();
             await remotePlebbit.destroy();

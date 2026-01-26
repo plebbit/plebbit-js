@@ -14,18 +14,18 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import * as remeda from "remeda";
 import validSubplebbitJsonfiedFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_jsonfied.json" with { type: "json" };
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) =>
     describe.concurrent(`plebbit.createSubplebbit - Remote (${config.name})`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -111,11 +111,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
 describe.concurrent(`plebbit.createSubplebbit - (remote) - errors`, async () => {
     let plebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbitV2({ remotePlebbit: true });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

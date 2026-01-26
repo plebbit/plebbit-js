@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import PlebbitWsServer from "../../../dist/node/rpc/src/index.js";
 import { describeSkipIfRpc, mockPlebbit, mockRpcServerForTests, mockRpcServerPlebbit } from "../../../dist/node/test/test-util.js";
@@ -21,13 +22,13 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
     let plebbit;
 
     const lanAddress = getLanIpV4Address(); // LAN address (non-internal)
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         expect(plebbit.dataPath).to.be.a("string");
         expect(lanAddress).to.be.a("string");
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

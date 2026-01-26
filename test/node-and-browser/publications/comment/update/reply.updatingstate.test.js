@@ -8,7 +8,7 @@ import {
     publishRandomPost,
     createStaticSubplebbitRecordForComment
 } from "../../../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 // Helper function to clean up state arrays by removing:
@@ -89,7 +89,7 @@ const cleanupStateArray = (states) => {
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc.concurrent(`reply.updatingState - ${config.name}`, async () => {
         let replyCid;
-        before(async () => {
+        beforeAll(async () => {
             const tempPlebbit = await config.plebbitInstancePromise();
             const sub = await tempPlebbit.getSubplebbit({ address: subplebbitAddress });
             const post = await publishRandomPost(sub.address, tempPlebbit);
@@ -271,11 +271,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describeSkipIfRpc.concurrent(`reply.updatingState - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

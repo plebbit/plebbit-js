@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import tempy from "tempy";
 
@@ -36,11 +37,11 @@ const setupConnectionContext = (rpcServer, connectionId) => {
 describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
     let rpcServer;
 
-    before(() => {
+    beforeAll(() => {
         setPlebbitJs(async (options) => mockRpcServerPlebbit({ dataPath: tempy.directory(), ...(options || {}) }));
     });
 
-    after(() => {
+    afterAll(() => {
         restorePlebbitJs();
     });
 

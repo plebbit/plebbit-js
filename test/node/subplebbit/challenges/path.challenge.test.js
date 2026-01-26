@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -11,12 +12,12 @@ import path from "path";
 
 describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async () => {
     let plebbit, remotePlebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
         await remotePlebbit.destroy();
     });

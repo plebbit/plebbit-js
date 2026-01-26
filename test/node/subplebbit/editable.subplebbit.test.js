@@ -1,13 +1,14 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { mockPlebbit } from "../../../dist/node/test/test-util.js";
 describe(`subplebbit.editable`, async () => {
     let plebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

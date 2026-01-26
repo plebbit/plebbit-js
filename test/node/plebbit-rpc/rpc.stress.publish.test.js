@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import tempy from "tempy";
 import net from "node:net";
@@ -68,7 +69,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         }
     }
 
-    before(async () => {
+    beforeAll(async () => {
         setPlebbitJs(async (options) => mockRpcServerPlebbit({ dataPath: tempy.directory(), ...(options || {}) }));
 
         const port = await getAvailablePort();
@@ -95,7 +96,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
     });
 
-    after(async () => {
+    afterAll(async () => {
         if (subplebbit) {
             try {
                 await subplebbit.stop();

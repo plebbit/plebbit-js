@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import { mockRemotePlebbit, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import {
@@ -29,11 +30,11 @@ const fixtureSignature = {
 
 describe("sign comment", async () => {
     let plebbit, signedCommentClone;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -131,11 +132,11 @@ describe("sign comment", async () => {
 // Clients of RPC will trust the response of RPC and won't validate
 describeSkipIfRpc("verify Comment", async () => {
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -234,12 +235,12 @@ describeSkipIfRpc(`Comment with author.address as domain`, async () => {
 // Clients of RPC will trust the response of RPC and won't validate
 describeSkipIfRpc(`commentupdate`, async () => {
     let plebbit, subplebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

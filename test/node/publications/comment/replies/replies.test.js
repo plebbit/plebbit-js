@@ -14,14 +14,14 @@ import {
 import { POST_REPLIES_SORT_TYPES, REPLY_REPLIES_SORT_TYPES } from "../../../../../dist/node/pages/util.js";
 import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../../../node-and-browser/pages/pages-test-util.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const remotePlebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
     let plebbit, subplebbit, postWithPageCids, replyWithPageCids, cleanup;
 
-    before(async () => {
+    beforeAll(async () => {
         ({
             plebbit,
             subplebbit,
@@ -31,7 +31,7 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
         } = await createLocalCommentWithPaginatedReplies());
     });
 
-    after(async () => {
+    afterAll(async () => {
         await cleanup();
     });
 
@@ -39,7 +39,7 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
         describe(`Loading comment.replies with config ${config.name}`, async () => {
             let plebbit, post, reply;
 
-            before(async () => {
+            beforeAll(async () => {
                 plebbit = await config.plebbitInstancePromise();
                 post = await plebbit.getComment({ cid: postWithPageCids.cid });
                 reply = await plebbit.getComment({ cid: replyWithPageCids.cid });
@@ -49,7 +49,7 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                 await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await plebbit.destroy();
             });
 

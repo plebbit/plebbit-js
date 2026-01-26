@@ -1,3 +1,4 @@
+import { beforeAll } from "vitest";
 import { expect } from "chai";
 import {
     shouldExcludeChallengeCommentCids,
@@ -700,7 +701,7 @@ describe("shouldExcludeChallengeCommentCids", () => {
     };
 
     let plebbit;
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await Plebbit();
     });
 

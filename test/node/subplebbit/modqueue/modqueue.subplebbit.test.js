@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import {
     mockPlebbit,
@@ -17,7 +18,7 @@ describe(`Pending approval modqueue functionality`, async () => {
     let plebbit, subplebbit, modSigner;
     let regularPublishedComment;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
@@ -46,7 +47,7 @@ describe(`Pending approval modqueue functionality`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => subplebbit.updatedAt });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
     });

@@ -12,7 +12,7 @@ import {
 import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import * as remeda from "remeda";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 import { _signJson, _signPubsubMsg } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
@@ -23,11 +23,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
     describe.sequential(`Publishing  and receiving pubsub messages with extra props - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

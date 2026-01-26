@@ -11,17 +11,17 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { _signJson } from "../../../../dist/node/signer/signatures.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.sequential(`Comments with extra props - ${config.name}`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -88,7 +88,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             let commentWithExtraProps;
             let extraProps;
 
-            before(async () => {
+            beforeAll(async () => {
                 commentWithExtraProps = await generateMockPost(subplebbitAddress, plebbit);
                 extraProps = { extraProp: "1234" };
                 await setExtraPropOnCommentAndSign(commentWithExtraProps, extraProps, true);
@@ -131,10 +131,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
     describe.sequential(`Comments with extra props in author`, async () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
         describe.sequential(`Publishing comment with extra props in author field - ${config.name}`, async () => {
@@ -170,7 +170,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             let postWithExtraAuthorProp;
             const extraProps = { extraProp: "1234" };
 
-            before(async () => {
+            beforeAll(async () => {
                 postWithExtraAuthorProp = await generateMockPost(subplebbitAddress, plebbit);
                 await setExtraPropOnCommentAndSign(
                     postWithExtraAuthorProp,

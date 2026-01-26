@@ -5,7 +5,7 @@ import {
     mockPlebbitToTimeoutFetchingCid,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 import { _signJson } from "../../../dist/node/signer/signatures.js";
 
@@ -42,11 +42,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe.concurrent(`Subplebbit waiting-retry - ${config.name}`, () => {
         let plebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

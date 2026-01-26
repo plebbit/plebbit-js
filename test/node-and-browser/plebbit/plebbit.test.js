@@ -1,3 +1,4 @@
+import { beforeAll, afterAll } from "vitest";
 import { expect } from "chai";
 import Plebbit from "../../../dist/node/index.js";
 import signers from "../../fixtures/signers.js";
@@ -14,7 +15,7 @@ const fixtureSigner = signers[0];
 let defaultIpfsGatewayUrls;
 
 describe("Plebbit options", async () => {
-    before(async () => {
+    beforeAll(async () => {
         const plebbit = await Plebbit({ httpRoutersOptions: [] });
         defaultIpfsGatewayUrls = plebbit.ipfsGatewayUrls;
         await plebbit.destroy();
@@ -193,12 +194,12 @@ describe("Plebbit options", async () => {
 describe("plebbit.createSigner", async () => {
     let plebbit, signer;
     const isBase64 = (testString) => /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}))?$/gm.test(testString);
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         signer = await plebbit.createSigner();
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 

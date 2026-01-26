@@ -14,7 +14,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 import { PlebbitError } from "../../../dist/node/plebbit-error.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 // this test is testing the loading logic of Comment at a different depths
 // it was made because testing it on test-server.js subs take too long
@@ -26,13 +26,13 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
     describe.concurrent(`post loading coverage`, () => {
         let context;
 
-        before(async () => {
+        beforeAll(async () => {
             context = await createPostDepthTestEnvironment({
                 forceSubplebbitPostsPageCids: false
             });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await context.cleanup();
         });
 
@@ -76,13 +76,13 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
         describe("subplebbit posts served via postUpdates", () => {
             let paginationContext;
 
-            before(async () => {
+            beforeAll(async () => {
                 paginationContext = await createPostDepthTestEnvironment({
                     forceSubplebbitPostsPageCids: true
                 });
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await paginationContext.cleanup();
             });
 
@@ -189,11 +189,11 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
         describe.concurrent(`reply depth ${replyDepth}`, () => {
             let context;
 
-            before(async () => {
+            beforeAll(async () => {
                 context = await createReplyDepthTestEnvironment({ replyDepth });
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await context?.cleanup();
             });
 
@@ -293,14 +293,14 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
         describe.concurrent("parent replies served via pageCids with depth " + replyDepth, () => {
             let paginationContext;
 
-            before(async () => {
+            beforeAll(async () => {
                 paginationContext = await createReplyDepthTestEnvironment({
                     replyDepth,
                     forceParentRepliesPageCids: true
                 });
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await paginationContext?.cleanup();
             });
 

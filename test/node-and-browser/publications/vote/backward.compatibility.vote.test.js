@@ -9,7 +9,7 @@ import {
 
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Backward compatibility for Vote - ${config.name}`, async () => {
@@ -18,12 +18,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         let plebbit;
         let commentToVoteOn;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToVoteOn = await publishRandomPost(signers[0].address, plebbit);
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 

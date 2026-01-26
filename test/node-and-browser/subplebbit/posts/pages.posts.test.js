@@ -18,20 +18,20 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { Buffer } from "buffer";
 import { messages } from "../../../../dist/node/errors.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.sequential(`subplebbit.posts - ${config.name}`, async () => {
         let plebbit, newPost, subplebbit;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post it should appear on all pages
             await waitTillPostInSubplebbitPages(newPost, plebbit);
             subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
@@ -152,7 +152,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         describe.concurrent(`subplebbit.posts.validatePage - ${config.name}`, async () => {
             let plebbit, subplebbit, validPageJson, newPost;
 
-            before(async () => {
+            beforeAll(async () => {
                 plebbit = await config.plebbitInstancePromise({ validatePages: false });
                 newPost = await publishRandomPost(subplebbitAddress, plebbit);
                 await publishRandomReply(newPost, plebbit);
@@ -161,7 +161,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 validPageJson = remeda.clone(subplebbit.posts.pages.hot); // PageTypeJson, not PageIpfs
             });
 
-            after(async () => {
+            afterAll(async () => {
                 await plebbit.destroy();
             });
 

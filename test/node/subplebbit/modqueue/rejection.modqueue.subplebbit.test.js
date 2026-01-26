@@ -12,7 +12,7 @@ import {
     createPendingApprovalChallenge
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-import { describe, it, vi } from "vitest";
+import { describe, it, vi, beforeAll, afterAll } from "vitest";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true }).filter(
     (config) => config.testConfigCode !== "remote-plebbit-rpc" // we're filtering RPC out because we can't reduce its timeout so tests take forever
@@ -55,7 +55,7 @@ for (const commentMod of commentModProps) {
                 let modSigner;
                 let subplebbit;
 
-                before(async () => {
+                beforeAll(async () => {
                     plebbit = await mockPlebbit();
                     subplebbit = await plebbit.createSubplebbit();
                     subplebbit.setMaxListeners(100);
@@ -86,7 +86,7 @@ for (const commentMod of commentModProps) {
                     await commentToBeRejected.update();
                 });
 
-                after(async () => {
+                afterAll(async () => {
                     await subplebbit.delete();
                     await plebbit.destroy();
                 });

@@ -13,7 +13,7 @@ import {
     iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const subplebbitAddress = signers[11].address;
 const roles = [
@@ -25,7 +25,7 @@ const roles = [
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Locking posts - ${config.name}`, async () => {
         let plebbit, postToBeLocked, replyUnderPostToBeLocked, modPost, sub;
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await mockRemotePlebbit();
             sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             await sub.update();
@@ -36,7 +36,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit);
             await modPost.update();
         });
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
         it(`Author can't lock their own post`, async () => {

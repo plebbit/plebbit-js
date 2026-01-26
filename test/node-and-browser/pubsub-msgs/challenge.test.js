@@ -8,7 +8,7 @@ import {
     mockRemotePlebbit,
     getAvailablePlebbitConfigsToTestAgainst
 } from "../../../dist/node/test/test-util.js";
-import { describe, it } from "vitest";
+import { describe, it, beforeAll, afterAll } from "vitest";
 
 const mathCliSubplebbitAddress = signers[1].address;
 
@@ -16,12 +16,12 @@ describe.skip(`Stress test challenge exchange`, async () => {
     const num = 50;
     let plebbit, subplebbit;
 
-    before(async () => {
+    beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
     });
 
-    after(async () => {
+    afterAll(async () => {
         await plebbit.destroy();
     });
 
@@ -35,11 +35,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
     describe.concurrent(`math-cli - ${config.name}`, async () => {
         let plebbit;
 
-        before(async () => {
+        beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        after(async () => {
+        afterAll(async () => {
             await plebbit.destroy();
         });
 
