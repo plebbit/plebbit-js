@@ -308,14 +308,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(plebbit._updatingComments[postCommentCid]).to.exist;
             expect(plebbit._updatingComments[postCommentCid].listenerCount("update")).to.equal(1);
 
-            expect(postComment2.replyCount).to.equal(0);
+            const initialReplyCount = postComment2.replyCount;
 
             await publishRandomReply(postComment2, plebbit);
 
-            // we don't know if another test might publish a reply to postComment2, so we wait until we see a reply count of at least 1
-            await resolveWhenConditionIsTrue({ toUpdate: postComment2, predicate: () => postComment2.replyCount >= 1 });
+            // we don't know if another test might publish a reply to postComment2, so we wait until we see a reply count increase
+            await resolveWhenConditionIsTrue({ toUpdate: postComment2, predicate: () => postComment2.replyCount > initialReplyCount });
 
-            expect(postComment2.replyCount).to.be.greaterThanOrEqual(1);
+            expect(postComment2.replyCount).to.be.greaterThan(initialReplyCount);
 
             await postComment2.stop();
 
