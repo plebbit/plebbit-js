@@ -76,7 +76,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.initSubplebbitIpfsPropsNoMerge(updateRecord.subplebbit);
         this.updateCid = updateRecord.updateCid;
 
-        if (updateRecord.updatingState) this._setUpdatingStateNoEmission(updateRecord.updatingState);
+        this._setUpdatingStateNoEmission(updateRecord.updatingState || "succeeded");
 
         this.emit("update", this);
     }
