@@ -328,12 +328,16 @@ State strings emitted via `statechange` and `publishingstatechange` events:
 - [ ] `"plebbit-author-address"` → `"pkc-author-address"` (src/clients/base-client-manager.ts)
 - [ ] `"subplebbit-address"` → `"pkc-community-address"`
 
-### 8.2 Migration TODO
+### 8.2 Wallet Signature Domain Separator
+The EVM contract call challenge uses a domain separator in the message to be signed:
+- [ ] `"plebbit-author-wallet"` → `"pkc-author-wallet"` ([src/runtime/node/subplebbit/challenges/plebbit-js-challenges/evm-contract-call/index.ts:111](src/runtime/node/subplebbit/challenges/plebbit-js-challenges/evm-contract-call/index.ts#L111))
+
+### 8.3 Migration TODO
 - [ ] **IMPORTANT:** Need to migrate existing DNS TXT records from old names to new names
 - [ ] Document migration process for users with existing records
 - [ ] Consider supporting both old and new record names during transition period
 
-### 8.3 Storage Cache Keys
+### 8.4 Storage Cache Keys
 Domain resolution cache keys (minor - invalidating just causes re-resolution):
 - [ ] `${domainAddress}_subplebbit-address` → `${domainAddress}_community-address` (src/clients/base-client-manager.ts:637)
 - [ ] Note: Changing this will invalidate existing caches, causing one-time re-resolution
@@ -908,6 +912,7 @@ These repositories are outside plebbit-js but will need coordinated updates:
 | @plebbit/proper-lockfile | Rename to @pkc/proper-lockfile | [ ] Not Started |
 | plebbit-cli | Directory migration: `.plebbit/` → `.pkc/` and `subplebbits/` → `communities/`, API updates | [ ] Not Started |
 | Desktop apps | Directory migration: `.plebbit/` → `.pkc/` and `subplebbits/` → `communities/`, API updates | [ ] Not Started |
+| plebbit-js-benchmarks | Rename repo to pkc-js-benchmarks, update all plebbit/subplebbit references | [ ] Not Started |
 | DNS TXT records | Migrate plebbit-author-address → pkc-author-address, subplebbit-address → pkc-community-address | [ ] Not Started |
 
 ---
@@ -918,50 +923,49 @@ Make plebbit-js (pkc-js) a neutral, core library that only handles IPNS/IPFS nat
 
 ### 17.1 Domain Resolver Plugin System
 
+> **See [DOMAIN_RESOLVER_PLAN.md](./DOMAIN_RESOLVER_PLAN.md) for the full detailed design.**
+
+**Key Design Points:**
+- No global `chainProviders` - removed from PlebbitOptions entirely
+- `PKC.domainResolvers` static registry (like `Plebbit.challenges`)
+- `chainProviders` passed as arg to `resolve()`, not stored on resolver instance
+- JSON config stores `{ name, chainProviders }` - looked up by name at runtime
+- Challenges fall back to resolver URLs, then to hardcoded defaults
+
 **DomainResolver Interface:**
 ```typescript
 export interface DomainResolverResult {
   resolvedTextRecordValue: string;
 }
 
-export interface DomainResolver {
+export interface DomainResolverInstance {
   name: string;
   tlds: string[];  // e.g., ['.eth'] or ['.sol']
   resolve: (args: {
     domain: string;
     txtRecordName: string;
-    plebbit: Plebbit;  // resolver can access plebbit.chainProviders, etc.
+    chainProviders: ChainProviders;  // passed at resolve time, not stored on instance
+    plebbit: Plebbit;
   }) => Promise<DomainResolverResult>;
 }
 ```
 
 **Usage Example:**
 ```javascript
-// In @bitsocial/resolver-ens (separate GitHub repo)
-import { DomainResolver } from '@bitsocial/plebbit-js';
-
-export const ensResolver: DomainResolver = {
-  name: 'ens',
-  tlds: ['.eth'],
-  resolve: async ({ domain, txtRecordName, plebbit }) => {
-    // Resolver derives chain URLs from plebbit.chainProviders.eth.urls
-    const urls = plebbit.chainProviders?.eth?.urls || [];
-    // ENS resolution logic using viem/ethers
-    const value = await resolveEns(domain, txtRecordName, urls);
-    return { resolvedTextRecordValue: value };
-  }
-};
-
-// In desktop app / plebbit-cli
+// App startup: register resolvers in static registry
+import PKC from '@pkc/pkc-js';
 import { ensResolver } from '@bitsocial/resolver-ens';
 import { snsResolver } from '@bitsocial/resolver-sns';
 
+PKC.domainResolvers['ens'] = ensResolver;
+PKC.domainResolvers['sns'] = snsResolver;
+
+// Create instance with user config (JSON-serializable)
 const plebbit = await PKC({
-  domainResolvers: [ensResolver, snsResolver],  // optional
-  chainProviders: {
-    eth: { urls: ['https://eth-rpc.example.com'] },
-    sol: { urls: ['https://solana-rpc.example.com'] }
-  }
+  domainResolvers: [
+    { name: 'ens', chainProviders: { eth: { urls: ['https://ethrpc.xyz'], chainId: 1 } } },
+    { name: 'sns', chainProviders: { sol: { urls: ['https://solana-rpc.com'], chainId: -1 } } }
+  ]
 });
 
 // If user tries to resolve a .eth domain without ensResolver registered:
@@ -969,9 +973,10 @@ const plebbit = await PKC({
 ```
 
 **Behavior:**
-- `domainResolvers` is optional in PlebbitOptions
-- When resolving a domain, plebbit-js finds a resolver whose `tlds` includes the domain's TLD
+- `domainResolvers` config is optional in PlebbitOptions
+- At resolve time, finds config by TLD, looks up resolver in `PKC.domainResolvers`, passes `chainProviders` to `resolve()`
 - If no matching resolver found, throws `ERR_NO_RESOLVER_FOR_TLD`
+- Challenges merge URLs from all resolver configs with matching chainTicker
 
 ### 17.2 External Challenge Registration
 
@@ -990,14 +995,19 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 
 ### 17.3 TODO Items
 
+> **See [DOMAIN_RESOLVER_PLAN.md](./DOMAIN_RESOLVER_PLAN.md) for detailed implementation steps.**
+
 **Domain Resolver System:**
-- [ ] Add `DomainResolver` and `DomainResolverResult` interfaces to `src/types.ts`
-- [ ] Add `DomainResolverSchema` to `src/schema.ts` - Zod schema validating resolver structure (name, tlds array, resolve function)
-- [ ] Add optional `domainResolvers: z.array(DomainResolverSchema)` to `PKCUserOptionsSchema` - Zod will automatically throw on invalid schema during PKC instantiation
+- [ ] Add `DomainResolverInstance` and `DomainResolverResult` interfaces to `src/types.ts`
+- [ ] Add `DomainResolverConfig` type (`{ name, chainProviders? }`) to `src/types.ts`
+- [ ] Add `DomainResolverConfigSchema` to `src/schema.ts`
+- [ ] Add optional `domainResolvers: DomainResolverConfig[]` to `PKCUserOptionsSchema`
+- [ ] Remove `chainProviders` from `PKCUserOptionsSchema` (breaking change)
+- [ ] Add static `PKC.domainResolvers` registry object
 - [ ] Refactor `src/domain-resolver.ts` to use plugin system
 - [ ] Update `src/clients/base-client-manager.ts` resolution flow
 - [ ] Add `ERR_NO_RESOLVER_FOR_TLD` error when no resolver matches
-- [ ] Export `DomainResolver` type from `src/index.ts`
+- [ ] Export `DomainResolverInstance` type from `src/index.ts`
 - [ ] Remove hardcoded ENS/SNS logic from core
 
 **External Challenges:**
@@ -1023,6 +1033,8 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 ### 17.5 Breaking Changes
 
 - No default domain resolvers - pkc-js only handles IPNS/IPFS natively
-- Users must explicitly provide `domainResolvers` to resolve `.eth`/`.sol` addresses
+- Users must explicitly provide `domainResolvers` config to resolve `.eth`/`.sol` addresses
 - `evm-contract-call` challenge no longer built-in
-- `chainProviders` still needed for RPC URLs, accessed by resolvers via plebbit instance
+- `chainProviders` removed from PlebbitOptions - now configured per-resolver in `domainResolvers` config
+- Must register resolvers in `PKC.domainResolvers` static registry before use
+- Challenges fall back to resolver URLs, then to their own hardcoded defaults
