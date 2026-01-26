@@ -53,7 +53,7 @@ jobs:
           npm install ../plebbit-js
           rm -rf ../plebbit-js/package-lock.json
           npm install
-          npm run webpack
+          npx playwright install chromium
         working-directory: ../plebbit-js-benchmarks
 
       # benchmark
