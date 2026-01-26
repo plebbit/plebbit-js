@@ -687,12 +687,31 @@ export class CommentClientsManager extends PublicationClientsManager {
             return;
         }
         if (Object.keys(parentCommentInstance.replies.pageCids).length === 0) {
+            // Parent has no pageCids - all replies fit in preloaded pages
+            // If we found the reply in preloaded pages (line 675-676), use it even if not strictly "newer"
+            if (replyInPreloadedParentPages) {
+                log(
+                    "Parent comment",
+                    this._comment.parentCid,
+                    "has no pageCids but reply",
+                    this._comment.cid,
+                    "found in preloaded pages - using it"
+                );
+                this._useLoadedCommentUpdateIfNewInfo(
+                    { commentUpdate: replyInPreloadedParentPages.commentUpdate },
+                    subplebbitWithSignature,
+                    log
+                );
+                return;
+            }
+
+            // Reply not in preloaded pages and no pageCids to search - wait for update
             log(
                 "Parent comment",
                 this._comment.parentCid,
                 "of reply",
                 this._comment.cid,
-                "does not have any pageCids, will wait until another update event by post"
+                "does not have any pageCids and reply not in preloaded pages, will wait until another update event by post"
             );
             this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;

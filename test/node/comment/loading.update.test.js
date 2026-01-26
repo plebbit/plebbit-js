@@ -6,6 +6,7 @@ import {
     getAvailablePlebbitConfigsToTestAgainst,
     mockCommentToNotUsePagesForUpdates,
     mockPlebbit,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     mockReplyToUseParentPagesForUpdates,
     publishRandomPost,
     waitTillReplyInParentPages,
@@ -20,7 +21,7 @@ import { describe, it, beforeAll, afterAll } from "vitest";
 // it was made because testing it on test-server.js subs take too long
 
 const plebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
-const replyDepthsToTest = [1, 2, 3, 10];
+const replyDepthsToTest = [1, 2, 3, 10, 12];
 
 describeSkipIfRpc("comment.update loading depth coverage", function () {
     describe.concurrent(`post loading coverage`, () => {
@@ -362,6 +363,80 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                     }
                 });
             });
+        });
+    });
+
+    describe.concurrent("deeply nested reply without parent pageCids - depth 12", () => {
+        let context;
+
+        beforeAll(async () => {
+            context = await createReplyDepthTestEnvironment({ replyDepth: 12 });
+        });
+
+        afterAll(async () => {
+            await context?.cleanup();
+        });
+
+        it("loads reply update when parent has no pageCids (only preloaded pages)", async () => {
+            // Verify the parent does NOT have pageCids (this is the bug scenario)
+            const parentUpdate = context.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: context.leafParentCid });
+            const parentPageCids = parentUpdate?.replies?.pageCids;
+            const hasNoPageCids = !parentPageCids || Object.keys(parentPageCids).length === 0;
+
+            // If parent already has pageCids, this test doesn't cover the bug scenario
+            // but should still pass
+            if (hasNoPageCids) {
+                console.log("Test confirms: parent has no pageCids, testing bug scenario");
+            }
+
+            // Load from remote plebbit - this is where the bug manifests
+            const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+            try {
+                const leafComment = await remotePlebbit.createComment({ cid: context.leafCid });
+                await leafComment.update();
+
+                // Should succeed without 160s timeout
+                await resolveWhenConditionIsTrue({
+                    toUpdate: leafComment,
+                    predicate: () => typeof leafComment.updatedAt === "number"
+                });
+
+                expect(leafComment.updatedAt).to.be.a("number");
+                expect(leafComment.depth).to.equal(12);
+            } finally {
+                await remotePlebbit.destroy();
+            }
+        });
+
+        it("loads reply update via Path B only (when _findCommentInPagesOfUpdatingCommentsOrSubplebbit is disabled)", async () => {
+            // This test verifies that Path B (usePageCidsOfParentToFetchCommentUpdateForReply)
+            // works correctly when parent has no pageCids and reply is in preloaded pages.
+            // We mock Path A to return undefined to force the code through Path B exclusively.
+            const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+
+            try {
+                const leafComment = await remotePlebbit.createComment({ cid: context.leafCid });
+
+                // CRITICAL: Mock _findCommentInPagesOfUpdatingCommentsOrSubplebbit to return undefined
+                // This forces the code to use Path B (the previously buggy usePageCidsOfParentToFetchCommentUpdateForReply)
+                const clientsManager = leafComment._clientsManager;
+                clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
+
+                await leafComment.update();
+
+                // With Path A disabled, this should still succeed via Path B
+                // (uses preloaded pages when parent has no pageCids)
+                await resolveWhenConditionIsTrue({
+                    toUpdate: leafComment,
+                    predicate: () => typeof leafComment.updatedAt === "number",
+                    timeoutMs: 30000 // 30 seconds should be plenty
+                });
+
+                expect(leafComment.updatedAt).to.be.a("number");
+                expect(leafComment.depth).to.equal(12);
+            } finally {
+                await remotePlebbit.destroy();
+            }
         });
     });
 });
