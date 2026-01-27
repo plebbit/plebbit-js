@@ -14,3 +14,5 @@
 -   If you're gonna mock a comment, you need to create a fixture that's similar to how it looks to production like this one. For comment (CommentIpfs), look at test/fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json, while for commentUpdate look at test/fixtures/signatures/comment/commentUpdate/valid_comment_update.json
 -   Keep in mind that a comment's bytes size during publication is limited to 40kb
 -   When writing new functions, prefer a single object parameter with all args (e.g., `signComment({ comment, plebbit })` instead of `signComment(comment, plebbit)`)
+-   When you're debugging a failure or a test failure in CI, you should check `test_server.log` for subplebbit logs and `test_node_${config}.stdout.log`/`test_node_${config}.stderr.log` artifacts for client logs (where config is e.g. `remote-kubo-rpc`)
+-   When I report a bug or test failure, you need to try to understand the root cause instead of trying to fix it with timeouts
