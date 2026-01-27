@@ -614,6 +614,12 @@ export async function findReplyInParentCommentPagesInstancePreloadedAndPageCids(
     if (reply?.parentCid !== parentComment?.cid)
         throw Error("You need to provide a reply that's direct child of parentComment");
     log("waiting for reply", reply.cid, "in parent comment", parentComment.cid, "replyCount of parent comment", parentComment.replyCount);
+    // Handle intermediate state where both pageCids and pages are empty
+    // This happens during early update events before CommentUpdate with replies is received
+    if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length === 0) {
+        // No pages loaded yet - this is a valid intermediate state, not an error
+        return undefined;
+    }
     if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
         // it's a single preloaded page
         const loadedAllBestPagesComments = (await loadAllPagesBySortName(Object.keys(parentComment.replies.pages)[0], parentComment.replies));
