@@ -186,7 +186,17 @@ for (const pendingCommentDepth of depthsToTest) {
         itSkipIfRpc(`Approved comment is pinned to IPFS node`, async () => {
             const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
 
-            const res = await kuboRpc.block.stat(approvedComment.cid);
+            // Retry block.stat to handle transient Kubo RPC connection issues on macOS CI
+            let res;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    res = await kuboRpc.block.stat(approvedComment.cid);
+                    break;
+                } catch (error) {
+                    if (attempt === 3) throw error;
+                    await new Promise((r) => setTimeout(r, 1000));
+                }
+            }
 
             expect(res.size).to.be.greaterThan(0);
 
