@@ -84,7 +84,17 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await subplebbit.update();
 
             await updatePromise;
-            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 5));
+
+            // Wait for at least 2 complete retry cycles (pairs of fetching-ipns + waiting-retry)
+            await resolveWhenConditionIsTrue({
+                toUpdate: subplebbit,
+                predicate: async () => {
+                    const waitingRetryCount = recordedStates.filter((s) => s === "waiting-retry").length;
+                    return waitingRetryCount >= 2;
+                },
+                eventName: "updatingstatechange"
+            });
+
             await subplebbit.stop();
 
             const expectedFirstUpdateStates = ["fetching-ipns", "fetching-ipfs", "succeeded"];
@@ -120,7 +130,16 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await subplebbit.update();
 
             await errorPromise;
-            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
+
+            // Wait for at least 2 complete retry cycles (pairs of fetching-ipns + waiting-retry)
+            await resolveWhenConditionIsTrue({
+                toUpdate: subplebbit,
+                predicate: async () => {
+                    const waitingRetryCount = recordedUpdatingStates.filter((s) => s === "waiting-retry").length;
+                    return waitingRetryCount >= 2;
+                },
+                eventName: "updatingstatechange"
+            });
 
             await subplebbit.stop();
 
@@ -262,7 +281,17 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             await subplebbit.update();
 
             await updatePromise;
-            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 5));
+
+            // Wait for at least 2 complete retry cycles (pairs of fetching-ipns + waiting-retry)
+            await resolveWhenConditionIsTrue({
+                toUpdate: subplebbit,
+                predicate: async () => {
+                    const waitingRetryCount = recordedStates.filter((s) => s === "waiting-retry").length;
+                    return waitingRetryCount >= 2;
+                },
+                eventName: "updatingstatechange"
+            });
+
             await subplebbit.stop();
 
             const expectedFirstUpdateStates = ["fetching-ipns", "succeeded"];
@@ -296,7 +325,16 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
             await subplebbit.update();
             await errorPromise;
-            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4));
+
+            // Wait for at least 2 complete retry cycles (pairs of fetching-ipns + waiting-retry)
+            await resolveWhenConditionIsTrue({
+                toUpdate: subplebbit,
+                predicate: async () => {
+                    const waitingRetryCount = recordedUpdatingStates.filter((s) => s === "waiting-retry").length;
+                    return waitingRetryCount >= 2;
+                },
+                eventName: "updatingstatechange"
+            });
 
             await subplebbit.stop();
 
