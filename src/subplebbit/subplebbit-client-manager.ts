@@ -341,6 +341,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             this.updateLibp2pJsClientState("fetching-ipns", kuboRpcOrHelia._libp2pJsClientsOptions.key);
         } else this.updateKuboRpcState("fetching-ipns", kuboRpcOrHelia.url);
         const latestSubplebbitCid = await this.resolveIpnsToCidP2P(ipnsName, { timeoutMs: this._plebbit._timeouts["subplebbit-ipns"] });
+        log.trace(`Resolved subplebbit IPNS`, ipnsName, `to CID`, latestSubplebbitCid);
         if (this._updateCidsAlreadyLoaded.has(latestSubplebbitCid)) {
             log.trace(
                 "Resolved subplebbit IPNS",

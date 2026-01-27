@@ -495,7 +495,14 @@ export class BaseClientsManager {
             else if (e instanceof Error && e.name === "TimeoutError")
                 throw new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, error: e, loadOpts });
             else
-                throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, error: e, loadOpts });
+                throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", {
+                    cid: cidV0,
+                    error: e,
+                    errorMessage: e?.message,
+                    errorName: e?.name,
+                    errorCode: e?.code,
+                    loadOpts
+                });
         }
     }
     async _verifyGatewayResponseMatchesCid(gatewayResponseBody, cid, loadOpts) {

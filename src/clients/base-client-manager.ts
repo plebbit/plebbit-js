@@ -615,7 +615,15 @@ export class BaseClientsManager {
             if (e instanceof PlebbitError) throw e;
             else if (e instanceof Error && e.name === "TimeoutError")
                 throw new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, error: e, loadOpts });
-            else throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, error: e, loadOpts });
+            else
+                throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", {
+                    cid: cidV0,
+                    error: e,
+                    errorMessage: (e as Error)?.message,
+                    errorName: (e as Error)?.name,
+                    errorCode: (e as { code?: string })?.code,
+                    loadOpts
+                });
         }
     }
 

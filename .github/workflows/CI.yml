@@ -86,7 +86,7 @@ jobs:
             - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
             - name: Run tests with config
               id: run_node_tests_remote
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment node test/node-and-browser
+              run: DEBUG="plebbit*" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment node --log-prefix test_node_${{ matrix.config }} test/node-and-browser
             - name: Print failed node tests
               if: ${{ failure() && steps.run_node_tests_remote.outcome == 'failure' }}
               run: node .github/workflows/print-vitest-failures.cjs
@@ -97,6 +97,15 @@ jobs:
                   name: vitest-node-${{ matrix.config }}
                   path: .vitest-reports
                   include-hidden-files: true
+                  if-no-files-found: ignore
+            - name: Upload test logs
+              if: ${{ failure() && steps.run_node_tests_remote.outcome == 'failure' }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: test-logs-${{ matrix.config }}
+                  path: |
+                      test_node_${{ matrix.config }}.stdout.log
+                      test_node_${{ matrix.config }}.stderr.log
                   if-no-files-found: ignore
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
@@ -129,7 +138,7 @@ jobs:
             # Run tests based on environment and config
             - name: Run browser tests with config
               id: run_browser_tests
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }} test/browser test/node-and-browser
+              run: DEBUG="plebbit*" node test/run-test-config.js --parallel --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }} test/browser test/node-and-browser
 
             - name: Print failed browser tests
               if: ${{ failure() && steps.run_browser_tests.outcome == 'failure' }}
@@ -163,7 +172,7 @@ jobs:
             # Setup tests for plebbit-js using rpc here
             - run: DEBUG="plebbit*" npm run test:server:node:rpc 2>&1 | tee test_server.log & npm run test:server:wait-on
             - id: run_rpc_tests
-              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:rpc
+              run: DEBUG="plebbit*" npm run test:node:parallel:rpc
             - name: Print failed rpc tests
               if: ${{ failure() && steps.run_rpc_tests.outcome == 'failure' }}
               run: node .github/workflows/print-vitest-failures.cjs
