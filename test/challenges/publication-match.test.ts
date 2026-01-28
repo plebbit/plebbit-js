@@ -4,11 +4,49 @@ import {
     getSubplebbitChallengeFromSubplebbitChallengeSettings,
     getPendingChallengesOrChallengeVerification
 } from "../../dist/node/runtime/node/subplebbit/challenges/index.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../dist/node/pubsub-messages/types.js";
+import type { LocalSubplebbit } from "../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
 import * as remeda from "remeda";
+
+import type { ChallengeVerificationMessageType } from "../../dist/node/pubsub-messages/types.js";
+import type { Challenge } from "../../dist/node/subplebbit/types.js";
+
+// Flattened type for test assertions - allows direct property access
+// This is appropriate for tests where we assert on the presence/value of these properties
+type PendingChallenge = Challenge & { index: number };
+type ChallengeVerificationResult = {
+    challengeSuccess?: boolean;
+    challengeErrors?: NonNullable<ChallengeVerificationMessageType["challengeErrors"]>;
+    pendingChallenges?: PendingChallenge[];
+    pendingApprovalSuccess?: boolean;
+};
+
+// Wrapper function for type assertion boilerplate
+const testGetPendingChallengesOrChallengeVerification = async (
+    challengeRequestMessage: unknown,
+    subplebbit: unknown
+): Promise<ChallengeVerificationResult> => {
+    return getPendingChallengesOrChallengeVerification(
+        challengeRequestMessage as DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+        subplebbit as LocalSubplebbit
+    ) as Promise<ChallengeVerificationResult>;
+};
+
+interface ChallengeRequestOverrides {
+    publication?: Record<string, unknown>;
+    [key: string]: unknown;
+}
+
+interface SubplebbitChallengeOptions {
+    matches?: string;
+    error?: string;
+    matchAll?: string;
+    description?: string;
+}
 
 describe("publication-match challenge", () => {
     // Create a standard challenge request message fixture to reuse
-    const createChallengeRequestMessage = (overrides = {}) => {
+    const createChallengeRequestMessage = (overrides: ChallengeRequestOverrides = {}): Record<string, unknown> => {
         const defaultPublication = {
             author: {
                 address: "author.eth"
@@ -30,8 +68,10 @@ describe("publication-match challenge", () => {
     };
 
     // Create a standard subplebbit fixture with publication-match challenge
-    const createSubplebbit = (options = {}) => {
-        const defaultOptions = {
+    const createSubplebbit = (
+        options: SubplebbitChallengeOptions = {}
+    ): { _plebbit: { getComment: () => void }; settings: { challenges: Array<{ name: string; options: SubplebbitChallengeOptions }> } } => {
+        const defaultOptions: SubplebbitChallengeOptions = {
             matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.eth$" }]),
             error: "Publication author.address must end with .eth",
             matchAll: "true"
@@ -108,7 +148,7 @@ describe("publication-match challenge", () => {
         const subplebbit = createSubplebbit();
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.true;
     });
 
@@ -121,7 +161,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.false;
         expect(result.challengeErrors[0]).to.equal("Author address must end with .sol");
     });
@@ -135,7 +175,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.true;
     });
 
@@ -151,7 +191,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.true;
     });
 
@@ -168,7 +208,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.true;
     });
 
@@ -185,7 +225,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.false;
         expect(result.challengeErrors[0]).to.equal("Publication does not match any required pattern");
     });
@@ -198,7 +238,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.false;
         expect(result.challengeErrors[0]).to.include("Invalid matches JSON");
     });
@@ -213,7 +253,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.false;
         expect(result.challengeErrors[0]).to.include("Invalid regex pattern");
     });
@@ -227,7 +267,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.false;
         expect(result.challengeErrors[0]).to.equal("Publication does not match required patterns");
     });
@@ -240,7 +280,7 @@ describe("publication-match challenge", () => {
 
         const challengeRequestMessage = createChallengeRequestMessage();
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.true;
     });
 
@@ -258,7 +298,7 @@ describe("publication-match challenge", () => {
             }
         });
 
-        const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+        const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
         expect(result.challengeSuccess).to.be.true;
     });
 });

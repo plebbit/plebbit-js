@@ -4,13 +4,37 @@ import {
     plebbitJsChallenges,
     getPendingChallengesOrChallengeVerification
 } from "../../dist/node/runtime/node/subplebbit/challenges/index.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../dist/node/pubsub-messages/types.js";
+import type { LocalSubplebbit } from "../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type { ChallengeVerificationMessageType } from "../../dist/node/pubsub-messages/types.js";
+import type { Challenge, ChallengeResult } from "../../dist/node/subplebbit/types.js";
 import * as remeda from "remeda";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 
+// Flattened type for challenge verification result - allows direct property access in tests
+type PendingChallenge = Challenge & { index: number };
+type ChallengeVerificationResult = {
+    challengeSuccess?: boolean;
+    challengeErrors?: NonNullable<ChallengeVerificationMessageType["challengeErrors"]>;
+    pendingChallenges?: PendingChallenge[];
+    pendingApprovalSuccess?: boolean;
+};
+
+// Wrapper function for type assertion boilerplate
+const testGetPendingChallengesOrChallengeVerification = async (
+    challengeRequestMessage: Record<string, unknown>,
+    subplebbit: Record<string, unknown>
+): Promise<ChallengeVerificationResult> => {
+    return getPendingChallengesOrChallengeVerification(
+        challengeRequestMessage as unknown as DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+        subplebbit as unknown as LocalSubplebbit
+    ) as Promise<ChallengeVerificationResult>;
+};
+
 describe.skip("voucher challenge", () => {
-    let tempDir;
+    let tempDir: string;
 
     beforeEach(() => {
         tempDir = path.join(tmpdir(), "plebbit-test-" + Math.random().toString(36));
@@ -22,8 +46,21 @@ describe.skip("voucher challenge", () => {
         }
     });
 
+    interface ChallengeRequestOverrides {
+        publication?: Record<string, unknown>;
+        challengeAnswers?: string[];
+        [key: string]: unknown;
+    }
+
+    interface VoucherOptions {
+        question?: string;
+        vouchers?: string;
+        invalidVoucherError?: string;
+        alreadyRedeemedError?: string;
+    }
+
     // Create a standard challenge request message fixture to reuse
-    const createChallengeRequestMessage = (overrides = {}) => {
+    const createChallengeRequestMessage = (overrides: ChallengeRequestOverrides = {}): Record<string, unknown> => {
         const defaultPublication = {
             author: {
                 address: "12D3test123"
@@ -43,8 +80,8 @@ describe.skip("voucher challenge", () => {
     };
 
     // Create a standard subplebbit fixture with voucher challenge
-    const createSubplebbit = (options = {}) => {
-        const defaultOptions = {
+    const createSubplebbit = (options: VoucherOptions = {}): Record<string, unknown> => {
+        const defaultOptions: VoucherOptions = {
             question: "What is your voucher code?",
             vouchers: "VOUCHER1,VOUCHER2,VOUCHER3"
         };
@@ -76,7 +113,7 @@ describe.skip("voucher challenge", () => {
 
         it("creates voucher challenge with default options", () => {
             const voucherFactory = plebbitJsChallenges.voucher;
-            const challenge = voucherFactory({});
+            const challenge = voucherFactory({ challengeSettings: {} } as Parameters<typeof voucherFactory>[0]);
             expect(challenge.getChallenge).to.be.a("function");
             expect(challenge.optionInputs).to.be.an("array");
             expect(challenge.type).to.equal("text/plain");
@@ -84,7 +121,7 @@ describe.skip("voucher challenge", () => {
 
         it("has correct option inputs", () => {
             const voucherFactory = plebbitJsChallenges.voucher;
-            const challenge = voucherFactory({});
+            const challenge = voucherFactory({ challengeSettings: {} } as Parameters<typeof voucherFactory>[0]);
             const optionNames = challenge.optionInputs.map((opt) => opt.option);
             expect(optionNames).to.include("question");
             expect(optionNames).to.include("vouchers");
@@ -99,7 +136,7 @@ describe.skip("voucher challenge", () => {
             const subplebbit = createSubplebbit();
             const challengeRequestMessage = createChallengeRequestMessage();
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             expect(result.pendingChallenges).to.have.length(1);
             const challenge = result.pendingChallenges[0];
@@ -112,20 +149,22 @@ describe.skip("voucher challenge", () => {
             const subplebbit = createSubplebbit();
             const challengeRequestMessage = createChallengeRequestMessage();
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             const challenge = result.pendingChallenges[0];
             const verification = await challenge.verify("INVALID_VOUCHER");
 
             expect(verification.success).to.be.false;
-            expect(verification.error).to.equal("Invalid voucher code.");
+            if (verification.success === false) {
+                expect(verification.error).to.equal("Invalid voucher code.");
+            }
         });
 
         it("allows same author to reuse their voucher", async () => {
             const subplebbit = createSubplebbit();
             const challengeRequestMessage = createChallengeRequestMessage();
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             const challenge = result.pendingChallenges[0];
 
@@ -146,7 +185,7 @@ describe.skip("voucher challenge", () => {
                 publication: { author: { address: "author1" } }
             });
 
-            const result1 = await getPendingChallengesOrChallengeVerification(challengeRequestMessage1, subplebbit);
+            const result1 = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage1, subplebbit);
 
             const challenge1 = result1.pendingChallenges[0];
             const verification1 = await challenge1.verify("VOUCHER1");
@@ -157,13 +196,15 @@ describe.skip("voucher challenge", () => {
                 publication: { author: { address: "author2" } }
             });
 
-            const result2 = await getPendingChallengesOrChallengeVerification(challengeRequestMessage2, subplebbit);
+            const result2 = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage2, subplebbit);
 
             const challenge2 = result2.pendingChallenges[0];
             const verification2 = await challenge2.verify("VOUCHER1");
 
             expect(verification2.success).to.be.false;
-            expect(verification2.error).to.equal("This voucher has already been redeemed by another author.");
+            if (verification2.success === false) {
+                expect(verification2.error).to.equal("This voucher has already been redeemed by another author.");
+            }
         });
 
         it("handles pre-answered challenges correctly", async () => {
@@ -172,7 +213,7 @@ describe.skip("voucher challenge", () => {
                 challengeAnswers: ["VOUCHER1"]
             });
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             expect(result.challengeSuccess).to.be.true;
         });
@@ -183,7 +224,7 @@ describe.skip("voucher challenge", () => {
                 challengeAnswers: ["INVALID_VOUCHER"]
             });
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             expect(result.challengeSuccess).to.be.false;
             expect(result.challengeErrors).to.be.an("object");
@@ -198,13 +239,15 @@ describe.skip("voucher challenge", () => {
             });
             const challengeRequestMessage = createChallengeRequestMessage();
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             const challenge = result.pendingChallenges[0];
             const verification = await challenge.verify("INVALID_VOUCHER");
 
             expect(verification.success).to.be.false;
-            expect(verification.error).to.equal("Custom invalid code message");
+            if (verification.success === false) {
+                expect(verification.error).to.equal("Custom invalid code message");
+            }
         });
 
         it("uses custom already redeemed error message", async () => {
@@ -217,7 +260,7 @@ describe.skip("voucher challenge", () => {
                 publication: { author: { address: "author1" } }
             });
 
-            const result1 = await getPendingChallengesOrChallengeVerification(challengeRequestMessage1, subplebbit);
+            const result1 = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage1, subplebbit);
 
             await result1.pendingChallenges[0].verify("VOUCHER1");
 
@@ -226,12 +269,14 @@ describe.skip("voucher challenge", () => {
                 publication: { author: { address: "author2" } }
             });
 
-            const result2 = await getPendingChallengesOrChallengeVerification(challengeRequestMessage2, subplebbit);
+            const result2 = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage2, subplebbit);
 
             const verification = await result2.pendingChallenges[0].verify("VOUCHER1");
 
             expect(verification.success).to.be.false;
-            expect(verification.error).to.equal("Custom already used message");
+            if (verification.success === false) {
+                expect(verification.error).to.equal("Custom already used message");
+            }
         });
     });
 
@@ -240,7 +285,7 @@ describe.skip("voucher challenge", () => {
             const subplebbit = createSubplebbit();
             const challengeRequestMessage = createChallengeRequestMessage();
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             const challenge = result.pendingChallenges[0];
             await challenge.verify("VOUCHER1");
@@ -280,12 +325,14 @@ describe.skip("voucher challenge", () => {
                 publication: { author: { address: "different_author" } }
             });
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             const verification = await result.pendingChallenges[0].verify("VOUCHER1");
 
             expect(verification.success).to.be.false;
-            expect(verification.error).to.equal("This voucher has already been redeemed by another author.");
+            if (verification.success === false) {
+                expect(verification.error).to.equal("This voucher has already been redeemed by another author.");
+            }
         });
     });
 
@@ -295,7 +342,7 @@ describe.skip("voucher challenge", () => {
             const challengeRequestMessage = createChallengeRequestMessage();
 
             try {
-                await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+                await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
                 expect.fail("Should have thrown an error");
             } catch (error) {
                 // The error gets wrapped by the challenge system
@@ -309,7 +356,7 @@ describe.skip("voucher challenge", () => {
             });
             const challengeRequestMessage = createChallengeRequestMessage();
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             const verification = await result.pendingChallenges[0].verify("VOUCHER2");
             expect(verification.success).to.be.true;
@@ -321,7 +368,7 @@ describe.skip("voucher challenge", () => {
             });
             const challengeRequestMessage = createChallengeRequestMessage();
 
-            const result = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+            const result = await testGetPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
             const verification1 = await result.pendingChallenges[0].verify("VOUCHER1");
             expect(verification1.success).to.be.true;

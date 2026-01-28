@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "ES2021",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "strict": false,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "resolveJsonModule": true,
+        "types": ["vitest/globals", "node"],
+        "noImplicitAny": false,
+        "strictNullChecks": false,
+        "strictFunctionTypes": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false
+    },
+    "include": ["./**/*.ts"],
+    "exclude": ["node_modules"]
+}

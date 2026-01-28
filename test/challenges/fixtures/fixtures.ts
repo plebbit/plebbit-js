@@ -1,80 +1,128 @@
 import { EventEmitter } from "events";
 import { plebbitJsChallenges } from "../../../dist/node/runtime/node/subplebbit/challenges/index.js";
 
+// Define types for mock objects
+interface MockAuthor {
+    address: string;
+    wallets?: { eth: { address: string; signature: string } };
+    subplebbit?: {
+        postScore?: number;
+        replyScore?: number;
+        firstCommentTimestamp?: number;
+    };
+}
+
+interface MockSubplebbitChallengeSettings {
+    name: string;
+    options?: Record<string, string>;
+    description?: string;
+    exclude?: Array<Record<string, unknown>>;
+}
+
+interface MockSubplebbit {
+    title: string;
+    roles?: Record<string, { role: string }>;
+    settings: {
+        challenges: MockSubplebbitChallengeSettings[];
+    };
+    _plebbit?: MockPlebbit;
+}
+
+interface MockPlebbit {
+    getComment: (cid: string | { cid: string }) => Comment;
+    createComment: (cid: string | { cid: string }) => Comment;
+}
+
+interface MockChallengeResult {
+    challengeSuccess?: boolean;
+    challengeErrors?: Record<number, string>;
+    pendingChallenges?: Array<{ challenge: string; type: string }>;
+}
+
 // define mock Author instances
-const highKarmaAuthor = {
+const highKarmaAuthor: MockAuthor = {
     address: "high-karma.eth",
     wallets: { eth: { address: "0x...", signature: "0x..." } }
 };
-const lowKarmaAuthor = { address: "low-karma.eth" };
-const authors = [highKarmaAuthor, lowKarmaAuthor];
+const lowKarmaAuthor: MockAuthor = { address: "low-karma.eth" };
+const authors: MockAuthor[] = [highKarmaAuthor, lowKarmaAuthor];
 
-// mock comment instance
-function Comment(cid) {
-    const split = cid.replace("Qm...", "").split(",");
-    const subplebbitAddress = split[0];
-    const karma = split[1];
-    const age = split[2];
-    this.subplebbitAddress = subplebbitAddress;
-    this.updatedAt = undefined;
+// mock comment class
+class Comment extends EventEmitter {
+    subplebbitAddress: string;
+    updatedAt: number | undefined;
+    author: MockAuthor;
+    karma: string | undefined;
+    age: string | undefined;
 
-    // define author
-    this.author = { address: "Qm..." };
-    if (karma === "high") {
-        this.author.address = highKarmaAuthor.address;
-    } else if (karma === "low") {
-        this.author.address = lowKarmaAuthor.address;
+    constructor(cid: string) {
+        super();
+        const split = cid.replace("Qm...", "").split(",");
+        const subplebbitAddress = split[0];
+        const karma = split[1];
+        const age = split[2];
+        this.subplebbitAddress = subplebbitAddress;
+        this.updatedAt = undefined;
+
+        // define author
+        this.author = { address: "Qm..." };
+        if (karma === "high") {
+            this.author.address = highKarmaAuthor.address;
+        } else if (karma === "low") {
+            this.author.address = lowKarmaAuthor.address;
+        }
+
+        // use this value to mock giving 'high' or 'low' karma to the author
+        this.karma = karma;
+        this.age = age;
     }
 
-    // use this value to mock giving 'high' or 'low' karma to the author
-    this.karma = karma;
-    this.age = age;
+    update(): void {
+        const timeout = setTimeout(() => {
+            this.updatedAt = 123456;
+            if (this.karma === "high") {
+                this.author.subplebbit = {
+                    postScore: 1000,
+                    replyScore: 1000
+                };
+            } else if (this.karma === "low") {
+                this.author.subplebbit = {
+                    postScore: 1,
+                    replyScore: 1
+                };
+            }
+            if (this.age === "old") {
+                this.author.subplebbit!.firstCommentTimestamp = Math.round(Date.now() / 1000) - 60 * 60 * 24 * 999; // 999 days ago
+            } else if (this.age === "new") {
+                this.author.subplebbit!.firstCommentTimestamp = Math.round(Date.now() / 1000) - 60 * 60 * 24 * 1; // 1 day ago
+            }
+            this.emit("update", this);
+        }, 5);
+        timeout.unref?.();
+    }
+
+    stop(): void {
+        this.removeAllListeners();
+    }
 }
-Object.setPrototypeOf(Comment.prototype, EventEmitter.prototype);
-
-Comment.prototype.update = function () {
-    setTimeout(() => {
-        this.updatedAt = 123456;
-        if (this.karma === "high") {
-            this.author.subplebbit = {
-                postScore: 1000,
-                replyScore: 1000
-            };
-        } else if (this.karma === "low") {
-            this.author.subplebbit = {
-                postScore: 1,
-                replyScore: 1
-            };
-        }
-        if (this.age === "old") {
-            this.author.subplebbit.firstCommentTimestamp = Math.round(Date.now() / 1000) - 60 * 60 * 24 * 999; // 999 days ago
-        } else if (this.age === "new") {
-            this.author.subplebbit.firstCommentTimestamp = Math.round(Date.now() / 1000) - 60 * 60 * 24 * 1; // 1 day ago
-        }
-        this.emit("update", this);
-    }, 5).unref?.();
-};
-
-Comment.prototype.stop = function () {
-    this.removeAllListeners();
-};
 
 // mock plebbit sync
-const createPlebbit = () => {
-    const getCidFromArg = (arg) => (typeof arg === "string" ? arg : arg?.cid);
+const createPlebbit = (): MockPlebbit => {
+    const getCidFromArg = (arg: string | { cid: string }): string => (typeof arg === "string" ? arg : arg?.cid);
     return {
         getComment: (cid) => new Comment(getCidFromArg(cid)),
         createComment: (cid) => new Comment(getCidFromArg(cid))
     };
 };
+
 // mock Plebbit async
-const Plebbit = () => createPlebbit();
+const Plebbit = (): MockPlebbit => createPlebbit();
 
 // define mock challenges included with plebbit-js
-Plebbit.challenges = plebbitJsChallenges;
+(Plebbit as unknown as { challenges: typeof plebbitJsChallenges }).challenges = plebbitJsChallenges;
 
 // define mock Subplebbit instances
-const textMathChallengeSubplebbit = {
+const textMathChallengeSubplebbit: MockSubplebbit = {
     title: "text-math challenge subplebbit",
     settings: {
         challenges: [
@@ -109,7 +157,7 @@ const textMathChallengeSubplebbit = {
 //     ]
 //   }
 // }
-const excludeHighKarmaChallengeSubplebbit = {
+const excludeHighKarmaChallengeSubplebbit: MockSubplebbit = {
     title: "exclude high karma challenge subplebbit",
     settings: {
         challenges: [
@@ -126,7 +174,7 @@ const excludeHighKarmaChallengeSubplebbit = {
         ]
     }
 };
-const excludeAccountAgeChallengeSubplebbit = {
+const excludeAccountAgeChallengeSubplebbit: MockSubplebbit = {
     title: "exclude account age challenge subplebbit",
     settings: {
         challenges: [
@@ -141,7 +189,7 @@ const excludeAccountAgeChallengeSubplebbit = {
         ]
     }
 };
-const excludeAddressChallengeSubplebbit = {
+const excludeAddressChallengeSubplebbit: MockSubplebbit = {
     title: "exclude address challenge subplebbit",
     settings: {
         challenges: [
@@ -157,7 +205,7 @@ const excludeAddressChallengeSubplebbit = {
         ]
     }
 };
-const whitelistChallengeSubplebbit = {
+const whitelistChallengeSubplebbit: MockSubplebbit = {
     title: "whitelist challenge subplebbit",
     settings: {
         challenges: [
@@ -170,7 +218,7 @@ const whitelistChallengeSubplebbit = {
         ]
     }
 };
-const blacklistChallengeSubplebbit = {
+const blacklistChallengeSubplebbit: MockSubplebbit = {
     title: "blacklist challenge subplebbit",
     settings: {
         challenges: [
@@ -204,7 +252,7 @@ const blacklistChallengeSubplebbit = {
 //     ]
 //   }
 // }
-const evmContractCallChallengeSubplebbit = {
+const evmContractCallChallengeSubplebbit: MockSubplebbit = {
     title: "evm contract call challenge subplebbit",
     settings: {
         challenges: [
@@ -224,7 +272,7 @@ const evmContractCallChallengeSubplebbit = {
         ]
     }
 };
-const passwordChallengeSubplebbit = {
+const passwordChallengeSubplebbit: MockSubplebbit = {
     title: "password challenge subplebbit",
     settings: {
         challenges: [
@@ -238,7 +286,7 @@ const passwordChallengeSubplebbit = {
         ]
     }
 };
-const excludeFriendlySubKarmaChallengeSubplebbit = {
+const excludeFriendlySubKarmaChallengeSubplebbit: MockSubplebbit = {
     title: "exclude friendly sub karma challenge subplebbit",
     settings: {
         challenges: [
@@ -259,7 +307,7 @@ const excludeFriendlySubKarmaChallengeSubplebbit = {
         ]
     }
 };
-const twoOutOf4SuccessChallengeSubplebbit = {
+const twoOutOf4SuccessChallengeSubplebbit: MockSubplebbit = {
     title: "2 out of 4 success challenge subplebbit",
     settings: {
         // challenge 0, 1 fail, but excluded if 2, 3 succeed, which makes challengeVerification.challengeSuccess = true
@@ -283,7 +331,7 @@ const twoOutOf4SuccessChallengeSubplebbit = {
         ]
     }
 };
-const twoOutOf4SuccessInverseChallengeSubplebbit = {
+const twoOutOf4SuccessInverseChallengeSubplebbit: MockSubplebbit = {
     title: "2 out of 4 success inverse challenge subplebbit",
     settings: {
         // challenge 0, 1 fail, but excluded if 2, 3 succeed, which makes challengeVerification.challengeSuccess = true
@@ -307,7 +355,7 @@ const twoOutOf4SuccessInverseChallengeSubplebbit = {
         ]
     }
 };
-const rateLimitChallengeSubplebbit = {
+const rateLimitChallengeSubplebbit: MockSubplebbit = {
     title: "rate limit challenge subplebbit",
     settings: {
         challenges: [
@@ -326,7 +374,7 @@ const rateLimitChallengeSubplebbit = {
         ]
     }
 };
-const rateLimitChallengeSuccessChallengeSubplebbit = {
+const rateLimitChallengeSuccessChallengeSubplebbit: MockSubplebbit = {
     title: "rate limit challenge success challenge subplebbit",
     settings: {
         challenges: [
@@ -345,7 +393,7 @@ const rateLimitChallengeSuccessChallengeSubplebbit = {
         ]
     }
 };
-const excludeModsChallengeSubplebbit = {
+const excludeModsChallengeSubplebbit: MockSubplebbit = {
     title: "exclude mods challenge subplebbit",
     roles: {
         "high-karma.eth": {
@@ -365,7 +413,7 @@ const excludeModsChallengeSubplebbit = {
     }
 };
 // test a challenge answer excluding a non challenge answer
-const questionOrWhitelistChallengeSubplebbit = {
+const questionOrWhitelistChallengeSubplebbit: MockSubplebbit = {
     title: "question or whitelist challenge subplebbit",
     settings: {
         challenges: [
@@ -391,7 +439,7 @@ const questionOrWhitelistChallengeSubplebbit = {
 };
 
 // define mock author karma scores and account age
-const subplebbitAuthors = {};
+const subplebbitAuthors: Record<string, Record<string, { postScore?: number; replyScore?: number; firstCommentTimestamp?: number }>> = {};
 subplebbitAuthors[highKarmaAuthor.address] = {};
 subplebbitAuthors[highKarmaAuthor.address][excludeHighKarmaChallengeSubplebbit.title] = {
     postScore: 1000,
@@ -408,16 +456,16 @@ subplebbitAuthors[lowKarmaAuthor.address][excludeHighKarmaChallengeSubplebbit.ti
 subplebbitAuthors[lowKarmaAuthor.address][excludeAccountAgeChallengeSubplebbit.title] = { postScore: 1000, replyScore: 1000 };
 
 // define mock friendly sub comment cids
-const challengeCommentCids = {};
+const challengeCommentCids: Record<string, string[]> = {};
 challengeCommentCids[highKarmaAuthor.address] = ["Qm...friendly-sub.eth,high,old", "Qm...friendly-sub.eth,high,old"];
 
-const challengeAnswers = {};
+const challengeAnswers: Record<string, Record<string, string[]>> = {};
 challengeAnswers[highKarmaAuthor.address] = {};
 challengeAnswers[highKarmaAuthor.address][passwordChallengeSubplebbit.title] = ["password"];
 challengeAnswers[lowKarmaAuthor.address] = {};
 challengeAnswers[lowKarmaAuthor.address][passwordChallengeSubplebbit.title] = ["wrong"];
 
-const subplebbits = [
+const subplebbits: MockSubplebbit[] = [
     textMathChallengeSubplebbit,
     // captchaAndMathChallengeSubplebbit,
     excludeHighKarmaChallengeSubplebbit,
@@ -437,7 +485,7 @@ const subplebbits = [
     questionOrWhitelistChallengeSubplebbit
 ];
 
-const results = {};
+const results: Record<string, Record<string, MockChallengeResult>> = {};
 results[textMathChallengeSubplebbit.title] = {
     "high-karma.eth": {
         pendingChallenges: [{ challenge: "660 - 256", type: "text/plain" }]

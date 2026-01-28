@@ -9,7 +9,8 @@
 -   You can't add code that only works in node under src/, it has to be under src/runtime/node, or otherwise it will fail browser build
 -   Do not include this.timeout in tests, that is not supported by vitest
 -   When I report a bug or regression to you we need to figure out how to reproduce it determinstically in a test case first and then we can brainstorm how to fix it.
--   Do not write in typescript inside test files that end with .js
+-   Test files should be written in TypeScript (.test.ts). The test runner will type-check all TypeScript test files before running them.
+-   When modifying files under test/, run `npx tsc --project test/tsconfig.json --noEmit` to verify types are correct.
 -   If you need to mock consider to use vitest utilities for mocking
 -   If you're gonna mock a comment, you need to create a fixture that's similar to how it looks to production like this one. For comment (CommentIpfs), look at test/fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json, while for commentUpdate look at test/fixtures/signatures/comment/commentUpdate/valid_comment_update.json
 -   Keep in mind that a comment's bytes size during publication is limited to 40kb

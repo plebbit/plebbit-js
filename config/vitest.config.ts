@@ -1,3 +1,4 @@
+// @ts-nocheck - Vitest's type definitions don't include all runtime options
 import { mkdirSync } from "node:fs";
 import { defineConfig, defineProject } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
@@ -12,18 +13,18 @@ const stderrJsonReporterPath = "./config/vitest-stderr-json-reporter.js";
 const baseReporters = [
     "verbose",
     [stderrJsonReporterPath, { outputFile: vitestJsonReportPath }]
-];
-const sharedReporters = isGithubActions ? [...baseReporters, "github-actions"] : baseReporters;
+] as const;
+const sharedReporters = isGithubActions ? [...baseReporters, "github-actions"] : [...baseReporters];
 
 mkdirSync(vitestReportDir, { recursive: true });
 
-const parseIncludeOverride = () => {
+const parseIncludeOverride = (): string[] | undefined => {
     const raw = process.env.VITEST_INCLUDE_GLOBS;
     if (!raw) {
         return undefined;
     }
     try {
-        const parsed = JSON.parse(raw);
+        const parsed: unknown = JSON.parse(raw);
         if (!Array.isArray(parsed)) {
             return undefined;
         }
@@ -37,7 +38,7 @@ const parseIncludeOverride = () => {
 
 const includeOverride = parseIncludeOverride();
 const defaultNodeInclude = ["test/node/**/*.test.{js,ts}", "test/node-and-browser/**/*.test.{js,ts}", "test/challenges/**/*.test.{js,ts}"];
-const defaultBrowserInclude = ["test/*browser/**/*.test.js"];
+const defaultBrowserInclude = ["test/*browser/**/*.test.{js,ts}"];
 const nodeTestInclude = includeOverride ?? defaultNodeInclude;
 const browserTestInclude = includeOverride ?? defaultBrowserInclude;
 
@@ -93,7 +94,7 @@ const browserProject = defineProject({
         alias: [
             {
                 find: /^((\.\.\/)+)dist\/node(\/.*)?$/,
-                replacement: (match, relativePath, lastSlash, subPath) => {
+                replacement: (_match: string, relativePath: string, _lastSlash: string, subPath: string) => {
                     const path = subPath || "";
                     return `${relativePath}dist/browser${path}`;
                 }
@@ -117,7 +118,7 @@ const nodeProject = defineProject({
     }
 });
 
-const getTarget = () => {
+const getTarget = (): string | undefined => {
     const direct = process.env.VITEST_MODE ?? process.env.VITEST_TARGET;
     return typeof direct === "string" ? direct.toLowerCase() : undefined;
 };

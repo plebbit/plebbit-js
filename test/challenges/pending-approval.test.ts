@@ -4,10 +4,42 @@ import {
     getChallengeVerification,
     getSubplebbitChallengeFromSubplebbitChallengeSettings
 } from "../../dist/node/runtime/node/subplebbit/challenges/index.js";
-import { Plebbit } from "./fixtures/fixtures.js";
+import type { GetChallengeAnswers } from "../../dist/node/runtime/node/subplebbit/challenges/index.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../dist/node/pubsub-messages/types.js";
+import type { LocalSubplebbit } from "../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import { Plebbit } from "./fixtures/fixtures.ts";
 
-const createSubplebbitWithChallenges = async (plebbitInstance, challengeSettings) => {
-    const subplebbit = {
+// Wrapper function for type assertion boilerplate
+const testGetChallengeVerification = (
+    challengeRequestMessage: unknown,
+    subplebbit: unknown,
+    getChallengeAnswers: GetChallengeAnswers
+) => {
+    return getChallengeVerification(
+        challengeRequestMessage as DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+        subplebbit as LocalSubplebbit,
+        getChallengeAnswers
+    );
+};
+
+interface MockChallengeSettings {
+    name: string;
+    options?: { question: string; answer: string };
+    pendingApproval?: boolean;
+    exclude?: Array<{ challenges?: number[]; address?: string[]; rateLimit?: number; rateLimitChallengeSuccess?: boolean }>;
+}
+
+interface MockSubplebbitWithChallenges {
+    settings: { challenges: MockChallengeSettings[] };
+    _plebbit: ReturnType<typeof Plebbit>;
+    challenges?: unknown[];
+}
+
+const createSubplebbitWithChallenges = async (
+    plebbitInstance: ReturnType<typeof Plebbit>,
+    challengeSettings: MockChallengeSettings[]
+): Promise<MockSubplebbitWithChallenges> => {
+    const subplebbit: MockSubplebbitWithChallenges = {
         settings: { challenges: challengeSettings },
         _plebbit: plebbitInstance
     };
@@ -18,13 +50,13 @@ const createSubplebbitWithChallenges = async (plebbitInstance, challengeSettings
 };
 
 describe("pending approval", () => {
-    let plebbit;
+    let plebbit: ReturnType<typeof Plebbit>;
 
     beforeAll(async () => {
         plebbit = await Plebbit();
     });
 
-    const wrongAnswers = async (challenges) => challenges.map(() => "wrong");
+    const wrongAnswers = async (challenges: unknown[]): Promise<string[]> => challenges.map(() => "wrong");
 
     it("fails comments when pending-approval challenges are answered incorrectly", async () => {
         const challengeSettings = [
@@ -42,7 +74,7 @@ describe("pending approval", () => {
         const subplebbit = await createSubplebbitWithChallenges(plebbit, challengeSettings);
         const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
 
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
+        const verification = await testGetChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
 
         expect(verification.pendingApproval).to.equal(undefined);
         expect(verification.challengeSuccess).to.equal(false);
@@ -67,7 +99,7 @@ describe("pending approval", () => {
         const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
 
         const answers = async () => ["password-1", "password-2"];
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, answers);
+        const verification = await testGetChallengeVerification(challengeRequestMessage, subplebbit, answers);
 
         expect(verification.pendingApproval).to.equal(true);
         expect(verification.challengeSuccess).to.equal(true);
@@ -86,7 +118,7 @@ describe("pending approval", () => {
         const challengeRequestMessage = { vote: { author: { address: "author-vote" } } };
 
         const correctAnswers = async () => ["password"];
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, correctAnswers);
+        const verification = await testGetChallengeVerification(challengeRequestMessage, subplebbit, correctAnswers);
 
         expect(verification.pendingApproval).to.equal(undefined);
         expect(verification.challengeSuccess).to.equal(true);
@@ -108,7 +140,7 @@ describe("pending approval", () => {
         const subplebbit = await createSubplebbitWithChallenges(plebbit, challengeSettings);
         const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
 
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
+        const verification = await testGetChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
 
         expect(verification.pendingApproval).to.equal(undefined);
         expect(verification.challengeSuccess).to.equal(false);
@@ -138,7 +170,7 @@ describe("pending approval", () => {
         const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
 
         const answers = async () => ["first", "wrong", "wrong"];
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, answers);
+        const verification = await testGetChallengeVerification(challengeRequestMessage, subplebbit, answers);
 
         expect(verification.pendingApproval).to.equal(undefined);
         expect(verification.challengeSuccess).to.equal(false);
@@ -163,7 +195,7 @@ describe("pending approval", () => {
         const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
 
         const answers = async () => ["first", "wrong"];
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, answers);
+        const verification = await testGetChallengeVerification(challengeRequestMessage, subplebbit, answers);
 
         expect(verification.pendingApproval).to.equal(undefined);
         expect(verification.challengeSuccess).to.equal(true);
@@ -182,7 +214,7 @@ describe("pending approval", () => {
         const subplebbit = await createSubplebbitWithChallenges(plebbit, challengeSettings);
         const challengeRequestMessage = { comment: { author: { address: "author-comment" } } };
 
-        const verification = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
+        const verification = await testGetChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswers);
 
         expect(verification.pendingApproval).to.equal(undefined);
         expect(verification.challengeSuccess).to.equal(true);
@@ -202,8 +234,8 @@ describe("pending approval", () => {
         const challengeRequestMessage = { comment: { author: { address: "rate-limited-author" } } };
 
         const wrongAnswer = async () => ["wrong"];
-        const first = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswer);
-        const second = await getChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswer);
+        const first = await testGetChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswer);
+        const second = await testGetChallengeVerification(challengeRequestMessage, subplebbit, wrongAnswer);
 
         for (const verification of [first, second]) {
             expect(verification.pendingApproval).to.equal(undefined);
@@ -226,7 +258,7 @@ describe("pending approval", () => {
             comment: { author: { address: "author-comment" } },
             challengeAnswers: ["wrong"]
         };
-        const wrongVerification = await getChallengeVerification(wrongRequest, subplebbit, async () => ["wrong"]);
+        const wrongVerification = await testGetChallengeVerification(wrongRequest, subplebbit, async () => ["wrong"]);
         expect(wrongVerification.pendingApproval).to.equal(undefined);
         expect(wrongVerification.challengeSuccess).to.equal(false);
         expect(wrongVerification.challengeErrors[0]).to.equal("Wrong answer.");
@@ -235,7 +267,7 @@ describe("pending approval", () => {
             comment: { author: { address: "author-comment" } },
             challengeAnswers: ["secret"]
         };
-        const correctVerification = await getChallengeVerification(correctRequest, subplebbit, async () => ["secret"]);
+        const correctVerification = await testGetChallengeVerification(correctRequest, subplebbit, async () => ["secret"]);
         expect(correctVerification.pendingApproval).to.equal(true);
         expect(correctVerification.challengeSuccess).to.equal(true);
         expect(correctVerification.challengeErrors).to.equal(undefined);

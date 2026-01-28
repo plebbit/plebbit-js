@@ -7,7 +7,32 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
-const vitestConfigPath = path.join(projectRoot, "config", "vitest.config.js");
+const vitestConfigPath = path.join(projectRoot, "config", "vitest.config.ts");
+
+/**
+ * Type check TypeScript test files before running tests.
+ * This ensures type errors are caught even though Vitest strips types without checking.
+ */
+const typeCheckTests = () => {
+    const hasTypeScriptTests = fs.readdirSync(__dirname, { recursive: true }).some((file) => String(file).endsWith(".test.ts"));
+
+    if (!hasTypeScriptTests) {
+        return; // Skip type checking if no TypeScript test files exist yet
+    }
+
+    console.log("Type checking test files...");
+    try {
+        // Type check test files
+        execSync("npx tsc --project test/tsconfig.json", {
+            stdio: "inherit",
+            cwd: projectRoot
+        });
+        console.log("Type checking passed.");
+    } catch (error) {
+        console.error("TypeScript type checking failed!");
+        process.exit(1);
+    }
+};
 
 const DEFAULT_NODE_OPTIONS = [
     "--experimental-specifier-resolution=node",
@@ -533,6 +558,9 @@ const runBrowserTests = () => {
         process.exit(code);
     });
 };
+
+// Type check TypeScript files before running tests
+typeCheckTests();
 
 if (isNodeEnvironment) {
     runNodeTests();
