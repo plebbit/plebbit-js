@@ -1,26 +1,77 @@
 import { expect } from "chai";
 import { describe, it } from "vitest";
 import { addStringToIpfs, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
-import { loadAllPagesUnderSubplebbitToFindComment } from "../../../src/publications/comment/comment-util.js";
+import { loadAllPagesUnderSubplebbitToFindComment } from "../../../dist/node/publications/comment/comment-util.js";
+import type { PageIpfs } from "../../../dist/node/pages/types.js";
+import type { RemoteSubplebbit } from "../../../dist/node/subplebbit/remote-subplebbit.js";
 
 const REPLY_DEPTHS = [1, 2, 3, 5, 10, 15];
 
-const makeComment = ({ cid, depth, postCid, parentCid }) => ({
-    comment: {
-        cid,
-        depth,
-        parentCid,
-        postCid,
-        subplebbitAddress: "s/test",
-        signature: {},
-        author: { address: "author" }
-    },
-    commentUpdate: {
-        cid,
-        updatedAt: depth,
-        replies: undefined
-    }
-});
+// Use PageIpfs types from plebbit-js
+type CommentInPage = PageIpfs["comments"][number];
+
+// Test-specific interfaces (not duplicating plebbit-js types)
+interface TestContextOptions {
+    depth: number;
+    postsStorage: "pages" | "pageCids";
+    repliesStorage?: "pages" | "pageCids";
+    targetOnSecondPostPage?: boolean;
+    targetOnSecondReplyPage?: boolean;
+    extraPosts?: number;
+}
+
+// Mock subplebbit shape for testing - cast to RemoteSubplebbit when calling loadAllPagesUnderSubplebbitToFindComment
+interface MockSubplebbit {
+    address: string;
+    _plebbit: { getComment: (opts: { cid: string }) => Promise<unknown> };
+    posts: {
+        pages: Record<string, PageIpfs>;
+        pageCids: Record<string, string>;
+        getPage: (opts: { cid: string }) => Promise<PageIpfs | undefined>;
+    };
+}
+
+interface TestContext {
+    subplebbit: MockSubplebbit;
+    targetCid: string;
+    postCid: string;
+    parentCid: string | undefined;
+    counters: {
+        postPageCalls: number;
+        replyPageCalls: number;
+        postPageCids: string[];
+        replyPageParents: string[];
+    };
+    extraPostCids: string[];
+}
+
+const makeComment = ({
+    cid,
+    depth,
+    postCid,
+    parentCid
+}: {
+    cid: string;
+    depth: number;
+    postCid: string;
+    parentCid: string | undefined;
+}): CommentInPage =>
+    ({
+        comment: {
+            cid,
+            depth,
+            parentCid,
+            postCid,
+            subplebbitAddress: "s/test",
+            signature: {},
+            author: { address: "author" }
+        },
+        commentUpdate: {
+            cid,
+            updatedAt: depth,
+            replies: undefined
+        }
+    }) as never;
 
 async function createTestContext({
     depth,
@@ -29,10 +80,10 @@ async function createTestContext({
     targetOnSecondPostPage = false,
     targetOnSecondReplyPage = false,
     extraPosts = 0
-}) {
-    const counters = { postPageCalls: 0, replyPageCalls: 0, postPageCids: [], replyPageParents: [] };
+}: TestContextOptions): Promise<TestContext> {
+    const counters = { postPageCalls: 0, replyPageCalls: 0, postPageCids: [] as string[], replyPageParents: [] as string[] };
     const postCid = `post-${Math.random().toString(16).slice(2)}`;
-    const commentsChain = [];
+    const commentsChain: CommentInPage[] = [];
     for (let i = 0; i <= depth; i++) {
         const cid = i === 0 ? postCid : `reply-${i}-${Math.random().toString(16).slice(2)}`;
         commentsChain.push(
@@ -41,11 +92,11 @@ async function createTestContext({
     }
     const targetComment = commentsChain[depth];
 
-    const postPagesByCid = {};
-    const replyPagesByParent = new Map();
-    const commentInstances = new Map();
+    const postPagesByCid: Record<string, PageIpfs> = {};
+    const replyPagesByParent = new Map<string, Record<string, PageIpfs>>();
+    const commentInstances = new Map<string, { cid: string; replies: unknown }>();
 
-    const registerReplyPage = async (parentCid, page) => {
+    const registerReplyPage = async (parentCid: string, page: PageIpfs): Promise<string> => {
         const cid = await addStringToIpfs(JSON.stringify(page));
         const pagesForParent = replyPagesByParent.get(parentCid) || {};
         pagesForParent[cid] = page;
@@ -53,22 +104,26 @@ async function createTestContext({
         return cid;
     };
 
-    const buildRepliesForParent = async (parentComment, childComment, useSecondPage) => {
+    const buildRepliesForParent = async (
+        parentComment: CommentInPage,
+        childComment: CommentInPage,
+        useSecondPage: boolean
+    ): Promise<{ pages?: { best: PageIpfs }; pageCids?: { best: string } }> => {
         const parentCid = parentComment.commentUpdate.cid;
         if (repliesStorage === "pages") {
-            let secondPageCid;
+            let secondPageCid: string | undefined;
             if (useSecondPage) {
-                const secondPage = { comments: [childComment] };
+                const secondPage: PageIpfs = { comments: [childComment] };
                 secondPageCid = await registerReplyPage(parentCid, secondPage);
             }
-            const firstPage = useSecondPage ? { comments: [], nextCid: secondPageCid } : { comments: [childComment] };
-            if (secondPageCid) replyPagesByParent.get(parentCid)[secondPageCid] = replyPagesByParent.get(parentCid)[secondPageCid];
+            const firstPage: PageIpfs = useSecondPage ? { comments: [], nextCid: secondPageCid } : { comments: [childComment] };
+            if (secondPageCid) replyPagesByParent.get(parentCid)![secondPageCid] = replyPagesByParent.get(parentCid)![secondPageCid];
             return { pages: { best: firstPage } };
         } else {
-            const firstPage = useSecondPage ? { comments: [] } : { comments: [childComment] };
+            const firstPage: PageIpfs = useSecondPage ? { comments: [] } : { comments: [childComment] };
             const firstPageCid = await registerReplyPage(parentCid, firstPage);
             if (useSecondPage) {
-                const secondPage = { comments: [childComment] };
+                const secondPage: PageIpfs = { comments: [childComment] };
                 const secondPageCid = await registerReplyPage(parentCid, secondPage);
                 firstPage.nextCid = secondPageCid;
             }
@@ -76,23 +131,23 @@ async function createTestContext({
         }
     };
 
-    const expectCidParamObject = (cidParam, context) => {
-        if (!cidParam || typeof cidParam !== "object" || typeof cidParam.cid !== "string") {
+    const expectCidParamObject = (cidParam: unknown, context: string): string => {
+        if (!cidParam || typeof cidParam !== "object" || typeof (cidParam as { cid?: unknown }).cid !== "string") {
             throw Error(`${context} expected argument { cid: string }`);
         }
-        return cidParam.cid;
+        return (cidParam as { cid: string }).cid;
     };
 
     for (let i = 0; i < depth; i++) {
         const parent = commentsChain[i];
         const child = commentsChain[i + 1];
         const replies = await buildRepliesForParent(parent, child, targetOnSecondReplyPage && i === 0);
-        parent.commentUpdate.replies = replies;
+        (parent.commentUpdate as { replies: unknown }).replies = replies;
         commentInstances.set(parent.commentUpdate.cid, {
             cid: parent.commentUpdate.cid,
             replies: {
                 ...replies,
-                getPage: async (cidParam) => {
+                getPage: async (cidParam: unknown) => {
                     const cid = expectCidParamObject(cidParam, "replies.getPage");
                     counters.replyPageCalls++;
                     counters.replyPageParents.push(parent.commentUpdate.cid);
@@ -103,7 +158,7 @@ async function createTestContext({
         });
     }
 
-    const extraPostsComments = [];
+    const extraPostsComments: CommentInPage[] = [];
     for (let i = 0; i < extraPosts; i++) {
         const extraPostCid = `post-extra-${i}-${Math.random().toString(16).slice(2)}`;
         const extraPost = makeComment({ cid: extraPostCid, depth: 0, postCid: extraPostCid, parentCid: undefined });
@@ -114,12 +169,12 @@ async function createTestContext({
             parentCid: extraPostCid
         });
         const replies = await buildRepliesForParent(extraPost, extraReply, false);
-        extraPost.commentUpdate.replies = replies;
+        (extraPost.commentUpdate as { replies: unknown }).replies = replies;
         commentInstances.set(extraPost.commentUpdate.cid, {
             cid: extraPost.commentUpdate.cid,
             replies: {
                 ...replies,
-                getPage: async (cidParam) => {
+                getPage: async (cidParam: unknown) => {
                     const cid = expectCidParamObject(cidParam, "replies.getPage");
                     counters.replyPageCalls++;
                     counters.replyPageParents.push(extraPostCid);
@@ -131,33 +186,33 @@ async function createTestContext({
         extraPostsComments.push(extraPost);
     }
 
-    const registerPostPage = async (page) => {
+    const registerPostPage = async (page: PageIpfs): Promise<string> => {
         const cid = await addStringToIpfs(JSON.stringify(page));
         postPagesByCid[cid] = page;
         return cid;
     };
 
     const postComment = commentsChain[0];
-    let postsPages = {};
-    let postsPageCids = {};
+    let postsPages: Record<string, PageIpfs> = {};
+    let postsPageCids: Record<string, string> = {};
     if (postsStorage === "pages") {
-        let secondPageCid;
+        let secondPageCid: string | undefined;
         const firstPageComments = targetOnSecondPostPage ? extraPostsComments : [postComment, ...extraPostsComments];
         if (targetOnSecondPostPage) {
-            const secondPage = { comments: [postComment] };
+            const secondPage: PageIpfs = { comments: [postComment] };
             secondPageCid = await registerPostPage(secondPage);
         }
-        const firstPage = targetOnSecondPostPage
+        const firstPage: PageIpfs = targetOnSecondPostPage
             ? { comments: firstPageComments, nextCid: secondPageCid }
             : { comments: firstPageComments };
         postsPages = { hot: firstPage };
     } else {
-        const firstPage = targetOnSecondPostPage
+        const firstPage: PageIpfs = targetOnSecondPostPage
             ? { comments: [...extraPostsComments] }
             : { comments: [postComment, ...extraPostsComments] };
         const firstPageCid = await registerPostPage(firstPage);
         if (targetOnSecondPostPage) {
-            const secondPage = { comments: [postComment] };
+            const secondPage: PageIpfs = { comments: [postComment] };
             const secondPageCid = await registerPostPage(secondPage);
             firstPage.nextCid = secondPageCid;
             postPagesByCid[firstPageCid] = firstPage;
@@ -166,8 +221,8 @@ async function createTestContext({
     }
 
     const plebbitMock = {
-        getComment: async (cidParam) => {
-            const cid = expectCidParamObject(cidParam, "getComment");
+        getComment: async (cidParam: { cid: string }) => {
+            const cid = cidParam.cid;
             const instance = commentInstances.get(cid);
             if (!instance) throw Error(`Mocked comment instance for ${cid} not found`);
             return instance;
@@ -180,8 +235,8 @@ async function createTestContext({
         posts: {
             pages: postsPages,
             pageCids: postsPageCids,
-            getPage: async (cidParam) => {
-                const cid = expectCidParamObject(cidParam, "posts.getPage");
+            getPage: async (cidParam: { cid: string }) => {
+                const cid = cidParam.cid;
                 counters.postPageCalls++;
                 counters.postPageCids.push(cid);
                 return postPagesByCid[cid];
@@ -203,13 +258,19 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
     describe("posts from preloaded pages", () => {
         it("finds post on the first page", async () => {
             const { subplebbit, targetCid } = await createTestContext({ depth: 0, postsStorage: "pages" });
-            const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+            const found = await loadAllPagesUnderSubplebbitToFindComment({
+                commentCidToFind: targetCid,
+                subplebbit: subplebbit as never
+            });
             expect(found?.commentUpdate.cid).to.equal(targetCid);
         });
 
         it("finds post on the second page", async () => {
             const { subplebbit, targetCid } = await createTestContext({ depth: 0, postsStorage: "pages", targetOnSecondPostPage: true });
-            const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+            const found = await loadAllPagesUnderSubplebbitToFindComment({
+                commentCidToFind: targetCid,
+                subplebbit: subplebbit as never
+            });
             expect(found?.commentUpdate.cid).to.equal(targetCid);
         });
     });
@@ -217,13 +278,23 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
     describe("posts from pageCids", () => {
         it("finds post on the first page", async () => {
             const { subplebbit, targetCid } = await createTestContext({ depth: 0, postsStorage: "pageCids" });
-            const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+            const found = await loadAllPagesUnderSubplebbitToFindComment({
+                commentCidToFind: targetCid,
+                subplebbit: subplebbit as never
+            });
             expect(found?.commentUpdate.cid).to.equal(targetCid);
         });
 
         it("finds post on the second page", async () => {
-            const { subplebbit, targetCid } = await createTestContext({ depth: 0, postsStorage: "pageCids", targetOnSecondPostPage: true });
-            const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+            const { subplebbit, targetCid } = await createTestContext({
+                depth: 0,
+                postsStorage: "pageCids",
+                targetOnSecondPostPage: true
+            });
+            const found = await loadAllPagesUnderSubplebbitToFindComment({
+                commentCidToFind: targetCid,
+                subplebbit: subplebbit as never
+            });
             expect(found?.commentUpdate.cid).to.equal(targetCid);
         });
     });
@@ -237,7 +308,10 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
                     repliesStorage: "pages",
                     targetOnSecondReplyPage: false
                 });
-                const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+                const found = await loadAllPagesUnderSubplebbitToFindComment({
+                    commentCidToFind: targetCid,
+                    subplebbit: subplebbit as never
+                });
                 expect(found?.commentUpdate.cid).to.equal(targetCid);
             });
 
@@ -248,7 +322,10 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
                     repliesStorage: "pages",
                     targetOnSecondReplyPage: true
                 });
-                const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+                const found = await loadAllPagesUnderSubplebbitToFindComment({
+                    commentCidToFind: targetCid,
+                    subplebbit: subplebbit as never
+                });
                 expect(found?.commentUpdate.cid).to.equal(targetCid);
             });
         });
@@ -263,7 +340,10 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
                     repliesStorage: "pageCids",
                     targetOnSecondReplyPage: false
                 });
-                const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+                const found = await loadAllPagesUnderSubplebbitToFindComment({
+                    commentCidToFind: targetCid,
+                    subplebbit: subplebbit as never
+                });
                 expect(found?.commentUpdate.cid).to.equal(targetCid);
             });
 
@@ -274,7 +354,10 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
                     repliesStorage: "pageCids",
                     targetOnSecondReplyPage: true
                 });
-                const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit });
+                const found = await loadAllPagesUnderSubplebbitToFindComment({
+                    commentCidToFind: targetCid,
+                    subplebbit: subplebbit as never
+                });
                 expect(found?.commentUpdate.cid).to.equal(targetCid);
             });
         });
@@ -288,7 +371,11 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
                 repliesStorage: "pageCids",
                 targetOnSecondReplyPage: true
             });
-            const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit, parentCid });
+            const found = await loadAllPagesUnderSubplebbitToFindComment({
+                commentCidToFind: targetCid,
+                subplebbit: subplebbit as never,
+                parentCid
+            });
             expect(found?.commentUpdate.cid).to.equal(targetCid);
         });
 
@@ -300,7 +387,11 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
                 targetOnSecondPostPage: true,
                 targetOnSecondReplyPage: true
             });
-            const found = await loadAllPagesUnderSubplebbitToFindComment({ commentCidToFind: targetCid, subplebbit, postCid });
+            const found = await loadAllPagesUnderSubplebbitToFindComment({
+                commentCidToFind: targetCid,
+                subplebbit: subplebbit as never,
+                postCid
+            });
             expect(found?.commentUpdate.cid).to.equal(targetCid);
         });
 
@@ -315,7 +406,7 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
             });
             await loadAllPagesUnderSubplebbitToFindComment({
                 commentCidToFind: ctxWithoutHint.targetCid,
-                subplebbit: ctxWithoutHint.subplebbit
+                subplebbit: ctxWithoutHint.subplebbit as never
             });
 
             const ctxWithParentHint = await createTestContext({
@@ -328,7 +419,7 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
             });
             await loadAllPagesUnderSubplebbitToFindComment({
                 commentCidToFind: ctxWithParentHint.targetCid,
-                subplebbit: ctxWithParentHint.subplebbit,
+                subplebbit: ctxWithParentHint.subplebbit as never,
                 parentCid: ctxWithParentHint.parentCid
             });
 
@@ -338,7 +429,7 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
         });
 
         it("skips unrelated replies when postCid is provided", async () => {
-            const baseOpts = {
+            const baseOpts: TestContextOptions = {
                 depth: 2,
                 postsStorage: "pageCids",
                 repliesStorage: "pageCids",
@@ -350,14 +441,14 @@ describeSkipIfRpc.sequential("loadAllPagesUnderSubplebbitToFindComment", () => {
             const ctxWithoutPostHint = await createTestContext(baseOpts);
             const foundWithoutHint = await loadAllPagesUnderSubplebbitToFindComment({
                 commentCidToFind: ctxWithoutPostHint.targetCid,
-                subplebbit: ctxWithoutPostHint.subplebbit
+                subplebbit: ctxWithoutPostHint.subplebbit as never
             });
             expect(foundWithoutHint?.commentUpdate.cid).to.equal(ctxWithoutPostHint.targetCid);
 
             const ctxWithPostHint = await createTestContext(baseOpts);
             const foundWithPostHint = await loadAllPagesUnderSubplebbitToFindComment({
                 commentCidToFind: ctxWithPostHint.targetCid,
-                subplebbit: ctxWithPostHint.subplebbit,
+                subplebbit: ctxWithPostHint.subplebbit as never,
                 postCid: ctxWithPostHint.postCid
             });
             expect(foundWithPostHint?.commentUpdate.cid).to.equal(ctxWithPostHint.targetCid);

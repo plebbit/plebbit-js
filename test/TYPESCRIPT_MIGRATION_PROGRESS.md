@@ -23,26 +23,18 @@ Always import types from the compiled output instead of creating custom types:
 import type { ChallengeResult, Challenge } from "../../dist/node/subplebbit/types.js";
 ```
 
-### 2. Type narrowing for discriminated unions (preferred)
 
-Use explicit equality checks for discriminated unions:
-```typescript
-const verification = await challenge.verify(answer);
-if (verification.success === false) {
-    expect(verification.error).to.equal("Expected error");
-}
-```
 
 ### 3. Type assertions on mock objects (when necessary)
 
-When mock objects don't match full API types:
+Only When mock objects don't match full API types:
 ```typescript
 const mockRequest = { comment: { author } } as unknown as DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor;
 ```
 
 ### 4. Wrapper functions for repeated type assertions
 
-For functions called many times with mock data, create typed wrapper functions:
+Only For functions called many times with mock data, create typed wrapper functions:
 ```typescript
 const testShouldExcludePublication = (
     subplebbitChallenge: Record<string, unknown>,
@@ -54,6 +46,14 @@ const testShouldExcludePublication = (
     );
 };
 ```
+
+Also make sure to always use types from plebbit-js and minimize any creation of new types or interfaces.
+
+### 5. File organization
+
+When you must declare new types or interfaces in a test file, place them at the top of the file (after imports) so they are easy to review.
+
+DO NOT use `unknown` or `any` or `never` as a type unless you consult with me and I approve it. 
 
 ## Phase 1: Configuration Setup
 
@@ -83,15 +83,15 @@ const testShouldExcludePublication = (
 
 ### test/node/ (57 files)
 
-#### test/node/comment/
+#### test/node/comment/ - Complete
 
-- [ ] loading.update.test.js
-- [ ] load.pages.to.find.comment.test.js
-- [ ] publishing.update.test.js
+- [x] loading.update.test.ts (type-safe)
+- [x] load.pages.to.find.comment.test.ts (type-safe)
+- [x] publishing.update.test.ts (type-safe)
 
-#### test/node/comment/post/
+#### test/node/comment/post/ - Complete
 
-- [ ] pages.posts.test.js
+- [x] pages.posts.test.ts (type-safe)
 
 #### test/node/
 
