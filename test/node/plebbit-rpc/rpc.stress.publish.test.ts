@@ -1,4 +1,4 @@
-import { beforeAll, afterAll } from "vitest";
+import { beforeAll, afterAll, afterEach } from "vitest";
 import { expect } from "chai";
 import tempy from "tempy";
 import net from "node:net";
@@ -17,10 +17,17 @@ import {
 import Plebbit from "../../../dist/node/index.js";
 import { messages } from "../../../dist/node/errors.js";
 import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client.js";
+import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";
+import type { RpcLocalSubplebbit } from "../../../dist/node/subplebbit/rpc-local-subplebbit.js";
+import type { SignerType } from "../../../dist/node/signer/types.js";
 
 const { PlebbitWsServer: createPlebbitWsServer, setPlebbitJs } = PlebbitWsServerModule;
 
-const getAvailablePort = async () =>
+type PlebbitWsServerType = Awaited<ReturnType<typeof createPlebbitWsServer>>;
+
+type MockPubsubClientType = ReturnType<typeof createMockPubsubClient>;
+
+const getAvailablePort = async (): Promise<number> =>
     await new Promise((resolve, reject) => {
         const server = net.createServer();
         server.unref();
@@ -35,19 +42,19 @@ const getAvailablePort = async () =>
     });
 
 describeSkipIfRpc("Plebbit RPC server stress publish", function () {
-    let rpcServer;
-    let plebbit;
-    let subplebbit;
-    let moderatorSigner;
-    let rpcPort;
-    const stressClients = [];
+    let rpcServer: PlebbitWsServerType | undefined;
+    let plebbit: PlebbitType;
+    let subplebbit: RpcLocalSubplebbit;
+    let moderatorSigner: SignerType;
+    let rpcPort: number;
+    const stressClients: PlebbitType[] = [];
 
-    function configureServerPubsubClients(options = {}) {
+    function configureServerPubsubClients(options: { dropRate?: number; throwOnPublish?: boolean } = {}) {
         const { dropRate, throwOnPublish } = options;
         const pubsubClients = rpcServer?.plebbit?.clients?.pubsubKuboRpcClients;
         if (!pubsubClients) return;
         for (const pubsubUrl of Object.keys(pubsubClients)) {
-            const wrapper = pubsubClients[pubsubUrl];
+            const wrapper = pubsubClients[pubsubUrl] as unknown as { _client?: MockPubsubClientType; destroy?: () => Promise<void> };
             if (!wrapper) continue;
             if (wrapper._client?.destroy) {
                 try {
@@ -57,7 +64,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
             const mockClient = createMockPubsubClient({ dropRate });
             if (throwOnPublish) {
                 const originalPublish = mockClient.pubsub.publish;
-                mockClient.pubsub.publish = async (...publishArgs) => {
+                mockClient.pubsub.publish = async (...publishArgs: Parameters<typeof mockClient.pubsub.publish>) => {
                     try {
                         await originalPublish?.(...publishArgs);
                     } catch {}
@@ -81,7 +88,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         configureServerPubsubClients();
 
         plebbit = await Plebbit({ plebbitRpcClientsOptions: [`ws://127.0.0.1:${port}`], dataPath: undefined, httpRoutersOptions: [] });
-        subplebbit = await plebbit.createSubplebbit({});
+        subplebbit = (await plebbit.createSubplebbit({})) as RpcLocalSubplebbit;
         subplebbit.setMaxListeners(100);
         moderatorSigner = await plebbit.createSigner();
         await subplebbit.edit({
@@ -93,7 +100,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
             }
         });
         await subplebbit.start();
-        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
     });
 
     afterAll(async () => {
@@ -112,7 +119,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         await Promise.allSettled(stressClients.splice(0).map((client) => client.destroy().catch(() => {})));
     });
 
-    const createPlebbitRpcClient = async () => {
+    const createPlebbitRpcClient = async (): Promise<PlebbitType> => {
         const client = await Plebbit({
             plebbitRpcClientsOptions: [`ws://127.0.0.1:${rpcPort}`],
             dataPath: undefined,
@@ -141,7 +148,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
                 const rejection = await plebbit.createCommentModeration({
                     subplebbitAddress: subplebbit.address,
-                    commentCid: pendingComment.cid,
+                    commentCid: pendingComment.cid!,
                     signer: moderatorSigner,
                     commentModeration: { approved: false, reason: `reject-${i}` }
                 });
@@ -149,7 +156,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
                 const edit = await client.createCommentEdit({
                     subplebbitAddress: subplebbit.address,
-                    commentCid: pendingComment.cid,
+                    commentCid: pendingComment.cid!,
                     reason: "stress-edit",
                     content: "text to edit on pending comment",
                     signer: authorSigner
@@ -187,7 +194,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
                 const rejection = await plebbit.createCommentModeration({
                     subplebbitAddress: subplebbit.address,
-                    commentCid: pendingComment.cid,
+                    commentCid: pendingComment.cid!,
                     signer: moderatorSigner,
                     commentModeration: { approved: false, reason: `drop-reject-${i}` }
                 });
@@ -195,7 +202,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
                 const edit = await client.createCommentEdit({
                     subplebbitAddress: subplebbit.address,
-                    commentCid: pendingComment.cid,
+                    commentCid: pendingComment.cid!,
                     reason: "drop-stress-edit",
                     content: "drop text to edit on pending comment",
                     signer: authorSigner
@@ -216,7 +223,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
     it("keeps pending-approval settings stable while publishng many pending comments", async () => {
         const publishAttempts = 40;
 
-        const runPublishFlow = async (index) => {
+        const runPublishFlow = async (index: number) => {
             const client = await createPlebbitRpcClient();
             const authorSigner = await client.createSigner();
 
@@ -234,7 +241,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
             const rejection = await plebbit.createCommentModeration({
                 subplebbitAddress: subplebbit.address,
-                commentCid: pendingComment.cid,
+                commentCid: pendingComment.cid!,
                 signer: moderatorSigner,
                 commentModeration: { approved: false, reason: `toggle-reject-${index}` }
             });
@@ -242,7 +249,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
             const edit = await client.createCommentEdit({
                 subplebbitAddress: subplebbit.address,
-                commentCid: pendingComment.cid,
+                commentCid: pendingComment.cid!,
                 reason: "toggle-stress-edit",
                 content: "toggle edit content",
                 signer: authorSigner

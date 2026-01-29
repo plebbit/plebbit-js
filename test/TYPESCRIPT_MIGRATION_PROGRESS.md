@@ -104,11 +104,11 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 - [x] started-subplebbits.test.ts (type-safe)
 - [x] validatecomment.plebbit.test.ts (type-safe)
 
-#### test/node/plebbit-rpc/
+#### test/node/plebbit-rpc/ - Complete
 
-- [ ] rpc.listeners.test.js
-- [ ] rpc.server.test.js
-- [ ] rpc.stress.publish.test.js
+- [x] rpc.listeners.test.ts (type-safe)
+- [x] rpc.server.test.ts (type-safe)
+- [x] rpc.stress.publish.test.ts (type-safe)
 
 #### test/node/publications/comment/replies/
 
@@ -344,6 +344,21 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 - [x] Update AGENTS.md
 - [x] Update RENAMING_GUIDE.md to use .test.ts extension for test file renames
 
+## Phase 4: Replace Chai with Vitest Assertions
+
+**After all test files have been migrated to TypeScript**, replace Chai assertions with Vitest's built-in `expect` assertions.
+
+- [ ] Remove `chai` and `@types/chai` dependencies
+- [ ] Replace `import { expect } from "chai"` with `import { expect } from "vitest"` in all test files
+- [ ] Update assertion syntax as needed (Chai and Vitest expect have slightly different APIs)
+
+### Why replace Chai?
+
+1. **Reduced dependencies** - One less dependency to maintain
+2. **Better TypeScript integration** - Vitest's expect is built with TypeScript in mind
+3. **Consistent tooling** - Using Vitest for both test runner and assertions
+4. **Better error messages** - Vitest provides better failure messages out of the box
+
 ---
 
 **Total: 141 test files**
@@ -366,7 +381,8 @@ After each batch of conversions:
 
 ```bash
 # Run tests (type checking happens automatically via run-test-config.js)
-node test/run-test-config.js --plebbit-config local-kubo-rpc test/challenges
+# Use the appropriate config for the test directory (see Conversion Guide below)
+node test/run-test-config.js --plebbit-config <config> test/path/to/directory
 ```
 
 If type checking fails, the test runner will exit with an error **before** running any tests.
@@ -378,6 +394,26 @@ For each test file:
 1. Rename `.test.js` to `.test.ts`
 2. Add type annotations where beneficial
 3. Fix any type errors
+4. **Run the tests to verify they pass** - Always run the migrated tests before considering the migration complete (see config selection below)
+5. Delete the old `.test.js` file only after tests pass
+
+### Selecting the correct plebbit-config
+
+Different test directories require different configs:
+
+| Test Directory | Config(s) |
+|----------------|-----------|
+| `test/node/` | `local-kubo-rpc` |
+| `test/challenges/` | `local-kubo-rpc` |
+| `test/node-and-browser/` | `remote-kubo-rpc`, `remote-ipfs-gateway`, `remote-plebbit-rpc`, `remote-libp2pjs` |
+
+For `test/node-and-browser/` tests, run with all four remote configs:
+```bash
+node test/run-test-config.js --plebbit-config remote-kubo-rpc test/node-and-browser/...
+node test/run-test-config.js --plebbit-config remote-ipfs-gateway test/node-and-browser/...
+node test/run-test-config.js --plebbit-config remote-plebbit-rpc test/node-and-browser/...
+node test/run-test-config.js --plebbit-config remote-libp2pjs test/node-and-browser/...
+```
 
 Example conversion:
 
