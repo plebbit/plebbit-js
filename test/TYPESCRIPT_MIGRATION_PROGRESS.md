@@ -114,9 +114,9 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 - [x] replies.test.ts (type-safe)
 
-#### test/node/publications/comment/update/
+#### test/node/publications/comment/update/ - Complete
 
-- [ ] reply.updatingstate.test.js
+- [x] reply.updatingstate.test.ts (type-safe)
 
 #### test/node/pubsub/
 

@@ -11,13 +11,25 @@ import {
 } from "../../../../../dist/node/test/test-util.js";
 
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit as PlebbitType } from "../../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../../dist/node/publications/comment/comment.js";
+import type { LocalSubplebbit } from "../../../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type { RpcLocalSubplebbit } from "../../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
+import type { CommentUpdatingState, CommentIpfsWithCidDefined } from "../../../../../dist/node/publications/comment/types.js";
+
+interface ReplyParentPagesTestContext {
+    publisherPlebbit: PlebbitType;
+    replyCid: string;
+    cleanup: () => Promise<void>;
+}
+
 const plebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 const replyDepthsToTest = [1, 2, 3, 5, 15, 30];
 
 describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
     replyDepthsToTest.forEach((replyDepth) => {
         describe.concurrent(`reply depth ${replyDepth}`, () => {
-            let context;
+            let context: ReplyParentPagesTestContext;
 
             beforeAll(async () => {
                 // this hook times out sometimes
@@ -33,8 +45,8 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
                     if (!context) throw new Error("Test context was not initialized");
                     const plebbit = await config.plebbitInstancePromise();
 
-                    const recordedStates = [];
-                    let reply;
+                    const recordedStates: CommentUpdatingState[] = [];
+                    let reply: Comment | undefined;
                     try {
                         reply = await plebbit.createComment({ cid: context.replyCid });
 
@@ -43,14 +55,14 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
 
                         reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-                        const commentUpdatePromise = new Promise((resolve, reject) => {
-                            reply.on("update", () => {
-                                if (!reply.updatedAt) return;
-                                if (reply.updatingState !== "succeeded")
+                        const commentUpdatePromise = new Promise<void>((resolve, reject) => {
+                            reply!.on("update", () => {
+                                if (!reply!.updatedAt) return;
+                                if (reply!.updatingState !== "succeeded")
                                     reject("updating state should be succeeded after getting comment ipfs");
                                 if (recordedStates.length === 0) reject("should have emitted an event");
                                 if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
-                                resolve(undefined);
+                                resolve();
                             });
                         });
 
@@ -61,14 +73,16 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
                         await commentUpdatePromise;
                         await resolveWhenConditionIsTrue({
                             toUpdate: reply,
-                            predicate: () => typeof reply.updatedAt === "number"
+                            predicate: async () => typeof reply!.updatedAt === "number"
                         });
 
-                        const updatingMockReply = plebbit._updatingComments[reply.cid];
+                        const updatingMockReply = plebbit._updatingComments[reply.cid!];
                         expect(updatingMockReply).to.exist;
                         const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
                         expect(numOfUpdates).to.be.greaterThan(0);
-                        expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(
+                        // Access private property for test verification
+                        const clientsManager = updatingMockReply._clientsManager as unknown as { _parentFirstPageCidsAlreadyLoaded: Set<string> };
+                        expect(clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(
                             numOfUpdates
                         );
 
@@ -83,7 +97,7 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
                         );
                         expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
                     } finally {
-                        await reply.stop();
+                        await reply?.stop();
                         await plebbit.destroy();
                     }
                 });
@@ -98,7 +112,6 @@ describeSkipIfRpc.concurrent("reply.updatingState regression (node)", () => {
             const plebbit = await config.plebbitInstancePromise();
             const replyCid = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D";
             const reply = await plebbit.createComment({ cid: replyCid });
-            const previousUpdatingEntry = plebbit._updatingComments[replyCid];
 
             // Force the same instance to be treated as the updating instance to mirror the recursion bug
             plebbit._updatingComments[replyCid] = reply;
@@ -117,33 +130,33 @@ describeSkipIfRpc.concurrent("reply.updatingState regression (node)", () => {
     });
 });
 
-async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
+async function createReplyParentPagesTestEnvironment({ replyDepth }: { replyDepth: number }): Promise<ReplyParentPagesTestContext> {
     if (replyDepth === undefined || replyDepth === null) throw new Error("replyDepth is required");
     if (replyDepth < 1) throw new Error("replyDepth must be at least 1");
 
     const publisherPlebbit = await mockPlebbit();
-    const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit);
+    const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit) as LocalSubplebbit | RpcLocalSubplebbit;
 
     try {
         await subplebbit.start();
-        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: () => typeof subplebbit.updatedAt === "number" });
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
 
         const reply = await publishCommentWithDepth({ depth: replyDepth, subplebbit });
-        const parentComment = await publisherPlebbit.getComment({ cid: reply.parentCid });
+        const parentComment = await publisherPlebbit.getComment({ cid: reply.parentCid! });
 
         await parentComment.update();
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,
-            predicate: () => typeof parentComment.updatedAt === "number"
+            predicate: async () => typeof parentComment.updatedAt === "number"
         });
 
-        const { cleanup: preloadCleanup } = await disablePreloadPagesOnSub({ subplebbit });
+        const { cleanup: preloadCleanup } = disablePreloadPagesOnSub({ subplebbit: subplebbit as LocalSubplebbit });
 
-        await publishRandomReply(parentComment, publisherPlebbit); // to force an update
+        await publishRandomReply(parentComment as CommentIpfsWithCidDefined, publisherPlebbit); // to force an update
         // below could timeout
         await resolveWhenConditionIsTrue({
             toUpdate: parentComment,
-            predicate: () => Object.keys(parentComment.replies.pageCids).length > 0
+            predicate: async () => Object.keys(parentComment.replies.pageCids).length > 0
         });
         expect(subplebbit.posts.pages.hot.comments.length).to.equal(0);
 
@@ -155,7 +168,7 @@ async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
 
         return {
             publisherPlebbit,
-            replyCid: reply.cid,
+            replyCid: reply.cid!,
             cleanup
         };
     } catch (error) {
@@ -165,10 +178,10 @@ async function createReplyParentPagesTestEnvironment({ replyDepth } = {}) {
     }
 }
 
-function getExpectedStatesForConfig(configCode) {
+function getExpectedStatesForConfig(configCode: string): CommentUpdatingState[] {
     if (!configCode) throw new Error("plebbit config code is required");
     const normalizedCode = configCode.toLowerCase();
-    const base = ["fetching-ipfs", "succeeded"];
+    const base: CommentUpdatingState[] = ["fetching-ipfs", "succeeded"];
 
     if (normalizedCode === "remote-ipfs-gateway") {
         return cleanupStateArray([...base, "fetching-subplebbit-ipns", "fetching-update-ipfs", "succeeded", "stopped"]);
@@ -200,7 +213,7 @@ function getExpectedStatesForConfig(configCode) {
     ]);
 }
 
-const cleanupStateArray = (states) => {
+const cleanupStateArray = (states: CommentUpdatingState[]): CommentUpdatingState[] => {
     const filteredStates = [...states];
 
     for (let i = 0; i < filteredStates.length; i++) {
@@ -217,8 +230,8 @@ const cleanupStateArray = (states) => {
         }
     }
 
-    const patternA = "fetching-subplebbit-ipns";
-    const patternB = "fetching-subplebbit-ipfs";
+    const patternA: CommentUpdatingState = "fetching-subplebbit-ipns";
+    const patternB: CommentUpdatingState = "fetching-subplebbit-ipfs";
     for (let i = 0; i <= filteredStates.length - 4; i++) {
         if (
             filteredStates[i] === patternA &&
@@ -231,8 +244,8 @@ const cleanupStateArray = (states) => {
         }
     }
 
-    const patternC = "fetching-update-ipfs";
-    const patternD = "succeeded";
+    const patternC: CommentUpdatingState = "fetching-update-ipfs";
+    const patternD: CommentUpdatingState = "succeeded";
     for (let i = 0; i <= filteredStates.length - 4; i++) {
         if (
             filteredStates[i] === patternA &&
@@ -260,7 +273,7 @@ const cleanupStateArray = (states) => {
         }
     }
 
-    const patternE = "failed";
+    const patternE: CommentUpdatingState = "failed";
     for (let i = 0; i <= filteredStates.length - 4; i++) {
         if (
             filteredStates[i] === patternA &&
