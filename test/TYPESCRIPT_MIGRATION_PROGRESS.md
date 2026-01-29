@@ -95,7 +95,7 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 #### test/node/
 
-- [ ] httprouter.test.js
+- [x] httprouter.test.ts (type-safe)
 
 #### test/node/plebbit/
 
