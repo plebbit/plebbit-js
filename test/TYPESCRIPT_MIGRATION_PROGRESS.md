@@ -41,6 +41,24 @@ interface AliasRow {
 }
 ```
 
+When you need to transform all fields of a type (e.g., adding `| null` to every field), use mapped types:
+```typescript
+// Good - use mapped types to derive from existing types
+import type { CommentsTableRow } from "../../../../dist/node/publications/comment/types.js";
+
+// Adds | null to every field (useful for SQLite where missing values are NULL)
+type TestCommentRow = {
+    [K in keyof CommentsTableRow]: CommentsTableRow[K] | null;
+};
+
+// Avoid - manually copying 20+ fields just to add | null
+interface TestCommentRow {
+    cid: string | null;
+    author: CommentsTableRow["author"] | null;
+    // ... 20 more fields manually defined
+}
+```
+
 This ensures types stay in sync with the source and reduces maintenance burden.
 
 ### 2. Derive types from function signatures (preferred over manual definitions)

@@ -38,34 +38,9 @@ interface TreeNode {
 
 // Internal row type for test fixtures that allows null for optional fields
 // (as is typical in SQLite databases where NULL represents missing values)
-interface TestCommentRow {
-    cid: string;
-    authorSignerAddress: string;
-    author: CommentsTableRow["author"];
-    link: string | null;
-    linkWidth: number | null;
-    linkHeight: number | null;
-    thumbnailUrl: string | null;
-    thumbnailUrlWidth: number | null;
-    thumbnailUrlHeight: number | null;
-    parentCid: string | null;
-    postCid: string;
-    previousCid: string | null;
-    subplebbitAddress: string;
-    content: string | undefined;
-    timestamp: number;
-    signature: CommentsTableRow["signature"];
-    title: string | null;
-    depth: number;
-    linkHtmlTagName: string | null;
-    flair: CommentsTableRow["flair"] | null;
-    spoiler: boolean | null;
-    pendingApproval: boolean | null;
-    nsfw: boolean | null;
-    extraProps: Record<string, unknown> | null;
-    protocolVersion: string;
-    insertedAt: number;
-}
+type TestCommentRow = {
+    [K in keyof CommentsTableRow]: CommentsTableRow[K] | null;
+};
 
 interface SeedHeavyDiscussionOverrides {
     primaryChainDepth?: number;
