@@ -195,11 +195,6 @@ export class AddressesRewriterProxyServer {
             this._proxyRequest(req, res, rewrittenBody, requestLogEntry);
         });
 
-        // Handle client disconnect
-        req.on("close", () => {
-            debug.trace("Client connection closed", req.url, req.method, req.headers, reqBody);
-        });
-
         // Handle request errors
         req.on("error", (err) => {
             debug.trace("Request error:", req.url, req.method, req.headers, reqBody, err);
