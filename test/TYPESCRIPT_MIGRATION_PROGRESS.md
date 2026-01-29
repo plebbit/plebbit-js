@@ -23,7 +23,23 @@ Always import types from the compiled output instead of creating custom types:
 import type { ChallengeResult, Challenge } from "../../dist/node/subplebbit/types.js";
 ```
 
+### 2. Derive types from function signatures (preferred over manual definitions)
 
+When you need a type for a callback parameter or return value, derive it from the function signature rather than manually defining it:
+
+```typescript
+// Good - derive from function signature
+type PubsubHandler = Extract<Parameters<PubsubClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
+type PubsubMessage = Parameters<PubsubHandler>[0];
+
+// Avoid - manually defining types that already exist in function signatures
+interface PubsubMessage {
+    data: Uint8Array;
+    // ... manually copying properties
+}
+```
+
+This ensures types stay in sync with the underlying library and reduces maintenance burden.
 
 ### 3. Type assertions on mock objects (when necessary)
 
@@ -122,70 +138,70 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 - [ ] mock.pubsub.server.test.js
 
-#### test/node/subplebbit/
+#### test/node/subplebbit/ - Complete
 
-- [ ] commentsToUpdate.db.subplebbit.test.js
-- [ ] commentUpdate.fields.db.subplebbit.test.js
-- [ ] create.subplebbit.test.js
-- [ ] db.subplebbit.test.js
-- [ ] delete.subplebbit.test.js
-- [ ] editable.subplebbit.test.js
-- [ ] edit.subplebbit.test.js
-- [ ] error.start.subplebbit.test.js
-- [ ] garbage.collection.subplebbit.test.js
-- [ ] gateway.loading.subplebbit.test.js
-- [ ] local.publishing.subplebbit.test.js
-- [ ] maximum.depth.test.js
-- [ ] misc.subplebbit.test.js
-- [ ] multiplegateways.update.test.js
-- [ ] parsing.db.subplebbit.test.js
-- [ ] postUpdates.subplebbit.test.js
-- [ ] republishing.subplebbit.test.js
-- [ ] startedState.subplebbit.test.js
-- [ ] start.subplebbit.test.js
-- [ ] state.subplebbit.test.js
-- [ ] stats.subplebbit.test.js
-- [ ] unique.migration.db.subplebbit.test.js
-- [ ] unique.publishing.subplebbit.test.js
-- [ ] updateCid.subplebbit.test.js
-- [ ] update.subplebbit.test.js
-- [ ] updatingstate.subplebbit.test.js
+- [x] commentsToUpdate.db.subplebbit.test.ts (type-safe)
+- [x] commentUpdate.fields.db.subplebbit.test.ts (type-safe)
+- [x] create.subplebbit.test.ts (type-safe)
+- [x] db.subplebbit.test.ts (type-safe)
+- [x] delete.subplebbit.test.ts (type-safe)
+- [x] editable.subplebbit.test.ts (type-safe)
+- [x] edit.subplebbit.test.ts (type-safe)
+- [x] error.start.subplebbit.test.ts (type-safe)
+- [x] garbage.collection.subplebbit.test.ts (type-safe)
+- [x] gateway.loading.subplebbit.test.ts (type-safe)
+- [x] local.publishing.subplebbit.test.ts (type-safe)
+- [x] maximum.depth.test.ts (type-safe)
+- [x] misc.subplebbit.test.ts (type-safe)
+- [x] multiplegateways.update.test.ts (type-safe)
+- [x] parsing.db.subplebbit.test.ts (type-safe)
+- [x] postUpdates.subplebbit.test.ts (type-safe)
+- [x] republishing.subplebbit.test.ts (type-safe)
+- [x] startedState.subplebbit.test.ts (type-safe)
+- [x] start.subplebbit.test.ts (type-safe)
+- [x] state.subplebbit.test.ts (type-safe)
+- [x] stats.subplebbit.test.ts (type-safe)
+- [x] unique.migration.db.subplebbit.test.ts (type-safe)
+- [x] unique.publishing.subplebbit.test.ts (type-safe)
+- [x] updateCid.subplebbit.test.ts (type-safe)
+- [x] update.subplebbit.test.ts (type-safe)
+- [x] updatingstate.subplebbit.test.ts (type-safe)
 
-#### test/node/subplebbit/challenges/
+#### test/node/subplebbit/challenges/ - Complete
 
-- [ ] challenges.settings.test.js
-- [ ] evm.contract.challenge.test.js
-- [ ] path.challenge.test.js
+- [x] challenges.settings.test.ts (type-safe)
+- [x] evm.contract.challenge.test.ts (type-safe)
+- [x] path.challenge.test.ts (type-safe)
 
-#### test/node/subplebbit/features/
+#### test/node/subplebbit/features/ - Complete
 
-- [ ] features.subplebbit.test.js
-- [ ] per-author.pseudonymityMode.subplebbit.features.test.js
-- [ ] per-post.pseudonymityMode.subplebbit.features.test.js
-- [ ] per-reply.pseudonymityMode.subplebbit.features.test.js
+- [x] features.subplebbit.test.ts (type-safe)
+- [x] per-author.pseudonymityMode.subplebbit.features.test.ts (type-safe)
+- [x] per-post.pseudonymityMode.subplebbit.features.test.ts (type-safe)
+- [x] per-reply.pseudonymityMode.subplebbit.features.test.ts (type-safe)
 
-#### test/node/subplebbit/ipns/
+#### test/node/subplebbit/ipns/ - Complete
 
-- [ ] resolve.ipns.subplebbit.test.js
+- [x] resolve.ipns.subplebbit.test.ts (type-safe)
 
-#### test/node/subplebbit/modqueue/
+#### test/node/subplebbit/modqueue/ - Complete
 
-- [ ] approved.modqueue.subplebbit.test.js
-- [ ] limit.modqueue.subplebbit.test.js
-- [ ] modqueue.subplebbit.test.js
-- [ ] page.modqueue.subplebbit.test.js
-- [ ] pendingapproval.modqueue.subplebbit.test.js
-- [ ] purge.expire.rejection.modqueue.subplebbit.test.js
-- [ ] rejection.modqueue.subplebbit.test.js
+- [x] approved.modqueue.subplebbit.test.ts (type-safe)
+- [x] limit.modqueue.subplebbit.test.ts (type-safe)
+- [x] modqueue.subplebbit.test.ts (type-safe)
+- [x] page.modqueue.subplebbit.test.ts (type-safe)
+- [x] pendingapproval.modqueue.subplebbit.test.ts (type-safe)
+- [x] purge.expire.rejection.modqueue.subplebbit.test.ts (type-safe)
+- [x] rejection.modqueue.subplebbit.test.ts (type-safe)
 
-#### test/node/subplebbit/page-generation/
+#### test/node/subplebbit/page-generation/ - Complete
 
-- [ ] chunking.page.generation.subplebbit.test.js
-- [ ] edgecases.page.generation.subplebbit.test.js
+- [x] chunking.page.generation.subplebbit.test.ts (type-safe)
+- [x] edgecases.page.generation.subplebbit.test.ts (type-safe)
 
-#### test/node/subplebbit/pubsub-msgs/
+#### test/node/subplebbit/pubsub-msgs/ - Complete
 
-- [ ] properties.pubsub.test.js
+- [x] properties.pubsub.test.ts (type-safe)
 
 #### test/node/util/
 
