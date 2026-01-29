@@ -19,6 +19,7 @@ import type { LocalSubplebbit } from "../../../../dist/node/runtime/node/subpleb
 import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
 import type { SignerType } from "../../../../dist/node/signer/types.js";
 import type { CommentWithinRepliesPostsPageJson, CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+import type { CreateCommentModerationOptions } from "../../../../dist/node/publications/comment-moderation/types.js";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true }).filter(
     (config) => config.testConfigCode !== "remote-plebbit-rpc" // we're filtering RPC out because we can't reduce its timeout so tests take forever
@@ -27,16 +28,7 @@ const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAl
 const depthsToTest = [0, 1, 2, 15];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
-interface CommentModeration {
-    approved: boolean;
-    reason?: string;
-    spoiler?: boolean;
-    nsfw?: boolean;
-    pinned?: boolean;
-    removed?: boolean;
-}
-
-const commentModProps: CommentModeration[] = [
+const commentModProps: CreateCommentModerationOptions["commentModeration"][] = [
     { approved: false },
 
     { approved: false, reason: "Test reason 1234" },
@@ -421,7 +413,7 @@ for (const commentMod of commentModProps) {
                                         predicate: async () => Boolean(newComment.updatedAt)
                                     });
 
-                                    for (const commentModKey of Object.keys(commentMod) as (keyof CommentModeration)[]) {
+                                    for (const commentModKey of Object.keys(commentMod) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
                                         expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
                                         expect(newComment.raw.commentUpdate![commentModKey]).to.equal(commentMod[commentModKey]);
                                     }
@@ -464,7 +456,7 @@ for (const commentMod of commentModProps) {
                                             predicate: async () => Boolean(newComment.updatedAt)
                                         });
 
-                                        for (const commentModKey of Object.keys(commentMod) as (keyof CommentModeration)[]) {
+                                        for (const commentModKey of Object.keys(commentMod) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
                                             expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
                                             expect(newComment.raw.commentUpdate![commentModKey]).to.equal(commentMod[commentModKey]);
                                         }
