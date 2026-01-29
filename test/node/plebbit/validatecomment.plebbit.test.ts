@@ -12,10 +12,23 @@ import {
 import { PlebbitError } from "../../../dist/node/plebbit-error.js";
 import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
-import { describe, beforeAll, afterAll } from "vitest";
+import { describe, beforeAll, afterAll, beforeEach, afterEach, it } from "vitest";
+import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../dist/node/publications/comment/comment.js";
+import type { RemoteSubplebbit } from "../../../dist/node/subplebbit/remote-subplebbit.js";
+import type { LocalSubplebbit } from "../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type { CommentWithinRepliesPostsPageJson } from "../../../dist/node/publications/comment/types.js";
 
-const cloneCommentInstance = (source) => {
-    const clone = source.__proto__ ? Object.assign(Object.create(Object.getPrototypeOf(source)), source) : { ...source };
+interface ValidateCommentTestEnvironment {
+    subplebbitAddress: string;
+    postCid: string;
+    repliesPostCid: string;
+    cleanup: () => Promise<void>;
+}
+
+const cloneCommentInstance = (source: Comment): Comment => {
+    const proto = Object.getPrototypeOf(source);
+    const clone = proto ? Object.assign(Object.create(proto), source) : { ...source };
     if (typeof clone.toJSON === "function") {
         // shallow clone for nested refs; tests mutate only top-level props
         clone.raw = remeda.clone(source.raw);
@@ -27,23 +40,23 @@ const cloneCommentInstance = (source) => {
 
 getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true }).map((config) => {
     describeSkipIfRpc.concurrent(`plebbit.validateComment - ${config.name}`, async () => {
-        let remotePlebbit,
-            subplebbit,
-            postCommentInstance,
-            postWithRepliesInstance,
-            postPageComment,
-            replyFromFlatPage,
-            replyFromBestPage,
-            publisherEnv;
+        let remotePlebbit: Plebbit;
+        let subplebbit: RemoteSubplebbit;
+        let postCommentInstance: Comment;
+        let postWithRepliesInstance: Comment;
+        let postPageComment: CommentWithinRepliesPostsPageJson;
+        let replyFromFlatPage: CommentWithinRepliesPostsPageJson;
+        let replyFromBestPage: CommentWithinRepliesPostsPageJson;
+        let publisherEnv: ValidateCommentTestEnvironment;
 
         beforeAll(async () => {
             publisherEnv = await createValidateCommentTestEnvironment();
             remotePlebbit = await config.plebbitInstancePromise();
-            subplebbit = await remotePlebbit.getSubplebbit({ address: publisherEnv.subplebbitAddress });
+            subplebbit = (await remotePlebbit.getSubplebbit({ address: publisherEnv.subplebbitAddress })) as RemoteSubplebbit;
             await subplebbit.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: subplebbit,
-                predicate: () =>
+                predicate: async () =>
                     Boolean(
                         subplebbit.posts.pages.hot &&
                             subplebbit.posts.pages.hot.comments.find(
@@ -56,22 +69,23 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
             await postCommentInstance.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: postCommentInstance,
-                predicate: () => typeof postCommentInstance.updatedAt === "number"
+                predicate: async () => typeof postCommentInstance.updatedAt === "number"
             });
 
-            postPageComment = subplebbit.posts.pages.hot.comments.find((c) => c.cid === postCommentInstance.cid);
-            expect(postPageComment, "Failed to find the post comment in the page").to.exist;
+            const foundPostPageComment = subplebbit.posts.pages.hot!.comments.find((c) => c.cid === postCommentInstance.cid);
+            expect(foundPostPageComment, "Failed to find the post comment in the page").to.exist;
+            postPageComment = foundPostPageComment!;
 
             postWithRepliesInstance = await remotePlebbit.getComment({ cid: publisherEnv.repliesPostCid });
             await postWithRepliesInstance.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: postWithRepliesInstance,
-                predicate: () => Boolean(postWithRepliesInstance.replies.pageCids?.newFlat)
+                predicate: async () => Boolean(postWithRepliesInstance.replies.pageCids?.newFlat)
             });
 
             const flatPageCid = postWithRepliesInstance.replies.pageCids?.newFlat;
             expect(flatPageCid, "Post must expose a flat replies page").to.be.a("string");
-            const flatPage = await postWithRepliesInstance.replies.getPage({ cid: flatPageCid });
+            const flatPage = await postWithRepliesInstance.replies.getPage({ cid: flatPageCid! });
             expect(flatPage.comments.length).to.be.greaterThan(0, "Flat page must contain comments");
             replyFromFlatPage = flatPage.comments[0];
             expect(replyFromFlatPage, "Failed to get a reply from the flat page").to.exist;
@@ -81,10 +95,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
             if (!bestPage?.comments?.length) {
                 const bestPageCid = postWithRepliesInstance.replies.pageCids?.best;
                 expect(bestPageCid, "Post must expose a best replies page").to.be.a("string");
-                bestPage = await postWithRepliesInstance.replies.getPage({ cid: bestPageCid });
+                bestPage = await postWithRepliesInstance.replies.getPage({ cid: bestPageCid! });
             }
             expect(bestPage?.comments?.length, "Post must have replies on 'best' page for test").to.be.greaterThan(0);
-            replyFromBestPage = bestPage.comments[0];
+            replyFromBestPage = bestPage!.comments[0];
             expect(replyFromBestPage, "Failed to get a reply from the 'best' page").to.exist;
         });
 
@@ -200,66 +214,66 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
         });
 
         describe.sequential("Invalid Comments", () => {
-            let plebbit; // Use a separate plebbit instance for invalid tests to reset caches if needed
-            let sourcePostCommentInstance; // Need a valid instance for cloning/copying tests
+            let plebbit: Plebbit; // Use a separate plebbit instance for invalid tests to reset caches if needed
+            let sourcePostCommentInstance: Comment; // Need a valid instance for cloning/copying tests
             beforeEach(async () => {
                 plebbit = await mockRemotePlebbit();
-                const sub = await plebbit.getSubplebbit({ address: signers[0].address });
-                await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.lastPostCid === "string" });
-                sourcePostCommentInstance = await plebbit.getComment({ cid: sub.lastPostCid });
+                const sub = (await plebbit.getSubplebbit({ address: signers[0].address })) as RemoteSubplebbit;
+                await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.lastPostCid === "string" });
+                sourcePostCommentInstance = await plebbit.getComment({ cid: sub.lastPostCid! });
                 await sourcePostCommentInstance.update();
                 await resolveWhenConditionIsTrue({
                     toUpdate: sourcePostCommentInstance,
-                    predicate: () => typeof sourcePostCommentInstance.updatedAt === "number"
+                    predicate: async () => typeof sourcePostCommentInstance.updatedAt === "number"
                 });
             });
             afterEach(async () => {
                 if (sourcePostCommentInstance) {
                     await sourcePostCommentInstance.stop?.();
-                    sourcePostCommentInstance = undefined;
+                    sourcePostCommentInstance = undefined!;
                 }
                 if (plebbit) {
                     await plebbit.destroy();
-                    plebbit = undefined;
+                    plebbit = undefined!;
                 }
             });
 
             // --- Invalid Post Comment Instance Tests ---
             it("should reject Post instance if CommentIpfs signature is invalid", async () => {
-                let invalidComment;
+                let invalidComment: Comment | undefined;
                 try {
                     invalidComment = await plebbit.createComment(sourcePostCommentInstance); // Use source
                     invalidComment.raw.comment = remeda.clone(invalidComment.raw.comment);
-                    invalidComment.raw.comment.signature.signature += "invalid";
+                    invalidComment.raw.comment!.signature.signature += "invalid";
                     await plebbit.validateComment(invalidComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_INVALID_COMMENT_IPFS");
+                    expect((e as PlebbitError).code).to.equal("ERR_INVALID_COMMENT_IPFS");
                 } finally {
                     if (invalidComment) await invalidComment.stop();
                 }
             });
 
             it("should reject Post instance if CommentUpdate signature is invalid", async () => {
-                let invalidComment;
+                let invalidComment: Comment | undefined;
                 try {
                     invalidComment = await plebbit.createComment(sourcePostCommentInstance); // Use source
                     const tamperedUpdate = remeda.clone(invalidComment.raw.commentUpdate);
-                    tamperedUpdate.signature.signature += "invalid"; // Tamper signature directly
+                    tamperedUpdate!.signature.signature += "invalid"; // Tamper signature directly
                     invalidComment.raw.commentUpdate = tamperedUpdate;
                     await plebbit.validateComment(invalidComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_INVALID_COMMENT_UPDATE");
+                    expect((e as PlebbitError).code).to.equal("ERR_INVALID_COMMENT_UPDATE");
                 } finally {
                     if (invalidComment) await invalidComment.stop();
                 }
             });
 
             it("should reject Post instance if CommentIpfs data is missing", async () => {
-                let invalidComment;
+                let invalidComment: Comment | undefined;
                 try {
                     invalidComment = await plebbit.createComment(remeda.clone(sourcePostCommentInstance)); // Use source
                     invalidComment.raw.comment = undefined;
@@ -267,14 +281,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_IPFS");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_IPFS");
                 } finally {
                     if (invalidComment) await invalidComment.stop();
                 }
             });
 
             it("should reject Post instance if CommentUpdate data is missing", async () => {
-                let invalidComment;
+                let invalidComment: Comment | undefined;
                 try {
                     invalidComment = await plebbit.createComment(sourcePostCommentInstance); // Use source
                     invalidComment.raw.commentUpdate = undefined;
@@ -282,30 +296,30 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_UPDATE");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_UPDATE");
                 } finally {
                     if (invalidComment) await invalidComment.stop();
                 }
             });
 
             it("should reject Post instance if CID is missing", async () => {
-                let invalidComment;
+                let invalidComment: Comment | undefined;
                 try {
                     invalidComment = await plebbit.createComment(sourcePostCommentInstance); // Use source
                     invalidComment.cid = undefined;
-                    invalidComment.raw.commentUpdate.cid = undefined;
+                    invalidComment.raw.commentUpdate!.cid = undefined!;
                     await plebbit.validateComment(invalidComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_CID");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_CID");
                 } finally {
                     if (invalidComment) await invalidComment.stop();
                 }
             });
 
             it("should reject Post instance if postCid is missing", async () => {
-                let invalidComment;
+                let invalidComment: Comment | undefined;
                 try {
                     invalidComment = await plebbit.createComment(sourcePostCommentInstance); // Use source
                     invalidComment.postCid = undefined;
@@ -313,7 +327,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_POST_CID");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_POST_CID");
                 } finally {
                     if (invalidComment) await invalidComment.stop();
                 }
@@ -325,7 +339,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
                 // validateComment only accesses .raw, .cid, .postCid which are preserved.
                 const shallowCopy = { ...sourcePostCommentInstance };
                 try {
-                    await plebbit.validateComment(shallowCopy);
+                    await plebbit.validateComment(shallowCopy as Comment);
                     // Expect fulfillment
                 } catch (e) {
                     expect.fail(`Expected promise to fulfill for shallow copy, but it rejected with: ${e}`);
@@ -353,7 +367,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_INVALID_COMMENT_IPFS");
+                    expect((e as PlebbitError).code).to.equal("ERR_INVALID_COMMENT_IPFS");
                 }
             });
 
@@ -366,69 +380,69 @@ getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true })
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_INVALID_COMMENT_UPDATE");
+                    expect((e as PlebbitError).code).to.equal("ERR_INVALID_COMMENT_UPDATE");
                 }
             });
 
             it("should reject Post pageComment if comment data is missing", async () => {
                 try {
                     const invalidPageComment = remeda.clone(postPageComment);
-                    invalidPageComment.raw.comment = undefined;
+                    (invalidPageComment.raw as { comment: undefined }).comment = undefined;
                     await plebbit.validateComment(invalidPageComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_IPFS");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_IPFS");
                 }
             });
 
             it("should reject Post pageComment if commentUpdate data is missing", async () => {
                 try {
                     const invalidPageComment = remeda.clone(postPageComment);
-                    invalidPageComment.raw.commentUpdate = undefined;
+                    (invalidPageComment.raw as { commentUpdate: undefined }).commentUpdate = undefined;
                     await plebbit.validateComment(invalidPageComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_UPDATE");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_UPDATE");
                 }
             });
 
             it("should reject Post pageComment if commentUpdate.cid is missing", async () => {
                 try {
                     const invalidPageComment = remeda.clone(postPageComment);
-                    invalidPageComment.raw.commentUpdate.cid = undefined;
-                    invalidPageComment.cid = undefined;
+                    invalidPageComment.raw.commentUpdate.cid = undefined!;
+                    invalidPageComment.cid = undefined!;
                     await plebbit.validateComment(invalidPageComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_CID");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_CID");
                 }
             });
 
             it("should reject Post pageComment if postCid is missing", async () => {
                 try {
                     const invalidPageComment = remeda.clone(postPageComment);
-                    invalidPageComment.postCid = undefined;
+                    invalidPageComment.postCid = undefined!;
                     await plebbit.validateComment(invalidPageComment);
                     expect.fail("Expected promise to reject, but it fulfilled.");
                 } catch (e) {
                     expect(e).to.be.instanceOf(PlebbitError);
-                    expect(e.code).to.equal("ERR_COMMENT_MISSING_POST_CID");
+                    expect((e as PlebbitError).code).to.equal("ERR_COMMENT_MISSING_POST_CID");
                 }
             });
         });
     });
 });
 
-async function createValidateCommentTestEnvironment() {
+async function createValidateCommentTestEnvironment(): Promise<ValidateCommentTestEnvironment> {
     const publisherPlebbit = await mockPlebbit();
-    const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit);
+    const subplebbit = (await createSubWithNoChallenge({}, publisherPlebbit)) as LocalSubplebbit;
     await subplebbit.start();
     await resolveWhenConditionIsTrue({
         toUpdate: subplebbit,
-        predicate: () => typeof subplebbit.updatedAt === "number"
+        predicate: async () => typeof subplebbit.updatedAt === "number"
     });
 
     const postForInstance = await publishRandomPost(subplebbit.address, publisherPlebbit, {
@@ -437,7 +451,7 @@ async function createValidateCommentTestEnvironment() {
     await postForInstance.update();
     await resolveWhenConditionIsTrue({
         toUpdate: postForInstance,
-        predicate: () => typeof postForInstance.updatedAt === "number"
+        predicate: async () => typeof postForInstance.updatedAt === "number"
     });
 
     const postWithReplies = await publishRandomPost(subplebbit.address, publisherPlebbit, {
@@ -446,7 +460,7 @@ async function createValidateCommentTestEnvironment() {
     await postWithReplies.update();
     await resolveWhenConditionIsTrue({
         toUpdate: postWithReplies,
-        predicate: () => typeof postWithReplies.updatedAt === "number"
+        predicate: async () => typeof postWithReplies.updatedAt === "number"
     });
 
     await ensureCommentHasPaginatedReplies({ subplebbit, comment: postWithReplies });
@@ -456,8 +470,8 @@ async function createValidateCommentTestEnvironment() {
 
     return {
         subplebbitAddress: subplebbit.address,
-        postCid: postForInstance.cid,
-        repliesPostCid: postWithReplies.cid,
+        postCid: postForInstance.cid!,
+        repliesPostCid: postWithReplies.cid!,
         cleanup: async () => {
             await subplebbit.delete().catch(() => {});
             await publisherPlebbit.destroy().catch(() => {});
@@ -465,7 +479,13 @@ async function createValidateCommentTestEnvironment() {
     };
 }
 
-async function ensureCommentHasPaginatedReplies({ subplebbit, comment }) {
+async function ensureCommentHasPaginatedReplies({
+    subplebbit,
+    comment
+}: {
+    subplebbit: LocalSubplebbit;
+    comment: Comment;
+}): Promise<void> {
     const { cleanup: cleanupForcedChunking } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
         subplebbit,
         parentComment: comment,
@@ -475,7 +495,7 @@ async function ensureCommentHasPaginatedReplies({ subplebbit, comment }) {
     try {
         await resolveWhenConditionIsTrue({
             toUpdate: comment,
-            predicate: () => Boolean(comment.replies.pageCids?.newFlat && comment.replies.pageCids?.best)
+            predicate: async () => Boolean(comment.replies.pageCids?.newFlat && comment.replies.pageCids?.best)
         });
     } finally {
         cleanupForcedChunking();

@@ -97,12 +97,12 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 - [x] httprouter.test.ts (type-safe)
 
-#### test/node/plebbit/
+#### test/node/plebbit/ - Complete
 
-- [ ] hanging.plebbit.test.js
-- [ ] plebbit.test.js
-- [ ] started-subplebbits.test.js
-- [ ] validatecomment.plebbit.test.js
+- [x] hanging.plebbit.test.ts (type-safe)
+- [x] plebbit.test.ts (type-safe)
+- [x] started-subplebbits.test.ts (type-safe)
+- [x] validatecomment.plebbit.test.ts (type-safe)
 
 #### test/node/plebbit-rpc/
 

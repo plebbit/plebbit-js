@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import Plebbit from "../../../dist/node/index.js";
-import { describe } from "vitest";
+import { describe, it } from "vitest";
 import {
     createSubWithNoChallenge,
     itIfRpc,
@@ -10,6 +10,9 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
+import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";
+import type { LocalSubplebbit } from "../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type { RpcLocalSubplebbit } from "../../../dist/node/subplebbit/rpc-local-subplebbit.js";
 
 // example of node only tests
 
@@ -90,17 +93,17 @@ describe(`Plebbit.challenges`, async () => {
 describe.concurrent(`plebbit.destroy()`, async () => {
     itSkipIfRpc(`plebbit.destroy() should stop running local sub`, async () => {
         const plebbit = await mockPlebbit();
-        const sub = await createSubWithNoChallenge({}, plebbit);
+        const sub = (await createSubWithNoChallenge({}, plebbit)) as LocalSubplebbit;
         await sub.start();
         expect(sub.state).to.equal("started");
-        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
         await plebbit.destroy();
         expect(sub.state).to.equal("stopped");
     });
 
     it(`plebbit.destroy() should stop updating local subs`, async () => {
         const plebbit = await mockPlebbit();
-        const sub = await createSubWithNoChallenge({}, plebbit);
+        const sub = (await createSubWithNoChallenge({}, plebbit)) as LocalSubplebbit | RpcLocalSubplebbit;
 
         await sub.update();
         expect(plebbit._updatingSubplebbits[sub.address]).to.exist;
@@ -109,7 +112,9 @@ describe.concurrent(`plebbit.destroy()`, async () => {
         let calledUpdate = false;
         await plebbit.destroy();
 
-        sub._setUpdatingStateNoEmission = sub._setUpdatingStateWithEventEmissionIfNewState = () => (calledUpdate = true);
+        sub._setUpdatingStateNoEmission = sub._setUpdatingStateWithEventEmissionIfNewState = () => {
+            calledUpdate = true;
+        };
         await new Promise((resolve) => setTimeout(resolve, 1000));
         expect(plebbit._updatingSubplebbits[sub.address]).to.not.exist;
         expect(plebbit._startedSubplebbits[sub.address]).to.not.exist;
@@ -119,14 +124,14 @@ describe.concurrent(`plebbit.destroy()`, async () => {
 
     itIfRpc(`plebbit.destroy() should not stop running local subplebbits (RPC client)`, async () => {
         const plebbit = await mockPlebbit();
-        const sub = await createSubWithNoChallenge({}, plebbit);
+        const sub = (await createSubWithNoChallenge({}, plebbit)) as RpcLocalSubplebbit;
         await sub.start();
-        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: () => typeof sub.updatedAt === "number" });
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
         expect(sub.state).to.equal("started");
         await plebbit.destroy();
 
         const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const post = await publishRandomPost(sub.address, remotePlebbit); // if we can publish a post, the sub is running
+        await publishRandomPost(sub.address, remotePlebbit); // if we can publish a post, the sub is running
 
         await remotePlebbit.destroy();
     });
