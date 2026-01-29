@@ -18,16 +18,12 @@ import type { LocalSubplebbit } from "../../../../dist/node/runtime/node/subpleb
 import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
 import type { SignerType } from "../../../../dist/node/signer/types.js";
 import type { CommentWithinRepliesPostsPageJson } from "../../../../dist/node/publications/comment/types.js";
+import type { PageIpfs } from "../../../../dist/node/pages/types.js";
 
 const depthsToTest = [0, 1, 2, 3, 11, 12, 15];
 const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pending"] } };
 
-interface CapturedChunkItem {
-    commentUpdate?: { cid?: string; replies?: { pages?: { best?: { comments?: CapturedChunkItem[] } } } };
-    cid?: string;
-    comment?: { cid?: string };
-    replies?: { pages?: { best?: { comments?: CapturedChunkItem[] } } };
-}
+type ChunkItem = PageIpfs["comments"][0];
 
 for (const pendingCommentDepth of depthsToTest) {
     describeSkipIfRpc.concurrent(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
@@ -257,7 +253,7 @@ async function capturePostsGeneration(
     subplebbit: LocalSubplebbit,
     preloadedSortName: string,
     preloadedPageSizeBytes: number
-): Promise<{ generated: CommentWithinRepliesPostsPageJson | undefined; capturedChunks: CapturedChunkItem[][] }> {
+): Promise<{ generated: CommentWithinRepliesPostsPageJson | undefined; capturedChunks: ChunkItem[][] }> {
     return captureSortChunks({
         subplebbit,
         matchParentCid: null,
@@ -279,7 +275,7 @@ async function captureRepliesGeneration({
     parentDepth: number;
     preloadedSortName: string;
     preloadedPageSizeBytes: number;
-}): Promise<{ generated: CommentWithinRepliesPostsPageJson | undefined; capturedChunks: CapturedChunkItem[][] }> {
+}): Promise<{ generated: CommentWithinRepliesPostsPageJson | undefined; capturedChunks: ChunkItem[][] }> {
     const generator =
         parentDepth === 0
             ? // @ts-expect-error - accessing private _pageGenerator
@@ -310,8 +306,8 @@ async function captureSortChunks<T>({
     matchParentCid: string | null;
     matchSortName: string;
     generate: () => Promise<T>;
-}): Promise<{ generated: T; capturedChunks: CapturedChunkItem[][] }> {
-    const capturedChunks: CapturedChunkItem[][] = [];
+}): Promise<{ generated: T; capturedChunks: ChunkItem[][] }> {
+    const capturedChunks: ChunkItem[][] = [];
     // @ts-expect-error - accessing private _pageGenerator
     const originalSortAndChunk = subplebbit._pageGenerator.sortAndChunkComments;
     // @ts-expect-error - accessing private _pageGenerator
@@ -333,7 +329,7 @@ async function captureSortChunks<T>({
     }
 }
 
-function cidExistsInChunks(chunks: CapturedChunkItem[][], targetCid: string): boolean {
+function cidExistsInChunks(chunks: ChunkItem[][], targetCid: string): boolean {
     for (const chunk of chunks) {
         for (const comment of chunk) {
             if (commentContainsCid(comment, targetCid)) return true;
@@ -342,18 +338,13 @@ function cidExistsInChunks(chunks: CapturedChunkItem[][], targetCid: string): bo
     return false;
 }
 
-function commentContainsCid(comment: CapturedChunkItem, targetCid: string): boolean {
-    if (extractCidFromChunkItem(comment) === targetCid) return true;
-    const replies = comment?.commentUpdate?.replies ?? comment?.replies;
-    const bestReplies = replies?.pages?.best?.comments;
+function commentContainsCid(comment: ChunkItem, targetCid: string): boolean {
+    if (comment.commentUpdate.cid === targetCid) return true;
+    const bestReplies = comment.commentUpdate.replies?.pages?.best?.comments;
     if (Array.isArray(bestReplies)) {
         for (const reply of bestReplies) {
             if (commentContainsCid(reply, targetCid)) return true;
         }
     }
     return false;
-}
-
-function extractCidFromChunkItem(comment: CapturedChunkItem): string | undefined {
-    return comment?.commentUpdate?.cid ?? comment?.cid ?? comment?.comment?.cid;
 }
