@@ -23,6 +23,26 @@ Always import types from the compiled output instead of creating custom types:
 import type { ChallengeResult, Challenge } from "../../dist/node/subplebbit/types.js";
 ```
 
+When you only need a subset of fields from a type, use `Pick<>` instead of defining a local interface:
+```typescript
+// Good - use Pick<> to select only needed fields
+import type { CommentsTableRow, CommentUpdatesRow, SubplebbitAuthor } from "../../../../dist/node/publications/comment/types.js";
+import type { PseudonymityAliasRow } from "../../../../dist/node/runtime/node/subplebbit/db-handler-types.js";
+
+type AliasRow = Pick<PseudonymityAliasRow, "mode" | "aliasPrivateKey" | "originalAuthorSignerPublicKey">;
+type StoredComment = Pick<CommentsTableRow, "cid" | "author" | "signature" | "parentCid">;
+type SubplebbitAuthorRow = Partial<SubplebbitAuthor>;  // Use Partial<> when all fields should be optional
+
+// Avoid - manually defining types that exist in plebbit-js
+interface AliasRow {
+    mode: string;
+    aliasPrivateKey: string;
+    originalAuthorSignerPublicKey: string;
+}
+```
+
+This ensures types stay in sync with the source and reduces maintenance burden.
+
 ### 2. Derive types from function signatures (preferred over manual definitions)
 
 When you need a type for a callback parameter or return value, derive it from the function signature rather than manually defining it:

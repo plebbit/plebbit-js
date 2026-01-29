@@ -26,7 +26,8 @@ import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-lo
 import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../dist/node/pubsub-messages/types.js";
 import type { SignerType } from "../../../../dist/node/signer/types.js";
-import type { CommentPubsubMessagePublication, CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+import type { CommentPubsubMessagePublication, CommentIpfsWithCidDefined, CommentsTableRow, CommentUpdatesRow } from "../../../../dist/node/publications/comment/types.js";
+import type { PseudonymityAliasRow } from "../../../../dist/node/runtime/node/subplebbit/db-handler-types.js";
 
 const remotePlebbitConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
@@ -49,28 +50,9 @@ interface AnonymityTransitionContext {
     cleanup: () => Promise<void>;
 }
 
-interface AliasRow {
-    mode: string;
-    aliasPrivateKey: string;
-    originalAuthorSignerPublicKey: string;
-}
-
-interface StoredCommentUpdate {
-    cid: string;
-    updatedAt: number;
-    replyCount: number;
-    protocolVersion: string;
-    signature: { signedPropertyNames: string[] };
-    edit?: { content?: string; signature?: { publicKey: string } };
-    author?: { subplebbit?: { lastCommentCid?: string; firstCommentTimestamp?: number; postScore?: number; replyScore?: number; banExpiresAt?: number } };
-}
-
-interface StoredComment {
-    cid: string;
-    author?: { address?: string; displayName?: string; previousCommentCid?: string };
-    signature?: { publicKey: string };
-    parentCid?: string;
-}
+type AliasRow = Pick<PseudonymityAliasRow, "mode" | "aliasPrivateKey" | "originalAuthorSignerPublicKey">;
+type StoredCommentUpdate = Pick<CommentUpdatesRow, "cid" | "updatedAt" | "replyCount" | "protocolVersion" | "signature" | "edit" | "author">;
+type StoredComment = Pick<CommentsTableRow, "cid" | "author" | "signature" | "parentCid">;
 
 // Type to access private methods for testing purposes
 interface LocalSubplebbitWithPrivateMethods {
