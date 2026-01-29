@@ -15,11 +15,29 @@ import { POST_REPLIES_SORT_TYPES, REPLY_REPLIES_SORT_TYPES } from "../../../../.
 import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../../../node-and-browser/pages/pages-test-util.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit as PlebbitType } from "../../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../../dist/node/publications/comment/comment.js";
+import type { LocalSubplebbit } from "../../../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type { RpcLocalSubplebbit } from "../../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
+import type { CommentWithinRepliesPostsPageJson, CommentIpfsWithCidDefined } from "../../../../../dist/node/publications/comment/types.js";
+import type { ReplySort } from "../../../../../dist/node/pages/types.js";
 
 const remotePlebbitLoadingConfigs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
+interface LocalCommentWithPaginatedRepliesResult {
+    plebbit: PlebbitType;
+    subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    post: Comment;
+    reply: Comment;
+    cleanup: () => Promise<void>;
+}
+
 describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
-    let plebbit, subplebbit, postWithPageCids, replyWithPageCids, cleanup;
+    let plebbit: PlebbitType;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let postWithPageCids: Comment;
+    let replyWithPageCids: Comment;
+    let cleanup: () => Promise<void>;
 
     beforeAll(async () => {
         ({
@@ -37,16 +55,18 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
 
     remotePlebbitLoadingConfigs.map((config) => {
         describe(`Loading comment.replies with config ${config.name}`, async () => {
-            let plebbit, post, reply;
+            let plebbit: PlebbitType;
+            let post: Comment;
+            let reply: Comment;
 
             beforeAll(async () => {
                 plebbit = await config.plebbitInstancePromise();
-                post = await plebbit.getComment({ cid: postWithPageCids.cid });
-                reply = await plebbit.getComment({ cid: replyWithPageCids.cid });
+                post = await plebbit.getComment({ cid: postWithPageCids.cid! });
+                reply = await plebbit.getComment({ cid: replyWithPageCids.cid! });
                 await post.update();
                 await reply.update();
-                await resolveWhenConditionIsTrue({ toUpdate: post, predicate: () => typeof post.updatedAt === "number" });
-                await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: () => typeof reply.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({ toUpdate: post, predicate: async () => typeof post.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({ toUpdate: reply, predicate: async () => typeof reply.updatedAt === "number" });
             });
 
             afterAll(async () => {
@@ -92,12 +112,16 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
 
                 it("flat sorts include nested replies and hide nested replies fields", async () => {
                     const availableFlatSorts = Object.keys(POST_REPLIES_SORT_TYPES).filter(
-                        (sortName) => POST_REPLIES_SORT_TYPES[sortName].flat && post.replies.pageCids[sortName]
+                        (sortName) =>
+                            (POST_REPLIES_SORT_TYPES as ReplySort)[sortName].flat && post.replies.pageCids[sortName]
                     );
                     if (availableFlatSorts.length === 0) return;
 
                     const flatSortName = availableFlatSorts[0];
-                    const flatReplies = await loadAllPages(post.replies.pageCids[flatSortName], post.replies);
+                    const flatReplies = (await loadAllPages(
+                        post.replies.pageCids[flatSortName],
+                        post.replies
+                    )) as CommentWithinRepliesPostsPageJson[];
 
                     expect(flatReplies.length).to.be.greaterThan(0);
                     expect(flatReplies.some((flatReply) => (flatReply.raw?.comment?.depth ?? flatReply.depth ?? 0) > 1)).to.be.true;
@@ -111,12 +135,15 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                     expect(postReplySortNames.length).to.be.greaterThan(0);
 
                     for (const postReplySortName of postReplySortNames) {
-                        const commentsFromEachPage = await loadAllPagesBySortName(postReplySortName, post.replies);
+                        const commentsFromEachPage = (await loadAllPagesBySortName(
+                            postReplySortName,
+                            post.replies
+                        )) as CommentWithinRepliesPostsPageJson[];
                         const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.raw);
 
                         for (const commentInPageIpfs of commentsPageIpfs) {
-                            const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
-                            expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
+                            const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs!.comment));
+                            expect(calculatedCid).to.equal(commentInPageIpfs!.commentUpdate.cid);
                         }
                     }
                 });
@@ -135,7 +162,8 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                 it("has the right pageCids under it after maxing out its replies", () => {
                     const pageCidsWithoutPreloadedPageOrFlat = Object.keys(REPLY_REPLIES_SORT_TYPES).filter(
                         (pageSortName) =>
-                            !Object.keys(reply.replies.pages).includes(pageSortName) && !REPLY_REPLIES_SORT_TYPES[pageSortName].flat
+                            !Object.keys(reply.replies.pages).includes(pageSortName) &&
+                            !(REPLY_REPLIES_SORT_TYPES as ReplySort)[pageSortName].flat
                     );
                     expect(Object.keys(reply.replies.pageCids).sort()).to.deep.equal(pageCidsWithoutPreloadedPageOrFlat.sort());
                 });
@@ -157,12 +185,15 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                     );
                     expect(availableReplySorts.length).to.be.greaterThan(0);
                     for (const replySortName of availableReplySorts) {
-                        const commentsFromEachPage = await loadAllPagesBySortName(replySortName, reply.replies);
+                        const commentsFromEachPage = (await loadAllPagesBySortName(
+                            replySortName,
+                            reply.replies
+                        )) as CommentWithinRepliesPostsPageJson[];
                         const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.raw);
 
                         for (const commentInPageIpfs of commentsPageIpfs) {
-                            const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
-                            expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
+                            const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs!.comment));
+                            expect(calculatedCid).to.equal(commentInPageIpfs!.commentUpdate.cid);
                         }
                     }
                 });
@@ -171,14 +202,14 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
     });
 });
 
-async function createLocalCommentWithPaginatedReplies() {
+async function createLocalCommentWithPaginatedReplies(): Promise<LocalCommentWithPaginatedRepliesResult> {
     const plebbit = await mockPlebbit();
     const subplebbit = await createSubWithNoChallenge({}, plebbit);
     await subplebbit.start();
 
     await resolveWhenConditionIsTrue({
         toUpdate: subplebbit,
-        predicate: () => typeof subplebbit.updatedAt === "number"
+        predicate: async () => typeof subplebbit.updatedAt === "number"
     });
 
     const post = await publishRandomPost(subplebbit.address, plebbit);
@@ -189,16 +220,20 @@ async function createLocalCommentWithPaginatedReplies() {
         parentCommentReplyProps: { content: "pagination coverage reply" }
     });
 
-    const replies = await Promise.all(new Array(10).fill(null).map(() => publishRandomReply(post, plebbit)));
-    const nestedReplies = await Promise.all(new Array(10).fill(null).map(() => publishRandomReply(replies[0], plebbit)));
+    const replies = await Promise.all(
+        new Array(10).fill(null).map(() => publishRandomReply(post as CommentIpfsWithCidDefined, plebbit))
+    );
+    await Promise.all(
+        new Array(10).fill(null).map(() => publishRandomReply(replies[0] as CommentIpfsWithCidDefined, plebbit))
+    );
     await post.update();
 
     await resolveWhenConditionIsTrue({
         toUpdate: post,
-        predicate: () => Object.keys(post.replies.pageCids).length > 0
+        predicate: async () => Object.keys(post.replies.pageCids).length > 0
     });
 
-    const reply = await plebbit.getComment({ cid: replies[0].cid });
+    const reply = await plebbit.getComment({ cid: replies[0].cid! });
     await reply.update();
     await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
         subplebbit,
@@ -207,11 +242,11 @@ async function createLocalCommentWithPaginatedReplies() {
         parentCommentReplyProps: { content: "pagination coverage nested reply" }
     });
 
-    await publishRandomReply(reply, plebbit); // to force new update
+    await publishRandomReply(reply as CommentIpfsWithCidDefined, plebbit); // to force new update
 
     await resolveWhenConditionIsTrue({
         toUpdate: reply,
-        predicate: () => Object.keys(reply.replies.pageCids).length > 0
+        predicate: async () => Object.keys(reply.replies.pageCids).length > 0
     });
 
     const cleanup = async () => {

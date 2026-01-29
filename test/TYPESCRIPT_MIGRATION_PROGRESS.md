@@ -110,9 +110,9 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 - [x] rpc.server.test.ts (type-safe)
 - [x] rpc.stress.publish.test.ts (type-safe)
 
-#### test/node/publications/comment/replies/
+#### test/node/publications/comment/replies/ - Complete
 
-- [ ] replies.test.js
+- [x] replies.test.ts (type-safe)
 
 #### test/node/publications/comment/update/
 
