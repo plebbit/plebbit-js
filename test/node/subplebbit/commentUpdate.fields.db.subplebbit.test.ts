@@ -9,67 +9,23 @@ import type { VotesTableRowInsert } from "../../../dist/node/publications/vote/t
 
 const PROTOCOL_VERSION = "1.0.0";
 
-interface InsertedComment {
-    cid: string;
-    depth: number;
-    parentCid: string | null;
-    postCid: string;
-    timestamp: number;
-    authorSignerAddress: string;
-    number: number | undefined;
-    postNumber: number | undefined;
+type InsertedComment = Pick<
+    CommentsTableRowInsert,
+    "cid" | "depth" | "parentCid" | "postCid" | "timestamp" | "authorSignerAddress" | "number" | "postNumber"
+>;
+
+interface InsertCommentOptions
+    extends Partial<Pick<CommentsTableRowInsert, "cid" | "depth" | "parentCid" | "postCid" | "timestamp" | "authorSignerAddress">> {
+    overrides?: Partial<CommentsTableRowInsert>;
 }
 
-interface InsertCommentOptions {
-    cid?: string;
-    depth?: number;
-    parentCid?: string | null;
-    postCid?: string;
-    timestamp?: number;
-    authorSignerAddress?: string;
-    overrides?: {
-        pendingApproval?: boolean | null;
-        content?: string;
-        title?: string;
-        signature?: { type: string; signature: string; publicKey: string; signedPropertyNames: string[] };
-        insertedAt?: number;
-        extraProps?: Record<string, unknown> | null;
-        flair?: { text: string } | null;
-        spoiler?: boolean;
-        nsfw?: boolean;
-    };
-}
+type InsertCommentUpdateOptions = Partial<CommentUpdatesTableRowInsert>;
 
-interface InsertCommentUpdateOptions {
-    updatedAt?: number;
-    replyCount?: number;
-    childCount?: number;
-    upvoteCount?: number;
-    downvoteCount?: number;
-    lastChildCid?: string | null;
-    lastReplyTimestamp?: number | null;
-    postUpdatesBucket?: number;
-    removed?: boolean | null;
-    approved?: boolean | null;
-    edit?: CommentUpdatesTableRowInsert["edit"] | null;
-    replies?: CommentUpdatesTableRowInsert["replies"] | null;
-    publishedToPostUpdatesMFS?: boolean;
-    insertedAt?: number;
-}
-
-interface InsertVoteOptions {
-    vote?: 1 | 0 | -1;
-    authorSignerAddress?: string;
-    timestamp?: number;
-    insertedAt?: number;
-}
+type InsertVoteOptions = Partial<Pick<VotesTableRowInsert, "vote" | "authorSignerAddress" | "timestamp" | "insertedAt">>;
 
 type CalculatedCommentUpdate = Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">;
 
-interface AssignedNumbers {
-    number?: number;
-    postNumber?: number;
-}
+type AssignedNumbers = Pick<CommentsTableRowInsert, "number" | "postNumber">;
 
 describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
     let dbHandler: DbHandler | undefined;
