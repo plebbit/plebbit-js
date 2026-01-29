@@ -8,82 +8,39 @@ import type { VotesTableRowInsert } from "../../../dist/node/publications/vote/t
 import type { CommentEditsTableRowInsert } from "../../../dist/node/publications/comment-edit/types.js";
 import type { CommentModerationsTableRowInsert } from "../../../dist/node/publications/comment-moderation/types.js";
 
-interface InsertCommentResult {
-    cid: string;
-    timestamp: number;
-    depth: number;
-    parentCid: string | null;
-    postCid: string;
+type InsertCommentResult = Pick<CommentsTableRowInsert, "cid" | "timestamp" | "depth" | "parentCid" | "postCid">;
+type InsertCommentUpdateResult = Pick<CommentUpdatesTableRowInsert, "updatedAt">;
+type InsertVoteResult = Pick<VotesTableRowInsert, "insertedAt">;
+type InsertCommentEditResult = Pick<CommentEditsTableRowInsert, "insertedAt">;
+type InsertCommentModerationResult = Pick<CommentModerationsTableRowInsert, "insertedAt">;
+
+interface InsertCommentOptions extends Partial<Pick<CommentsTableRowInsert, "cid" | "depth" | "parentCid" | "postCid" | "timestamp">> {
+    overrides?: Partial<CommentsTableRowInsert>;
 }
 
-interface InsertCommentUpdateResult {
-    updatedAt: number;
-}
-
-interface InsertVoteResult {
-    insertedAt: number;
-}
-
-interface InsertCommentEditResult {
-    insertedAt: number;
-}
-
-interface InsertCommentModerationResult {
-    insertedAt: number;
-}
-
-interface InsertCommentOptions {
-    cid?: string;
-    depth?: number;
-    parentCid?: string | null;
-    postCid?: string;
-    timestamp?: number;
-    overrides?: {
-        authorSignerAddress?: string;
-        author?: { address: string };
-        content?: string;
-        title?: string;
-        signature?: { type: string; signature: string; publicKey: string; signedPropertyNames: string[] };
-        pendingApproval?: number | null;
-        insertedAt?: number;
-    };
-}
-
-interface InsertCommentUpdateOptions {
-    updatedAt?: number;
+// Extends from CommentUpdatesTableRowInsert for compatible fields, overrides for SQLite-style values
+interface InsertCommentUpdateOptions
+    extends Partial<
+        Pick<
+            CommentUpdatesTableRowInsert,
+            "updatedAt" | "replyCount" | "childCount" | "upvoteCount" | "downvoteCount" | "lastChildCid" | "lastReplyTimestamp" | "postUpdatesBucket" | "insertedAt"
+        >
+    > {
+    // These fields differ from plebbit-js types: booleans stored as numbers, objects as JSON strings
     publishedToPostUpdatesMFS?: number;
-    replyCount?: number;
-    childCount?: number;
-    upvoteCount?: number;
-    downvoteCount?: number;
-    lastChildCid?: string | null;
-    replies?: string | null;
-    lastReplyTimestamp?: number | null;
-    postUpdatesBucket?: number;
     removed?: number | null;
     approved?: number | null;
+    replies?: string | null;
     edit?: string | null;
-    insertedAt?: number;
 }
 
-interface InsertVoteOptions {
-    authorSignerAddress?: string;
-    vote?: 1 | 0 | -1;
-    insertedAt?: number;
-    timestamp?: number;
-}
+type InsertVoteOptions = Partial<Pick<VotesTableRowInsert, "authorSignerAddress" | "vote" | "insertedAt" | "timestamp">>;
 
-interface InsertCommentEditOptions {
-    insertedAt?: number;
-    timestamp?: number;
-    authorSignerAddress?: string;
-}
+type InsertCommentEditOptions = Partial<Pick<CommentEditsTableRowInsert, "insertedAt" | "timestamp" | "authorSignerAddress">>;
 
-interface InsertCommentModerationOptions {
-    insertedAt?: number;
-    timestamp?: number;
-    modSignerAddress?: string;
-    moderation?: { approved?: boolean; removed?: boolean };
+interface InsertCommentModerationOptions
+    extends Partial<Pick<CommentModerationsTableRowInsert, "insertedAt" | "timestamp" | "modSignerAddress">> {
+    moderation?: CommentModerationsTableRowInsert["commentModeration"];
 }
 
 describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
@@ -232,7 +189,12 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
 
     const insertCommentModeration = (
         comment: InsertCommentResult,
-        { insertedAt, timestamp, modSignerAddress = `12D3KooMod${comment.cid}`, moderation = { approved: true } }: InsertCommentModerationOptions = {}
+        {
+            insertedAt,
+            timestamp,
+            modSignerAddress = `12D3KooMod${comment.cid}`,
+            moderation = { approved: true }
+        }: InsertCommentModerationOptions = {}
     ): InsertCommentModerationResult => {
         const resolvedTimestamp = timestamp ?? currentTimestamp();
         const resolvedInsertedAt = insertedAt ?? resolvedTimestamp;
@@ -712,7 +674,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
             replies: repliesSnapshot
         });
 
-        ((dbHandler as unknown as { _db: Database.Database })._db).prepare(`DELETE FROM commentUpdates WHERE cid = ?`).run(child.cid);
+        (dbHandler as unknown as { _db: Database.Database })._db.prepare(`DELETE FROM commentUpdates WHERE cid = ?`).run(child.cid);
 
         const cids = commentCidsNeedingUpdate();
         expect(cids).to.include(
@@ -868,7 +830,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
             depth: 2,
             parentCid: parent.cid,
             postCid: post.cid,
-            overrides: { pendingApproval: 1 }
+            overrides: { pendingApproval: true }
         });
 
         const childUpdatedAt = currentTimestamp();
@@ -1021,10 +983,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
 
         // CRITICAL: postByC should ALSO be included (parent of replyA2 which is added via authors_to_update)
         // This is the bug - currently postByC is NOT included because parent_chain only comes from base_updates
-        expect(cids).to.include(
-            postByC.cid,
-            "postByC should be included as parent of replyA2 (replyA2 is added via authors_to_update)"
-        );
+        expect(cids).to.include(postByC.cid, "postByC should be included as parent of replyA2 (replyA2 is added via authors_to_update)");
     });
 
     it("includes deep ancestor chain for author comments added via authors_to_update", async () => {
@@ -1172,7 +1131,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
                 authorSignerAddress: authorA,
                 author: { address: authorA },
                 insertedAt: baseTimestamp + 3,
-                pendingApproval: 1
+                pendingApproval: true
             }
         });
 
