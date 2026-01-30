@@ -1,5 +1,4 @@
 import http, { IncomingMessage, ServerResponse, Server } from "http";
-import { expect } from "chai";
 import { describe, it, beforeAll, afterAll } from "vitest";
 import { mockGatewayPlebbit, mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import { signSubplebbit } from "../../../dist/node/signer/signatures.js";

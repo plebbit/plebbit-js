@@ -5,7 +5,6 @@ import {
     mockCacheOfTextRecord,
     describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import { ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKey } from "../../../../dist/node/util.js";
 

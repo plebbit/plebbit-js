@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import { mockPlebbit, createSubWithNoChallenge } from "../../../dist/node/test/test-util.js";
 import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
 import type { LocalSubplebbit } from "../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";

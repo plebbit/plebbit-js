@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it, beforeEach } from "vitest";
-import { expect } from "chai";
 import {
     publishRandomPost,
     mockPlebbit,

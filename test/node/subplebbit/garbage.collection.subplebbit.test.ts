@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it, afterEach, beforeAll, vi, type Mock, type MockInstance } from "vitest";
 import * as util from "../../../dist/node/util.js";
 import * as pagesUtil from "../../../dist/node/pages/util.js";

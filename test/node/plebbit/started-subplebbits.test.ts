@@ -5,7 +5,6 @@ import {
     publishRandomPost,
     createSubWithNoChallenge
 } from "../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import { describe, beforeAll, afterAll, it } from "vitest";
 import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
 import type { LocalSubplebbit } from "../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";

@@ -1,5 +1,4 @@
 import { beforeAll, describe, it, beforeEach, afterEach } from "vitest";
-import { expect } from "chai";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     findOrPublishCommentWithDepth,

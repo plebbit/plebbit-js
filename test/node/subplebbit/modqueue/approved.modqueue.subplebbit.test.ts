@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it, beforeAll, afterAll, vi } from "vitest";
 import {
     mockPlebbit,

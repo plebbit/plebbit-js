@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it } from "vitest";
 import PlebbitRpcClient from "../../../../dist/node/clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../../../../dist/node/plebbit-error.js";

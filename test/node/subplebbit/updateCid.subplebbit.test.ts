@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import { describe, beforeAll, afterAll, it } from "vitest";
 

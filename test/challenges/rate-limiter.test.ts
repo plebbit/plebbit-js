@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { testRateLimit, addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../dist/node/pubsub-messages/types.js";
 import type { Exclude, SubplebbitSettings, ChallengeResult } from "../../dist/node/subplebbit/types.js";

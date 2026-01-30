@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describeSkipIfRpc, mockPlebbit } from "../../../../dist/node/test/test-util.js";
 import { it, vi } from "vitest";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";

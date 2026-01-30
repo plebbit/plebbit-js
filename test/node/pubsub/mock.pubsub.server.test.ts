@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it, beforeAll, afterAll } from "vitest";
 import { Server } from "socket.io";
 import { io as createSocketClient, Socket as ClientSocket } from "socket.io-client";

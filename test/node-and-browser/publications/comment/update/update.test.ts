@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
 import validCommentFixture from "../../../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };

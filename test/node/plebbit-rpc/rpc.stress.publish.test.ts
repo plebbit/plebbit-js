@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, afterEach } from "vitest";
-import { expect } from "chai";
 import tempy from "tempy";
 import net from "node:net";
 

@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it } from "vitest";
 import { createSchemaRowParser } from "../../../dist/node/schema/schema-util.js";
 import { CommentUpdateTableRowSchema, CommentsTableRowSchema } from "../../../dist/node/publications/comment/schema.js";

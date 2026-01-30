@@ -1,5 +1,4 @@
 import { beforeAll, afterAll } from "vitest";
-import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import {
     publishRandomPost,

@@ -1,5 +1,4 @@
 import { beforeAll, afterAll } from "vitest";
-import { expect } from "chai";
 import { getAvailablePlebbitConfigsToTestAgainst, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 import validModQueuePage from "../../../fixtures/valid_modqueue_page.json" with { type: "json" };

@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { it, beforeEach, afterEach } from "vitest";
 import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler.js";
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";

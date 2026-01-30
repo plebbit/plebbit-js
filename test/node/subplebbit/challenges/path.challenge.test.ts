@@ -1,5 +1,4 @@
 import { beforeAll, afterAll } from "vitest";
-import { expect } from "chai";
 import {
     mockPlebbit,
     generateMockPost,

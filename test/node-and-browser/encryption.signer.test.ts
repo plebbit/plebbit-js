@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import fixtureSigners from "../fixtures/signers.js";
 import type { SignerType, Encrypted } from "../../dist/node/signer/types.js";
 import type { Plebbit } from "../../dist/node/plebbit/plebbit.js";

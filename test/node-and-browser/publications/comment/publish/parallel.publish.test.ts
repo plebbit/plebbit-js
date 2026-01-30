@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it, vi } from "vitest";
 import type { MockInstance } from "vitest";
 import {

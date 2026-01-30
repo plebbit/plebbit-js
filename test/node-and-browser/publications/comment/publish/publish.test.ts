@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import { it, describe, beforeAll, afterAll } from "vitest";
 import {

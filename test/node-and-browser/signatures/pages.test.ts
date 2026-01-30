@@ -1,5 +1,4 @@
 import { beforeAll, afterAll } from "vitest";
-import { expect } from "chai";
 import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import { verifyPage } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";

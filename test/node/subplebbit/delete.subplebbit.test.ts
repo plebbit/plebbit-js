@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import { itSkipIfRpc, mockPlebbitV2, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 
 import path from "path";

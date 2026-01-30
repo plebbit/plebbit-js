@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { generatePostToAnswerMathQuestion, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import { describe, it, beforeAll, afterAll } from "vitest";

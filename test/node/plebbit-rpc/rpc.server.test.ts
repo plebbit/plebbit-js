@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import PlebbitWsServer from "../../../dist/node/rpc/src/index.js";
 import { describeSkipIfRpc, mockPlebbit } from "../../../dist/node/test/test-util.js";
 import tempy from "tempy";

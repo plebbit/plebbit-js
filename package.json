@@ -53,7 +53,7 @@
         }
     },
     "dependencies": {
-        "@bonfida/spl-name-service": "3.0.10",
+        "@bonfida/spl-name-service": "3.0.16",
         "@enhances/with-resolvers": "0.0.5",
         "@helia/block-brokers": "5.0.13",
         "@helia/delegated-routing-v1-http-api-client": "5.1.4",
@@ -111,7 +111,7 @@
         "ts-custom-error": "3.3.1",
         "typestub-ipfs-only-hash": "4.0.0",
         "uuid": "11.1.0",
-        "viem": "2.43.1",
+        "viem": "2.45.0",
         "zod": "4.1.12"
     },
     "devDependencies": {
@@ -122,13 +122,13 @@
         "@types/node": "20.19.1",
         "@types/node-forge": "1.3.11",
         "@types/probe-image-size": "7.2.4",
+        "@types/sinon": "21.0.0",
         "@types/tcp-port-used": "1.0.4",
         "@types/url-parse": "1.4.11",
         "@vitest/browser": "4.0.15",
         "@vitest/browser-playwright": "4.0.15",
         "@vitest/ui": "4.0.15",
         "babel-loader": "9.1.3 ",
-        "chai": "4.3.7",
         "chokidar": "3.5.3",
         "concurrently": "7.5.0",
         "cross-env": "7.0.3",

@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import Plebbit from "../../../dist/node/index.js";
 import { describe, it } from "vitest";
 import {

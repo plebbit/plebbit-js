@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler.js";

@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 

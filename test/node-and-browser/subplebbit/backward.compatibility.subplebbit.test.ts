@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { messages } from "../../../dist/node/errors.js";
 
 import {

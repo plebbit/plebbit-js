@@ -1,5 +1,4 @@
 import { beforeAll } from "vitest";
-import { expect } from "chai";
 import {
     getChallengeVerification,
     getSubplebbitChallengeFromSubplebbitChallengeSettings

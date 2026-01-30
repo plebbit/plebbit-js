@@ -1,5 +1,4 @@
 import { beforeAll, afterAll } from "vitest";
-import { expect } from "chai";
 import Plebbit from "../../dist/node/index.js";
 import { createSubWithNoChallenge, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util.js";
 import { MockHttpRouter } from "../../dist/node/runtime/node/test/mock-http-router.js";

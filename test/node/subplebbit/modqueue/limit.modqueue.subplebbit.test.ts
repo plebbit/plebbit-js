@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import {
     mockPlebbit,
     resolveWhenConditionIsTrue,

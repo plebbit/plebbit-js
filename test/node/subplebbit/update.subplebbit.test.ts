@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import lockfile from "proper-lockfile";
 import path from "path";
 import {

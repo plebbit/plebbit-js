@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import assert from "assert";
 import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../dist/node/pages/util.js";

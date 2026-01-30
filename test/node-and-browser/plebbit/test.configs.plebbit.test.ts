@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it, beforeAll, afterAll } from "vitest";
 import { getAvailablePlebbitConfigsToTestAgainst, isRpcFlagOn, isRunningInBrowser, itIfRpc } from "../../../dist/node/test/test-util.js";
 import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";

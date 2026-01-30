@@ -1,5 +1,4 @@
 import { beforeAll, afterAll } from "vitest";
-import { expect } from "chai";
 import { generateMockPost, publishWithExpectedResult, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import {
     verifyChallengeRequest,

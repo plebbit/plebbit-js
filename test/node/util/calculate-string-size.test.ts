@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { afterAll, beforeAll, it } from "vitest";
 import { randomBytes } from "node:crypto";
 import { describeSkipIfRpc, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../../dist/node/test/test-util.js";

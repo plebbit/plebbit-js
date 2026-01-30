@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describe, it } from "vitest";
 import { addStringToIpfs, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import { loadAllPagesUnderSubplebbitToFindComment } from "../../../dist/node/publications/comment/comment-util.js";

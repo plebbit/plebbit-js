@@ -1,7 +1,6 @@
 // comment.pendingApproval should not appear in postUpdates
 // comments with pendingApproval should not show up in comment.replies, post.replies, subplebbit.posts
 
-import { expect } from "chai";
 import {
     mockPlebbit,
     publishWithExpectedResult,

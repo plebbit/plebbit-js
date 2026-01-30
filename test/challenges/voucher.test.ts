@@ -1,5 +1,4 @@
 import { beforeEach, afterEach } from "vitest";
-import { expect } from "chai";
 import {
     plebbitJsChallenges,
     getPendingChallengesOrChallengeVerification

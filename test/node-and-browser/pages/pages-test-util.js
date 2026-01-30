@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { loadAllUniqueCommentsUnderCommentInstance } from "../../../dist/node/test/test-util.js";
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
 import signers from "../../fixtures/signers.js";

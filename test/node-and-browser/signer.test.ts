@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import { mockPlebbitNoDataPathWithOnlyKuboClient } from "../../dist/node/test/test-util.js";
 import fixtureSigners from "../fixtures/signers.js";
 import { signBufferEd25519, verifyBufferEd25519 } from "../../dist/node/signer/signatures.js";

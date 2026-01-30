@@ -115,7 +115,7 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 - [x] Create `config/vitest.tsconfig.json`
 - [x] Convert `config/vitest.config.js` to `config/vitest.config.ts`
 - [x] Update `test/run-test-config.js` with type checking
-- [x] Install type dependencies (@types/chai, @types/sinon)
+- [x] Install type dependencies (@types/sinon)
 - [x] Update AGENTS.md documentation
 
 ## Phase 2: Test File Migration
@@ -399,20 +399,22 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 - [x] Update AGENTS.md
 - [x] Update RENAMING_GUIDE.md to use .test.ts extension for test file renames
 
-## Phase 4: Replace Chai with Vitest Assertions
+## Phase 4: Replace Chai with Vitest Assertions — Complete
 
-**After all test files have been migrated to TypeScript**, replace Chai assertions with Vitest's built-in `expect` assertions.
+Removed explicit `chai` dependency. Since Vitest 4.0.15 bundles Chai internally and `globals: true` is configured, the global `expect` supports all Chai-style assertion chains natively (`.to.equal()`, `.to.be.true`, `.to.deep.equal()`, `.to.exist`, etc.).
 
-- [ ] Remove `chai` and `@types/chai` dependencies
-- [ ] Replace `import { expect } from "chai"` with `import { expect } from "vitest"` in all test files
-- [ ] Update assertion syntax as needed (Chai and Vitest expect have slightly different APIs)
+- [x] Remove `chai` and `@types/chai` from `devDependencies`
+- [x] Remove `import { expect } from "chai"` from all 152 test files (151 `.test.ts` + 1 `.js`)
+- [x] Verify type-checking passes (`npx tsc --project test/tsconfig.json --noEmit`)
+- [x] Verify build passes (`npm run build`)
+- [x] Verify tests pass at runtime
 
-### Why replace Chai?
+### Why this works without syntax changes
 
-1. **Reduced dependencies** - One less dependency to maintain
-2. **Better TypeScript integration** - Vitest's expect is built with TypeScript in mind
-3. **Consistent tooling** - Using Vitest for both test runner and assertions
-4. **Better error messages** - Vitest provides better failure messages out of the box
+- `config/vitest.config.ts` has `globals: true` — `expect` is available globally
+- `test/tsconfig.json` has `"types": ["vitest/globals", "node"]` — TypeScript knows about global `expect`
+- Vitest's `@vitest/expect` depends on `chai ^6.2.1` internally
+- Vitest's `Assertion<T>` extends `VitestAssertion<Chai.Assertion, T>` — all Chai chains work natively
 
 ## Phase 5: Enable Strict TypeScript and Disallow `any`
 
@@ -499,7 +501,6 @@ Example conversion:
 
 ```typescript
 // Before (JavaScript)
-import { expect } from "chai";
 import { describe, it, beforeAll } from "vitest";
 
 describe("example", () => {
@@ -510,7 +511,6 @@ describe("example", () => {
 });
 
 // After (TypeScript)
-import { expect } from "chai";
 import { describe, it, beforeAll } from "vitest";
 import type { Plebbit as PlebbitType } from "../dist/node/plebbit/plebbit.js";
 

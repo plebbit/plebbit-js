@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import Plebbit from "../../dist/node/index.js";
 // example of browser only tests
 

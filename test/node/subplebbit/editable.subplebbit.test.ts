@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import { mockPlebbit } from "../../../dist/node/test/test-util.js";
 import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
 

@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
     mockGatewayPlebbit,

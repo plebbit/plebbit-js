@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, beforeEach, afterEach, it } from "vitest";
-import { expect } from "chai";
 import { describeSkipIfRpc, generateMockPost, mockPlebbit } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";

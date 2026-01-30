@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, describe, it } from "vitest";
-import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import { generateMockPost, getAvailablePlebbitConfigsToTestAgainst, publishRandomPost } from "../../../../dist/node/test/test-util.js";
 import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";

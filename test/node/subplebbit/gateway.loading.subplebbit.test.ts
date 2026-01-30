@@ -5,7 +5,6 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import { describe, beforeAll, afterAll, it } from "vitest";
 
 import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";

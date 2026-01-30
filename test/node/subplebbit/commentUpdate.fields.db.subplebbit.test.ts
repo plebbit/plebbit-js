@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { beforeEach, afterEach, describe, it } from "vitest";
 import assert from "assert";
 import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler.js";

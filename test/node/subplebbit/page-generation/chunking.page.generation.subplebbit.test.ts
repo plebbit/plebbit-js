@@ -1,4 +1,3 @@
-import { expect } from "chai";
 import { describeSkipIfRpc } from "../../../../dist/node/test/test-util.js";
 import { beforeEach, it } from "vitest";
 import { PageGenerator } from "../../../../dist/node/runtime/node/subplebbit/page-generator.js";

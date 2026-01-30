@@ -1,5 +1,4 @@
 import { beforeAll, afterAll, beforeEach } from "vitest";
-import { expect } from "chai";
 import {
     addStringToIpfs,
     describeSkipIfRpc,
