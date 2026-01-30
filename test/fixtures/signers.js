@@ -1,6 +1,4 @@
-import type { SignerType } from "../../dist/node/signer/types.js";
-
-const signers: SignerType[] = [];
+const signers = [];
 
 signers[0] = {
     privateKey: "UhpMFpOAA2nnHVemWa9Ns23xf63FCbH4rrOkvUtOuxs",

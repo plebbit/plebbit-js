@@ -372,8 +372,8 @@ export async function startOnlineSubplebbit() {
 
 export async function startSubplebbits(props: {
     signers: SignerType[];
-    noData: boolean;
-    dataPath: string;
+    noData?: boolean;
+    dataPath?: string;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
     numOfPostsToPublish: number;
@@ -925,7 +925,7 @@ export async function createSubWithNoChallenge(
     return sub;
 }
 
-export async function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit) {
+export async function generatePostToAnswerMathQuestion(props: Partial<CreateCommentOptions> & Pick<CreateCommentOptions, "subplebbitAddress">, plebbit: Plebbit) {
     const mockPost = await generateMockPost(props.subplebbitAddress, plebbit, false, props);
     mockPost.removeAllListeners("challenge");
     mockPost.once("challenge", (challengeMessage) => {

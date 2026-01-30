@@ -49,8 +49,8 @@ type TestServerSubs = {
 export declare function startOnlineSubplebbit(): Promise<LocalSubplebbit>;
 export declare function startSubplebbits(props: {
     signers: SignerType[];
-    noData: boolean;
-    dataPath: string;
+    noData?: boolean;
+    dataPath?: string;
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
     numOfPostsToPublish: number;
@@ -87,7 +87,7 @@ export declare function iterateThroughPagesToFindCommentInParentPagesInstance(co
 export declare function waitTillReplyInParentPagesInstance(reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>, parentComment: Comment): Promise<void>;
 export declare function waitTillReplyInParentPages(reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>, plebbit: Plebbit): Promise<void>;
 export declare function createSubWithNoChallenge(props: CreateNewLocalSubplebbitUserOptions, plebbit: Plebbit): Promise<LocalSubplebbit | RpcLocalSubplebbit>;
-export declare function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit): Promise<Comment>;
+export declare function generatePostToAnswerMathQuestion(props: Partial<CreateCommentOptions> & Pick<CreateCommentOptions, "subplebbitAddress">, plebbit: Plebbit): Promise<Comment>;
 export declare function isRpcFlagOn(): boolean;
 export declare function isRunningInBrowser(): boolean;
 export type ResolveWhenConditionIsTrueOptions = {

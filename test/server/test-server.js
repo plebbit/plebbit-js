@@ -159,7 +159,7 @@ const startIpfsNode = async (nodeArgs) => {
             });
 
     const ipfsConfigPath = path.join(nodeArgs.dir, "config");
-    const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
+    const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath, "utf8"));
 
     ipfsConfig["Addresses"]["API"] = `/ip4/0.0.0.0/tcp/${nodeArgs.apiPort}`;
     ipfsConfig["Addresses"]["Gateway"] = `/ip4/0.0.0.0/tcp/${nodeArgs.gatewayPort}`;
@@ -513,7 +513,7 @@ const setUpMockPubsubServer = async () => {
         const pathname = parsedUrl.pathname;
         const query = querystring.parse(parsedUrl.query);
 
-        console.log("Mock pubsub server: Received request", req.url, req.method, req.query);
+        console.log("Mock pubsub server: Received request", req.url, req.method);
         // Handle CORS
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Methods", "*");
