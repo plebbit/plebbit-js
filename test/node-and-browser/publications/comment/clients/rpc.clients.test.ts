@@ -42,9 +42,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 "stopped"
             ];
 
-            const actualStates = [];
+            const actualStates: string[] = [];
 
-            mockPost.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            mockPost.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState: string) => actualStates.push(newState));
 
             mockPost.once("challenge", async (challengeMsg) => {
                 await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
@@ -60,9 +60,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             await waitTillPostInSubplebbitPages(mockPost as CommentIpfsWithCidDefined, plebbit);
             const postToUpdate = await plebbit.createComment({ cid: mockPost.cid });
 
-            const recordedStates = [];
+            const recordedStates: string[] = [];
             const currentRpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
-            postToUpdate.clients.plebbitRpcClients[currentRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+            postToUpdate.clients.plebbitRpcClients[currentRpcUrl].on("statechange", (newState: string) => recordedStates.push(newState));
 
             await postToUpdate.update();
 

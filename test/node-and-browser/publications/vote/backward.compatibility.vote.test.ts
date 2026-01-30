@@ -9,6 +9,9 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
 
 // Type for challenge request event with vote
 type ChallengeRequestWithVote = {
@@ -24,8 +27,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         // A subplebbit should accept a vote with unknown props
         // However, it should not process the unknown props, it should strip them out after validation
 
-        let plebbit;
-        let commentToVoteOn;
+        let plebbit: Plebbit;
+        let commentToVoteOn: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToVoteOn = await publishRandomPost(signers[0].address, plebbit);
@@ -38,7 +41,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`Publishing vote.extraProp should fail if it's not included in vote.signature.signedPropertyNames`, async () => {
             // We skip with RPC because rpc server will check if signature is valid before publishing
             // If signature is invalid, like in this test, it will throw before publishing
-            const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
+            const vote = await generateMockVote(commentToVoteOn as unknown as CommentIpfsWithCidDefined, 1, plebbit);
             await setExtraPropOnVoteAndSign(vote, { extraProp: "1234" }, false); // will include extra prop in request.vote, but not in signedPropertyNames
 
             await plebbit.createVote(JSON.parse(JSON.stringify(vote))); // attempt to create just to see if createVote will throw due to extra prop
@@ -50,7 +53,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`publishing vote.extraProp should succeed if it's included in vote.signature.signedPropertyNames`, async () => {
-            const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
+            const vote = await generateMockVote(commentToVoteOn as unknown as CommentIpfsWithCidDefined, 1, plebbit);
             await setExtraPropOnVoteAndSign(vote, { extraProp: "1234" }, true); // will include extra prop in request.vote, and signedPropertyNames
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) => vote.once("challengerequest", resolve as (req: unknown) => void));
@@ -61,7 +64,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Publishing vote.reservedField should be rejected`, async () => {
-            const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
+            const vote = await generateMockVote(commentToVoteOn as unknown as CommentIpfsWithCidDefined, 1, plebbit);
             await setExtraPropOnVoteAndSign(vote, { insertedAt: "1234" }, true);
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) => vote.once("challengerequest", resolve as (req: unknown) => void));
@@ -73,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         describe.concurrent(`Publishing vote with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
-                const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
+                const vote = await generateMockVote(commentToVoteOn as unknown as CommentIpfsWithCidDefined, 1, plebbit);
                 await setExtraPropOnVoteAndSign(
                     vote,
                     { author: { ...vote.raw.pubsubMessageToPublish.author, subplebbit: "random" } },
@@ -87,7 +90,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(challengeRequest.vote.author.subplebbit).to.equal("random");
             });
             it(`Publishing with extra prop for author should succeed`, async () => {
-                const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
+                const vote = await generateMockVote(commentToVoteOn as unknown as CommentIpfsWithCidDefined, 1, plebbit);
                 const extraProps = { extraProp: "1234" };
                 await setExtraPropOnVoteAndSign(vote, { author: { ...vote.raw.pubsubMessageToPublish.author, ...extraProps } }, true);
 

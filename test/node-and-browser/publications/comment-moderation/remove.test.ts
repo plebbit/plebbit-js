@@ -13,6 +13,9 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
 
 const subplebbitAddress = signers[7].address; // this sub is dedicated for removing
 const roles = [
@@ -23,12 +26,12 @@ const roles = [
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Removing post - ${config.name}`, async () => {
-        let plebbit, postToRemove, postReply;
+        let plebbit: Plebbit, postToRemove: Comment, postReply: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             postToRemove = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post to be removed" });
             postToRemove.on("updatingstatechange", console.log);
-            postReply = await publishRandomReply(postToRemove, plebbit, { content: "reply under removed post" });
+            postReply = await publishRandomReply(postToRemove as CommentIpfsWithCidDefined, plebbit, { content: "reply under removed post" });
             await postToRemove.update();
         });
         afterAll(async () => {
@@ -75,22 +78,22 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Sub rejects votes on removed post`, async () => {
-            const vote = await generateMockVote(postToRemove, 1, plebbit, remeda.sample(signers, 1)[0]);
+            const vote = await generateMockVote(postToRemove as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
             await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
         });
 
         it(`Sub rejects replies on removed post`, async () => {
-            const reply = await generateMockComment(postToRemove, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
+            const reply = await generateMockComment(postToRemove as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
             await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
         });
 
         it(`Sub rejects votes on a reply of a removed post`, async () => {
-            const vote = await generateMockVote(postReply, 1, plebbit, remeda.sample(signers, 1)[0]);
+            const vote = await generateMockVote(postReply as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
             await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
         });
 
         it(`Sub rejects replies on a reply of a removed post`, async () => {
-            const reply = await generateMockComment(postReply, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
+            const reply = await generateMockComment(postReply as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
             await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
         });
 
@@ -148,7 +151,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.concurrent(`Mods removing their own posts - ${config.name}`, async () => {
-        let plebbit, modPost;
+        let plebbit: Plebbit, modPost: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -184,12 +187,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.concurrent(`Removing reply`, async () => {
-        let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
+        let plebbit: Plebbit, post: Comment, replyToBeRemoved: Comment, replyUnderRemovedReply: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post with removed reply under it" });
-            replyToBeRemoved = await publishRandomReply(post, plebbit, { content: "reply to be removed" });
-            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved, plebbit, { content: "reply under removed reply" });
+            replyToBeRemoved = await publishRandomReply(post as CommentIpfsWithCidDefined, plebbit, { content: "reply to be removed" });
+            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved as CommentIpfsWithCidDefined, plebbit, { content: "reply under removed reply" });
             await Promise.all([
                 replyToBeRemoved.update(),
                 post.update(),
@@ -250,8 +253,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             //     -- replyUnderRemovedReply (removed = false)
             // We're testing publishing under replyUnderRemovedReply
             const [reply, vote] = [
-                await generateMockComment(replyUnderRemovedReply, plebbit, false, { signer: remeda.sample(signers, 1)[0] }),
-                await generateMockVote(replyUnderRemovedReply, 1, plebbit, remeda.sample(signers, 1)[0])
+                await generateMockComment(replyUnderRemovedReply as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] }),
+                await generateMockVote(replyUnderRemovedReply as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0])
             ];
             await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, true)));
         });

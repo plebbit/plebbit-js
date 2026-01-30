@@ -45,15 +45,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
             const spread = { ...loadedSubplebbit };
             const createdFromSpreadSubplebbit = await plebbit.createSubplebbit(spread);
             for (const key of Object.keys(loadedSubplebbit)) {
-                expect(deterministicStringify(loadedSubplebbit[key])).to.equal(
-                    deterministicStringify(createdFromSpreadSubplebbit[key]),
+                expect(deterministicStringify((loadedSubplebbit as unknown as Record<string, unknown>)[key])).to.equal(
+                    deterministicStringify((createdFromSpreadSubplebbit as unknown as Record<string, unknown>)[key]),
                     `Mismatch for key: ${key}`
                 );
             }
 
             for (const key of Object.keys(createdFromSpreadSubplebbit)) {
-                expect(deterministicStringify(loadedSubplebbit[key])).to.equal(
-                    deterministicStringify(createdFromSpreadSubplebbit[key]),
+                expect(deterministicStringify((loadedSubplebbit as unknown as Record<string, unknown>)[key])).to.equal(
+                    deterministicStringify((createdFromSpreadSubplebbit as unknown as Record<string, unknown>)[key]),
                     `Mismatch for key: ${key}`
                 );
             }
@@ -92,6 +92,47 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
             for (const key of Object.keys(noInternalPropsSubObj)) {
                 expect(noInternalPropsSubJson[key]).to.deep.equal(noInternalPropsSubObj[key], `Mismatch for key: ${key}`);
             }
+        });
+
+        it("createSubplebbit does not throw when posts has empty pages/pageCids and no updatedAt", async () => {
+            const sub = await plebbit.createSubplebbit({
+                address: subplebbitAddress,
+                posts: { pages: {}, pageCids: {} }
+            });
+            expect(sub.address).to.equal(subplebbitAddress);
+        });
+
+        it("createSubplebbit does not throw when JSON.stringify'd sub has empty posts and no updatedAt", async () => {
+            // This is the actual plebones scenario: cached sub with clients key, empty posts, no updatedAt
+            const cachedSub = {
+                address: subplebbitAddress,
+                clients: {},
+                posts: { pages: {}, pageCids: {} },
+                modQueue: { pageCids: {} },
+                startedState: "stopped",
+                state: "stopped",
+                updatingState: "stopped"
+            };
+            const sub = await plebbit.createSubplebbit(cachedSub as any);
+            expect(sub.address).to.equal(subplebbitAddress);
+        });
+
+        it("createSubplebbit does not throw when modQueue has empty pageCids and no updatedAt", async () => {
+            const sub = await plebbit.createSubplebbit({
+                address: subplebbitAddress,
+                modQueue: { pageCids: {} }
+            });
+            expect(sub.address).to.equal(subplebbitAddress);
+        });
+
+        it("comment._updateRepliesPostsInstance with empty replies pages/pageCids does not throw", async () => {
+            const loadedSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
+            const post = loadedSub.posts.pages.hot!.comments[0];
+            const comment = await plebbit.createComment({ cid: post.cid, subplebbitAddress });
+            // updatedAt must be defined for _updateRepliesPostsInstance not to throw
+            comment.updatedAt = Math.floor(Date.now() / 1000);
+            // Should not throw with empty pages and pageCids
+            comment._updateRepliesPostsInstance({ pages: {}, pageCids: {} } as any);
         });
 
         it("Remote subplebbit instance created with only address prop can call getPage", async () => {

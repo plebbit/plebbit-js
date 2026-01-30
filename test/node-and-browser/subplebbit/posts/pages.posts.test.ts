@@ -24,7 +24,7 @@ import type { RemoteSubplebbit } from "../../../../dist/node/subplebbit/remote-s
 import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 import type { PlebbitError } from "../../../../dist/node/plebbit-error.js";
 import type { PageTypeJson } from "../../../../dist/node/pages/types.js";
-import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+import type { CommentIpfsWithCidDefined, CommentWithinRepliesPostsPageJson } from "../../../../dist/node/publications/comment/types.js";
 
 const subplebbitAddress = signers[0].address;
 
@@ -70,14 +70,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts);
                 const postInPreloadedPage = allPostsUnderPreloadedSortName.find((postInPage) => postInPage.cid === newPost.cid);
                 expect(postInPreloadedPage).to.exist;
-                testCommentFieldsInPageJson(postInPreloadedPage);
+                testCommentFieldsInPageJson(postInPreloadedPage as CommentWithinRepliesPostsPageJson);
             }
         });
 
         it(`Preloaded pages are sorted correctly`, async () => {
             expect(Object.keys(subplebbit.posts.pages).length).to.be.greaterThan(0);
             for (const preloadedPageSortName of Object.keys(subplebbit.posts.pages)) {
-                const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts);
+                const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts) as CommentWithinRepliesPostsPageJson[];
                 await testPageCommentsIfSortedCorrectly(allPostsUnderPreloadedSortName, preloadedPageSortName, subplebbit);
             }
         });
@@ -267,7 +267,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const validPageIpfs = subplebbit.raw.subplebbitIpfs.posts.pages.hot;
                 const invalidPage = JSON.parse(JSON.stringify(validPageIpfs));
                 const postWithNoRepliesIndex = invalidPage.comments.findIndex(
-                    (comment) => comment.comment.depth === 0 && !comment.commentUpdate.replies
+                    (comment: { comment: { depth: number }; commentUpdate: { replies?: unknown } }) => comment.comment.depth === 0 && !comment.commentUpdate.replies
                 );
                 expect(postWithNoRepliesIndex).to.be.greaterThanOrEqual(0);
                 invalidPage.comments[postWithNoRepliesIndex].comment.postCid =
@@ -319,7 +319,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 // Create an empty page
                 const emptyPage = {
                     ...validPageJson,
-                    comments: []
+                    comments: [] as CommentWithinRepliesPostsPageJson[]
                 };
 
                 // Empty pages should be valid

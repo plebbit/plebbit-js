@@ -9,7 +9,7 @@ const comment = {
     content: "some content... "
 };
 // test large content
-let i = 1000;
+let i: number = 1000;
 while (i--) {
     comment.content += "some content... ";
 }

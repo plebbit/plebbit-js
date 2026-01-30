@@ -5,6 +5,7 @@ import {
 } from "../../../../../dist/node/test/test-util.js";
 import signers from "../../../../fixtures/signers.js";
 import { describe, beforeAll, afterAll, it } from "vitest";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
 
 // Type for challengerequest event data
 type ChallengeRequestEvent = {
@@ -13,7 +14,7 @@ type ChallengeRequestEvent = {
 };
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Pubsub request fields in plebbit.createComment - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();

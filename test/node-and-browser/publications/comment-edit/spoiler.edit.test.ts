@@ -9,6 +9,9 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import { verifyCommentIpfs, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidPostCidDefined } from "../../../../dist/node/publications/comment/types.js";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -19,7 +22,7 @@ const roles = [
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Authors can mark their own comment as spoiler - ${config.name}`, async () => {
-        let plebbit, authorPost;
+        let plebbit: Plebbit, authorPost: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             authorPost = await publishRandomPost(subplebbitAddress, plebbit);
@@ -95,7 +98,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 resolveAuthorAddresses: true,
                 clientsManager: recreatedPost._clientsManager,
                 subplebbit: { address: recreatedPost.subplebbitAddress },
-                comment: recreatedPost,
+                comment: recreatedPost as unknown as Pick<CommentIpfsWithCidPostCidDefined, "signature" | "cid" | "depth" | "postCid">,
                 overrideAuthorAddressIfInvalid: false,
                 validatePages: true,
                 validateUpdateSignature: true
@@ -136,7 +139,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.concurrent(`Mods marking their own comment as spoiler - ${config.name}`, async () => {
-        let plebbit, modPost;
+        let plebbit: Plebbit, modPost: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();

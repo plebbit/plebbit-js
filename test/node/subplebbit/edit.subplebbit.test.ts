@@ -533,7 +533,7 @@ describe(`Editing subplebbit.roles`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: newSub, predicate: async () => Boolean(newSub.updatedAt) }); // wait until it publishes an ipns record
         await remotePlebbit.getSubplebbit({ address: newSub.address }); // no problem with signature
 
-        const newRoles = { "author-address.eth": { role: null }, "author-address2.eth": { role: "admin" } };
+        const newRoles: Record<string, { role: string | null }> = { "author-address.eth": { role: null }, "author-address2.eth": { role: "admin" } };
         await newSub.edit({ roles: newRoles as { [key: string]: { role: string } } });
         expect(newSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
 

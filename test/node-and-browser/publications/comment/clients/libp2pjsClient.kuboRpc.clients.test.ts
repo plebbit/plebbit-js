@@ -13,9 +13,11 @@ import { describe, it, beforeAll, afterAll } from "vitest";
 import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
 
+type ClientsRecord = Record<string, Record<string, { on: (event: string, handler: (state: string) => void) => void; state: string }>>;
+
 const subplebbitAddress = signers[0].address;
 
-const clientsFieldName = {
+const clientsFieldName: Record<string, string> = {
     "remote-libp2pjs": "libp2pJsClients",
     "remote-kubo-rpc": "kuboRpcClients"
 };
@@ -35,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`comment.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
-            expect(mockPost.clients[clientFieldName]).to.be.undefined;
+            expect((mockPost.clients as Record<string, unknown>)[clientFieldName]).to.be.undefined;
             await gatewayPlebbit.destroy();
         });
 
@@ -60,11 +62,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "stopped"
             ];
 
-            const actualStates = [];
+            const actualStates: string[] = [];
 
-            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
+            const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -91,11 +93,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "stopped"
             ];
 
-            const actualStates = [];
+            const actualStates: string[] = [];
 
-            const keyOfClient = Object.keys(reply.clients[clientFieldName])[0];
+            const keyOfClient = Object.keys((reply.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            reply.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
+            (reply.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
 
             await reply.update();
 
@@ -117,11 +119,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped", "fetching-update-ipfs", "stopped"];
 
-            const actualStates = [];
+            const actualStates: string[] = [];
 
-            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
+            const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -138,11 +140,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             mockPost._getSubplebbitCache = () => undefined;
             const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped"];
 
-            const actualStates = [];
+            const actualStates: string[] = [];
 
-            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
+            const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -152,11 +154,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`Correct order of ${clientFieldName} state when publishing a comment (cached)`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const actualStates = [];
+            const actualStates: string[] = [];
 
-            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
+            const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -186,11 +188,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const mockPost = await customPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
-            const recordedStates = [];
+            const recordedStates: string[] = [];
 
-            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
+            const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => recordedStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => recordedStates.push(newState));
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -229,9 +231,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 cid: commentUpdateWithInvalidSignatureJson.cid
             });
 
-            const clientStates = [];
-            const keyOfClient = Object.keys(createdComment.clients[clientFieldName])[0];
-            createdComment.clients[clientFieldName][keyOfClient].on("statechange", (state) => clientStates.push(state));
+            const clientStates: string[] = [];
+            const keyOfClient = Object.keys((createdComment.clients as unknown as ClientsRecord)[clientFieldName])[0];
+            (createdComment.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (state: string) => clientStates.push(state));
 
             const createErrorPromise = () =>
                 new Promise<void>((resolve) =>

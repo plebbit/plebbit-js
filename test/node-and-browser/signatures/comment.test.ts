@@ -226,7 +226,7 @@ describeSkipIfRpc("verify Comment", async () => {
 describeSkipIfRpc(`Comment with author.address as domain`, async () => {
     it(`verifyCommentPubsubMessage corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await mockRemotePlebbit();
-        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress: string) =>
+        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = async (authorAddress: string) =>
             authorAddress === "testDomain.eth" ? fixtureComment.author.address : authorAddress;
         const commentWithInvalidDomain = remeda.clone(fixtureComment);
         commentWithInvalidDomain.author.address = "testDomain.eth";

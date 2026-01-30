@@ -280,7 +280,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const post = await plebbit.createComment({ cid: postCid });
             const errors: PlebbitError[] = [];
-            post.on("error", (e: PlebbitError) => errors.push(e));
+            post.on("error", (e: PlebbitError | Error) => { errors.push(e as PlebbitError); });
 
             await post.update();
             await resolveWhenConditionIsTrue({ toUpdate: post, predicate: async () => errors.length >= 1, eventName: "error" });

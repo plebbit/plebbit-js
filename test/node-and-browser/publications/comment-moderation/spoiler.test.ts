@@ -7,6 +7,8 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 const subplebbitAddress = signers[0].address;
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -16,7 +18,7 @@ const roles = [
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Mods marking an author comment as spoiler - ${config.name}`, async () => {
-        let plebbit, randomPost;
+        let plebbit: Plebbit, randomPost: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();

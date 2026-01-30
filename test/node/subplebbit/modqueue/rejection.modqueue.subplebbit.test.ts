@@ -413,8 +413,8 @@ for (const commentMod of commentModProps) {
                                     });
 
                                     for (const commentModKey of Object.keys(commentMod) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
-                                        expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
-                                        expect(newComment.raw.commentUpdate![commentModKey]).to.equal(commentMod[commentModKey]);
+                                        expect((newComment as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
+                                        expect((newComment.raw.commentUpdate! as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
                                     }
 
                                     expect(newComment.updatedAt).to.be.a("number");
@@ -456,8 +456,8 @@ for (const commentMod of commentModProps) {
                                         });
 
                                         for (const commentModKey of Object.keys(commentMod) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
-                                            expect(newComment[commentModKey]).to.equal(commentMod[commentModKey]);
-                                            expect(newComment.raw.commentUpdate![commentModKey]).to.equal(commentMod[commentModKey]);
+                                            expect((newComment as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
+                                            expect((newComment.raw.commentUpdate! as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
                                         }
 
                                         expect(newComment.updatedAt).to.be.a("number");

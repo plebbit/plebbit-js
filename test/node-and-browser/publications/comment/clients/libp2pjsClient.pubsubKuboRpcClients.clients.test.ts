@@ -19,7 +19,9 @@ type CommentWithInternals = { _publishToDifferentProviderThresholdSeconds: numbe
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 
-const clientsFieldName = {
+type ClientsRecord = Record<string, Record<string, { on: (event: string, handler: (state: string) => void) => void; state: string }>>;
+
+const clientsFieldName: Record<string, string> = {
     "remote-libp2pjs": "libp2pJsClients",
     "remote-kubo-rpc": "pubsubKuboRpcClients"
 };
@@ -43,26 +45,26 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`correct order of ${clientFieldName} state when publishing a comment with a sub that skips challenge`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
 
-            const pubsubUrls = Object.keys(plebbit.clients[clientFieldName]);
+            const pubsubUrls = Object.keys((plebbit.clients as Record<string, Record<string, unknown>>)[clientFieldName]);
             // Only first pubsub url is used for subscription. For publishing we use all providers
 
-            const expectedStates = Object.assign(
+            const expectedStates: Record<string, string[]> = Object.assign(
                 {},
-                ...pubsubUrls.map((url) => ({
+                ...pubsubUrls.map((url): Record<string, string[]> => ({
                     [url]: []
                 }))
             );
             expectedStates[pubsubUrls[0]] = ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"];
 
-            const actualStates = Object.assign(
+            const actualStates: Record<string, string[]> = Object.assign(
                 {},
-                ...pubsubUrls.map((url) => ({
+                ...pubsubUrls.map((url): Record<string, string[]> => ({
                     [url]: []
                 }))
             );
 
             for (const pubsubUrl of Object.keys(expectedStates))
-                mockPost.clients[clientFieldName][pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+                (mockPost.clients as unknown as ClientsRecord)[clientFieldName][pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
 
             const subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
             mockPost._getSubplebbitCache = () => subplebbit.raw.subplebbitIpfs; // so libp2pjs client state won't include fetching subplebbit states
@@ -74,12 +76,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`correct order of ${clientFieldName} state when publishing a comment with a sub that requires challenge`, async () => {
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-            const pubsubUrls = Object.keys(mockPost.clients[clientFieldName]);
+            const pubsubUrls = Object.keys((mockPost.clients as Record<string, Record<string, unknown>>)[clientFieldName]);
             // Only first pubsub url is used for subscription. For publishing we use all providers
 
-            const expectedStates = Object.assign(
+            const expectedStates: Record<string, string[]> = Object.assign(
                 {},
-                ...pubsubUrls.map((url) => ({
+                ...pubsubUrls.map((url): Record<string, string[]> => ({
                     [url]: []
                 }))
             );
@@ -94,15 +96,15 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "stopped"
             ];
 
-            const actualStates = Object.assign(
+            const actualStates: Record<string, string[]> = Object.assign(
                 {},
-                ...pubsubUrls.map((url) => ({
+                ...pubsubUrls.map((url): Record<string, string[]> => ({
                     [url]: []
                 }))
             );
 
             for (const pubsubUrl of Object.keys(expectedStates))
-                mockPost.clients[clientFieldName][pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+                (mockPost.clients as unknown as ClientsRecord)[clientFieldName][pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -120,15 +122,15 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
                 const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
 
-                const actualStates = [];
+                const actualStates: string[] = [];
 
-                mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrl].on("statechange", (newState) => actualStates.push(newState));
+                mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrl].on("statechange", (newState: string) => actualStates.push(newState));
 
                 try {
                     await mockPost.publish();
                     expect.fail("Should have thrown");
                 } catch (e) {
-                    expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
+                    expect((e as PlebbitError).code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
                 }
 
                 const expectedStates = new Array(Object.keys(mockPost._challengeExchanges).length)
@@ -155,10 +157,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]
                 };
 
-                const actualStates = { [offlinePubsubUrl]: [], [upPubsubUrl]: [] };
+                const actualStates: Record<string, string[]> = { [offlinePubsubUrl]: [], [upPubsubUrl]: [] };
 
                 for (const pubsubUrl of Object.keys(expectedStates))
-                    mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) =>
+                    mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) =>
                         actualStates[pubsubUrl].push(newState)
                     );
 
@@ -189,10 +191,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]
                 };
 
-                const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
+                const actualStates: Record<string, string[]> = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
 
                 for (const pubsubUrl of Object.keys(plebbit.clients.pubsubKuboRpcClients))
-                    mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) =>
+                    mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) =>
                         actualStates[pubsubUrl].push(newState)
                     );
 
@@ -234,10 +236,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     ]
                 };
 
-                const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
+                const actualStates: Record<string, string[]> = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
 
                 for (const pubsubUrl of Object.keys(expectedStates))
-                    mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) =>
+                    mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) =>
                         actualStates[pubsubUrl].push(newState)
                     );
 

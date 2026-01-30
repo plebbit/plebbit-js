@@ -22,8 +22,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 let updateHasBeenEmitted = false;
                 createdComment.once("update", () => (updateHasBeenEmitted = true));
 
-                const waitingRetries = [];
-                createdComment.on("error", (err) => waitingRetries.push(err));
+                const waitingRetries: PlebbitError[] = [];
+                createdComment.on("error", (err) => waitingRetries.push(err as PlebbitError));
 
                 // Start the update process
                 await createdComment.update();

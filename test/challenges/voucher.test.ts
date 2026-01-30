@@ -345,7 +345,7 @@ describe.skip("voucher challenge", () => {
                 expect.fail("Should have thrown an error");
             } catch (error) {
                 // The error gets wrapped by the challenge system
-                expect(error.message).to.include("invalid getChallenge response");
+                expect((error as Error).message).to.include("invalid getChallenge response");
             }
         });
 

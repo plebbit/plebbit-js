@@ -16,6 +16,7 @@ import { describe, it, beforeAll, afterAll } from "vitest";
 import { _signJson, _signPubsubMsg } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
 import Logger from "@plebbit/plebbit-logger";
+import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
 
 // Types for pubsub messages and errors
 type PlebbitError = {
@@ -41,7 +42,7 @@ const mathCliSubplebbitAddress = signers[1].address;
 // TODO make these tests work with RPC clients
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe.sequential(`Publishing  and receiving pubsub messages with extra props - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -56,17 +57,17 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 const post = await generateMockPost(signers[0].address, plebbit);
                 const extraProps = { extraProp: 1234 };
                 await setExtraPropOnChallengeRequestAndSign(post, extraProps, false);
-                let responseOfSub;
-                let requestFromEvent;
+                let responseOfSub: unknown;
+                let requestFromEvent: Record<string, unknown> | undefined;
 
-                post.once("challengeverification", (request) => (responseOfSub = request));
-                post.once("challengerequest", (request) => {
+                post.once("challengeverification", (request: unknown) => (responseOfSub = request));
+                post.once("challengerequest", (request: Record<string, unknown>) => {
                     requestFromEvent = request;
                 });
 
                 await post.publish();
 
-                expect(requestFromEvent.extraProp).to.equal(extraProps.extraProp);
+                expect(requestFromEvent!.extraProp).to.equal(extraProps.extraProp);
 
                 // will get ignored because the signature of request is invalid, which means all peers on the network will validate that
                 // No need to publish a challenge verification
@@ -80,13 +81,13 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 const extraProps = { extraProp: 1234 };
                 await setExtraPropOnChallengeRequestAndSign(post, extraProps, true);
 
-                let requestFromEvent;
+                let requestFromEvent: Record<string, unknown> | undefined;
 
-                post.once("challengerequest", (request) => (requestFromEvent = request));
+                post.once("challengerequest", (request: Record<string, unknown>) => (requestFromEvent = request));
                 await post.publish();
 
                 expect(requestFromEvent).to.be.a("object");
-                expect(requestFromEvent.extraProp).to.equal(extraProps.extraProp);
+                expect(requestFromEvent!.extraProp).to.equal(extraProps.extraProp);
 
                 // TODO need to test challenge request on the sub side as well
 

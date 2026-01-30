@@ -8,6 +8,8 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 
 // Type for challenge request event with comment moderation
 type ChallengeRequestWithCommentModeration = {
@@ -33,8 +35,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         // A subplebbit should accept a CommentModeration with unknown props
         // However, it should not process the unknown props, it should strip them out after validation
 
-        let plebbit;
-        let commentToMod;
+        let plebbit: Plebbit;
+        let commentToMod: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToMod = await publishRandomPost(signers[0].address, plebbit);
@@ -79,16 +81,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await publishWithExpectedResult(commentModeration, true);
 
-            await new Promise<void>((resolve) => commentToMod.once("update", resolve));
+            await new Promise<void>((resolve) => commentToMod.once("update", () => resolve()));
             expect(commentToMod.removed).to.be.true; // should process only removed since it's the known field to the sub
-            expect((commentToMod as Record<string, unknown>).extraProp).to.be.undefined;
+            expect((commentToMod as any).extraProp).to.be.undefined;
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.commentModeration.extraProp).to.equal("1234");
             await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
 
             await resolveWhenConditionIsTrue({ toUpdate: commentToMod, predicate: async () => commentToMod.removed });
             expect(commentToMod.removed).to.be.true; // should process only locked since it's the known field to the sub
-            expect((commentToMod as Record<string, unknown>).extraProp).to.be.undefined;
+            expect((commentToMod as any).extraProp).to.be.undefined;
         });
 
         it(`publishing commentModerationPublication.commentModeration.extraProp should succeed, but it shouldn't include it in CommentUpdate`, async () => {
@@ -111,7 +113,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await resolveWhenConditionIsTrue({ toUpdate: commentToMod, predicate: async () => commentToMod.locked });
             // if commentToEdit emits update that means the signature of update.edit is correct
             expect(commentToMod.locked).to.be.true; // should process only locked since it's the known field to the sub
-            expect((commentToMod as Record<string, unknown>).extraProp).to.be.undefined;
+            expect((commentToMod as any).extraProp).to.be.undefined;
 
             await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
         });

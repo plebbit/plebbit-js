@@ -65,7 +65,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
 
                 const resolveCallsCount = fetchSpy
-                    ? fetchSpy.mock.calls.filter(([input]) => {
+                    ? fetchSpy.mock.calls.filter(([input]: [unknown]) => {
                           const url = typeof input === "string" ? input : (input as { url?: string })?.url;
                           return typeof url === "string" && url.includes("/ipns/" + targetAddress);
                       }).length

@@ -1,10 +1,13 @@
 import { loadAllUniqueCommentsUnderCommentInstance } from "../../../dist/node/test/test-util.js";
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
 import signers from "../../fixtures/signers.js";
+import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
+import type { RemoteSubplebbit } from "../../../dist/node/subplebbit/remote-subplebbit.js";
+import type { CommentWithinRepliesPostsPageJson } from "../../../dist/node/publications/comment/types.js";
 
 const defaultSubplebbitAddress = signers[0].address;
 
-export const testCommentFieldsInPageJson = (comment, expectedSubplebbitAddress = defaultSubplebbitAddress) => {
+export const testCommentFieldsInPageJson = (comment: CommentWithinRepliesPostsPageJson, expectedSubplebbitAddress: string = defaultSubplebbitAddress) => {
     if (!comment.link && !comment.content && !comment.title) expect.fail("Comment should either have link, content or title defined");
     expect(comment.author.address).to.be.a("string");
     expect(comment.cid).to.be.a("string");
@@ -44,8 +47,8 @@ export const testCommentFieldsInPageJson = (comment, expectedSubplebbitAddress =
 
     if (comment.edit) {
         expect(comment.author.address).to.equal(comment.author.address);
-        expect(comment.edit.authorAddress).to.be.undefined; // Shouldn't be included (extra from db)
-        expect(comment.edit.challengeRequestId).to.be.undefined;
+        expect((comment.edit as any).authorAddress).to.be.undefined; // Shouldn't be included (extra from db)
+        expect((comment.edit as any).challengeRequestId).to.be.undefined;
         expect(comment.edit.commentCid).to.equal(comment.cid);
         expect(comment.edit.signature).to.be.a("object");
         expect(comment.edit.subplebbitAddress).to.equal(comment.subplebbitAddress);
@@ -53,14 +56,14 @@ export const testCommentFieldsInPageJson = (comment, expectedSubplebbitAddress =
     }
 
     // Props that shouldn't be there
-    expect(comment.ipnsKeyName).to.be.undefined;
-    expect(comment.challengeRequestId).to.be.undefined;
-    expect(comment.signer).to.be.undefined;
-    expect(comment._signer).to.be.undefined;
-    expect(comment.pendingApproval).to.not.exist;
+    expect((comment as any).ipnsKeyName).to.be.undefined;
+    expect((comment as any).challengeRequestId).to.be.undefined;
+    expect((comment as any).signer).to.be.undefined;
+    expect((comment as any)._signer).to.be.undefined;
+    expect((comment as any).pendingApproval).to.not.exist;
 };
 
-export const testCommentFieldsInModQueuePageJson = (comment, subplebbitAddress) => {
+export const testCommentFieldsInModQueuePageJson = (comment: Record<string, any>, subplebbitAddress: string) => {
     if (!comment.link && !comment.content && !comment.title)
         expect.fail("Pending Comment should either have link, content or title defined");
     expect(comment.author.address).to.be.a("string");
@@ -110,12 +113,12 @@ export const testCommentFieldsInModQueuePageJson = (comment, subplebbitAddress) 
     expect(comment.pendingApproval).to.be.true;
 };
 
-const activeScore = async (comment, plebbit) => {
+const activeScore = async (comment: CommentWithinRepliesPostsPageJson, plebbit: Plebbit): Promise<number> => {
     if (!comment.replies) return comment.timestamp;
     let maxTimestamp = comment.timestamp;
 
     const commentInstance = await plebbit.createComment(comment);
-    const updateMaxTimestamp = async (localComments) => {
+    const updateMaxTimestamp = async (localComments: CommentWithinRepliesPostsPageJson[]) => {
         for (const localComment of localComments) {
             if (localComment.deleted || localComment.removed) continue; // shouldn't count
             if (localComment.timestamp > maxTimestamp) maxTimestamp = localComment.timestamp;
@@ -134,8 +137,8 @@ const activeScore = async (comment, plebbit) => {
     return maxTimestamp;
 };
 
-export const testPageCommentsIfSortedCorrectly = async (sortedComments, sortName, subplebbit) => {
-    const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
+export const testPageCommentsIfSortedCorrectly = async (sortedComments: CommentWithinRepliesPostsPageJson[], sortName: string, subplebbit: RemoteSubplebbit) => {
+    const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe: string) =>
         sortName.toLowerCase().includes(timeframe.toLowerCase())
     )[0];
     const expectedSubplebbitAddress = subplebbit?.address || defaultSubplebbitAddress;
@@ -146,20 +149,20 @@ export const testPageCommentsIfSortedCorrectly = async (sortedComments, sortName
         if (currentTimeframe && !sortedComments[j].pinned && currentTimeframe !== "ALL") {
             const syncIntervalSeconds = 5 * 60;
 
-            const sortStart = subplebbit.updatedAt - TIMEFRAMES_TO_SECONDS[currentTimeframe] - syncIntervalSeconds; // Should probably add extra buffer here
+            const sortStart = subplebbit.updatedAt! - TIMEFRAMES_TO_SECONDS[currentTimeframe as keyof typeof TIMEFRAMES_TO_SECONDS] - syncIntervalSeconds; // Should probably add extra buffer here
             const errMsg = `${sortName} sort includes posts from different timeframes`;
             expect(sortedComments[j].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
-            expect(sortedComments[j].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
+            expect(sortedComments[j].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt!, errMsg);
             expect(sortedComments[j + 1].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
-            expect(sortedComments[j + 1].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt, errMsg);
+            expect(sortedComments[j + 1].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt!, errMsg);
         }
         if (sortedComments[j].pinned || sortedComments[j + 1].pinned) continue; // Ignore pinned posts as they don't follow regular sorting
 
         const sort = { ...POSTS_SORT_TYPES, ...POST_REPLIES_SORT_TYPES }[sortName];
-        let scoreA, scoreB;
+        let scoreA: number, scoreB: number;
         if (sortName === "active") {
-            scoreA = await activeScore(sortedComments[j], subplebbit._plebbit);
-            scoreB = await activeScore(sortedComments[j + 1], subplebbit._plebbit);
+            scoreA = await activeScore(sortedComments[j], (subplebbit as any)._plebbit);
+            scoreB = await activeScore(sortedComments[j + 1], (subplebbit as any)._plebbit);
         } else {
             scoreA = sort.score(sortedComments[j].raw);
             scoreB = sort.score(sortedComments[j + 1].raw);

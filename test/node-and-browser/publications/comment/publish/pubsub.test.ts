@@ -40,7 +40,7 @@ const workingPubsubUrl = "http://localhost:15002/api/v0"; // kubo node with work
 
 const offlinePubsubUrl = "http://localhost:23425"; // Non-existent URL that will fail
 
-const waitForPubsubTopicToBeRemoved = async (pubsubClient, pubsubTopic, { timeoutMs = 10000, intervalMs = 200 } = {}) => {
+const waitForPubsubTopicToBeRemoved = async (pubsubClient: { pubsub: { ls: () => Promise<string[]> } }, pubsubTopic: string, { timeoutMs = 10000, intervalMs = 200 } = {}) => {
     const start = Date.now();
     while (true) {
         const subscribedTopics = await pubsubClient.pubsub.ls();
@@ -53,7 +53,7 @@ const waitForPubsubTopicToBeRemoved = async (pubsubClient, pubsubTopic, { timeou
     }
 };
 
-const validateKuboRpcNotListeningToPubsubTopic = async (testPlebbit, pubsubTopic) => {
+const validateKuboRpcNotListeningToPubsubTopic = async (testPlebbit: Plebbit, pubsubTopic: string) => {
     expect(pubsubTopic).to.be.a("string");
     for (const pubsubProviderUrl of Object.keys(testPlebbit.clients.pubsubKuboRpcClients)) {
         const pubsubClient = testPlebbit.clients.pubsubKuboRpcClients[pubsubProviderUrl]._client;
@@ -113,10 +113,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             (mockPost as unknown as CommentWithInternals)._publishToDifferentProviderThresholdSeconds = 2; // Speed up test
             (mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds = 5; // Speed up test
 
-            const errorsEmitted = [];
+            const errorsEmitted: PlebbitError[] = [];
 
             mockPost.on("error", (error) => {
-                errorsEmitted.push(error);
+                errorsEmitted.push(error as PlebbitError);
             });
 
             await mockPost.publish();
@@ -232,7 +232,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbitWithMathCliChallenge }, testPlebbit);
                 (mockPost as unknown as CommentWithInternals)._publishToDifferentProviderThresholdSeconds = 2;
 
-                const providerAttempts = [];
+                const providerAttempts: string[] = [];
                 const originalPublishOnProvider = (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubPublishOnProvider.bind((testPlebbit as PlebbitWithInternals)._clientsManager);
 
                 (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubPublishOnProvider = async (topic, data, providerUrl) => {

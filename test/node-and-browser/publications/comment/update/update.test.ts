@@ -20,6 +20,7 @@ import { cleanUpBeforePublishing } from "../../../../../dist/node/signer/signatu
 import { messages } from "../../../../../dist/node/errors.js";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
 import type { CommentIpfsWithCidDefined } from "../../../../../dist/node/publications/comment/types.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
 
 // Type for replies with required parentCid
 type ReplyWithRequiredFields = Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>;
@@ -31,7 +32,7 @@ const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`comment.update - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -67,10 +68,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
                 const postCid =
-                    subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0 && !post.locked && !post.removed)?.cid ||
+                    subplebbit.posts.pages.hot.comments.find((post: { replyCount: number; locked?: boolean; removed?: boolean }) => post.replyCount > 0 && !post.locked && !post.removed)?.cid ||
                     subplebbit.lastPostCid;
 
-                const reply = await publishRandomReply(await plebbit.getComment({ cid: postCid }), plebbit);
+                const reply = await publishRandomReply((await plebbit.getComment({ cid: postCid })) as CommentIpfsWithCidDefined, plebbit);
 
                 const recreatedReply = await plebbit.createComment({ cid: reply.cid });
 
@@ -98,7 +99,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await comment.update();
             let updatedHasBeenCalled = false;
             await comment.stop();
-            comment._setUpdatingState = async () => {
+            (comment as any)._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
             };
             await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 2));
@@ -114,7 +115,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await comment.stop();
             await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
             let updatedHasBeenCalled = false;
-            comment._setUpdatingState = async () => {
+            (comment as any)._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
             };
 
@@ -202,12 +203,12 @@ const addInvalidJsonToIpfs = async () => {
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`comment.update() emits errors for issues with CommentIpfs or CommentUpdate record - ${config.name}`, async () => {
-        let invalidCommentIpfsCid;
-        let cidOfInvalidJson;
-        let cidOfCommentIpfsWithInvalidSchema;
-        let cidOfCommentIpfsWithMismatchedSubplebbitAddress;
-        let plebbit;
-        let commentUpdateWithInvalidSignatureJson;
+        let invalidCommentIpfsCid: string;
+        let cidOfInvalidJson: string;
+        let cidOfCommentIpfsWithInvalidSchema: string;
+        let cidOfCommentIpfsWithMismatchedSubplebbitAddress: string;
+        let plebbit: Plebbit;
+        let commentUpdateWithInvalidSignatureJson: { cid: string };
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             invalidCommentIpfsCid = await addCommentIpfsWithInvalidSignatureToIpfs();
@@ -228,10 +229,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const createdComment = await plebbit.createComment({ cid: invalidCommentIpfsCid });
             expect(createdComment.content).to.be.undefined; // Make sure it didn't use the props sub pages
 
-            const errors = [];
-            const updatingStates = [];
+            const errors: PlebbitError[] = [];
+            const updatingStates: string[] = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-            createdComment.on("error", (err) => errors.push(err));
+            createdComment.on("error", (err) => errors.push(err as PlebbitError));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
@@ -253,10 +254,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid json`, async () => {
             const createdComment = await plebbit.createComment({ cid: cidOfInvalidJson });
 
-            const updatingStates = [];
+            const updatingStates: string[] = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-            const errors = [];
-            createdComment.on("error", (err) => errors.push(err));
+            const errors: PlebbitError[] = [];
+            createdComment.on("error", (err) => errors.push(err as PlebbitError));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
@@ -278,12 +279,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid schema`, async () => {
             const createdComment = await plebbit.createComment({ cid: cidOfCommentIpfsWithInvalidSchema });
 
-            const updatingStates = [];
+            const updatingStates: string[] = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
-            const errors = [];
-            createdComment.on("error", (err) => errors.push(err));
+            const errors: PlebbitError[] = [];
+            createdComment.on("error", (err) => errors.push(err as PlebbitError));
             await createdComment.update();
 
             await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: async () => errors.length >= 1, eventName: "error" });
@@ -308,10 +309,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress: expectedSubplebbitAddress
             });
 
-            const updatingStates = [];
+            const updatingStates: string[] = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-            const errors = [];
-            createdComment.on("error", (err) => errors.push(err));
+            const errors: PlebbitError[] = [];
+            createdComment.on("error", (err) => errors.push(err as PlebbitError));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
@@ -337,9 +338,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 cid: commentUpdateWithInvalidSignatureJson.cid
             });
 
-            const errors = [];
+            const errors: PlebbitError[] = [];
 
-            createdComment.on("error", (err) => errors.push(err));
+            createdComment.on("error", (err) => errors.push(err as PlebbitError));
 
             await createdComment.update();
 
@@ -380,9 +381,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     cid: commentUpdateWithInvalidSignatureJson.cid
                 });
 
-                const errors = [];
+                const errors: PlebbitError[] = [];
 
-                createdComment.on("error", (err) => errors.push(err));
+                createdComment.on("error", (err) => errors.push(err as PlebbitError));
 
                 await createdComment.update();
                 await mockPostToReturnSpecificCommentUpdate(createdComment, invalidCommentUpdateJson);
@@ -420,9 +421,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const invalidCommentUpdateSchema = { hello: "this should fail the schema parse" };
 
-            const errors = [];
+            const errors: PlebbitError[] = [];
 
-            createdComment.on("error", (err) => errors.push(err));
+            createdComment.on("error", (err) => errors.push(err as PlebbitError));
 
             await createdComment.update();
 
@@ -455,8 +456,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const postCid = sub.posts.pages.hot.comments[0].cid;
 
             const post = await plebbit.getComment({ cid: postCid });
-            const errors = [];
-            post.on("error", (err) => errors.push(err));
+            const errors: PlebbitError[] = [];
+            post.on("error", (err) => errors.push(err as PlebbitError));
             await post.update();
             await mockPostToFailToLoadFromPostUpdates(post);
 
@@ -476,8 +477,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const postCid = sub.posts.pages.hot.comments[0].cid;
 
             const post = await plebbit.getComment({ cid: postCid });
-            const errors = [];
-            post.on("error", (err) => errors.push(err));
+            const errors: PlebbitError[] = [];
+            post.on("error", (err) => errors.push(err as PlebbitError));
             await post.update();
             await mockPostToHaveSubplebbitWithNoPostUpdates(post);
 
@@ -503,8 +504,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const cid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with random content for this cid
             const createdComment = await plebbit.createComment({ cid });
 
-            const ipfsGatewayStates = [];
-            const updatingStates = [];
+            const ipfsGatewayStates: string[] = [];
+            const updatingStates: string[] = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
             const ipfsGatewayUrl = Object.keys(createdComment.clients.ipfsGateways)[0];
             createdComment.clients.ipfsGateways[ipfsGatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));

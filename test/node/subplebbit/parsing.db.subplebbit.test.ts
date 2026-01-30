@@ -123,7 +123,7 @@ describe("createSchemaRowParser", () => {
 
     it("treats null database values as undefined for optional comment fields", () => {
         const signature = buildSignature();
-        const rawRow = {
+        const rawRow: Record<string, string | number | null> = {
             cid: "QmZg4TCKqKoMTVHCpQbVmGBkcGaA4vHwaC7xaoZ3nfJm8k",
             postCid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f",
             depth: 0,

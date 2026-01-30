@@ -13,6 +13,9 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
 
 const subplebbitAddress = signers[8].address;
 const roles = [
@@ -23,7 +26,7 @@ const roles = [
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("Deleting a post - " + config.name, async () => {
-        let plebbit, postToDelete, modPostToDelete, postReply;
+        let plebbit: Plebbit, postToDelete: Comment, modPostToDelete: Comment, postReply: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -31,7 +34,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 publishRandomPost(subplebbitAddress, plebbit),
                 publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
             ]);
-            postReply = await publishRandomReply(postToDelete, plebbit);
+            postReply = await publishRandomReply(postToDelete as CommentIpfsWithCidDefined, plebbit);
             await postToDelete.update();
             await modPostToDelete.update();
             await postReply.update();
@@ -74,7 +77,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it.sequential(`A new CommentUpdate is published with deleted=true for author deleted post`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: postToDelete, predicate: async () => postToDelete.deleted === true });
             expect(postToDelete.deleted).to.be.true;
-            expect(postToDelete.raw.commentUpdate.deleted).to.be.undefined;
+            expect((postToDelete.raw.commentUpdate as Record<string, unknown>).deleted).to.be.undefined;
             expect(postToDelete.raw.commentUpdate.edit.deleted).to.be.true;
             expect(postToDelete.reason).to.be.undefined; // reason is only for mod
             expect(postToDelete.edit.reason).to.equal("To test delete for author");
@@ -105,22 +108,22 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can't publish vote on deleted post`, async () => {
-            const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit, remeda.sample(signers, 1)[0]);
+            const voteUnderDeletedPost = await generateMockVote(postToDelete as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
             await publishWithExpectedResult(voteUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
         });
 
         it(`Can't publish reply under deleted post`, async () => {
-            const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
+            const replyUnderDeletedPost = await generateMockComment(postToDelete as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
             await publishWithExpectedResult(replyUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
         });
 
         it(`Can't publish a reply under a reply of a deleted post`, async () => {
-            const reply = await generateMockComment(postReply, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
+            const reply = await generateMockComment(postReply as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
             await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
         });
 
         it(`Can't publish a vote under a reply of a deleted post`, async () => {
-            const vote = await generateMockVote(postReply, 1, plebbit, remeda.sample(signers, 1)[0]);
+            const vote = await generateMockVote(postReply as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
             await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
         });
         it.sequential(`Mod can delete their own post`, async () => {
@@ -137,7 +140,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it.sequential(`A new CommentUpdate is published with deleted=true for mod deleted post`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPostToDelete, predicate: async () => modPostToDelete.deleted === true });
             expect(modPostToDelete.deleted).to.be.true;
-            expect(modPostToDelete.raw.commentUpdate.deleted).to.be.undefined;
+            expect((modPostToDelete.raw.commentUpdate as Record<string, unknown>).deleted).to.be.undefined;
             expect(modPostToDelete.raw.commentUpdate.edit.deleted).to.be.true;
             expect(modPostToDelete.reason).to.be.undefined; // .reason is for mod editing other authors posts
             expect(modPostToDelete.edit.reason).to.equal("For mod to test deleting their own post");
@@ -169,13 +172,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.concurrent("Deleting a reply - " + config.name, async () => {
-        let plebbit, replyToDelete, post, replyUnderDeletedReply;
+        let plebbit: Plebbit, replyToDelete: Comment, post: Comment, replyUnderDeletedReply: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
-            replyToDelete = await publishRandomReply(post, plebbit);
-            replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit);
+            replyToDelete = await publishRandomReply(post as CommentIpfsWithCidDefined, plebbit);
+            replyUnderDeletedReply = await publishRandomReply(replyToDelete as CommentIpfsWithCidDefined, plebbit);
             await Promise.all([replyToDelete.update(), post.update()]);
         });
         afterAll(async () => {
@@ -229,8 +232,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             //     -- replyUnderDeletedReply (deleted = false)
             // We're testing publishing under replyUnderDeletedReply
             const [reply, vote] = [
-                await generateMockComment(replyUnderDeletedReply, plebbit),
-                await generateMockVote(replyUnderDeletedReply, 1, plebbit)
+                await generateMockComment(replyUnderDeletedReply as CommentIpfsWithCidDefined, plebbit),
+                await generateMockVote(replyUnderDeletedReply as CommentIpfsWithCidDefined, 1, plebbit)
             ];
             await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, true)));
         });

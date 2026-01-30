@@ -471,7 +471,7 @@ describeSkipIfRpc("comment.update loading depth coverage", function () {
                 // CRITICAL: Mock _findCommentInPagesOfUpdatingCommentsOrSubplebbit to return undefined
                 // This forces the code to use Path B (the previously buggy usePageCidsOfParentToFetchCommentUpdateForReply)
                 const clientsManager = leafComment._clientsManager as never as Record<string, unknown>;
-                clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
+                clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = (): undefined => undefined;
 
                 await leafComment.update();
 

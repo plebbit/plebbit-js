@@ -128,12 +128,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
 
-                invalidPage.comments.find((comment) => comment.comment.depth === 0).comment.parentCid =
+                invalidPage.comments.find((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0).comment.parentCid =
                     "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
 
                 // Update the commentUpdate.cid to match the modified comment
-                invalidPage.comments.find((comment) => comment.comment.depth === 0).commentUpdate.cid = await calculateIpfsHash(
-                    JSON.stringify(invalidPage.comments.find((comment) => comment.comment.depth === 0).comment)
+                invalidPage.comments.find((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0).commentUpdate.cid = await calculateIpfsHash(
+                    JSON.stringify(invalidPage.comments.find((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0).comment)
                 );
 
                 const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
@@ -158,7 +158,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
 
-                const indexOfPost = invalidPage.comments.findIndex((comment) => comment.comment.depth === 0);
+                const indexOfPost = invalidPage.comments.findIndex((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0);
                 expect(indexOfPost).to.be.greaterThanOrEqual(0);
                 invalidPage.comments[indexOfPost].comment.postCid = "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
 

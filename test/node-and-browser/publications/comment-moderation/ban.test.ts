@@ -10,6 +10,8 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import { timestamp } from "../../../../dist/node/util.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -20,7 +22,7 @@ const roles = [
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Banning authors`, async () => {
-        let plebbit, commentToBeBanned, authorBanExpiresAt, reasonOfBan;
+        let plebbit: Plebbit, commentToBeBanned: Comment, authorBanExpiresAt: number, reasonOfBan: string;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();

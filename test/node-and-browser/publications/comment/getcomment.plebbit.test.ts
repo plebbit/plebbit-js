@@ -71,7 +71,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     expect(localPlebbit._updatingComments).to.deep.equal({});
 
                     const catOrFetchCallsCount = fetchSpy
-                        ? fetchSpy.mock.calls.filter(([input]) => {
+                        ? fetchSpy.mock.calls.filter(([input]: [string | { url?: string }]) => {
                               const url = typeof input === "string" ? input : input?.url;
                               return typeof url === "string" && url.includes("/ipfs/" + randomCidInGatewayUrl);
                           }).length
@@ -101,7 +101,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expectedPostProps.cid = loadedPost.cid;
 
             for (const key of Object.keys(expectedPostProps))
-                expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify(loadedPost[key]));
+                expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify((loadedPost as unknown as Record<string, unknown>)[key]));
         });
 
         it("reply props are loaded correctly", async () => {
@@ -129,7 +129,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(loadedReply.constructor.name).to.equal("Comment");
             if (loadedReply.author.subplebbit) delete loadedReply.author.subplebbit; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
             for (const key of Object.keys(expectedReplyProps))
-                expect(deterministicStringify(expectedReplyProps[key])).to.equal(deterministicStringify(loadedReply[key]));
+                expect(deterministicStringify(expectedReplyProps[key])).to.equal(deterministicStringify((loadedReply as unknown as Record<string, unknown>)[key]));
         });
 
         it(`plebbit.getComment is not fetching comment updates in background after fulfilling its promise`, async () => {

@@ -38,12 +38,13 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             await post.publish();
             expect.fail("should not resolve");
         } catch (e) {
-            expect(e.code, messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
-            expect(e.details.gatewayToError[error429Gateway].details.status).to.equal(
+            const err = e as PlebbitError;
+            expect(err.code, messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
+            expect(err.details.gatewayToError[error429Gateway].details.status).to.equal(
                 429,
-                "expected gateway error details" + JSON.stringify(e.details.gatewayToError[error429Gateway].details)
+                "expected gateway error details" + JSON.stringify(err.details.gatewayToError[error429Gateway].details)
             );
-            expect(e.details.gatewayToError[normalIpfsGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+            expect(err.details.gatewayToError[normalIpfsGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
         } finally {
             await gatewayPlebbit.destroy();
         }
@@ -115,10 +116,10 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]
         };
 
-        const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
+        const actualStates: Record<string, string[]> = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
 
         for (const pubsubUrl of Object.keys(expectedStates))
-            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
 
         try {
             await publishWithExpectedResult(mockPost, true);
@@ -166,9 +167,9 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         (mockPost as unknown as CommentWithInternals)._publishToDifferentProviderThresholdSeconds = 2;
         (mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds = 5;
 
-        const errors = [];
+        const errors: PlebbitError[] = [];
         mockPost.on("error", (err) => {
-            errors.push(err);
+            errors.push(err as PlebbitError);
         });
 
         const expectedStates = {
@@ -176,10 +177,10 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             [offlinePubsubUrl]: ["subscribing-pubsub", "stopped"]
         };
 
-        const actualStates = { [notRespondingPubsubUrl]: [], [offlinePubsubUrl]: [] };
+        const actualStates: Record<string, string[]> = { [notRespondingPubsubUrl]: [], [offlinePubsubUrl]: [] };
 
         for (const pubsubUrl of Object.keys(expectedStates))
-            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
 
         const timeBeforePublish = Date.now();
         await mockPost.publish();

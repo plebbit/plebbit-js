@@ -104,7 +104,7 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                     );
                     expect(availableSorts.length).to.be.greaterThan(0);
                     for (const sortName of availableSorts) {
-                        const repliesUnderPost = await loadAllPagesBySortName(sortName, post.replies);
+                        const repliesUnderPost = await loadAllPagesBySortName(sortName, post.replies) as CommentWithinRepliesPostsPageJson[];
                         await testPageCommentsIfSortedCorrectly(repliesUnderPost, sortName, subplebbit);
                     }
                 });
@@ -173,7 +173,7 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                     );
                     expect(availableSorts.length).to.be.greaterThan(0);
                     for (const sortName of availableSorts) {
-                        const repliesUnderReply = await loadAllPagesBySortName(sortName, reply.replies);
+                        const repliesUnderReply = await loadAllPagesBySortName(sortName, reply.replies) as CommentWithinRepliesPostsPageJson[];
                         await testPageCommentsIfSortedCorrectly(repliesUnderReply, sortName, subplebbit);
                     }
                 });

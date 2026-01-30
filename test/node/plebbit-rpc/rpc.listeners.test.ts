@@ -49,7 +49,7 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
     let rpcServer: PlebbitWsServerType | undefined;
 
     beforeAll(() => {
-        setPlebbitJs(async (options) => mockRpcServerPlebbit({ dataPath: tempy.directory(), ...(options || {}) }));
+        setPlebbitJs(async (options: Record<string, unknown>) => mockRpcServerPlebbit({ dataPath: tempy.directory(), ...(options || {}) }));
     });
 
     afterAll(() => {

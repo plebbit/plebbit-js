@@ -8,6 +8,8 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 
 // Type for challenge request event
 type ChallengeRequestWithEdit = {
@@ -32,8 +34,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         // A subplebbit should accept a CommentEdit with unknown props
         // However, it should not process the unknown props, it should strip them out after validation
 
-        let plebbit;
-        let commentToEdit;
+        let plebbit: Plebbit;
+        let commentToEdit: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             commentToEdit = await publishRandomPost(signers[0].address, plebbit);
@@ -83,7 +85,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await new Promise((resolve) => commentToEdit.once("update", resolve));
                 // if commentToEdit emits update that means the signature of update.edit is correct
                 expect(commentToEdit.content).to.equal(commentEdit.content); // should process only content since it's the known field
-                expect(commentToEdit.extraProp).to.be.undefined;
+                expect((commentToEdit as Comment & Record<string, unknown>).extraProp).to.be.undefined;
                 const challengeRequest = await challengeRequestPromise;
                 expect(challengeRequest.commentEdit.extraProp).to.equal("1234");
                 await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop

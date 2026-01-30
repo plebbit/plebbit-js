@@ -13,6 +13,7 @@ import {
 import { describe, it, beforeAll, afterAll } from "vitest";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
 import type { Comment } from "../../../../../dist/node/publications/comment/comment.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
 
 const subplebbitAddress = signers[0].address;
 
@@ -96,7 +97,7 @@ const normalizePostUpdateFailureStates = (states: string[]): string[] => {
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc.concurrent(`post.updatingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -107,10 +108,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it.sequential(`Updating states is in correct upon updating a post that's included in preloaded pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
-            const postCid = sub.posts.pages.hot.comments.find((comment) => !comment.author.address.includes(".")).cid;
+            const postCid = sub.posts.pages.hot.comments.find((comment: { author: { address: string } }) => !comment.author.address.includes(".")).cid;
             const mockPost = await plebbit.createComment({ cid: postCid });
             const recordedStates: string[] = [];
-            mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
 
             await mockPost.update();
             const expectedStates = [
@@ -144,7 +145,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     "stopped"
                 ];
                 const recordedStates: string[] = [];
-                mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+                mockPost.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
 
                 await mockPost.update();
                 mockCommentToNotUsePagesForUpdates(mockPost); // we want to force it to fetch from the post updates
@@ -271,7 +272,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describeSkipIfRpc.concurrent(`post.updatingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -383,7 +384,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const postCid = sub.posts.pages.hot.comments[0].cid;
             const mockPost = await plebbit.createComment({ cid: postCid });
             const recordedStates: string[] = [];
-            mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
 
             await mockPost.update();
             const expectedStates = [
@@ -417,7 +418,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                     "stopped"
                 ];
                 const recordedStates: string[] = [];
-                mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+                mockPost.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
 
                 await mockPost.update();
                 mockCommentToNotUsePagesForUpdates(mockPost);
@@ -439,7 +440,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describeSkipIfRpc.concurrent(`post.updatingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -480,7 +481,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(mockPost.raw.commentUpdate).to.be.undefined;
             expect(mockPost.updatedAt).to.be.undefined;
             const recordedStates: string[] = [];
-            mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
 
             const commentIpfsUpdate = new Promise<void>((resolve, reject) => {
                 mockPost.once("update", () => {

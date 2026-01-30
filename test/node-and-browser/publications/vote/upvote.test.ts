@@ -10,14 +10,11 @@ import {
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
-
-// Type for vote objects stored in previousVotes
-type StoredVote = {
-    commentCid: string;
-    subplebbitAddress: string;
-    signer?: { address: string; privateKey: string };
-    vote: number;
-};
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+import type { SignerWithPublicKeyAddress } from "../../../../dist/node/signer/index.js";
+import type Vote from "../../../../dist/node/publications/vote/vote.js";
 
 // Type for challenge request event with vote
 type ChallengeRequestWithVote = {
@@ -27,16 +24,16 @@ type ChallengeRequestWithVote = {
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    const previousVotes: StoredVote[] = [];
+    const previousVotes: Vote[] = [];
 
     describe.concurrent(`Test upvote - ${config.name}`, async () => {
-        let plebbit, postToVote, replyToVote, signer;
+        let plebbit: Plebbit, postToVote: Comment, replyToVote: Comment, signer: SignerWithPublicKeyAddress;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
             signer = await plebbit.createSigner();
             postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
-            replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
+            replyToVote = await publishRandomReply(postToVote as unknown as CommentIpfsWithCidDefined, plebbit, { signer });
             await postToVote.update();
             await replyToVote.update();
             await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => typeof postToVote.updatedAt === "number" });
@@ -48,7 +45,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`(vote: Vote) === plebbit.createVote(JSON.parse(JSON.stringify(vote)))`, async () => {
-            const vote = await generateMockVote(postToVote, 1, plebbit, remeda.sample(signers, 1)[0]);
+            const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
             const voteFromStringifiedVote = await plebbit.createVote(JSON.parse(JSON.stringify(vote)));
             const jsonPropsToOmit = ["clients"];
 
@@ -60,7 +57,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it.sequential("Can upvote a post", async () => {
             const originalUpvote = remeda.clone(postToVote.upvoteCount);
-            const vote = await generateMockVote(postToVote, 1, plebbit);
+            const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, 1, plebbit);
             await publishWithExpectedResult(vote, true);
             await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => postToVote.upvoteCount === originalUpvote + 1 });
             expect(postToVote.upvoteCount).to.be.equal(originalUpvote + 1);
@@ -73,7 +70,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`Can upvote a reply`, async () => {
             const originalUpvote = remeda.clone(replyToVote.upvoteCount);
-            const vote = await generateMockVote(replyToVote, 1, plebbit);
+            const vote = await generateMockVote(replyToVote as unknown as CommentIpfsWithCidDefined, 1, plebbit);
             await publishWithExpectedResult(vote, true);
             await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: async () => replyToVote.upvoteCount === originalUpvote + 1 });
             expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
@@ -134,7 +131,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can publish a vote that was created from jsonfied vote instance`, async () => {
-            const vote = await generateMockVote(postToVote, 1, plebbit, remeda.sample(signers, 1)[0]);
+            const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
             const voteFromStringifiedVote = await plebbit.createVote(JSON.parse(JSON.stringify(vote)));
             const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) =>
                 voteFromStringifiedVote.once("challengerequest", resolve as (req: unknown) => void)
@@ -149,7 +146,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`A vote=0 is rejected if the author never published a vote on the comment before`, async () => {
-            const vote = await generateMockVote(postToVote, 0, plebbit); // will generate random signer
+            const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, 0, plebbit); // will generate random signer
 
             await publishWithExpectedResult(vote, false, messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL);
         });

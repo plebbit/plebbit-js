@@ -7,6 +7,7 @@ import {
 import signers from "../../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
 
 // Type for challenge request event with subplebbit edit
 type ChallengeRequestWithSubplebbitEdit = {
@@ -21,7 +22,7 @@ const roles = [
 ];
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.createSubplebbitEdit - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -89,7 +90,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe(`Editing a subplebbit remotely as a non admin/owner - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -129,9 +130,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe(`Editing a sub remotely as a admin - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
-        let editProps;
+        let editProps: Record<string, unknown>;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -198,7 +199,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe(`Editing a sub remotely as an owner - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         let newRoleAddress: string;
         let editProps: Record<string, unknown> = {};

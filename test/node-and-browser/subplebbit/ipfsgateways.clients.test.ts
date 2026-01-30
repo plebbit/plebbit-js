@@ -123,7 +123,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             sub.on("updatingstatechange", (newState: string) => newState === "waiting-retry" && waitingRetryCount++);
 
             const emittedErrors: PlebbitError[] = [];
-            sub.on("error", (error: PlebbitError) => emittedErrors.push(error));
+            sub.on("error", (error: PlebbitError | Error) => { emittedErrors.push(error as PlebbitError); });
 
             // Record states for verification
             const recordedStates: string[] = [];

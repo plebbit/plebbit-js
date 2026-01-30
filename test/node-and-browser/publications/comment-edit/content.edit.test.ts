@@ -9,6 +9,9 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentWithinRepliesPostsPageJson } from "../../../../dist/node/publications/comment/types.js";
 
 const subplebbitAddress = signers[10].address;
 const roles = [
@@ -19,7 +22,7 @@ const roles = [
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("Editing comment.content - " + config.name, async () => {
-        let plebbit, commentToBeEdited, originalContent;
+        let plebbit: Plebbit, commentToBeEdited: Comment, originalContent: string;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -133,7 +136,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 JSON.parse(JSON.stringify(sub2)),
                 JSON.parse(JSON.stringify(sub3))
             ]) {
-                const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment) =>
+                const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment: CommentWithinRepliesPostsPageJson) =>
                     comment.edit?.reason?.startsWith("To test editing content")
                 );
                 expect(editedCommentInPage).to.be.a("object");

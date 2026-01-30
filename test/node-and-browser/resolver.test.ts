@@ -164,7 +164,7 @@ describe("Comments with Authors as domains", async () => {
             const originalResolvingFunction = comment._clientsManager.resolveAuthorAddressIfNeeded.bind(comment._clientsManager);
             // verifyComment in comment.update should overwrite author.address to derived address
             await comment.update();
-            mockUpdatingCommentResolvingAuthor(comment, (authorAddress: string) =>
+            mockUpdatingCommentResolvingAuthor(comment, async (authorAddress: string) =>
                 authorAddress === "plebbit.eth" ? signers[7].address : originalResolvingFunction(authorAddress)
             );
             await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => Boolean(comment.author?.address) });

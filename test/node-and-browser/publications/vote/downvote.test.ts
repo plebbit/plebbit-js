@@ -9,27 +9,24 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+import type { SignerWithPublicKeyAddress } from "../../../../dist/node/signer/index.js";
+import type Vote from "../../../../dist/node/publications/vote/vote.js";
 
 const subplebbitAddress = signers[0].address;
 
-// Type for vote objects stored in previousVotes
-type StoredVote = {
-    commentCid: string;
-    subplebbitAddress: string;
-    signer?: { address: string; privateKey: string };
-    vote: number;
-};
-
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Test Downvote - ${config.name}`, async () => {
-        const previousVotes: StoredVote[] = [];
+        const previousVotes: Vote[] = [];
 
-        let plebbit, postToVote, replyToVote, signer;
+        let plebbit: Plebbit, postToVote: Comment, replyToVote: Comment, signer: SignerWithPublicKeyAddress;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             signer = await plebbit.createSigner();
             postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
-            replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
+            replyToVote = await publishRandomReply(postToVote as unknown as CommentIpfsWithCidDefined, plebbit, { signer });
             await Promise.all([postToVote.update(), replyToVote.update()]);
             await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => typeof postToVote.updatedAt === "number" });
             await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: async () => typeof replyToVote.updatedAt === "number" });
@@ -40,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it.sequential("Can downvote a post", async () => {
             const originalDownvote = remeda.clone(postToVote.downvoteCount);
-            const vote = await generateMockVote(postToVote, -1, plebbit);
+            const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, -1, plebbit);
             await publishWithExpectedResult(vote, true);
 
             await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => postToVote.downvoteCount === originalDownvote + 1 });
@@ -55,7 +52,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it.sequential(`Can downvote a reply`, async () => {
             const originalDownvote = remeda.clone(replyToVote.downvoteCount);
-            const vote = await generateMockVote(replyToVote, -1, plebbit);
+            const vote = await generateMockVote(replyToVote as unknown as CommentIpfsWithCidDefined, -1, plebbit);
             await publishWithExpectedResult(vote, true);
 
             await resolveWhenConditionIsTrue({
@@ -121,9 +118,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     commentCid: "gibbrish"
                 });
                 expect.fail("should fail");
-            } catch (e) {
-                expect(e.code).to.equal("ERR_INVALID_CREATE_VOTE_ARGS_SCHEMA");
-                expect(e.details.zodError.issues[0].message).to.equal("CID is invalid");
+            } catch (e: unknown) {
+                expect((e as { code: string }).code).to.equal("ERR_INVALID_CREATE_VOTE_ARGS_SCHEMA");
+                expect((e as { details: { zodError: { issues: Array<{ message: string }> } } }).details.zodError.issues[0].message).to.equal("CID is invalid");
             }
         });
 

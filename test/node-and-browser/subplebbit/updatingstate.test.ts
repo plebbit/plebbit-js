@@ -124,7 +124,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const errors: PlebbitError[] = [];
 
             subplebbit.on("updatingstatechange", (newState: string) => recordedUpdatingStates.push(newState));
-            subplebbit.on("error", (err: PlebbitError) => errors.push(err));
+            subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
 
             // First update should succeed with the initial valid record
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
@@ -222,13 +222,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const subplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
             subplebbit.on("updatingstatechange", (newState: string) => recordedUpdatingStates.push(newState));
-            subplebbit.on("error", (err: PlebbitError) => errors.push(err));
+            subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
 
             // First update should succeed with the initial valid record
             await subplebbit.update();
 
             const errorPromise = new Promise<void>((resolve, reject) =>
-                subplebbit.once("error", (err: PlebbitError) => {
+                subplebbit.once("error", (err: PlebbitError | Error) => {
                     if (subplebbit.updatingState !== "failed") reject("if it emits error, updatingState should be failed");
                     if (recordedUpdatingStates.length === 0) reject("if it emits error, updatingStatechange should have been emitted");
                     if (recordedUpdatingStates[recordedUpdatingStates.length - 1] === "failed")
@@ -321,7 +321,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const errors: PlebbitError[] = [];
 
             subplebbit.on("updatingstatechange", (newState: string) => recordedUpdatingStates.push(newState));
-            subplebbit.on("error", (err: PlebbitError) => errors.push(err));
+            subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
 
             // First update should succeed with the initial valid record
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));

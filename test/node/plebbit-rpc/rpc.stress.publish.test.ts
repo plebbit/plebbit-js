@@ -76,7 +76,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
     }
 
     beforeAll(async () => {
-        setPlebbitJs(async (options) => mockRpcServerPlebbit({ dataPath: tempy.directory(), ...(options || {}) }));
+        setPlebbitJs(async (options: Record<string, unknown>) => mockRpcServerPlebbit({ dataPath: tempy.directory(), ...(options || {}) }));
 
         const port = await getAvailablePort();
         rpcPort = port;

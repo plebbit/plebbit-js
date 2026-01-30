@@ -85,7 +85,7 @@ const getRandomAddress = (): string => String(Math.random());
 describe("shouldExcludePublication", () => {
     it("empty", () => {
         const publication = { author: { address: "Qm..." } };
-        let subplebbitChallenge = { exclude: [] };
+        let subplebbitChallenge: { exclude: undefined | unknown[] } = { exclude: [] };
         expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication })).to.equal(false);
         subplebbitChallenge = { exclude: undefined };
         expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication })).to.equal(false);
@@ -669,7 +669,7 @@ describe("shouldExcludeChallengeSuccess", () => {
         const challengeResultsSucceed3 = [{ success: true }, { success: true }, { success: true }];
         const challengeResultsFail1 = [{ success: true }, { success: false }];
         const challengeResultsFail2 = [{ success: false }, { success: false }];
-        const challengeResultsEmpty = [];
+        const challengeResultsEmpty: Record<string, unknown>[] = [];
         const challengeResultsMixed = [{ success: true }, { success: false }, { success: true }, { success: false }];
         expect(testShouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed2)).to.equal(true);
         expect(testShouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed3)).to.equal(true);
@@ -687,7 +687,7 @@ describe("shouldExcludeChallengeSuccess", () => {
         const challengeResultsSucceed123 = [{ success: true }, { success: true }, { success: true }];
         const challengeResultsSucceed3 = [{ success: false }, { success: false }, { success: true }];
         const challengeResultsSucceed4 = [{ success: false }, { success: false }, { success: false }, { success: true }];
-        const challengeResultsEmpty = [];
+        const challengeResultsEmpty: Record<string, unknown>[] = [];
         expect(testShouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed12)).to.equal(true);
         expect(testShouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed123)).to.equal(true);
         expect(testShouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed3)).to.equal(true);

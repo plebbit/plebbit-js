@@ -7,6 +7,8 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 
 // Type for challenge request event
 type ChallengeRequestWithEdit = {
@@ -17,8 +19,8 @@ const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("plebbit.createCommentEdit - " + config.name, async () => {
-        let plebbit;
-        let commentToEdit;
+        let plebbit: Plebbit;
+        let commentToEdit: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -106,7 +108,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.sequential(`Changing multiple fields simultaneously in one CommentEdit - ` + config.name, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -157,7 +159,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.concurrent(`Changing multiple edit fields in separate edits - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();

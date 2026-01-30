@@ -16,6 +16,8 @@ import { signComment } from "../../../../../dist/node/signer/signatures.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
 import type { CommentIpfsWithCidDefined, CommentPubsubMessagPublicationSignature } from "../../../../../dist/node/publications/comment/types.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
+import type { RemoteSubplebbit } from "../../../../../dist/node/subplebbit/remote-subplebbit.js";
 
 // Helper type for replies that requires both cid and parentCid
 type ReplyWithRequiredFields = Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>;
@@ -24,7 +26,7 @@ const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("publishing posts - " + config.name, async () => {
-        let plebbit, sub;
+        let plebbit: Plebbit, sub: RemoteSubplebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -288,7 +290,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             };
 
             props.signature = await signComment({ comment: { ...props, signer }, plebbit });
-            const post = await plebbit.createComment(props);
+            const post = await plebbit.createComment(props as Parameters<typeof plebbit.createComment>[0]);
             expect(post.signature).to.deep.equal(props.signature);
             await publishWithExpectedResult(post, true);
             await post.stop();
@@ -296,7 +298,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.concurrent(`Publishing replies - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();

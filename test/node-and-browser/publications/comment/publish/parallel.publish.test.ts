@@ -193,7 +193,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                     expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
 
                     const resolveCallsCount = fetchSpy
-                        ? fetchSpy.mock.calls.filter(([input]: [unknown]) => {
+                        ? fetchSpy.mock.calls.filter(([input]: unknown[]) => {
                               const url = typeof input === "string" ? input : (input as { url?: string })?.url;
                               return typeof url === "string" && url.includes("/ipns/" + targetAddressForGatewayIpnsUrl);
                           }).length

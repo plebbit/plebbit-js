@@ -17,6 +17,9 @@ import { testCommentFieldsInPageJson } from "../../../pages/pages-test-util.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
 import type { CommentIpfsWithCidDefined } from "../../../../../dist/node/publications/comment/types.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../../dist/node/publications/comment/comment.js";
+import type { RemoteSubplebbit } from "../../../../../dist/node/subplebbit/remote-subplebbit.js";
 
 // Helper type for replies that require both cid and parentCid
 type ReplyWithRequiredFields = Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>;
@@ -25,8 +28,8 @@ const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("post.replies - " + config.name, async () => {
-        let plebbit, subplebbit;
-        let post, firstLevelReply, secondLevelReply, thirdLevelReply;
+        let plebbit: Plebbit, subplebbit: RemoteSubplebbit;
+        let post: Comment, firstLevelReply: Comment, secondLevelReply: Comment, thirdLevelReply: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -82,7 +85,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 });
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    let plebbit, reply, subplebbit;
+    let plebbit: Plebbit, reply: Comment, subplebbit: RemoteSubplebbit;
     describe.concurrent(`reply.replies - ${config.name}`, async () => {
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -142,7 +145,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 });
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent("comment.replies - " + config.name, async () => {
-        let plebbit, post;
+        let plebbit: Plebbit, post: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit);
@@ -186,7 +189,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe.concurrent("replies.validatePage validation tests", async () => {
-        let plebbit, postWithReplies;
+        let plebbit: Plebbit, postWithReplies: Comment;
 
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });

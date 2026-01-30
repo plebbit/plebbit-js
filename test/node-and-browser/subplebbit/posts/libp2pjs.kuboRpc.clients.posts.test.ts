@@ -33,18 +33,18 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`subplebbit.posts.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const mockSub = await gatewayPlebbit.createSubplebbit({ address: subplebbitAddress });
-            const sortTypes = Object.keys(mockSub.posts.clients[clientFieldName]);
+            const sortTypes = Object.keys((mockSub.posts.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
-            for (const sortType of sortTypes) expect(mockSub.posts.clients[clientFieldName][sortType]).to.deep.equal({});
+            for (const sortType of sortTypes) expect((mockSub.posts.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName][sortType]).to.deep.equal({});
             await gatewayPlebbit.destroy();
         });
 
         it(`subplebbit.posts.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
             const mockSub = await plebbit.createSubplebbit({ address: subplebbitAddress });
-            const key = Object.keys(mockSub.clients[clientFieldName])[0];
+            const key = Object.keys((mockSub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName])[0];
             // add tests here
-            expect(Object.keys(mockSub.posts.clients[clientFieldName]["new"]).length).to.equal(1);
-            expect((mockSub.posts.clients[clientFieldName]["new"][key] as { state: string }).state).to.equal("stopped");
+            expect(Object.keys((mockSub.posts.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName]["new"]).length).to.equal(1);
+            expect(((mockSub.posts.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName]["new"][key] as { state: string }).state).to.equal("stopped");
         });
 
         it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
@@ -57,11 +57,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             mockSub.posts.pageCids.new = firstPageMockedCid;
 
-            const clientKey = Object.keys(mockSub.clients[clientFieldName])[0];
+            const clientKey = Object.keys((mockSub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName])[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates: string[] = [];
-            mockSub.posts.clients[clientFieldName]["new"][clientKey].on("statechange", (newState: string) => {
+            (mockSub.posts.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName]["new"][clientKey].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 
@@ -71,7 +71,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it("Correct state of 'new' sort is updated after fetching second page of 'new' pages", async () => {
             const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
-            const clientKey = Object.keys(mockSub.clients[clientFieldName])[0];
+            const clientKey = Object.keys((mockSub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName])[0];
 
             const secondPageMocked = { comments: mockSub.posts.pages.hot.comments.slice(1, 5).map((comment) => comment.raw) }; // create a slightly different page
             const secondPageCid = await addStringToIpfs(JSON.stringify(secondPageMocked));
@@ -87,7 +87,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const expectedStates = ["fetching-ipfs", "stopped", "fetching-ipfs", "stopped"];
             const actualStates: string[] = [];
-            mockSub.posts.clients[clientFieldName]["new"][clientKey].on("statechange", (newState: string) => {
+            (mockSub.posts.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName]["new"][clientKey].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 
@@ -114,11 +114,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             });
             expect(fetchSub.updatedAt).to.be.undefined;
 
-            const clientKey = Object.keys(fetchSub.clients[clientFieldName])[0];
+            const clientKey = Object.keys((fetchSub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName])[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates: string[] = [];
-            fetchSub.posts.clients[clientFieldName]["new"][clientKey].on("statechange", (newState: string) => {
+            (fetchSub.posts.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName]["new"][clientKey].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 

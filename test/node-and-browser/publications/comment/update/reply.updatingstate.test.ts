@@ -10,6 +10,7 @@ import {
 import { describe, it, beforeAll, afterAll } from "vitest";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
 import type { CommentIpfsWithCidDefined } from "../../../../../dist/node/publications/comment/types.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
 // Helper type to access private properties for testing
 type CommentClientsManagerWithInternals = {
     _parentFirstPageCidsAlreadyLoaded: Set<string>;
@@ -277,7 +278,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describeSkipIfRpc.concurrent(`reply.updatingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -288,11 +289,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`the order of state-event-statechange is correct when we get a new update from reply`, async () => {
             const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
-            const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
+            const replyCid = sub.posts.pages.hot.comments.find((post: { replies?: unknown }) => post.replies).replies.pages.best.comments[0].cid;
             const mockReply = await plebbit.createComment({ cid: replyCid });
             expect(mockReply.updatedAt).to.be.undefined;
             const recordedStates: string[] = [];
-            mockReply.on("updatingstatechange", (newState) => recordedStates.push(newState));
+            mockReply.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
 
             const commentIpfsUpdate = new Promise<void>((resolve, reject) => {
                 mockReply.once("update", () => {

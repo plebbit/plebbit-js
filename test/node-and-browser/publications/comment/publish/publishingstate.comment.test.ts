@@ -11,6 +11,7 @@ import {
 } from "../../../../../dist/node/test/test-util.js";
 import { describe, beforeAll, afterAll, it } from "vitest";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
 
 // Helper type for accessing private properties on Comment
 type CommentWithInternals = {
@@ -23,7 +24,7 @@ const mathCliSubplebbitAddress = signers[1].address;
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`comment.publishingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -36,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const commentCid = sub.posts.pages.hot.comments[0].cid;
             const comment = await plebbit.createComment({ cid: commentCid });
             expect(comment.publishingState).to.equal("stopped");
-            comment.on("publishingstatechange", (newState) => {
+            comment.on("publishingstatechange", (newState: string) => {
                 if (newState !== "stopped") expect.fail("Should not change publishing state");
             });
             await comment.update();
@@ -56,11 +57,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "waiting-challenge-verification",
                 "succeeded"
             ];
-            const recordedStates = [];
+            const recordedStates: string[] = [];
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
             mockPost._getSubplebbitCache = () => undefined;
 
-            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -76,12 +77,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "waiting-challenge-verification",
                 "succeeded"
             ];
-            const recordedStates = [];
+            const recordedStates: string[] = [];
             const mathCliSubplebbitAddress = signers[1].address;
             await plebbit.getSubplebbit({ address: mathCliSubplebbitAddress }); // address of math cli, we fetch it here to make sure it's cached
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -97,11 +98,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "waiting-challenge",
                 "succeeded"
             ];
-            const recordedStates = [];
+            const recordedStates: string[] = [];
             const mockPost = await generateMockPost("plebbit.eth", plebbit);
             mockPost._getSubplebbitCache = () => undefined;
 
-            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -112,7 +113,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
     describe.concurrent(`comment.publishingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -145,7 +146,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`comment.publishingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -159,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const commentCid = sub.posts.pages.hot.comments[0].cid;
             const comment = await plebbit.createComment({ cid: commentCid });
             expect(comment.publishingState).to.equal("stopped");
-            comment.on("publishingstatechange", (newState) => {
+            comment.on("publishingstatechange", (newState: string) => {
                 if (newState !== "stopped") expect.fail("Should not change publishing state");
             });
             await comment.update();
@@ -177,11 +178,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 "waiting-challenge-verification",
                 "succeeded"
             ];
-            const recordedStates = [];
+            const recordedStates: string[] = [];
             await plebbit.getSubplebbit({ address: mathCliSubplebbitAddress }); // Make sure it's cached
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -198,11 +199,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 "waiting-challenge-verification",
                 "succeeded"
             ];
-            const recordedStates = [];
+            const recordedStates: string[] = [];
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
             mockPost._getSubplebbitCache = () => undefined;
 
-            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+            mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -213,7 +214,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`comment.publishingState - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -249,9 +250,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const mockPost = await generateMockPost(ipnsObj.signer.address, plebbit);
 
-            const recordedPublishingStates = [];
+            const recordedPublishingStates: string[] = [];
 
-            mockPost.on("publishingstatechange", (newState) => recordedPublishingStates.push(newState));
+            mockPost.on("publishingstatechange", (newState: string) => recordedPublishingStates.push(newState));
 
             try {
                 await mockPost.publish();
@@ -279,9 +280,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             (mockPost as unknown as CommentWithInternals)._publishToDifferentProviderThresholdSeconds = 1;
             (mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds = 2;
 
-            const recordedPublishingStates = [];
+            const recordedPublishingStates: string[] = [];
 
-            mockPost.on("publishingstatechange", (newState) => recordedPublishingStates.push(newState));
+            mockPost.on("publishingstatechange", (newState: string) => recordedPublishingStates.push(newState));
 
             const errorPromise = new Promise<void>((resolve, reject) => {
                 mockPost.on("error", () => {

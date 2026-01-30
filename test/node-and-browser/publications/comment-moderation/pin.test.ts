@@ -14,7 +14,10 @@ import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
-import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+import type { CommentIpfsWithCidDefined, CommentWithinRepliesPostsPageJson } from "../../../../dist/node/publications/comment/types.js";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { RemoteSubplebbit } from "../../../../dist/node/subplebbit/remote-subplebbit.js";
 
 // Helper type for page comments
 type PageCommentWithPinned = {
@@ -30,12 +33,12 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-const removeAllPins = async (allComments, plebbit) => {
+const removeAllPins = async (allComments: CommentWithinRepliesPostsPageJson[], plebbit: Plebbit) => {
     // We need to remove all pins from previous tests session so it wouldn't interfere with the results of this test
     await Promise.all(
         allComments
-            .filter((comment) => comment.pinned)
-            .map(async (comment) =>
+            .filter((comment: CommentWithinRepliesPostsPageJson) => comment.pinned)
+            .map(async (comment: CommentWithinRepliesPostsPageJson) =>
                 publishWithExpectedResult(
                     await plebbit.createCommentModeration({
                         subplebbitAddress: comment.subplebbitAddress,
@@ -51,15 +54,15 @@ const removeAllPins = async (allComments, plebbit) => {
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Pinning posts - ${config.name}`, async () => {
-        let plebbit, postToPin, secondPostToPin, sub;
+        let plebbit: Plebbit, postToPin: Comment, secondPostToPin: Comment, sub: RemoteSubplebbit;
 
-        const populateSub = async (subplebbit) => {
+        const populateSub = async (subplebbit: RemoteSubplebbit) => {
             const subplebbitPage = subplebbit.posts.pageCids.new
                 ? await subplebbit.posts.getPage({ cid: subplebbit.posts.pageCids.new })
                 : subplebbit.posts.pages.hot;
             if (!subplebbitPage || subplebbitPage.comments.length < 10) {
                 await Promise.all(
-                    new Array(5).fill(null).map(async (x) => {
+                    new Array(5).fill(null).map(async (_x) => {
                         const post = await publishRandomPost(subplebbit.address, plebbit);
                         await waitTillPostInSubplebbitInstancePages(post as CommentIpfsWithCidDefined, subplebbit);
                         return post;
@@ -78,7 +81,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await postToPin.update();
             await secondPostToPin.update();
-            await waitTillPostInSubplebbitInstancePages(secondPostToPin, sub);
+            await waitTillPostInSubplebbitInstancePages(secondPostToPin as CommentIpfsWithCidDefined, sub);
             const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage({ cid: sub.posts.pageCids.new }) : sub.posts.pages.hot;
             const posts = firstPage.comments;
             await removeAllPins(posts, plebbit);
@@ -285,11 +288,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     });
 
     describe(`Pinning replies - ${config.name}`, async () => {
-        let plebbit, post, replyToPin, sub;
+        let plebbit: Plebbit, post: Comment, replyToPin: Comment, sub: RemoteSubplebbit;
 
         const populatePost = async () => {
             if (post.replyCount < 5) {
-                await Promise.all(new Array(10).fill(null).map((x) => publishRandomReply(post, plebbit)));
+                await Promise.all(new Array(10).fill(null).map((_x) => publishRandomReply(post as CommentIpfsWithCidDefined, plebbit)));
                 await resolveWhenConditionIsTrue({ toUpdate: post, predicate: async () => post.replyCount > 5 });
             }
         };
@@ -302,7 +305,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await post.update();
             await populatePost();
             expect(post.replyCount).to.be.greaterThan(5); // Arbitary number
-            replyToPin = await publishRandomReply(post, plebbit);
+            replyToPin = await publishRandomReply(post as CommentIpfsWithCidDefined, plebbit);
             await removeAllPins(
                 post.replies.pageCids.best
                     ? await loadAllPages(post.replies.pageCids.best, post.replies)

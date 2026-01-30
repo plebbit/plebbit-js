@@ -60,7 +60,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         const expectedStates = ["resolving-subplebbit-address", "stopped"];
 
-        const actualStates = [];
+        const actualStates: string[] = [];
 
         const chainProviderUrl = Object.keys(updatingPost.clients.chainProviders.eth)[0];
 
@@ -91,9 +91,9 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
             value: signers[3].address
         });
 
-        const expectedStates = []; // no state change because it's cached
+        const expectedStates: string[] = []; // no state change because it's cached
 
-        const actualStates = [];
+        const actualStates: string[] = [];
 
         const chainProviderUrl = Object.keys(mockPost.clients.chainProviders.eth)[0];
 
@@ -130,7 +130,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         const updatingPost = await differentPlebbit.createComment({ cid: mockPost.cid });
 
         const expectedStates = ["resolving-author-address", "stopped"];
-        const actualStates = [];
+        const actualStates: string[] = [];
 
         const chainProviderUrl = Object.keys(updatingPost.clients.chainProviders.eth)[0];
 
@@ -167,8 +167,8 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         const updatingPost = await differentPlebbit.createComment({ cid: mockPost.cid });
 
-        const expectedStates = []; // empty because it's cached
-        const actualStates = [];
+        const expectedStates: string[] = []; // empty because it's cached
+        const actualStates: string[] = [];
 
         const chainProviderUrl = Object.keys(updatingPost.clients.chainProviders.eth)[0];
 
@@ -196,7 +196,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         });
         const expectedStates = ["resolving-subplebbit-address", "stopped"];
 
-        const actualStates = [];
+        const actualStates: string[] = [];
 
         const chainProviderUrl = Object.keys(mockPost.clients.chainProviders.eth)[0];
 
@@ -216,9 +216,9 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
             textRecord: "subplebbit-address",
             value: signers[3].address
         });
-        const expectedStates = []; // empty because it's cached
+        const expectedStates: string[] = []; // empty because it's cached
 
-        const actualStates = [];
+        const actualStates: string[] = [];
 
         const chainProviderUrl = Object.keys(mockPost.clients.chainProviders.eth)[0];
 
@@ -270,12 +270,12 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
             value: signers[3].address
         });
         const loadedPost = await differentPlebbit.createComment({ cid: mockPost.cid });
-        const expectedStates = [];
-        const actualStates = [];
+        const expectedStates: string[] = [];
+        const actualStates: string[] = [];
 
         const chainProviderUrl = Object.keys(loadedPost.clients.chainProviders.eth)[0];
 
-        loadedPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
+        loadedPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState: string) => actualStates.push(newState));
 
         await loadedPost.update();
 

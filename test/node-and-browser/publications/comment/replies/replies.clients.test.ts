@@ -7,16 +7,17 @@ import {
     addStringToIpfs,
     getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../../dist/node/test/test-util.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
 const subplebbitAddress = signers[0].address;
 
-const clientsFieldName = {
+const clientsFieldName: Record<string, string> = {
     "remote-libp2pjs": "libp2pJsClients",
     "remote-kubo-rpc": "kuboRpcClients"
 };
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     const clientFieldName = clientsFieldName[config.testConfigCode];
     describe(`comment.replies.clients.${clientFieldName} - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -28,27 +29,27 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`comment.replies.clients.${clientFieldName} is {} for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const comment = await gatewayPlebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
-            const sortTypes = Object.keys(comment.replies.clients[clientFieldName]);
+            const sortTypes = Object.keys((comment.replies.clients as Record<string, Record<string, unknown>>)[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
 
-            for (const sortType of sortTypes) expect(comment.replies.clients[clientFieldName][sortType]).to.deep.equal({}); // should be empty
+            for (const sortType of sortTypes) expect((comment.replies.clients as Record<string, Record<string, unknown>>)[clientFieldName][sortType]).to.deep.equal({}); // should be empty
             await gatewayPlebbit.destroy();
         });
         it(`comment.replies.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
             const comment = await plebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
-            const ipfsUrl = Object.keys(comment.clients[clientFieldName])[0];
-            expect(Object.keys(comment.replies.clients[clientFieldName]["new"]).length).to.equal(1);
-            expect(comment.replies.clients[clientFieldName]["new"][ipfsUrl].state).to.equal("stopped");
+            const ipfsUrl = Object.keys((comment.clients as Record<string, Record<string, unknown>>)[clientFieldName])[0];
+            expect(Object.keys((comment.replies.clients as Record<string, Record<string, Record<string, unknown>>>)[clientFieldName]["new"]).length).to.equal(1);
+            expect((comment.replies.clients as Record<string, Record<string, Record<string, { state: string }>>>)[clientFieldName]["new"][ipfsUrl].state).to.equal("stopped");
         });
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
             const comment = await plebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             comment.replies.pageCids.new = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D"; // random cid
-            const ipfsUrl = Object.keys(comment.clients[clientFieldName])[0];
+            const ipfsUrl = Object.keys((comment.clients as Record<string, Record<string, unknown>>)[clientFieldName])[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
-            const actualStates = [];
-            comment.replies.clients[clientFieldName]["new"][ipfsUrl].on("statechange", (newState) => {
+            const actualStates: string[] = [];
+            (comment.replies.clients as Record<string, Record<string, Record<string, { on: (event: string, handler: (state: string) => void) => void }>>>)[clientFieldName]["new"][ipfsUrl].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 
@@ -65,7 +66,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`comment.replies.clients.ipfsGateways - ${config.name}`, async () => {
-        let plebbit;
+        let plebbit: Plebbit;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
@@ -88,8 +89,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
-            const actualStates = [];
-            comment.replies.clients.ipfsGateways["new"][gatewayUrl].on("statechange", (newState) => {
+            const actualStates: string[] = [];
+            comment.replies.clients.ipfsGateways["new"][gatewayUrl].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 
@@ -133,9 +134,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 ]
             };
 
-            const actualStates = { [gateways[0]]: [], [gateways[1]]: [] };
+            const actualStates: Record<string, string[]> = { [gateways[0]]: [], [gateways[1]]: [] };
             for (const gatewayUrl of gateways)
-                comment.replies.clients.ipfsGateways["new"][gatewayUrl].on("statechange", (newState) => {
+                comment.replies.clients.ipfsGateways["new"][gatewayUrl].on("statechange", (newState: string) => {
                     actualStates[gatewayUrl].push(newState);
                 });
 
@@ -154,8 +155,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
     describe(`comment.replies.clients.plebbitRpcClients - ${config.name}`, async () => {
-        let plebbit;
-        let commentCid;
+        let plebbit: Plebbit;
+        let commentCid: string;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
             const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
@@ -183,8 +184,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
-            const actualStates = [];
-            comment.replies.clients.plebbitRpcClients["new"][rpcUrl].on("statechange", (newState) => {
+            const actualStates: string[] = [];
+            comment.replies.clients.plebbitRpcClients["new"][rpcUrl].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 

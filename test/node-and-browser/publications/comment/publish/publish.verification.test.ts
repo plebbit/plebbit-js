@@ -15,10 +15,13 @@ import * as remeda from "remeda";
 import { messages } from "../../../../../dist/node/errors.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
 import type { PlebbitError } from "../../../../../dist/node/plebbit-error.js";
+import type { Plebbit } from "../../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../../dist/node/publications/comment/types.js";
 const subplebbitAddress = signers[0].address;
 
 describe.sequential(`Client side verification`, async () => {
-    let plebbit;
+    let plebbit: Plebbit;
     beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
@@ -57,7 +60,7 @@ describe.sequential(`Client side verification`, async () => {
 });
 
 describe.concurrent("Subplebbit rejection of incorrect values of fields", async () => {
-    let plebbit, post;
+    let plebbit: Plebbit, post: Comment;
     beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit);
@@ -84,7 +87,7 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
 
     it(`A reply with timestamp earlier than its parent is rejected`, async () => {
         expect(post.timestamp).to.be.a("number");
-        const reply = await generateMockComment(post, plebbit, false, { signer: signers[0], timestamp: post.timestamp - 1 });
+        const reply = await generateMockComment(post as CommentIpfsWithCidDefined, plebbit, false, { signer: signers[0], timestamp: post.timestamp - 1 });
         expect(reply.timestamp).to.be.lessThan(post.timestamp);
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
     });
@@ -154,13 +157,13 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
 
     it(`Subs respond with error if you attempt to publish a reply without postCid defined`, async () => {
         try {
-            await generateMockComment(post, plebbit, false, { postCid: undefined });
+            await generateMockComment(post as CommentIpfsWithCidDefined, plebbit, false, { postCid: undefined });
             expect.fail("Should fail to create a reply without postCid defined");
         } catch (e) {
             expect((e as PlebbitError).code).to.equal("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA");
             expect((e as PlebbitError).details.zodError.issues[0].message).to.equal(messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
         }
-        const reply = await generateMockComment(post, plebbit, false);
+        const reply = await generateMockComment(post as CommentIpfsWithCidDefined, plebbit, false);
         await setExtraPropOnCommentAndSign(reply, { postCid: undefined }, true);
         expect(reply.postCid).to.be.undefined;
         const challengerequestPromise = new Promise<{ comment?: { postCid?: string } }>((resolve) => reply.once("challengerequest", resolve as (request: unknown) => void));
@@ -171,7 +174,7 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
 });
 
 describe.concurrent(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
-    let plebbit;
+    let plebbit: Plebbit;
     beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
@@ -213,7 +216,7 @@ describe.concurrent(`Posts with forbidden fields are rejected during challenge e
 });
 
 describe("Posts with forbidden author fields are rejected", async () => {
-    let plebbit;
+    let plebbit: Plebbit;
     beforeAll(async () => {
         plebbit = await mockRemotePlebbit();
     });
@@ -222,7 +225,7 @@ describe("Posts with forbidden author fields are rejected", async () => {
         await plebbit.destroy();
     });
 
-    const forbiddenFieldsWithValue = {
+    const forbiddenFieldsWithValue: Record<string, unknown> = {
         subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 },
         shortAddress: "12345"
     };

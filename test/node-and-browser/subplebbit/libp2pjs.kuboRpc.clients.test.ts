@@ -34,14 +34,14 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`subplebbit.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const mockSub = await gatewayPlebbit.getSubplebbit({ address: subplebbitAddress });
-            expect(mockSub.clients[clientFieldName]).to.be.undefined;
+            expect((mockSub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName]).to.be.undefined;
             await gatewayPlebbit.destroy();
         });
 
         it(`subplebbit.clients.${clientFieldName}[url] is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
-            expect(Object.keys(mockSub.clients[clientFieldName]).length).to.equal(1);
-            expect((Object.values(mockSub.clients[clientFieldName])[0] as { state: string }).state).to.equal("stopped");
+            expect(Object.keys((mockSub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName]).length).to.equal(1);
+            expect((Object.values((mockSub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName])[0] as { state: string }).state).to.equal("stopped");
         });
 
         it(`Correct order of ${clientFieldName} state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
@@ -51,9 +51,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const actualStates: string[] = [];
 
-            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
+            const clientUrl = Object.keys((sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName])[0];
 
-            sub.clients[clientFieldName][clientUrl].on("statechange", (newState: string) => actualStates.push(newState));
+            (sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName][clientUrl].on("statechange", (newState: string) => actualStates.push(newState));
 
             const updatePromise = new Promise((resolve) => sub.once("update", resolve));
             await sub.update();
@@ -71,9 +71,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const actualStates: string[] = [];
 
-            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
+            const clientUrl = Object.keys((sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName])[0];
 
-            sub.clients[clientFieldName][clientUrl].on("statechange", (newState: string) => actualStates.push(newState));
+            (sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName][clientUrl].on("statechange", (newState: string) => actualStates.push(newState));
 
             const updatePromise = new Promise((resolve) => sub.once("update", resolve));
             await sub.update();
@@ -90,8 +90,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const sub = await plebbit.createSubplebbit({ address: subRecord.subplebbitRecord.address });
 
             const recordedStates: string[] = [];
-            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
-            sub.clients[clientFieldName][clientUrl].on("statechange", (newState: string) => recordedStates.push(newState));
+            const clientUrl = Object.keys((sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName])[0];
+            (sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName][clientUrl].on("statechange", (newState: string) => recordedStates.push(newState));
 
             // now plebbit._updatingSubplebbits will be defined
 
@@ -123,8 +123,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
 
             const recordedStates: string[] = [];
-            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
-            sub.clients[clientFieldName][clientUrl].on("statechange", (newState: string) => recordedStates.push(newState));
+            const clientUrl = Object.keys((sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName])[0];
+            (sub.clients as unknown as Record<string, Record<string, { on: Function }>>)[clientFieldName][clientUrl].on("statechange", (newState: string) => recordedStates.push(newState));
 
             const errorPromise = new Promise<PlebbitError>((resolve) => sub.once("error", resolve as (err: Error) => void));
 

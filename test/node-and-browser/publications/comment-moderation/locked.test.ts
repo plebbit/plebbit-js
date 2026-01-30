@@ -13,6 +13,10 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+import type { RemoteSubplebbit } from "../../../../dist/node/subplebbit/remote-subplebbit.js";
 
 const subplebbitAddress = signers[11].address;
 const roles = [
@@ -23,7 +27,7 @@ const roles = [
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`Locking posts - ${config.name}`, async () => {
-        let plebbit, postToBeLocked, replyUnderPostToBeLocked, modPost, sub;
+        let plebbit: Plebbit, postToBeLocked: Comment, replyUnderPostToBeLocked: Comment, modPost: Comment, sub: RemoteSubplebbit;
         beforeAll(async () => {
             plebbit = await mockRemotePlebbit();
             sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
@@ -32,7 +36,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
 
             await postToBeLocked.update();
-            replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit);
+            replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked as CommentIpfsWithCidDefined, plebbit);
             await modPost.update();
         });
         afterAll(async () => {
@@ -142,22 +146,22 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can't publish a reply on a locked post`, async () => {
-            const comment = await generateMockComment(postToBeLocked, plebbit, false);
+            const comment = await generateMockComment(postToBeLocked as CommentIpfsWithCidDefined, plebbit, false);
             await publishWithExpectedResult(comment, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
         });
 
         it(`Can't vote on a locked post`, async () => {
-            const vote = await generateMockVote(postToBeLocked, 1, plebbit);
+            const vote = await generateMockVote(postToBeLocked as CommentIpfsWithCidDefined, 1, plebbit);
             await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
         });
 
         it(`Can't vote on a reply of a locked post`, async () => {
-            const vote = await generateMockVote(replyUnderPostToBeLocked, 1, plebbit);
+            const vote = await generateMockVote(replyUnderPostToBeLocked as CommentIpfsWithCidDefined, 1, plebbit);
             await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
         });
 
         it(`Can't reply on a reply of a locked post`, async () => {
-            const reply = await generateMockComment(replyUnderPostToBeLocked, plebbit);
+            const reply = await generateMockComment(replyUnderPostToBeLocked as CommentIpfsWithCidDefined, plebbit);
             await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
         });
 
@@ -187,11 +191,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Unlocked post can receive replies`, async () => {
-            const reply = await generateMockComment(replyUnderPostToBeLocked, plebbit);
+            const reply = await generateMockComment(replyUnderPostToBeLocked as CommentIpfsWithCidDefined, plebbit);
             await publishWithExpectedResult(reply, true);
         });
         it(`Unlocked post can receive votes `, async () => {
-            const vote = await generateMockVote(replyUnderPostToBeLocked, 1, plebbit);
+            const vote = await generateMockVote(replyUnderPostToBeLocked as CommentIpfsWithCidDefined, 1, plebbit);
             await publishWithExpectedResult(vote, true);
         });
     });

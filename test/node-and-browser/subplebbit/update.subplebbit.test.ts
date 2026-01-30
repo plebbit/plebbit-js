@@ -76,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 );
 
                 const resolveCallsCount = fetchSpy
-                    ? fetchSpy.mock.calls.filter(([input]) => {
+                    ? fetchSpy.mock.calls.filter(([input]: [unknown]) => {
                           const url = typeof input === "string" ? input : (input as { url?: string })?.url;
                           return typeof url === "string" && url.includes("/ipns/" + targetAddressForGatewayIpnsUrl);
                       }).length
@@ -136,13 +136,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
 
             const errorPromise = new Promise<void>((resolve) => {
-                tempSubplebbit.once("error", (err: PlebbitError) => {
+                tempSubplebbit.once("error", (err: PlebbitError | Error) => {
+                    const pErr = err as PlebbitError;
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
-                        expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                        expect(pErr.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
-                            expect((err.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+                            expect((pErr.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
                     } else {
-                        expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+                        expect(pErr.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
                     }
                     resolve();
                 });
@@ -162,13 +163,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await ipnsObj.publishToIpns(JSON.stringify(rawSubplebbitJson));
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
             const errorPromise = new Promise<void>((resolve) => {
-                tempSubplebbit.once("error", (err: PlebbitError) => {
+                tempSubplebbit.once("error", (err: PlebbitError | Error) => {
+                    const pErr = err as PlebbitError;
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
-                        expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                        expect(pErr.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
-                            expect((err.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+                            expect((pErr.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
                     } else {
-                        expect(err.code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+                        expect(pErr.code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
                     }
                     resolve();
                 });
@@ -187,15 +189,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
 
             const errorPromise = new Promise<void>((resolve) => {
-                tempSubplebbit.once("error", (err: PlebbitError) => {
+                tempSubplebbit.once("error", (err: PlebbitError | Error) => {
+                    const pErr = err as PlebbitError;
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         // we're using gateways to fetch
-                        expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                        expect(pErr.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(tempSubplebbit.clients.ipfsGateways)) {
-                            expect((err.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_INVALID_JSON");
+                            expect((pErr.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_INVALID_JSON");
                         }
                     } else {
-                        expect(err.code).to.equal("ERR_INVALID_JSON");
+                        expect(pErr.code).to.equal("ERR_INVALID_JSON");
                     }
                     resolve();
                 });
@@ -212,8 +215,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // Should emit an error and keep on retrying in the next update loop
             let errorCount = 0;
             const errorPromise = new Promise<void>((resolve) => {
-                sub.on("error", (err: PlebbitError) => {
-                    expect(err.code).to.equal("ERR_DOMAIN_TXT_RECORD_NOT_FOUND");
+                sub.on("error", (err: PlebbitError | Error) => {
+                    expect((err as PlebbitError).code).to.equal("ERR_DOMAIN_TXT_RECORD_NOT_FOUND");
                     expect(sub.updatingState).to.equal("failed");
                     errorCount++;
                     if (errorCount === 3) resolve();

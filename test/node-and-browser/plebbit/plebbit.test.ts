@@ -44,7 +44,7 @@ describe("Plebbit options", async () => {
     it("Plebbit Options is set up correctly when only kuboRpcClientsOptions is provided", async () => {
         // RPC exception
         const url = "http://localhost:15018/api/v0"; // offline API
-        const options = { kuboRpcClientsOptions: [url], httpRoutersOptions: [], dataPath: undefined };
+        const options = { kuboRpcClientsOptions: [url], httpRoutersOptions: [] as string[], dataPath: undefined as undefined };
         const testPlebbit = await Plebbit(options);
         expect(testPlebbit.clients.kuboRpcClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubKuboRpcClients[url]).to.exist;
@@ -283,7 +283,7 @@ describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
         const plebbit = await mockRpcRemotePlebbit();
         const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
 
-        const rpcStates = [];
+        const rpcStates: string[] = [];
 
         rpcClient.on("statechange", (newState) => rpcStates.push(newState));
 
@@ -299,7 +299,7 @@ describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
         const plebbit = await mockRpcRemotePlebbit();
         const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
         const settingsPromise = new Promise((resolve) => rpcClient.once("settingschange", resolve));
-        const allSettings = [];
+        const allSettings: unknown[] = [];
         rpcClient.on("settingschange", (newSettings) => allSettings.push(newSettings));
 
         if (!rpcClient.settings) await settingsPromise;
