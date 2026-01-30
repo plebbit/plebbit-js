@@ -134,6 +134,7 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 - [x] rate-limiter.test.ts (type-safe)
 - [x] voucher.test.ts (type-safe)
 - [x] fixtures/fixtures.ts
+- [x] fixtures/signers.ts (typed with SignerType[])
 
 ### test/node/ (57 files)
 
@@ -172,9 +173,9 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 - [x] reply.updatingstate.test.ts (type-safe)
 
-#### test/node/pubsub/
+#### test/node/pubsub/ - Complete
 
-- [ ] mock.pubsub.server.test.js
+- [x] mock.pubsub.server.test.ts (type-safe)
 
 #### test/node/subplebbit/ - Complete
 
@@ -241,143 +242,143 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 - [x] properties.pubsub.test.ts (type-safe)
 
-#### test/node/util/
+#### test/node/util/ - Complete
 
-- [ ] calculate-string-size.test.js
+- [x] calculate-string-size.test.ts (type-safe)
 
 ### test/node-and-browser/ (76 files)
 
-#### test/node-and-browser/
+#### test/node-and-browser/ - Partial
 
-- [ ] encryption.signer.test.js
-- [ ] resolver.test.js
-- [ ] signer.test.js
+- [x] encryption.signer.test.ts (type-safe)
+- [x] resolver.test.ts (type-safe)
+- [x] signer.test.ts (type-safe)
 
-#### test/node-and-browser/helia/
+#### test/node-and-browser/helia/ - Complete
 
-- [ ] helia.test.js
+- [x] helia.test.ts (type-safe)
 
-#### test/node-and-browser/pages/
+#### test/node-and-browser/pages/ - Complete
 
-- [ ] page-sizes.test.js
+- [x] page-sizes.test.ts (type-safe)
 
-#### test/node-and-browser/plebbit/
+#### test/node-and-browser/plebbit/ - Complete
 
-- [ ] fetchCid.plebbit.test.js
-- [ ] plebbit.test.js
-- [ ] test.configs.plebbit.test.js
-- [ ] _updatingComments.plebbit.test.js
-- [ ] _updatingSubplebbits.plebbit.test.js
+- [x] fetchCid.plebbit.test.ts (type-safe)
+- [x] plebbit.test.ts (type-safe)
+- [x] test.configs.plebbit.test.ts (type-safe)
+- [x] _updatingComments.plebbit.test.ts (type-safe)
+- [x] _updatingSubplebbits.plebbit.test.ts (type-safe)
 
-#### test/node-and-browser/plebbit/plebbit-rpc/
+#### test/node-and-browser/plebbit/plebbit-rpc/ - Complete
 
-- [ ] concurrency.plebbit.rpc.test.js
-- [ ] edgecases.plebbit.rpc.test.js
-- [ ] rpc.errors.test.js
+- [x] concurrency.plebbit.rpc.test.ts (type-safe)
+- [x] edgecases.plebbit.rpc.test.ts (type-safe)
+- [x] rpc.errors.test.ts (type-safe)
 
 #### test/node-and-browser/publications/comment/
 
-- [ ] backward.compatibility.comment.test.js
-- [ ] backward.compatibility.commentupdate.test.js
-- [ ] createcomment.test.js
-- [ ] getcomment.plebbit.test.js
-- [ ] original.comment.test.js
-- [ ] states.test.js
+- [x] backward.compatibility.comment.test.ts (type-safe)
+- [x] backward.compatibility.commentupdate.test.ts (type-safe)
+- [x] createcomment.test.ts (type-safe)
+- [x] getcomment.plebbit.test.ts (type-safe)
+- [x] original.comment.test.ts (type-safe)
+- [x] states.test.ts (type-safe)
 
 #### test/node-and-browser/publications/comment/clients/
 
-- [ ] chainproviders.clients.test.js
-- [ ] ipfsgateways.clients.test.js
-- [ ] libp2pjsClient.kuboRpc.clients.test.js
-- [ ] libp2pjsClient.pubsubKuboRpcClients.clients.test.js
-- [ ] rpc.clients.test.js
+- [x] chainproviders.clients.test.ts (type-safe)
+- [x] ipfsgateways.clients.test.ts (type-safe)
+- [x] libp2pjsClient.kuboRpc.clients.test.ts (type-safe)
+- [x] libp2pjsClient.pubsubKuboRpcClients.clients.test.ts (type-safe)
+- [x] rpc.clients.test.ts (type-safe)
 
 #### test/node-and-browser/publications/comment/publish/
 
-- [ ] errors.publish.test.js
-- [ ] parallel.publish.test.js
-- [ ] publishingstate.comment.test.js
-- [ ] publish.test.js
-- [ ] publish.verification.test.js
-- [ ] pubsubfields.comment.test.js
-- [ ] pubsub.test.js
+- [x] errors.publish.test.ts (type-safe)
+- [x] parallel.publish.test.ts (type-safe)
+- [x] publishingstate.comment.test.ts (type-safe)
+- [x] publish.test.ts (type-safe)
+- [x] publish.verification.test.ts (type-safe)
+- [x] pubsubfields.comment.test.ts (type-safe)
+- [x] pubsub.test.ts (type-safe)
 
 #### test/node-and-browser/publications/comment/replies/
 
-- [ ] replies.clients.test.js
-- [ ] replies.test.js
+- [x] replies.clients.test.ts (type-safe)
+- [x] replies.test.ts (type-safe)
 
 #### test/node-and-browser/publications/comment/update/
 
-- [ ] post.updatingstate.test.js
-- [ ] reply.updatingstate.test.js
-- [ ] update.test.js
-- [ ] waiting-retry.update.test.js
+- [x] post.updatingstate.test.ts (type-safe)
+- [x] reply.updatingstate.test.ts (type-safe)
+- [x] update.test.ts (type-safe)
+- [x] waiting-retry.update.test.ts (type-safe)
 
 #### test/node-and-browser/publications/comment-edit/
 
-- [ ] backward.compatibility.commentedit.test.js
-- [ ] content.edit.test.js
-- [ ] delete.edit.test.js
-- [ ] misc.edit.test.js
-- [ ] nsfw.edit.test.js
-- [ ] spoiler.edit.test.js
+- [x] backward.compatibility.commentedit.test.ts (type-safe)
+- [x] content.edit.test.ts (type-safe)
+- [x] delete.edit.test.ts (type-safe)
+- [x] misc.edit.test.ts (type-safe)
+- [x] nsfw.edit.test.ts (type-safe)
+- [x] spoiler.edit.test.ts (type-safe)
 
-#### test/node-and-browser/publications/comment-moderation/
+#### test/node-and-browser/publications/comment-moderation/ - Complete
 
-- [ ] backward.compatibility.test.js
-- [ ] ban.test.js
-- [ ] locked.test.js
-- [ ] misc.test.js
-- [ ] nsfw.test.js
-- [ ] pin.test.js
-- [ ] purged.test.js
-- [ ] remove.test.js
-- [ ] spoiler.test.js
+- [x] backward.compatibility.test.ts (type-safe)
+- [x] ban.test.ts (type-safe)
+- [x] locked.test.ts (type-safe)
+- [x] misc.test.ts (type-safe)
+- [x] nsfw.test.ts (type-safe)
+- [x] pin.test.ts (type-safe)
+- [x] purged.test.ts (type-safe)
+- [x] remove.test.ts (type-safe)
+- [x] spoiler.test.ts (type-safe)
 
-#### test/node-and-browser/publications/subplebbit-edit/
+#### test/node-and-browser/publications/subplebbit-edit/ - Complete
 
-- [ ] subplebbit.edit.publication.test.js
+- [x] subplebbit.edit.publication.test.ts (type-safe)
 
-#### test/node-and-browser/publications/vote/
+#### test/node-and-browser/publications/vote/ - Complete
 
-- [ ] backward.compatibility.vote.test.js
-- [ ] downvote.test.js
-- [ ] upvote.test.js
+- [x] backward.compatibility.vote.test.ts (type-safe)
+- [x] downvote.test.ts (type-safe)
+- [x] upvote.test.ts (type-safe)
 
-#### test/node-and-browser/pubsub-msgs/
+#### test/node-and-browser/pubsub-msgs/ - Complete
 
-- [ ] backward.compatibility.pubsub.test.js
-- [ ] challenge.test.js
-- [ ] properties.pubsub.test.js
+- [x] backward.compatibility.pubsub.test.ts (type-safe)
+- [x] challenge.test.ts (type-safe)
+- [x] properties.pubsub.test.ts (type-safe)
 
 #### test/node-and-browser/signatures/
 
-- [ ] comment.test.js
-- [ ] edit.comment.test.js
-- [ ] pages.test.js
-- [ ] pubsub.messages.test.js
-- [ ] subplebbit.test.js
-- [ ] vote.test.js
+- [x] comment.test.ts (type-safe)
+- [x] edit.comment.test.ts (type-safe)
+- [x] pages.test.ts (type-safe)
+- [x] pubsub.messages.test.ts (type-safe)
+- [x] subplebbit.test.ts (type-safe)
+- [x] vote.test.ts (type-safe)
 
 #### test/node-and-browser/subplebbit/
 
-- [ ] backward.compatibility.subplebbit.test.js
-- [ ] chainproviders.clients.test.js
-- [ ] createsubplebbit.plebbit.test.js
-- [ ] getsubplebbit.plebbit.test.js
-- [ ] ipfsgateways.clients.test.js
-- [ ] libp2pjs.kuboRpc.clients.test.js
-- [ ] rpc.clients.test.js
-- [ ] state.subplebbit.test.js
-- [ ] updateCid.subplebbit.test.js
-- [ ] update.subplebbit.test.js
-- [ ] updatingstate.test.js
-- [ ] waiting-retry.update.test.js
+- [x] backward.compatibility.subplebbit.test.ts (type-safe)
+- [x] chainproviders.clients.test.ts (type-safe)
+- [x] createsubplebbit.plebbit.test.ts (type-safe)
+- [x] getsubplebbit.plebbit.test.ts (type-safe)
+- [x] ipfsgateways.clients.test.ts (type-safe)
+- [x] libp2pjs.kuboRpc.clients.test.ts (type-safe)
+- [x] rpc.clients.test.ts (type-safe)
+- [x] state.subplebbit.test.ts (type-safe)
+- [x] updateCid.subplebbit.test.ts (type-safe)
+- [x] update.subplebbit.test.ts (type-safe)
+- [x] updatingstate.test.ts (type-safe)
+- [x] waiting-retry.update.test.ts (type-safe)
 
 #### test/node-and-browser/subplebbit/ipns/
 
-- [ ] ipns.fields.subplebbit.test.js
+- [x] ipns.fields.subplebbit.test.ts (type-safe)
 
 #### test/node-and-browser/subplebbit/modqueue/
 
@@ -412,6 +413,31 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 2. **Better TypeScript integration** - Vitest's expect is built with TypeScript in mind
 3. **Consistent tooling** - Using Vitest for both test runner and assertions
 4. **Better error messages** - Vitest provides better failure messages out of the box
+
+## Phase 5: Enable Strict TypeScript and Disallow `any`
+
+**After all test files have been migrated to TypeScript**, make the tsconfig strict and disallow the use of `any`.
+
+- [ ] Enable `strict: true` in `test/tsconfig.json`
+- [ ] Enable `noImplicitAny: true` in `test/tsconfig.json`
+- [ ] Enable `strictNullChecks: true` in `test/tsconfig.json`
+- [ ] Add ESLint rule `@typescript-eslint/no-explicit-any` with `error` severity
+- [ ] Fix all type errors that arise from stricter type checking
+- [ ] Replace all `any` types with proper types or `unknown` (with approval)
+
+### Why enable strict mode?
+
+1. **Catch more bugs at compile time** - Strict mode catches null/undefined errors before runtime
+2. **Better IDE support** - More accurate autocomplete and error highlighting
+3. **Self-documenting code** - Types serve as documentation
+4. **Prevent `any` abuse** - Forces proper typing instead of escape hatches
+
+### Migration strategy for strict mode
+
+1. Enable strict flags one at a time
+2. Fix errors in batches by directory
+3. Use `// @ts-expect-error` sparingly with explanatory comments for temporary workarounds
+4. Prioritize replacing `any` with `unknown` where the type truly can be anything
 
 ---
 
