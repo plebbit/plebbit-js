@@ -1,0 +1,226 @@
+import { expect } from "chai";
+import {
+    generatePostToAnswerMathQuestion,
+    publishWithExpectedResult,
+    getAvailablePlebbitConfigsToTestAgainst,
+    resolveWhenConditionIsTrue,
+    mockPlebbitV2,
+    addStringToIpfs
+} from "../../../dist/node/test/test-util.js";
+import signers from "../../fixtures/signers.js";
+import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../dist/node/publications/comment/comment.js";
+import type { IpfsHttpClientPubsubMessage } from "../../../dist/node/types.js";
+
+const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub is connected to a plebbit instance whose pubsub is not mocked
+
+// should connect to a kubo node and exchange pubsub messages with it
+// DO NOT MOCK PUBSUB
+//flaky
+// for(let i =0;i <50; i++)
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((config) => {
+    describe(`Test publishing pubsub in real environment - ${config.name}`, async () => {
+        let plebbit: Plebbit;
+        let publishedPost: Comment;
+
+        beforeAll(async () => {
+            plebbit = await config.plebbitInstancePromise({ forceMockPubsub: false });
+        });
+
+        afterAll(async () => {
+            await plebbit.destroy();
+        });
+
+        it(`Can fetch subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit({ address: mathCliNoMockedPubsubSubplebbitAddress });
+            expect(sub.updatedAt).to.be.a("number");
+            expect(sub.settings).to.be.undefined; // make sure it's not loading local subplebbit
+        });
+
+        it("can post after answering correctly", async function () {
+            publishedPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliNoMockedPubsubSubplebbitAddress }, plebbit);
+            await publishWithExpectedResult(publishedPost, true);
+        });
+
+        it(`Can fetch Comment IPFS`, async () => {
+            const commentCid = publishedPost.cid;
+            expect(commentCid).to.be.a("string");
+            const comment = await plebbit.getComment({ cid: commentCid! });
+            expect(comment.signature).to.be.a("object");
+        });
+
+        it(`Can fetch comment update`, async () => {
+            const commentCid = publishedPost.cid;
+            expect(commentCid).to.be.a("string");
+            const comment = await plebbit.getComment({ cid: commentCid! });
+            expect(comment.signature).to.be.a("object");
+
+            await comment.update();
+            await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => typeof comment.updatedAt === "number" });
+            expect(comment.author.subplebbit).to.be.a("object");
+            await comment.stop();
+        });
+
+        it(`It should connect to peers if we're publishing over pubsub`, async () => {
+            const testPlebbit = await config.plebbitInstancePromise({
+                forceMockPubsub: false
+            });
+
+            const kuboPlebbit = await mockPlebbitV2({
+                plebbitOptions: { pubsubKuboRpcClientsOptions: ["http://localhost:15001/api/v0"] },
+                forceMockPubsub: false,
+                remotePlebbit: true
+            });
+
+            const kuboRpc = Object.values(kuboPlebbit.clients.pubsubKuboRpcClients)[0];
+
+            const pubsubMsgs: IpfsHttpClientPubsubMessage[] = [];
+
+            kuboRpc._client.pubsub.subscribe(mathCliNoMockedPubsubSubplebbitAddress, (msg: IpfsHttpClientPubsubMessage) => {
+                pubsubMsgs.push(msg);
+            });
+
+            const libp2pJsClient = Object.values(testPlebbit.clients.libp2pJsClients)[0];
+            const numOfPeersBeforePublishing = libp2pJsClient._helia.libp2p.getConnections().length;
+            expect(numOfPeersBeforePublishing).to.equal(0);
+            const heliaWithKuboRpcClientFunctions = libp2pJsClient.heliaWithKuboRpcClientFunctions;
+
+            await heliaWithKuboRpcClientFunctions.pubsub.publish(mathCliNoMockedPubsubSubplebbitAddress, new TextEncoder().encode("test"));
+
+            const numOfPeersAfterPublishing = libp2pJsClient._helia.libp2p.getConnections().length;
+            expect(numOfPeersAfterPublishing).to.be.greaterThan(numOfPeersBeforePublishing);
+
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            expect(pubsubMsgs.length).to.equal(1);
+            expect(pubsubMsgs[0].data.toString()).to.equal("116,101,115,116"); // uint8 array representation of "test"
+
+            await testPlebbit.destroy();
+            await kuboPlebbit.destroy();
+        });
+
+        it(`should connect to peers if we're subscribing over pubsub`, async () => {
+            const testPlebbit = await config.plebbitInstancePromise({
+                forceMockPubsub: false
+            });
+
+            const kuboPlebbit = await mockPlebbitV2({
+                plebbitOptions: { pubsubKuboRpcClientsOptions: ["http://localhost:15001/api/v0"] },
+                forceMockPubsub: false,
+                remotePlebbit: true
+            });
+
+            const kuboRpc = Object.values(kuboPlebbit.clients.pubsubKuboRpcClients)[0];
+
+            const libp2pJsClient = Object.values(testPlebbit.clients.libp2pJsClients)[0];
+            const numOfPeersBeforeSubscribing = libp2pJsClient._helia.libp2p.getConnections().length;
+            expect(numOfPeersBeforeSubscribing).to.equal(0);
+            const heliaWithKuboRpcClientFunctions = libp2pJsClient.heliaWithKuboRpcClientFunctions;
+
+            const pubsubMsgs: IpfsHttpClientPubsubMessage[] = [];
+
+            await heliaWithKuboRpcClientFunctions.pubsub.subscribe(mathCliNoMockedPubsubSubplebbitAddress, (msg: IpfsHttpClientPubsubMessage) => {
+                pubsubMsgs.push(msg);
+            });
+
+            const numOfPeersAfterSubscribing = libp2pJsClient._helia.libp2p.getConnections().length;
+            expect(numOfPeersAfterSubscribing).to.be.greaterThan(numOfPeersBeforeSubscribing);
+
+            await kuboRpc._client.pubsub.publish(mathCliNoMockedPubsubSubplebbitAddress, new TextEncoder().encode("test"));
+
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            expect(pubsubMsgs.length).to.equal(1);
+            expect(pubsubMsgs[0].data.toString()).to.equal("116,101,115,116"); // uint8 array representation of "test"
+
+            await testPlebbit.destroy();
+            await kuboPlebbit.destroy();
+        });
+        it(`it should connect if we're fetching content by CID`, async () => {
+            const testPlebbit = await config.plebbitInstancePromise({
+                forceMockPubsub: false
+            });
+
+            const libp2pJsClient = Object.values(testPlebbit.clients.libp2pJsClients)[0];
+            const numOfPeersBeforeFetching = libp2pJsClient._helia.libp2p.getConnections().length;
+            expect(numOfPeersBeforeFetching).to.equal(0);
+
+            const newContentCid = await addStringToIpfs("test");
+
+            const contentLoadedByHelia = await testPlebbit.fetchCid({ cid: newContentCid });
+            expect(contentLoadedByHelia).to.equal("test");
+
+            const numOfPeersAfterFetching = libp2pJsClient._helia.libp2p.getConnections().length;
+            expect(numOfPeersAfterFetching).to.be.greaterThan(numOfPeersBeforeFetching);
+
+            await testPlebbit.destroy();
+        });
+
+        it(`We can fetch the IPNS using pubsub only`, async () => {
+            // plebbit-js sets up helia to use two routers for IPNS:
+            // 1. Pubsub router: Joins pubsub topic, and awaits for the IPNS record to be published
+            // 2. Fetch router: requests the IPNS record from peers in the pubsub topic
+
+            // We need to test if we can fetch the IPNS using pubsub only
+
+            const testPlebbit = await config.plebbitInstancePromise({
+                forceMockPubsub: false
+            });
+
+            const libp2pJsClient = Object.values(testPlebbit.clients.libp2pJsClients)[0];
+            libp2pJsClient._heliaIpnsRouter.routers = libp2pJsClient._heliaIpnsRouter.routers.slice(1); // remove the fetch router
+
+            const sub = await testPlebbit.createSubplebbit({ address: mathCliNoMockedPubsubSubplebbitAddress });
+            const errors: Error[] = [];
+            sub.on("error", (error: Error) => errors.push(error));
+
+            await sub.update();
+            await new Promise((resolve) => sub.once("update", resolve));
+
+            expect(sub.updatedAt).to.be.a("number");
+            expect(sub.settings).to.be.undefined; // make sure it's not loading local subplebbit
+
+            await testPlebbit.destroy();
+        });
+    });
+
+    describe(`Helia parallel lifecycle - ${config.name}`, () => {
+        it("reuses a shared libp2pjs client across parallel creations and tears it down only after the last destroy", async () => {
+            const parallelClients = 20;
+            const sharedKey = `helia-parallel-${Date.now()}`;
+            const plebbitFactory = () =>
+                config.plebbitInstancePromise({
+                    forceMockPubsub: true,
+                    plebbitOptions: {
+                        libp2pJsClientsOptions: [
+                            {
+                                key: sharedKey,
+                                libp2pOptions: { connectionGater: { denyDialMultiaddr: async () => false } }
+                            }
+                        ]
+                    }
+                });
+            const plebbits = await Promise.all(Array.from({ length: parallelClients }, () => plebbitFactory()));
+
+            const sharedClients = plebbits.map((plebbitInstance) => {
+                const clients = Object.values(plebbitInstance.clients.libp2pJsClients);
+                expect(clients.length).to.be.greaterThan(0);
+                return clients[0];
+            });
+
+            const referenceClient = sharedClients[0];
+            sharedClients.forEach((client) => expect(client).to.equal(referenceClient));
+            expect(referenceClient.countOfUsesOfInstance).to.equal(parallelClients);
+
+            const midway = Math.floor(parallelClients / 2);
+            await Promise.all(plebbits.slice(0, midway).map((plebbitInstance) => plebbitInstance.destroy()));
+
+            expect(referenceClient.countOfUsesOfInstance).to.equal(parallelClients - midway);
+            expect(referenceClient._helia.libp2p.status).to.not.equal("stopped");
+
+            await Promise.all(plebbits.slice(midway).map((plebbitInstance) => plebbitInstance.destroy()));
+
+            expect(referenceClient.countOfUsesOfInstance).to.equal(0);
+            expect(referenceClient._helia.libp2p.status).to.equal("stopped");
+        }, 30000);
+    });
+});

@@ -120,10 +120,10 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 ## Phase 2: Test File Migration
 
-### test/browser/ (2 files)
+### test/browser/ (2 files) - Complete
 
-- [ ] libp2p.browser.test.js
-- [ ] plebbit.test.js
+- [x] libp2p.browser.test.ts (type-safe)
+- [x] plebbit.test.ts (type-safe)
 
 ### test/challenges/ (6 files) - Complete
 
@@ -352,7 +352,7 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 - [x] challenge.test.ts (type-safe)
 - [x] properties.pubsub.test.ts (type-safe)
 
-#### test/node-and-browser/signatures/
+#### test/node-and-browser/signatures/ - Complete
 
 - [x] comment.test.ts (type-safe)
 - [x] edit.comment.test.ts (type-safe)
@@ -380,19 +380,19 @@ DO NOT use `unknown` or `any` or `never` as a type unless you consult with me an
 
 - [x] ipns.fields.subplebbit.test.ts (type-safe)
 
-#### test/node-and-browser/subplebbit/modqueue/
+#### test/node-and-browser/subplebbit/modqueue/ - Complete
 
-- [ ] ipfsgateways.clients.modqueue.test.js
-- [ ] libp2pjs.kuboRpc.clients.modqueue.test.js
-- [ ] pages.modqueue.test.js
-- [ ] rpc.clients.modqueue.test.js
+- [x] ipfsgateways.clients.modqueue.test.ts (type-safe)
+- [x] libp2pjs.kuboRpc.clients.modqueue.test.ts (type-safe)
+- [x] pages.modqueue.test.ts (type-safe)
+- [x] rpc.clients.modqueue.test.ts (type-safe)
 
-#### test/node-and-browser/subplebbit/posts/
+#### test/node-and-browser/subplebbit/posts/ - Complete
 
-- [ ] ipfsgateways.clients.posts.test.js
-- [ ] libp2pjs.kuboRpc.clients.posts.test.js
-- [ ] pages.posts.test.js
-- [ ] rpc.clients.posts.test.js
+- [x] ipfsgateways.clients.posts.test.ts (type-safe)
+- [x] libp2pjs.kuboRpc.clients.posts.test.ts (type-safe)
+- [x] pages.posts.test.ts (type-safe)
+- [x] rpc.clients.posts.test.ts (type-safe)
 
 ## Phase 3: Documentation Updates
 
