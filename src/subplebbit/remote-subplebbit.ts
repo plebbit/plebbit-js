@@ -167,14 +167,23 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (!newPosts)
             // The sub has changed its address, need to reset the posts
             this.posts.resetPages();
-        else if (!("pages" in newPosts) && newPosts.pageCids) {
-            // only pageCids is provided
+        else if (
+            (!("pages" in newPosts) || !newPosts.pages || Object.keys(newPosts.pages).length === 0) &&
+            newPosts.pageCids &&
+            Object.keys(newPosts.pageCids).length > 0
+        ) {
+            // only pageCids is provided (or pages is empty)
             this.posts.updateProps({
                 pageCids: newPosts.pageCids,
                 subplebbit: this,
                 pages: {}
             });
-        } else if (!newPosts.pageCids && "pages" in newPosts && newPosts.pages) {
+        } else if (
+            (!newPosts.pageCids || Object.keys(newPosts.pageCids).length === 0) &&
+            "pages" in newPosts &&
+            newPosts.pages &&
+            Object.keys(newPosts.pages).length > 0
+        ) {
             // was only provided with a single preloaded page, no page cids
             if (typeof postsPagesCreationTimestamp !== "number") throw Error("subplebbit.updatedAt should be defined when updating posts");
             const parsedPages = parseRawPages(newPosts);
@@ -183,7 +192,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 subplebbit: this,
                 pageCids: {}
             });
-        } else if ("pages" in newPosts && newPosts.pages && "pageCids" in newPosts && newPosts.pageCids) {
+        } else if (
+            "pages" in newPosts &&
+            newPosts.pages &&
+            Object.keys(newPosts.pages).length > 0 &&
+            "pageCids" in newPosts &&
+            newPosts.pageCids &&
+            Object.keys(newPosts.pageCids).length > 0
+        ) {
             // both pageCids and pages are provided
 
             log.trace(`Updating the props of subplebbit (${this.address}) posts`);
