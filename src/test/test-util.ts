@@ -1008,7 +1008,7 @@ export async function overrideCommentInstancePropsAndSign(comment: Comment, prop
     }
 
     comment.signature = pubsubPublication.signature = await signComment({
-        comment: removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }),
+        comment: removeUndefinedValuesRecursively({ ...pubsubPublication, signer: comment.signer }),
         plebbit: comment._plebbit
     });
 

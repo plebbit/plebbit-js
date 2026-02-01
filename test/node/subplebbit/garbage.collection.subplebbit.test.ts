@@ -75,6 +75,8 @@ let LocalSubplebbitClass: typeof LocalSubplebbit;
 
 const VALID_CID_A = "QmYwAPJzv5CZsnAzt8auVTLcAckU4iigFsMNBvYHiYAv5k";
 const VALID_CID_B = "QmZtrqcSJR25CzAJhDigw1VE3DybMTDfjQX5nGoK2cHpik";
+const VALID_CID_C = "QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ewB6LDXZCtioEB";
+const VALID_CID_D = "QmcRD4wkPPi6dig81r5sLj9Zm1gDCL4zgpEj9CfuRrGbzF";
 
 function createStubKuboClient(): StubKuboClient {
     const removedBlocks: string[] = [];
@@ -183,11 +185,11 @@ function createTestSubplebbit(overrides: { address?: string } = {}): { subplebbi
     return { subplebbit, kuboClient };
 }
 
-function createMockAddResult(path: string, size: number): AddResult {
+function createMockAddResult(cidStr: string, size: number): AddResult {
     return {
-        path,
+        path: cidStr,
         size,
-        cid: CID.parse(path)
+        cid: CID.parse(cidStr)
     };
 }
 
@@ -206,7 +208,7 @@ describe("local subplebbit garbage collection", () => {
         const replyCids = [VALID_CID_B, "QmReplyExtraCid11111111111111111111111111111111111"];
         const iterateSpy = vi.spyOn(pagesUtil, "iterateOverPageCidsToFindAllCids").mockResolvedValue(replyCids);
 
-        subplebbit._addAllCidsUnderPurgedCommentToBeRemoved({
+        await subplebbit._addAllCidsUnderPurgedCommentToBeRemoved({
             commentTableRow: { cid: purgeCid },
             commentUpdateTableRow: {
                 postUpdatesBucket: 86400,
@@ -267,8 +269,8 @@ describe("local subplebbit garbage collection", () => {
         subplebbit._blocksToRm = [VALID_CID_A, VALID_CID_B];
 
         const retrySpy = vi.spyOn(util, "retryKuboIpfsAddAndProvide");
-        retrySpy.mockResolvedValueOnce(createMockAddResult("QmStatsCid0000000000000000000000000000000000", 5));
-        retrySpy.mockResolvedValueOnce(createMockAddResult("QmNewUpdateCid000000000000000000000000000000", 5));
+        retrySpy.mockResolvedValueOnce(createMockAddResult(VALID_CID_C, 5));
+        retrySpy.mockResolvedValueOnce(createMockAddResult(VALID_CID_D, 5));
 
         vi.spyOn(signatures, "signSubplebbit").mockResolvedValue({
             signature: "sig",
@@ -283,7 +285,7 @@ describe("local subplebbit garbage collection", () => {
 
         expect(removeBlocksSpy.mock.calls.length).to.equal(1);
         expect(subplebbit._blocksToRm).to.deep.equal([]);
-        expect(subplebbit.updateCid).to.equal("QmNewUpdateCid000000000000000000000000000000");
+        expect(subplebbit.updateCid).to.equal(VALID_CID_D);
         expect(subplebbit._subplebbitUpdateTrigger).to.equal(false);
     });
 

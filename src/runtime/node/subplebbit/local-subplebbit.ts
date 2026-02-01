@@ -28,6 +28,7 @@ import {
     hideClassPrivateProps,
     ipnsNameToIpnsOverPubsubTopic,
     isLinkOfMedia,
+    isLinkValid,
     isStringDomain,
     pubsubTopicToDhtKey,
     throwWithErrorCode,
@@ -243,6 +244,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
     private _updateLoopPromise?: Promise<void> = undefined;
+    private _updateLoopAbortController?: AbortController;
     private _firstUpdateAfterStart: boolean = true;
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
     private _lastPubsubTopicRoutingProvideAt?: number = undefined;
@@ -769,7 +771,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             key: this.signer.ipnsKeyName,
             allowOffline: true,
             resolve: true,
-            ttl,
+            ttl
             // enable below line after kubo fixes their problems with fetching IPNS records from local blockstore
             // ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
@@ -987,7 +989,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (!commentToPurge) throw Error("Comment to purge not found");
             const purgedTableRows = this._dbHandler.purgeComment(modTableRow.commentCid);
 
-            purgedTableRows.forEach((purgedTableRow) => this._addAllCidsUnderPurgedCommentToBeRemoved(purgedTableRow));
+            for (const purgedTableRow of purgedTableRows) await this._addAllCidsUnderPurgedCommentToBeRemoved(purgedTableRow);
 
             log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", "out of DB and IPFS");
 
@@ -1195,7 +1197,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         });
         const commentEditSignedByAlias = remeda.clone(originalEdit);
         commentEditSignedByAlias.author = { address: aliasSigner.address };
-        commentEditSignedByAlias.signature = await signCommentEdit({ edit: { ...commentEditSignedByAlias, signer: aliasSigner }, plebbit: this._plebbit });
+        commentEditSignedByAlias.signature = await signCommentEdit({
+            edit: { ...commentEditSignedByAlias, signer: aliasSigner },
+            plebbit: this._plebbit
+        });
 
         return commentEditSignedByAlias;
     }
@@ -1321,10 +1326,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _respondWithErrorIfSignatureOfPublicationIsInvalid(request: DecryptedChallengeRequestMessageType): Promise<void> {
         let validity: ValidationResult;
         if (request.comment)
-            validity = await verifyCommentPubsubMessage({ comment: request.comment, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
+            validity = await verifyCommentPubsubMessage({
+                comment: request.comment,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
         else if (request.commentEdit)
-            validity = await verifyCommentEdit({ edit: request.commentEdit, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
-        else if (request.vote) validity = await verifyVote({ vote: request.vote, resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses, clientsManager: this._clientsManager, overrideAuthorAddressIfInvalid: false });
+            validity = await verifyCommentEdit({
+                edit: request.commentEdit,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
+        else if (request.vote)
+            validity = await verifyVote({
+                vote: request.vote,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
         else if (request.commentModeration)
             validity = await verifyCommentModeration({
                 moderation: request.commentModeration,
@@ -1452,7 +1473,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
         const commentUpdate = <DecryptedChallengeVerification["commentUpdate"]>{
             ...commentUpdateOfVerificationNoSignature,
-            signature: await signCommentUpdateForChallengeVerification({ update: commentUpdateOfVerificationNoSignature, signer: this.signer })
+            signature: await signCommentUpdateForChallengeVerification({
+                update: commentUpdateOfVerificationNoSignature,
+                signer: this.signer
+            })
         };
 
         const toEncrypt = <DecryptedChallengeVerification>{ comment: commentAfterAddingToIpfs.comment, commentUpdate };
@@ -1612,6 +1636,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const commentPublication = request.comment;
             if (remeda.intersection(remeda.keys.strict(commentPublication), CommentPubsubMessageReservedFields).length > 0)
                 return messages.ERR_COMMENT_HAS_RESERVED_FIELD;
+            if (
+                this.features?.requirePostLink &&
+                !commentPublication.parentCid &&
+                (!commentPublication.link || !isLinkValid(commentPublication.link))
+            )
+                return messages.ERR_COMMENT_HAS_INVALID_LINK_FIELD;
             if (this.features?.requirePostLinkIsMedia && commentPublication.link && !isLinkOfMedia(commentPublication.link))
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
 
@@ -2470,7 +2500,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: PurgedCommentTableRows) {
+    async _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: PurgedCommentTableRows) {
         const log = Logger("plebbit-js:_addAllCidsUnderPurgedCommentToBeRemoved");
         this._cidsToUnPin.add(purgedCommentAndCommentUpdate.commentTableRow.cid);
         this._blocksToRm.push(purgedCommentAndCommentUpdate.commentTableRow.cid);
@@ -2482,8 +2512,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._mfsPathsToRemove.add(localCommentUpdatePath);
         }
         if (purgedCommentAndCommentUpdate?.commentUpdateTableRow?.replies)
-            this._addOldPageCidsToCidsToUnpin(purgedCommentAndCommentUpdate?.commentUpdateTableRow?.replies, undefined, true).catch((err) =>
-                log.error("Failed to add purged page cids to be unpinned and removed", err)
+            await this._addOldPageCidsToCidsToUnpin(purgedCommentAndCommentUpdate?.commentUpdateTableRow?.replies, undefined, true).catch(
+                (err) => log.error("Failed to add purged page cids to be unpinned and removed", err)
             );
     }
 
@@ -2507,7 +2537,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         for (const purgedComment of purgedComments)
             for (const purgedCommentAndCommentUpdate of purgedComment.purgedTableRows)
-                this._addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate);
+                await this._addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate);
 
         if (this._mfsPathsToRemove.size > 0) await this._rmUnneededMfsPaths();
         if (this.updateCid) {
@@ -3022,7 +3052,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 log.error("Error in update loop", e);
                 this.emit("error", e as PlebbitError | Error);
             } finally {
-                await new Promise((resolve) => setTimeout(resolve, this._plebbit.updateInterval));
+                await new Promise<void>((resolve) => {
+                    if (this._updateLoopAbortController?.signal.aborted) return resolve();
+                    const timer = setTimeout(resolve, this._plebbit.updateInterval);
+                    this._updateLoopAbortController?.signal.addEventListener(
+                        "abort",
+                        () => {
+                            clearTimeout(timer);
+                            resolve();
+                        },
+                        { once: true }
+                    );
+                });
             }
         }
     }
@@ -3038,12 +3079,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } catch (e) {
             this.emit("error", e as PlebbitError | Error);
         }
+        this._updateLoopAbortController = new AbortController();
         this._updateLoopPromise = this._updateLoop();
     }
 
     override async stop() {
         const log = Logger("plebbit-js:local-subplebbit:stop");
         this._stopHasBeenCalled = true;
+        if (this._updateLoopAbortController) {
+            this._updateLoopAbortController.abort();
+            this._updateLoopAbortController = undefined;
+        }
         this.posts._stop();
 
         if (this.state === "started") {

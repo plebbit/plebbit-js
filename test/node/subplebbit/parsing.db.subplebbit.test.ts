@@ -1,6 +1,8 @@
 import { describe, it } from "vitest";
-import { createSchemaRowParser } from "../../../dist/node/schema/schema-util.js";
+// comment/schema must be imported before schema-util to avoid a circular dependency crash:
+// schema-util → pages/schema → comment/schema → pages/schema (partial, RepliesPagesIpfsSchema undefined)
 import { CommentUpdateTableRowSchema, CommentsTableRowSchema } from "../../../dist/node/publications/comment/schema.js";
+import { createSchemaRowParser } from "../../../dist/node/schema/schema-util.js";
 import { parseCommentsTableRow } from "../../../dist/node/runtime/node/subplebbit/db-row-parser.js";
 import { parseDbResponses } from "../../../dist/node/util.js";
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
