@@ -2,8 +2,7 @@ import signers from "../../fixtures/signers.js";
 
 import {
     getAvailablePlebbitConfigsToTestAgainst,
-    resolveWhenConditionIsTrue,
-    mockPlebbitV2
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 import { describe, it, afterAll } from "vitest";
@@ -36,24 +35,3 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
     })
 );
-
-describe(`subplebbit.stop() timing - Local subplebbit`, async () => {
-    let plebbit: PlebbitType;
-
-    afterAll(async () => {
-        await plebbit.destroy();
-    });
-
-    it(`Local subplebbit stop() after update() should complete within 10s`, async () => {
-        plebbit = await mockPlebbitV2();
-        const newSub = await plebbit.createSubplebbit();
-        const address = newSub.address;
-        const sub = await plebbit.createSubplebbit({ address });
-        await sub.update();
-        const startMs = Date.now();
-        await sub.stop();
-        const elapsed = Date.now() - startMs;
-        expect(elapsed).to.be.lessThan(10000);
-        await newSub.delete();
-    });
-});

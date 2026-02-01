@@ -262,3 +262,37 @@ describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
         expect(createdSubplebbit.title).to.equal(title);
     });
 });
+
+describe(`plebbit.createSubplebbit - performance regression`, async () => {
+    let plebbit: PlebbitType;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbitV2();
+    });
+
+    afterAll(async () => {
+        await plebbit.destroy();
+    });
+
+    it(`createSubplebbit({address}) for a stopped local subplebbit should not trigger IPNS resolution`, async () => {
+        // Create a new local sub (it will NOT be started)
+        const newSub = await plebbit.createSubplebbit();
+        const address = newSub.address;
+
+        // Now call createSubplebbit({address}) for the stopped sub.
+        // Before the fix, this would await subplebbit.update() on the RPC server
+        // which triggered IPNS resolution, taking 60+ seconds.
+        const timeoutMs = 15000;
+        const result = await Promise.race([
+            plebbit.createSubplebbit({ address }).then((sub) => ({ sub, timedOut: false as const })),
+            new Promise<{ sub: undefined; timedOut: true }>((resolve) =>
+                setTimeout(() => resolve({ sub: undefined, timedOut: true }), timeoutMs)
+            )
+        ]);
+
+        expect(result.timedOut, `createSubplebbit({address}) for stopped local sub took longer than ${timeoutMs}ms`).to.be.false;
+        expect(result.sub!.address).to.equal(address);
+
+        await newSub.delete();
+    });
+});
