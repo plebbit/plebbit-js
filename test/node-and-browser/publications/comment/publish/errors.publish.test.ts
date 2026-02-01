@@ -136,6 +136,12 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             plebbitOptions: { pubsubKuboRpcClientsOptions: offlinePubsubUrls }
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
+        // Pre-set _subplebbit to skip the network IPNS fetch in _initSubplebbit(),
+        // which is flaky in CI. This isolates the test to only exercise the pubsub failure path.
+        (mockPost as any)._subplebbit = {
+            encryption: { type: "ed25519-aes-gcm", publicKey: signers[1].publicKey },
+            address: signers[1].address
+        };
 
         const errorPromise = new Promise<Error | PlebbitError>((resolve) => mockPost.once("error", resolve));
 
@@ -164,6 +170,12 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             plebbitOptions: { pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl] }
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
+        // Pre-set _subplebbit to skip the network IPNS fetch in _initSubplebbit(),
+        // which is flaky in CI. This isolates the test to only exercise the pubsub failure path.
+        (mockPost as any)._subplebbit = {
+            encryption: { type: "ed25519-aes-gcm", publicKey: signers[1].publicKey },
+            address: signers[1].address
+        };
         (mockPost as unknown as CommentWithInternals)._publishToDifferentProviderThresholdSeconds = 2;
         (mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds = 5;
 
