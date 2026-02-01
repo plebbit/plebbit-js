@@ -6,7 +6,8 @@ import {
     jsonifySubplebbitAndRemoveInternalProps,
     isRunningInBrowser,
     addStringToIpfs,
-    mockPlebbitV2
+    mockPlebbitV2,
+    describeIfRpc
 } from "../../../dist/node/test/test-util.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -135,18 +136,6 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
             comment._updateRepliesPostsInstance({ pages: {}, pageCids: {} } as any);
         });
 
-        it(`createSubplebbit({address}) for an existing stopped local subplebbit should complete quickly`, async () => {
-            // Regression test: over RPC, createSubplebbit({address}) for a stopped local sub
-            // was taking 60+ seconds because the server awaited subplebbit.update() which triggered
-            // IPNS resolution instead of just reading from the local DB.
-            const startMs = Date.now();
-            const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
-            const elapsed = Date.now() - startMs;
-
-            expect(sub.address).to.equal(subplebbitAddress);
-            expect(elapsed).to.be.lessThan(15000); // Should not trigger IPNS resolution
-        });
-
         it("Remote subplebbit instance created with only address prop can call getPage", async () => {
             const actualSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             expect(actualSub.createdAt).to.be.a("number");
@@ -201,4 +190,38 @@ describe.concurrent(`plebbit.createSubplebbit - (remote) - errors`, async () => 
                 expect((e as { code: string }).code).to.equal("ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA");
             }
         });
+});
+
+describe(`plebbit.createSubplebbit - performance regression`, async () => {
+    let plebbit: PlebbitType;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbitV2();
+    });
+
+    afterAll(async () => {
+        await plebbit.destroy();
+    });
+
+    it(`createSubplebbit({address}) for a stopped local subplebbit should not trigger IPNS resolution`, async () => {
+        // Create a new local sub (it will NOT be started)
+        const newSub = await plebbit.createSubplebbit();
+        const address = newSub.address;
+
+        // Now call createSubplebbit({address}) for the stopped sub.
+        // Before the fix, this would await subplebbit.update() on the RPC server
+        // which triggered IPNS resolution, taking 60+ seconds.
+        const timeoutMs = 15000;
+        const result = await Promise.race([
+            plebbit.createSubplebbit({ address }).then((sub) => ({ sub, timedOut: false as const })),
+            new Promise<{ sub: undefined; timedOut: true }>((resolve) =>
+                setTimeout(() => resolve({ sub: undefined, timedOut: true }), timeoutMs)
+            )
+        ]);
+
+        expect(result.timedOut, `createSubplebbit({address}) for stopped local sub took longer than ${timeoutMs}ms`).to.be.false;
+        expect(result.sub!.address).to.equal(address);
+
+        await newSub.delete();
+    });
 });
