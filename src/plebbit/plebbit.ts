@@ -603,7 +603,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     async _awaitSubplebbitsToIncludeSub(subAddress: string): Promise<void> {
         if (this.subplebbits.includes(subAddress)) return;
-        else await resolveWhenPredicateIsTrue(this, () => this.subplebbits.includes(subAddress), "subplebbitschange");
+        else await resolveWhenPredicateIsTrue({ toUpdate: this, predicate: () => this.subplebbits.includes(subAddress), eventName: "subplebbitschange" });
     }
 
     private async _createRemoteSubplebbitInstance(options: z.infer<typeof CreateRemoteSubplebbitFunctionArgumentSchema>) {

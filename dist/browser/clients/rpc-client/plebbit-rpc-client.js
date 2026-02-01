@@ -113,7 +113,7 @@ export default class PlebbitRpcClient extends TypedEmitter {
         if (this._webSocketClient.ready)
             return;
         if (!this._openConnectionPromise)
-            this._openConnectionPromise = pTimeout(resolveWhenPredicateIsTrue(this, () => this.state === "connected", "statechange"), {
+            this._openConnectionPromise = pTimeout(resolveWhenPredicateIsTrue({ toUpdate: this, predicate: () => this.state === "connected", eventName: "statechange" }), {
                 milliseconds: this._timeoutSeconds * 1000
             });
         try {

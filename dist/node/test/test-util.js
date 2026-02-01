@@ -721,25 +721,23 @@ export async function resolveWhenConditionIsTrue(options) {
         throw Error("resolveWhenConditionIsTrue options.predicate must be a function");
     }
     const normalizedEventName = eventName || "update";
-    // should add a timeout?
-    const listenerPromise = new Promise(async (resolve) => {
+    await new Promise((resolve, reject) => {
         const listener = async () => {
             try {
                 const conditionStatus = await predicate();
                 if (conditionStatus) {
-                    resolve(conditionStatus);
                     toUpdate.removeListener(normalizedEventName, listener);
+                    resolve();
                 }
             }
             catch (error) {
-                console.error(error);
-                throw error;
+                toUpdate.removeListener(normalizedEventName, listener);
+                reject(error);
             }
         };
         toUpdate.on(normalizedEventName, listener);
-        await listener(); // make sure we're checking at least once
+        listener(); // initial check — no await, errors flow through reject()
     });
-    await listenerPromise;
 }
 export async function disableValidationOfSignatureBeforePublishing(publication) {
     //@ts-expect-error
@@ -754,7 +752,7 @@ export async function overrideCommentInstancePropsAndSign(comment, props) {
         comment[optionKey] = pubsubPublication[optionKey] = props[optionKey];
     }
     comment.signature = pubsubPublication.signature = await signComment({
-        comment: removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }),
+        comment: removeUndefinedValuesRecursively({ ...pubsubPublication, signer: comment.signer }),
         plebbit: comment._plebbit
     });
     comment.raw.pubsubMessageToPublish = pubsubPublication;

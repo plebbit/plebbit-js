@@ -286,26 +286,25 @@ export function isRequestPubsubPublicationOfReply(request) {
 export function isRequestPubsubPublicationOfPost(request) {
     return Boolean(request.comment && !request.comment.parentCid);
 }
-export async function resolveWhenPredicateIsTrue(toUpdate, predicate, eventName = "update") {
-    // should add a timeout?
-    const listenerPromise = new Promise(async (resolve) => {
+export async function resolveWhenPredicateIsTrue(options) {
+    const { toUpdate, predicate, eventName = "update" } = options;
+    await new Promise((resolve, reject) => {
         const listener = async () => {
             try {
                 const conditionStatus = await predicate();
                 if (conditionStatus) {
-                    resolve(conditionStatus);
                     toUpdate.removeListener(eventName, listener);
+                    resolve();
                 }
             }
             catch (error) {
-                console.error(error);
-                throw error;
+                toUpdate.removeListener(eventName, listener);
+                reject(error);
             }
         };
         toUpdate.on(eventName, listener);
-        await listener(); // make sure we're checking at least once
+        listener(); // initial check — no await, errors flow through reject()
     });
-    await listenerPromise;
 }
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs) {
     const wasUpdating = subplebbit.state === "updating";

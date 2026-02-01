@@ -971,26 +971,23 @@ export async function resolveWhenConditionIsTrue(options: ResolveWhenConditionIs
     }
 
     const normalizedEventName = eventName || "update";
-    // should add a timeout?
 
-    const listenerPromise = new Promise(async (resolve) => {
+    await new Promise<void>((resolve, reject) => {
         const listener = async () => {
             try {
                 const conditionStatus = await predicate();
                 if (conditionStatus) {
-                    resolve(conditionStatus);
                     toUpdate.removeListener(normalizedEventName, listener);
+                    resolve();
                 }
             } catch (error) {
-                console.error(error);
-                throw error;
+                toUpdate.removeListener(normalizedEventName, listener);
+                reject(error);
             }
         };
         toUpdate.on(normalizedEventName, listener);
-        await listener(); // make sure we're checking at least once
+        listener(); // initial check — no await, errors flow through reject()
     });
-
-    await listenerPromise;
 }
 
 export async function disableValidationOfSignatureBeforePublishing(publication: Publication) {

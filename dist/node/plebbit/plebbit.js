@@ -401,7 +401,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         if (this.subplebbits.includes(subAddress))
             return;
         else
-            await resolveWhenPredicateIsTrue(this, () => this.subplebbits.includes(subAddress), "subplebbitschange");
+            await resolveWhenPredicateIsTrue({ toUpdate: this, predicate: () => this.subplebbits.includes(subAddress), eventName: "subplebbitschange" });
     }
     async _createRemoteSubplebbitInstance(options) {
         const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");
