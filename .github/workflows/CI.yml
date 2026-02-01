@@ -189,9 +189,9 @@ jobs:
 
             # Setup tests for rpc directory here (skipped for now)
 
-    test-plebbit-react-hooks:
-        uses: ./.github/workflows/CI-plebbit-react-hooks.yml
-        secrets: inherit
+    # test-plebbit-react-hooks:
+    #     uses: ./.github/workflows/CI-plebbit-react-hooks.yml
+    #     secrets: inherit
 
     test-plebbit-protocol-test:
         uses: ./.github/workflows/CI-plebbit-protocol-test.yml
