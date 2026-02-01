@@ -24,7 +24,14 @@ if (process.argv.includes("debug") || process.argv.includes("--debug")) {
 let lastTimestamp = Date.now();
 
 // use dist folder instead of input folder because doesnt always work otherwise
-chokidar.watch(distFolder, { persistent }).on("all", async (event, path) => {
+chokidar.watch(distFolder, {
+    persistent,
+    ignored: outputFolder,
+    awaitWriteFinish: {
+        stabilityThreshold: 300,
+        pollInterval: 50
+    }
+}).on("all", async (event, path) => {
     // this is not the input folder
     if (!path.startsWith(inputFolder)) {
         return;
