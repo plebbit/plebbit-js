@@ -397,7 +397,7 @@ export class DbHandler {
         if (needToMigrate) {
             await this._purgeCommentsWithInvalidSchemaOrSignature();
             await this._purgeCommentEditsWithInvalidSchemaOrSignature();
-            this._purgePublicationTablesWithDuplicateSignatures();
+            await this._purgePublicationTablesWithDuplicateSignatures();
             if (currentDbVersion < 29)
                 this._backfillApprovedCommentNumbers();
             this._db.exec("PRAGMA foreign_keys = ON");
@@ -522,7 +522,7 @@ export class DbHandler {
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
-    _purgePublicationTablesWithDuplicateSignatures() {
+    async _purgePublicationTablesWithDuplicateSignatures() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgePublicationTablesWithDuplicateSignatures");
         const publicationTables = [TABLES.COMMENTS, TABLES.COMMENT_EDITS, TABLES.COMMENT_MODERATIONS, TABLES.COMMENT_UPDATES];
         for (const tableName of publicationTables) {
@@ -568,7 +568,8 @@ export class DbHandler {
                     .all();
                 for (const { cid } of duplicateCids) {
                     const purgedRows = this.purgeComment(cid);
-                    purgedRows.forEach((row) => this._subplebbit._addAllCidsUnderPurgedCommentToBeRemoved(row));
+                    for (const row of purgedRows)
+                        await this._subplebbit._addAllCidsUnderPurgedCommentToBeRemoved(row);
                 }
                 log(`Purged ${duplicateCids.length} duplicate comment row(s) based on signature.signature with higher rowid values.`);
                 continue;

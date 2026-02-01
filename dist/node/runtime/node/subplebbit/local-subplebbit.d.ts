@@ -23,6 +23,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _stopHasBeenCalled;
     private _publishLoopPromise?;
     private _updateLoopPromise?;
+    private _updateLoopAbortController?;
     private _firstUpdateAfterStart;
     private _internalStateUpdateId;
     private _lastPubsubTopicRoutingProvideAt?;
@@ -98,7 +99,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _adjustPostUpdatesBucketsIfNeeded;
     private _cleanUpIpfsRepoRarely;
     private _providePubsubTopicRoutingCidsIfNeeded;
-    _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: PurgedCommentTableRows): void;
+    _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: PurgedCommentTableRows): Promise<void>;
     private _purgeDisapprovedCommentsOlderThan;
     private syncIpnsWithDb;
     private _assertDomainResolvesCorrectly;
