@@ -74,6 +74,7 @@ export class Comment
     previousCid?: CommentIpfsType["previousCid"];
     depth?: CommentIpfsType["depth"];
     postCid?: CommentIpfsType["postCid"];
+    pseudonymityMode?: CommentIpfsType["pseudonymityMode"];
     linkHtmlTagName?: CommentPubsubMessagePublication["linkHtmlTagName"];
 
     // CommentEdit and CommentUpdate props
@@ -205,6 +206,7 @@ export class Comment
             this.thumbnailUrl = props.thumbnailUrl;
             this.thumbnailUrlHeight = props.thumbnailUrlHeight;
             this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+            this.pseudonymityMode = props.pseudonymityMode;
         }
     }
 

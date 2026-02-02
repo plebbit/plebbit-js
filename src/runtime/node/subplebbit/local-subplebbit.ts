@@ -1205,17 +1205,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return commentEditSignedByAlias;
     }
 
-    private async storeComment(
-        commentPubsub: CommentPubsubMessagePublication,
-        pendingApproval?: boolean
-    ): Promise<{ comment: CommentIpfsType; cid: CommentUpdateType["cid"] }> {
+    private async storeComment(opts: {
+        commentPubsub: CommentPubsubMessagePublication;
+        pendingApproval?: boolean;
+        pseudonymityMode?: PseudonymityAliasRow["mode"];
+    }): Promise<{ comment: CommentIpfsType; cid: CommentUpdateType["cid"] }> {
+        const { commentPubsub, pendingApproval, pseudonymityMode } = opts;
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storeComment");
 
         const commentIpfs = <CommentIpfsType>{
             ...commentPubsub,
             ...(await this._calculateLinkProps(commentPubsub.link)),
             ...(this.isPublicationPost(commentPubsub) && (await this._calculateLatestPostProps())),
-            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub)))
+            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub))),
+            ...(pseudonymityMode ? { pseudonymityMode } : {})
         };
 
         const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
@@ -1290,7 +1293,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
         else if (request.comment) {
             const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
-            const storedComment = await this.storeComment(publication, pendingApproval);
+            const storedComment = await this.storeComment({ commentPubsub: publication, pendingApproval, pseudonymityMode: anonymity?.mode });
 
             if (anonymity)
                 this._dbHandler.insertPseudonymityAliases([

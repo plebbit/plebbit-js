@@ -97,7 +97,8 @@ export const CommentIpfsSchema = CommentPubsubMessageWithFlexibleAuthorSchema.ex
     thumbnailUrl: z.string().min(1).optional(),
     thumbnailUrlWidth: z.number().positive().optional(),
     thumbnailUrlHeight: z.number().positive().optional(),
-    previousCid: CidStringSchema.optional()
+    previousCid: CidStringSchema.optional(),
+    pseudonymityMode: z.enum(["per-post", "per-reply", "per-author"]).optional()
 }).strict();
 
 // This one should be used for parsing user's input or from gateway/p2p etc

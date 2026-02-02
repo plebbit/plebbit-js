@@ -51,7 +51,7 @@ interface AnonymityTransitionContext {
 
 type AliasRow = Pick<PseudonymityAliasRow, "mode" | "aliasPrivateKey" | "originalAuthorSignerPublicKey">;
 type StoredCommentUpdate = Pick<CommentUpdatesRow, "cid" | "updatedAt" | "replyCount" | "protocolVersion" | "signature" | "edit" | "author">;
-type StoredComment = Pick<CommentsTableRow, "cid" | "author" | "signature" | "parentCid">;
+type StoredComment = Pick<CommentsTableRow, "cid" | "author" | "signature" | "parentCid" | "pseudonymityMode">;
 
 // Type to access private methods for testing purposes
 interface LocalSubplebbitWithPrivateMethods {
@@ -100,6 +100,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                     await expectCommentCidToUseAlias(context.publisherPlebbit, stored.cid, aliasSigner);
                     expect(stored?.author?.address).to.equal(aliasSigner.address);
                     expect(stored?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+                    expect(stored?.pseudonymityMode).to.equal("per-author");
                 }
 
                 expect(storedReply?.parentCid).to.equal(secondPost.cid);
@@ -1000,6 +1001,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                             expect(postInPage?.author?.wallets).to.be.undefined;
                             expect(postInPage?.author?.flair).to.be.undefined;
                             expect(postInPage?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+                            expect(postInPage?.pseudonymityMode).to.equal("per-author");
                         }
                     });
 
@@ -1017,6 +1019,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                         expect(remoteComment.edit?.content).to.equal(sharedContext.editContent);
                         expect(remoteComment.edit?.signature?.publicKey).to.equal(aliasSigner.publicKey);
                         expect(remoteComment.signature.publicKey).to.equal(aliasSigner.publicKey);
+                        expect(remoteComment.pseudonymityMode).to.equal("per-author");
                         await remoteComment.stop();
                     });
 
@@ -1144,9 +1147,10 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
 });
 
 async function expectCommentCidToUseAlias(plebbit: Plebbit, cid: string, aliasSigner: SignerWithPublicKeyAddress) {
-    const fetched = JSON.parse(await plebbit.fetchCid({ cid })) as { author?: { address?: string }; signature?: { publicKey?: string } };
+    const fetched = JSON.parse(await plebbit.fetchCid({ cid })) as { author?: { address?: string }; signature?: { publicKey?: string }; pseudonymityMode?: string };
     expect(fetched?.author?.address).to.equal(aliasSigner.address);
     expect(fetched?.signature?.publicKey).to.equal(aliasSigner.publicKey);
+    expect(fetched?.pseudonymityMode).to.equal("per-author");
 }
 
 const PROTOCOL_VERSION = "1.0.0";
