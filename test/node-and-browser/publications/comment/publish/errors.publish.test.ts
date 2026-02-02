@@ -93,6 +93,13 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         // Only pubsubProviders [2] is able to publish/subscribe
 
         const post = await generateMockPost(subplebbitAddress, tempPlebbit);
+        // Pre-set _subplebbit to skip the network IPNS fetch in _initSubplebbit(),
+        // which is flaky in CI. This isolates the test to only exercise the pubsub failure path.
+        (post as any)._subplebbit = {
+            encryption: { type: "ed25519-aes-gcm", publicKey: signers[0].publicKey },
+            pubsubTopic: signers[0].address,
+            address: signers[0].address
+        };
         await publishWithExpectedResult(post, true);
         await tempPlebbit.destroy();
     });
@@ -110,6 +117,13 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         plebbit.clients.pubsubKuboRpcClients[notRespondingPubsubUrl]._client.pubsub.subscribe = async () => {};
 
         const mockPost = await generateMockPost(signers[0].address, plebbit);
+        // Pre-set _subplebbit to skip the network IPNS fetch in _initSubplebbit(),
+        // which is flaky in CI. This isolates the test to only exercise the pubsub failure path.
+        (mockPost as any)._subplebbit = {
+            encryption: { type: "ed25519-aes-gcm", publicKey: signers[0].publicKey },
+            pubsubTopic: signers[0].address,
+            address: signers[0].address
+        };
 
         const expectedStates = {
             [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
@@ -140,6 +154,7 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         // which is flaky in CI. This isolates the test to only exercise the pubsub failure path.
         (mockPost as any)._subplebbit = {
             encryption: { type: "ed25519-aes-gcm", publicKey: signers[1].publicKey },
+            pubsubTopic: signers[1].address,
             address: signers[1].address
         };
 
@@ -174,6 +189,7 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         // which is flaky in CI. This isolates the test to only exercise the pubsub failure path.
         (mockPost as any)._subplebbit = {
             encryption: { type: "ed25519-aes-gcm", publicKey: signers[1].publicKey },
+            pubsubTopic: signers[1].address,
             address: signers[1].address
         };
         (mockPost as unknown as CommentWithInternals)._publishToDifferentProviderThresholdSeconds = 2;
