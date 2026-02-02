@@ -91,6 +91,7 @@ export class Comment extends Publication {
             this.thumbnailUrl = props.thumbnailUrl;
             this.thumbnailUrlHeight = props.thumbnailUrlHeight;
             this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+            this.pseudonymityMode = props.pseudonymityMode;
         }
     }
     _initCommentUpdate(props, subplebbit) {

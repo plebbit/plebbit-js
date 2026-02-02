@@ -259,6 +259,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                         thumbnailUrlWidth?: number | undefined;
                         thumbnailUrlHeight?: number | undefined;
                         previousCid?: string | undefined;
+                        pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
                     };
                     commentUpdate: {
                         [x: string]: unknown;
@@ -733,6 +734,7 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
                     previousCid?: string | undefined;
+                    pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
                 };
                 commentUpdate: {
                     [x: string]: unknown;
