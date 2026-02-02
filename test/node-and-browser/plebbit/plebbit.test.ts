@@ -276,6 +276,20 @@ describe(`plebbit.destroy`, async () => {
             expect((e as PlebbitError).code).to.equal("ERR_PLEBBIT_IS_DESTROYED");
         }
     });
+
+    it(`plebbit.destroy() should not throw if _updatingSubplebbits contains a subplebbit with state "stopped"`, async () => {
+        // Reproduces a race condition where a subplebbit is stored in _updatingSubplebbits
+        // but hasn't transitioned to "updating" state yet (e.g. during fetchLatestSubOrSubscribeToEvent)
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const sub = await plebbit.createSubplebbit({ address: fixtureSigner.address });
+        expect(sub.state).to.equal("stopped");
+        // Simulate the race: sub is in the map but still in "stopped" state
+        plebbit._updatingSubplebbits[sub.address] = sub;
+        await plebbit.destroy(); // should not throw
+        expect(sub.state).to.equal("stopped");
+    });
+
+
 });
 
 describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {

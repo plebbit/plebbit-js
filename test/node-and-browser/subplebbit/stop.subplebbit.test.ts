@@ -2,6 +2,7 @@ import signers from "../../fixtures/signers.js";
 
 import {
     getAvailablePlebbitConfigsToTestAgainst,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
@@ -35,3 +36,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
     })
 );
+
+describe(`subplebbit.stop() idempotency`, async () => {
+    it(`subplebbit.stop() should be a no-op when state is already "stopped"`, async () => {
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+        expect(sub.state).to.equal("stopped");
+        await sub.stop(); // should not throw
+        expect(sub.state).to.equal("stopped");
+        await plebbit.destroy();
+    });
+});
