@@ -17,3 +17,5 @@
 -   When writing new functions, prefer a single object parameter with all args (e.g., `signComment({ comment, plebbit })` instead of `signComment(comment, plebbit)`)
 -   When you're debugging a failure or a test failure in CI, you should check `test_server.log` for subplebbit logs and `test_node_${config}.stdout.log`/`test_node_${config}.stderr.log` artifacts for client logs (where config is e.g. `remote-kubo-rpc`)
 -   When I report a bug or test failure, you need to try to understand the root cause instead of trying to fix it with timeouts
+-   When you modify a test file you need to make sure it passes test build process of tsc with test/tsconfig.json
+- Do not commit /dist to git
