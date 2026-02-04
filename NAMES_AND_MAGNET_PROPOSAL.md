@@ -1,4 +1,4 @@
-# Proposal: `subplebbitIpfs.names` and `pkc-magnet:` link
+# Proposal: `subplebbitIpfs.names` and `pkc://` magnet link
 
 ## Problem
 
@@ -44,12 +44,12 @@ names?: string[]  // e.g., ["memes.eth", "memes.sol", "memes.bso"]
 4. If resolution fails or the resolved key doesn't match the subplebbit's public key, try the next name
 5. If all names fail, fall back to the raw IPNS key if known
 
-### 2. Add `subplebbitIpfs.pkcMagnet` field
+### 2. Add `subplebbitIpfs.magnetUri` field
 
-Add an optional `pkcMagnet` field to SubplebbitIpfs — a single string that bundles everything needed to discover and connect to a community:
+Add an optional `magnetUri` field to SubplebbitIpfs — a single string that bundles everything needed to discover and connect to a community:
 
 ```
-pkc-magnet:?publicKey=12D3KooWNMYbPn...&name=memes.eth&name=memes.sol&httpRouter=https://peers.pleb.bot&httpRouter=https://routing.lol&timestamp=1738700000
+pkc://?publicKey=12D3KooWNMYbPn...&name=memes.eth&name=memes.sol&httpRouter=https://peers.pleb.bot&httpRouter=https://routing.lol&timestamp=1738700000
 ```
 
 **Components:**
@@ -65,13 +65,19 @@ pkc-magnet:?publicKey=12D3KooWNMYbPn...&name=memes.eth&name=memes.sol&httpRouter
 -   **Signed** — part of the SubplebbitIpfs record
 -   **Auto-generated** by the local subplebbit on each IPNS publish (not manually editable)
 -   Computed from: `signer.address` (IPNS key) + `names` + the sub's configured `httpRoutersOptions`
--   **Size-capped at 40KB** — `encodePkcMagnet` always includes all `name` params, `publicKey`, and `timestamp`, but includes `httpRouter` params in order until adding the next one would push the magnet string over 40KB. Routers beyond the cap are silently dropped. The sub owner controls router priority via order. This ensures the magnet stays well within the 1MB `SubplebbitIpfs` size limit (`MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS = 1024 * 1024`) while leaving the vast majority of the budget for posts and other fields. In practice, magnets will be a few hundred bytes (3 names + 3 routers ≈ 350 bytes), so the 40KB cap is a safety net for extreme configurations.
+-   **Size-capped at 40KB** — `encodeMagnetUri` always includes all `name` params, `publicKey`, and `timestamp`, but includes `httpRouter` params in order until adding the next one would push the magnet string over 40KB. Routers beyond the cap are silently dropped. The sub owner controls router priority via order. This ensures the magnet stays well within the 1MB `SubplebbitIpfs` size limit (`MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS = 1024 * 1024`) while leaving the vast majority of the budget for posts and other fields. In practice, magnets will be a few hundred bytes (3 names + 3 routers ≈ 350 bytes), so the 40KB cap is a safety net for extreme configurations.
 
 **Why this is useful:**
 
-Similar to BitTorrent magnet links, a single `pkc-magnet:` string is fully self-contained. If someone shares `pkc-magnet:?publicKey=12D3KooW...&name=memes.eth&httpRouter=https://peers.pleb.bot`, the recipient has everything needed to find the community — the cryptographic identity, human-readable names to display (though needs to be verified), and the HTTP routers to discover peers. No external dependencies required.
+Similar to BitTorrent magnet links, a single `pkc://` string is fully self-contained. If someone shares `pkc://?publicKey=12D3KooW...&name=memes.eth&httpRouter=https://peers.pleb.bot`, the recipient has everything needed to find the community — the cryptographic identity, human-readable names to display (though needs to be verified), and the HTTP routers to discover peers. No external dependencies required.
 
-**Key insight:** If a client already has a `pkc-magnet:` string, it does **not** need to resolve any names — the IPNS public key is right there in the `publicKey` parameter. The client can go directly to the HTTP routers in the magnet to find peers and fetch the IPNS record. Name resolution is only needed when the user has a human-readable name but no magnet link (e.g., someone told them "check out memes.eth"). The `name` params in the magnet exist solely as display hints — they let the client show a human-readable label while the IPNS record is loading, but they resolve to the same IPNS key that's already in the magnet's `publicKey` param.
+**Why `pkc://` instead of `pkc-magnet:`:**
+
+We use `pkc://` as the URI scheme rather than `pkc-magnet:` because `pkc://` is a standard custom protocol scheme that operating systems recognize natively. When a user scans a QR code containing `pkc://...`, the OS can open a registered pkc app directly — the same way `mailto:` opens an email client, `tg://` opens Telegram, or `spotify://` opens Spotify. This works via Android intent filters, iOS URL schemes, and desktop protocol handler registration.
+
+`pkc-magnet:` would technically also work as a URI scheme (the OS dispatches based on the part before `:`), but it has drawbacks: hyphenated scheme names are unusual, and it signals "variant of magnet" rather than "its own protocol." `pkc://` is shorter, cleaner, and follows the established convention for app-opening URIs. The concept remains inspired by BitTorrent magnet links (a self-contained discovery string), hence the field name `magnetUri`, but the URI scheme is `pkc://` for maximum compatibility with OS-level protocol handling and QR code workflows.
+
+**Key insight:** If a client already has a `pkc://` string, it does **not** need to resolve any names — the IPNS public key is right there in the `publicKey` parameter. The client can go directly to the HTTP routers in the magnet to find peers and fetch the IPNS record. Name resolution is only needed when the user has a human-readable name but no magnet link (e.g., someone told them "check out memes.eth"). The `name` params in the magnet exist solely as display hints — they let the client show a human-readable label while the IPNS record is loading, but they resolve to the same IPNS key that's already in the magnet's `publicKey` param.
 
 **Performance benefit for multisubs:** A multisub list with 100+ communities would be extremely slow to load if every entry required blockchain RPC resolution — RPCs throttle aggressively and each resolution is a separate network call. With magnet links, the client uses the `publicKey` + `httpRouter` params to fetch all 100+ IPNS records in parallel via HTTP routers, with zero blockchain involvement. Name resolution can be deferred to when the user actually navigates to a specific community, turning 100+ blocking RPC calls into 0 on initial load.
 
@@ -110,9 +116,9 @@ Key observations:
 -   **2 subs timed out entirely** at 120s — one had no text record, the other couldn't resolve at all. These block the UI for 2 minutes each.
 -   With only 39 subs, the total wall time was 7.5s (for those that succeeded). **At 100+ subs, rate limiting would compound further** — RPC providers that throttle at ~15 concurrent requests would create waves of 6-10s backoff delays, easily pushing total resolution time to 30-60s+ before any IPNS fetching even begins.
 
-**With pkcMagnet: all of the above becomes 0s.** The client skips blockchain RPC entirely and goes straight to IPNS fetching via the public key + HTTP routers embedded in the magnet link. No rate limits, no backoff delays, no timeouts from unresolvable domains.
+**With magnetUri: all of the above becomes 0s.** The client skips blockchain RPC entirely and goes straight to IPNS fetching via the public key + HTTP routers embedded in the magnet link. No rate limits, no backoff delays, no timeouts from unresolvable domains.
 
-#### Why not separate `names` + `publicKey` fields in multisubs? Why we need `pkcMagnet` specifically?
+#### Why not separate `names` + `publicKey` fields in multisubs? Why we need `magnetUri` specifically?
 
 A multisub entry could include `names` and `publicKey` as separate JSON fields, letting clients skip blockchain resolution the same way. So why bundle everything into a magnet string?
 
@@ -126,13 +132,13 @@ The three identifiers form a hierarchy of censorship resistance vs. human readab
 
 | Method      | Censorship resistance                                  | Human readable  | Needs external resolution |
 | ----------- | ------------------------------------------------------ | --------------- | ------------------------- |
-| `pkcMagnet` | Highest — self-contained, includes routers + publicKey | No              | No                        |
+| `magnetUri` | Highest — self-contained, includes routers + publicKey | No              | No                        |
 | `names`     | Medium — redundancy across chains                      | Yes             | Yes (blockchain RPCs)     |
 | `address`   | Lowest — single name or raw key                        | Yes (if domain) | Yes (if domain)           |
 
 ### Name verification
 
-A magnet link from an untrusted source (e.g., a third-party multisub) could claim names it doesn't own — for example, `pkc-magnet:?publicKey=EVIL_KEY&name=memes.eth` where the publicKey actually points to a malicious subplebbit. This is not a new attack surface (today's multisubs can already put any `address` next to any `title`), but magnets make it explicit and **verifiable**.
+A magnet link from an untrusted source (e.g., a third-party multisub) could claim names it doesn't own — for example, `pkc://?publicKey=EVIL_KEY&name=memes.eth` where the publicKey actually points to a malicious subplebbit. This is not a new attack surface (today's multisubs can already put any `address` next to any `title`), but magnets make it explicit and **verifiable**.
 
 **plebbit-js** provides an on-demand method for name verification — hooks call it when the user navigates to a community, and consume the results:
 
@@ -157,11 +163,11 @@ Hooks SHOULD call this lazily (when the user navigates to the community, not on 
 
 **Indexing by public key:** Hooks should **index communities by public key** (available via `subplebbit.publicKey` param in the magnet), not by name or address. Names can be added, removed, or transferred by the sub owner at any time. The public key is the only truly stable, immutable identifier — it's the cryptographic identity of the community. Indexing by public key ensures the hook never loses track of a community due to name changes.
 
-**Persisting magnets:** UIs and hooks should **persist `pkcMagnet` strings in browser storage** for every subscribed community. This way, even if all blockchain resolvers go down, the client can still reach communities using the stored magnet links. The magnet link is the maximally censorship-resistant method of accessing a community, while `address` and `names` are the human-readable ways to share and discover communities.
+**Persisting magnets:** UIs and hooks should **persist `magnetUri` strings in browser storage** for every subscribed community. This way, even if all blockchain resolvers go down, the client can still reach communities using the stored magnet links. The magnet link is the maximally censorship-resistant method of accessing a community, while `address` and `names` are the human-readable ways to share and discover communities.
 
-**Keeping magnets fresh:** Hooks should **update their stored `pkcMagnet` every time they receive a new subplebbit update** (i.e., on every `update` event). Since the local subplebbit re-generates the magnet on each IPNS publish, the magnet in each update reflects the latest names and HTTP routers. By always persisting the freshest magnet, clients ensure they have up-to-date router URLs and name lists even if they go offline for an extended period.
+**Keeping magnets fresh:** Hooks should **update their stored `magnetUri` every time they receive a new subplebbit update** (i.e., on every `update` event). Since the local subplebbit re-generates the magnet on each IPNS publish, the magnet in each update reflects the latest names and HTTP routers. By always persisting the freshest magnet, clients ensure they have up-to-date router URLs and name lists even if they go offline for an extended period.
 
-**Multisub integration:** In the future, multisub lists (like [temporary-default-subplebbits](https://github.com/plebbit/temporary-default-subplebbits)) should include the `pkcMagnet` field per entry, giving clients a fully self-contained discovery string even if blockchain RPCs are unavailable.
+**Multisub integration:** In the future, multisub lists (like [temporary-default-subplebbits](https://github.com/plebbit/temporary-default-subplebbits)) should include the `magnetUri` field per entry, giving clients a fully self-contained discovery string even if blockchain RPCs are unavailable.
 
 ### Community identity
 
@@ -181,7 +187,7 @@ Key rotation may be revisited in the future if there is real demand (e.g., via s
 
 -   **No resolvers available:** If the client has no resolvers but has the public key (directly or via magnet), it should still load the community without attempting resolution — the UI should display a warning that `names` are unverified rather than blocking access. Not sure if the warning should be surfaced from pkc-js, I think the hooks should do it.
 
--   **Should `pkcMagnet` include `name` params?** The names in the magnet resolve to the same IPNS key that's already in the `publicKey` param — they don't provide an alternative discovery path. Arguments for and against:
+-   **Should `magnetUri` include `name` params?** The names in the magnet resolve to the same IPNS key that's already in the `publicKey` param — they don't provide an alternative discovery path. Arguments for and against:
 
     **For including names:**
     - Gives the client a human-readable label to display immediately while the IPNS record is loading (which could be slow or fail entirely) — without names, the user just sees a raw `12D3KooW...` key
@@ -189,7 +195,7 @@ Key rotation may be revisited in the future if there is real demand (e.g., via s
     - Cheap in bytes — a few names add negligible size to the magnet
 
     **Against including names:**
-    - Names in the magnet are **unverified claims** — a malicious multisub can attach any name to any public key (e.g., `pkc-magnet:?publicKey=EVIL_KEY&name=memes.eth`), and the only way to verify is `verifyNames()` which does an actual blockchain RPC resolution
+    - Names in the magnet are **unverified claims** — a malicious multisub can attach any name to any public key (e.g., `pkc://?publicKey=EVIL_KEY&name=memes.eth`), and the only way to verify is `verifyNames()` which does an actual blockchain RPC resolution
     - The authoritative, signed `names` list is already in `subplebbitIpfs.names` once the IPNS record loads — the magnet names are redundant after that point
     - Adds a source of potential confusion (unverified names in magnet vs. signed names in the record)
 
@@ -213,7 +219,7 @@ This means if you call `plebbit.getSubplebbit({ address: "12D3KooW..." })` but t
 
 This is confirmed by existing tests (`test/node-and-browser/subplebbit/update.subplebbit.test.ts:108-126`) which explicitly assert that loading by IPNS key when the sub has a domain address throws `ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED`.
 
-**This blocks the core pkcMagnet optimization.** The whole point of magnet links is that clients can skip blockchain resolution and load directly via the public key + HTTP routers. But if the subplebbit has a domain address (which most will), loading by public key fails.
+**This blocks the core magnetUri optimization.** The whole point of magnet links is that clients can skip blockchain resolution and load directly via the public key + HTTP routers. But if the subplebbit has a domain address (which most will), loading by public key fails.
 
 ### Required change
 
@@ -246,7 +252,7 @@ if (subJson.address !== subInstanceAddress) {
 Once this change is in place:
 
 -   `plebbit.getSubplebbit({ address: "12D3KooW..." })` works even when the sub's address is `"business-and-finance.eth"`
--   Clients with a pkcMagnet can load any community directly by public key — **zero blockchain calls**
+-   Clients with a magnetUri can load any community directly by public key — **zero blockchain calls**
 -   The existing `.eth` path continues to work exactly as before (domain → resolve → fetch)
 -   Security is preserved: the signature check (`verifySubplebbit`) still runs and confirms the record is authentic
 
@@ -262,48 +268,48 @@ Once this change is in place:
 
 -   Add `SubplebbitNameSchema` — validates strings contain a dot (domain format)
 -   Add `names: SubplebbitNameSchema.array().optional()` to `SubplebbitIpfsSchema`
--   Add `pkcMagnet: z.string().min(1).optional()` to `SubplebbitIpfsSchema`
+-   Add `magnetUri: z.string().min(1).optional()` to `SubplebbitIpfsSchema`
 -   Add `names: true` to `SubplebbitEditOptionsSchema` (editable by sub owner)
--   Do NOT add `pkcMagnet` to `SubplebbitEditOptionsSchema` (auto-generated, not user-editable)
+-   Do NOT add `magnetUri` to `SubplebbitEditOptionsSchema` (auto-generated, not user-editable)
 -   `SubplebbitSignedPropertyNames` auto-updates (derived from schema keys)
 -   All derived types (`SubplebbitIpfsType`, `SubplebbitEditOptions`, etc.) auto-update via `z.infer<>`
 
 ### RemoteSubplebbit (`src/subplebbit/remote-subplebbit.ts`)
 
--   Add `names` and `pkcMagnet` property declarations
+-   Add `names` and `magnetUri` property declarations
 -   Assign them in `initRemoteSubplebbitPropsNoMerge()`
 
 ### LocalSubplebbit auto-generation (`src/runtime/node/subplebbit/local-subplebbit.ts`)
 
 In `updateSubplebbitIpnsIfNeeded()`, before signing the new SubplebbitIpfs record:
 
--   Compute `pkcMagnet` from `signer.address` + current `names` + `this._plebbit.httpRoutersOptions` + `updatedAt` timestamp
+-   Compute `magnetUri` from `signer.address` + current `names` + `this._plebbit.httpRoutersOptions` + `updatedAt` timestamp
 -   Include it in the record so it gets signed
 
-### Magnet utilities (`src/pkc-magnet.ts` — new file)
+### Magnet utilities (`src/magnet-uri.ts` — new file)
 
 ```ts
-interface PkcMagnetComponents {
+interface MagnetUriComponents {
     publicKey: string; // IPNS public key (matches subplebbit.publicKey)
-    names: string[]; // human-readable domain names (matches subplebbit.anmes)
+    names: string[]; // human-readable domain names (matches subplebbit.names)
     httpRouters: string[]; // HTTP router URLs (matches plebbitOptions.httpRouters)
     timestamp: number; // unix timestamp in seconds (matches subplebbit.updatedAt)
 }
 
-const PKC_MAGNET_MAX_SIZE_BYTES = 40 * 1024; // 40KB
+const MAGNET_URI_MAX_SIZE_BYTES = 40 * 1024; // 40KB
 
-function encodePkcMagnet(components: PkcMagnetComponents): string;
+function encodeMagnetUri(components: MagnetUriComponents): string;
 // Always includes publicKey, timestamp, and all names.
-// Includes httpRouters in order until adding the next one would exceed PKC_MAGNET_MAX_SIZE_BYTES.
+// Includes httpRouters in order until adding the next one would exceed MAGNET_URI_MAX_SIZE_BYTES.
 // Routers beyond the cap are silently dropped.
 
-function decodePkcMagnet(magnetLink: string): PkcMagnetComponents;
+function decodeMagnetUri(magnetUri: string): MagnetUriComponents;
 ```
 
-Exported at the top level via `src/index.ts` and attached to the `Plebbit` function object (`Plebbit.encodePkcMagnet`, `Plebbit.decodePkcMagnet`).
+Exported at the top level via `src/index.ts` and attached to the `Plebbit` function object (`Plebbit.encodeMagnetUri`, `Plebbit.decodeMagnetUri`).
 
 ### Backward compatibility
 
--   Records without `names` or `pkcMagnet` parse fine (both fields are optional)
+-   Records without `names` or `magnetUri` parse fine (both fields are optional)
 -   Old clients receiving new records with these fields use `.loose()` parsing which ignores unknown fields
 -   Signature verification uses the record's own `signedPropertyNames`, so old and new records coexist
