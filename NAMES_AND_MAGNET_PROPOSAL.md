@@ -26,6 +26,10 @@ Publications currently carry `subplebbitAddress` — a potentially mutable domai
 
 Additionally, loading a subplebbit by its IPNS public key currently fails if the record's `address` is a domain name, because validation does a strict string comparison. This blocks the core magnetUri optimization — clients with a magnet link can't skip blockchain resolution and load directly by public key.
 
+### 5. `address` is no longer universally resolvable
+
+Once domain resolution moves out of plebbit-js into pkc-js clients (see [#68](https://github.com/plebbit/plebbit-js/issues/68)), the idea of a single `address` field that works across all clients is no longer true. A client that only ships with `.sol` resolvers cannot resolve a `memes.eth` address. This is an acceptable trade-off — the `magnetUri` becomes the universal, self-contained identifier that works for all clients without external dependencies. Domain names become a convenience layer on top.
+
 ### Why `name` (singular) doesn't work
 
 Domain resolution is being refactored out of plebbit-js into pkc-js clients (see [#68](https://github.com/plebbit/plebbit-js/issues/68)). plebbit-js will no longer be the one doing name resolution — it just carries the data. The protocol layer (plebbit-js / SubplebbitIpfs) needs to store **all** the names a community uses so that any client, with whatever resolvers it has available, can find the community. A singular `name` field would still leave communities dependent on a single chain and a single set of resolvers.
@@ -70,6 +74,8 @@ It is populated:
 
 **Serialization requirement:** `address`, `names`, and `publicKey` must all be **enumerable properties** on the subplebbit class instance. This means they must appear in `JSON.stringify(subplebbit)` output and be accessible via object destructuring (`const { address, names, publicKey } = subplebbit`). This applies regardless of whether `address` is a SubplebbitIpfs field (Option B) or a computed class property (Option A), and regardless of whether `publicKey` is derived at runtime. Implementation-wise, these properties should be plain instance properties (not getters on the prototype) so that they are own enumerable properties of the object.
 
+**`shortAddress` is unchanged** — it remains derived from `address` as it is today. No changes needed.
+
 **Client-side resolution algorithm** (implemented in pkc-js, not plebbit-js):
 
 1. Filter `names[]` to only names that the client's registered resolvers can handle
@@ -82,7 +88,7 @@ It is populated:
 
 Publications (comments, votes, edits, moderations) currently carry `subplebbitAddress` — a potentially mutable domain name. This is semantically wrong: you're publishing to a cryptographic identity, not a mutable alias.
 
-Rename to `subplebbitPublicKey` across all publication types. This is the IPNS key string (`12D3KooW...`), matching `subplebbit.publicKey`. This is a clean break — no backward compatibility with the old field name.
+Rename to `subplebbitPublicKey` across all publication types. This is the IPNS key string (`12D3KooW...`), matching `subplebbit.publicKey`. This is a clean break — no backward compatibility with the old field name. Old clients will reject new publications and vice versa; this is acceptable.
 
 ### 3. Add `subplebbitIpfs.magnetUri` field
 
@@ -106,9 +112,23 @@ pkc://?publicKey=12D3KooWNMYbPn...&name=memes.eth&httpRouter=https://peers.pleb.
 -   Computed from: `signer.address` (IPNS key) + preferred name (`names[0]` or `address`) + the sub's configured `httpRoutersOptions`
 -   **Size-capped at 4KB** — `encodeMagnetUri` always includes `publicKey` and the single `name` param (if available), then includes `httpRouter` params in order until adding the next one would push the magnet string over 4KB. Routers beyond the cap are silently dropped. The sub owner controls router priority via order. In practice, magnets will be a few hundred bytes (1 name + 3 routers ≈ 250 bytes), so the 4KB cap is a safety net for extreme configurations. Keeping the magnetUri under ~1,000 bytes is recommended for QR code compatibility.
 
+#### Magnet URI size budget
+
+A typical magnet URI breaks down as:
+
+| Component | Example | Bytes |
+| --------- | ------- | ----- |
+| Scheme + publicKey param | `pkc://?publicKey=12D3KooWNMYbPn...` (52-char key) | ~63 |
+| Name param | `&name=business-and-finance.eth` | ~30 |
+| Each httpRouter param | `&httpRouter=https://peers.pleb.bot` | ~45-60 |
+
+Real subplebbit names average 12-24 characters (e.g., `brasilandia.eth`, `weaponized-autism.eth`, `business-and-finance.eth`). With a 600-byte QR code budget, after publicKey + name (~95 bytes), ~505 bytes remain — enough for **8-11 HTTP routers** with typical domain lengths. Even at the recommended 1,000-byte limit, 15+ routers fit comfortably. The 4KB hard cap is a safety net for extreme configurations.
+
 **Why this is useful:**
 
 Similar to BitTorrent magnet links, a single `pkc://` string is fully self-contained. If someone shares `pkc://?publicKey=12D3KooW...&name=memes.eth&httpRouter=https://peers.pleb.bot`, the recipient has everything needed to find the community — the cryptographic identity, a human-readable name to display (though it needs to be verified), and the HTTP routers to discover peers. No external dependencies required.
+
+**The magnet is the primary sharing mechanism.** Since `address` is no longer universally resolvable across all pkc-js clients (different clients may ship different resolvers), the `magnetUri` is the only identifier guaranteed to work everywhere without external dependencies. UI "share community" actions should output the `pkc://` magnet string. Domain names are a convenience layer for human communication (e.g., "check out memes.eth"), but the magnet is the canonical portable identifier.
 
 **Why `pkc://` instead of `pkc-magnet:`:**
 
@@ -164,14 +184,26 @@ The identifiers form a hierarchy of censorship resistance vs. human readability:
 
 ```ts
 const result = await subplebbit.verifyNames();
-// result: { [name: string]: { publicKey: string, resolvedAt: number, error?: Error } }
-// resolvedAt: unix timestamp in seconds of when the resolution was actually performed (not from cache)
+// result: { [name: string]: VerifyNameResult }
 ```
+
+Where `VerifyNameResult` has three distinct states:
+
+```ts
+type VerifyNameResult =
+    | { status: "verified"; publicKey: string; resolvedAt: number }    // Name resolved and matches subplebbit's publicKey
+    | { status: "failed"; resolvedAt: number; error: Error }           // Name resolved but mismatched, or resolution errored
+    | { status: "skipped"; reason: "no-resolver-available" }           // No resolver registered for this TLD — cannot check
+```
+
+-   **`verified`**: The name was resolved via blockchain RPC and the resolved IPNS key matches `subplebbit.publicKey`. `resolvedAt` is a unix timestamp in seconds of when the resolution was actually performed (not from cache).
+-   **`failed`**: Resolution was attempted but either errored or returned a public key that doesn't match. The name should not be trusted.
+-   **`skipped`**: The client has no resolver for this name's TLD (e.g., a client without `.sol` support encountering a `.sol` name). This is distinct from "failed" — the client simply cannot verify this name, not that it's wrong. UIs should display these names with an "unverified" indicator rather than a "failed" warning.
 
 The method:
 
-1. Filters `names[]` to only names that the instance's registered resolvers can handle
-2. Resolves each name via blockchain RPC
+1. Filters `names[]` to only names that the instance's registered resolvers can handle (others get `status: "skipped"`)
+2. Resolves each resolvable name via blockchain RPC
 3. Checks that the resolved IPNS key matches the subplebbit's public key (`subplebbit.publicKey`)
 4. Returns a map of results per name — hooks use this to decide what to display and whether to warn the user
 
@@ -181,13 +213,17 @@ Hooks SHOULD call this lazily (when the user navigates to the community, not on 
 
 **Displaying names:** Hooks should call `subplebbit.verifyNames()` and use the following display priority: show `address` if it verifies (resolves to the correct public key). Otherwise, show the first verified name from `names`. If none resolve, fall back to displaying `subplebbit.publicKey`.
 
+**Verified vs. unverified display:** pkc-js clients SHOULD visually distinguish verified names from unverified names. For example, a verified name could show a checkmark icon, while an unverified name (status `"skipped"` — no resolver available) could show a warning icon or "unverified" label. A failed name (status `"failed"` — resolved to wrong key) should show a clear warning. This prevents a malicious sub from claiming `names: ["bitcoin.eth"]` and having it displayed as if it were legitimate. When `verifyNames()` hasn't been called yet (e.g., initial load from magnet), `names[0]` is displayed as the unverified display hint.
+
+**Sharing communities:** The primary "share this community" action in UIs should output the `pkc://` magnet URI string. This is the only identifier guaranteed to work across all pkc-js clients regardless of which resolvers they ship. Domain names are useful for human communication ("check out memes.eth") but the magnet is the canonical portable identifier.
+
 **Indexing by public key:** Hooks should **index communities by `subplebbit.publicKey`** once available. `publicKey` is `undefined` until the first update for domain-created subs, so hooks may use `subplebbit.address` as a temporary key before the first update. Once `publicKey` is known, migrate to it as the permanent index key. The public key is the only truly stable, immutable identifier — it's the cryptographic identity of the community.
 
 **Persisting magnets:** UIs and hooks should **persist `magnetUri` strings in browser storage** for every subscribed community. This way, even if all blockchain resolvers go down, the client can still reach communities using the stored magnet links.
 
 **Keeping magnets fresh:** Hooks should **update their stored `magnetUri` every time they receive a new subplebbit update** (i.e., on every `update` event). Since the local subplebbit re-generates the magnet on each IPNS publish, the magnet in each update reflects the latest names and HTTP routers.
 
-**Multisub integration:** In the future, multisub lists (like [temporary-default-subplebbits](https://github.com/plebbit/temporary-default-subplebbits)) should include the `magnetUri` field per entry, giving clients a fully self-contained discovery string even if blockchain RPCs are unavailable. This will also allow pkc clients withiout resolvers to consume multisubs, albeit without validation.
+**Multisub integration:** In the future, multisub lists (like [temporary-default-subplebbits](https://github.com/plebbit/temporary-default-subplebbits)) should include the `magnetUri` field per entry, giving clients a fully self-contained discovery string even if blockchain RPCs are unavailable. This will also allow pkc clients without resolvers to consume multisubs, albeit without validation.
 
 ### Community identity
 
@@ -256,7 +292,7 @@ The critical fix (publications pointing to cryptographic identity via `subplebbi
 
 ## Open questions
 
--   **`verifyNames()` return type:** The exact shape needs refinement. Should names that were skipped (no resolver available) be included in the map with a specific error? Should the method also return a convenience field like `verifiedName: string | undefined` for the first name that passed verification?
+-   **Option A vs Option B:** See design discussion above. Decision pending.
 
 -   **No resolvers available:** If the client has no resolvers but has the public key (directly with `createSubplebbit({address: "12D..."})` or via magnet), it should still load the community without attempting resolution — the UI should display a warning that `names` are unverified rather than blocking access.
 
@@ -328,8 +364,8 @@ The signature verification (`verifySubplebbit`) already confirms the record was 
 
 ### Database changes (`src/runtime/node/subplebbit/db-handler.ts`)
 
--   Rename `subplebbitAddress` column to `subplebbitPublicKey` in publication tables (comments, commentEdits, commentModerations)
--   Bump DB version, add column mapping in migration
+-   Migrate `subplebbitAddress` column to `subplebbitPublicKey` in publication tables (comments, commentEdits, commentModerations) using copy-to-new-table strategy: create new table with correct schema → copy data from old table → drop old table only after copy succeeds → rename new table to original name
+-   Bump DB version, add migration logic
 -   DB file paths stay keyed by `address` — no file path migration needed
 
 ### Magnet utilities (`src/magnet-uri.ts` — new file)
@@ -352,5 +388,5 @@ Exported at the top level via `src/index.ts` and attached to the `Plebbit` funct
 ### Backward compatibility
 
 -   **SubplebbitIpfs**: Non-breaking for old clients. `address` stays, new `names`/`magnetUri` fields are ignored by old clients using `.loose()` parsing.
--   **Publications**: Breaking change. Old clients will see `subplebbitPublicKey` instead of `subplebbitAddress`. This is a clean break — no backward compatibility shim.
+-   **Publications**: Breaking change. Old clients will see `subplebbitPublicKey` instead of `subplebbitAddress`. This is a clean break — no backward compatibility shim. Old clients will reject new publications; this is acceptable.
 -   New clients can still validate old records: signature verification uses the record's own `signedPropertyNames`, so old records with `subplebbitAddress` are verified against what they claim to have signed.
