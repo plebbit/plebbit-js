@@ -16,7 +16,11 @@ Different pkc-js clients may ship with different domain resolvers. One client mi
 
 By publishing multiple names across different naming systems, communities can maximize their reachability across the diverse ecosystem of pkc-js clients and resolvers.
 
-### 3. Publications point to mutable domain names instead of cryptographic identity
+### 3. No migration path between naming systems
+
+With a single address, migrating from one naming system to another (e.g., `.eth` to `.bso`) requires a hard cutover — every sub owner, client, and user must switch simultaneously. With `names`, sub owners can list both old and new names during the transition period (`names: ["memes.eth", "memes.bso"]`). Clients that support the new resolver use it; clients that only support the old one continue working. Over time, the old names can be dropped without disrupting any users.
+
+### 4. Publications point to mutable domain names instead of cryptographic identity
 
 Publications currently carry `subplebbitAddress` — a potentially mutable domain name. This is semantically wrong: a publication belongs to a cryptographic identity, not a mutable alias. If a sub owner changes their address from `memes.eth` to `memes.sol`, old publications point to a name that may no longer resolve to this community.
 
