@@ -89,13 +89,13 @@ Rename to `subplebbitPublicKey` across all publication types. This is the IPNS k
 Add an optional `magnetUri` field to SubplebbitIpfs — a single string that bundles everything needed to discover and connect to a community:
 
 ```
-pkc://?publicKey=12D3KooWNMYbPn...&name=memes.eth&name=memes.sol&httpRouter=https://peers.pleb.bot&httpRouter=https://routing.lol
+pkc://?publicKey=12D3KooWNMYbPn...&name=memes.eth&httpRouter=https://peers.pleb.bot&httpRouter=https://routing.lol
 ```
 
 **Components:**
 
 -   `publicKey` — the IPNS public key (the cryptographic identity of the subplebbit), matches `subplebbit.publicKey`
--   `name` (repeated) — human-readable names, used as **unverified display hints** while the IPNS record is loading (must be verified via `verifyNames()` before being trusted)
+-   `name` (singular, optional) — the sub owner's preferred human-readable name (typically `names[0]` or `address`), used as an **unverified display hint** while the IPNS record is loading (must be verified via `verifyNames()` before being trusted). Only one name is included — the full `names[]` list is available in the `SubplebbitIpfs` record once the IPNS record is fetched.
 -   `httpRouter` (repeated) — HTTP router URLs used to discover peers, matches `plebbitOptions.httpRouters`
 
 **Properties:**
@@ -103,12 +103,12 @@ pkc://?publicKey=12D3KooWNMYbPn...&name=memes.eth&name=memes.sol&httpRouter=http
 -   **Optional** in SubplebbitIpfs — backward compatible
 -   **Signed** — part of the SubplebbitIpfs record
 -   **Auto-generated** by the local subplebbit on each IPNS publish (not manually editable)
--   Computed from: `signer.address` (IPNS key) + `names` + the sub's configured `httpRoutersOptions`
--   **Size-capped at 4KB** — `encodeMagnetUri` always includes all `name` params and `publicKey`, but includes `httpRouter` params in order until adding the next one would push the magnet string over 4KB. Routers beyond the cap are silently dropped. The sub owner controls router priority via order. In practice, magnets will be a few hundred bytes (3 names + 3 routers ≈ 350 bytes), so the 4KB cap is a safety net for extreme configurations. Keeping the magnetUri under ~1,000 bytes is recommended for QR code compatibility.
+-   Computed from: `signer.address` (IPNS key) + preferred name (`names[0]` or `address`) + the sub's configured `httpRoutersOptions`
+-   **Size-capped at 4KB** — `encodeMagnetUri` always includes `publicKey` and the single `name` param (if available), then includes `httpRouter` params in order until adding the next one would push the magnet string over 4KB. Routers beyond the cap are silently dropped. The sub owner controls router priority via order. In practice, magnets will be a few hundred bytes (1 name + 3 routers ≈ 250 bytes), so the 4KB cap is a safety net for extreme configurations. Keeping the magnetUri under ~1,000 bytes is recommended for QR code compatibility.
 
 **Why this is useful:**
 
-Similar to BitTorrent magnet links, a single `pkc://` string is fully self-contained. If someone shares `pkc://?publicKey=12D3KooW...&name=memes.eth&httpRouter=https://peers.pleb.bot`, the recipient has everything needed to find the community — the cryptographic identity, human-readable names to display (though needs to be verified), and the HTTP routers to discover peers. No external dependencies required.
+Similar to BitTorrent magnet links, a single `pkc://` string is fully self-contained. If someone shares `pkc://?publicKey=12D3KooW...&name=memes.eth&httpRouter=https://peers.pleb.bot`, the recipient has everything needed to find the community — the cryptographic identity, a human-readable name to display (though it needs to be verified), and the HTTP routers to discover peers. No external dependencies required.
 
 **Why `pkc://` instead of `pkc-magnet:`:**
 
@@ -116,7 +116,9 @@ We use a single `pkc://` URI scheme rather than separate JSON fields because a U
 
 We chose `pkc://` over `pkc-magnet:` specifically because `pkc://` is a standard custom protocol scheme that operating systems recognize natively. The concept remains inspired by BitTorrent magnet links (a self-contained discovery string), hence the field name `magnetUri`, but the URI scheme is `pkc://` for maximum compatibility with OS-level protocol handling and QR code workflows.
 
-**Key insight:** If a client already has a `pkc://` string, it does **not** need to resolve any names — the IPNS public key is right there in the `publicKey` parameter. The client can go directly to the HTTP routers in the magnet to find peers and fetch the IPNS record. Name resolution is only needed when the user has a human-readable name but no magnet link (e.g., someone told them "check out memes.eth"). The `name` params in the magnet exist solely as display hints.
+**Key insight:** If a client already has a `pkc://` string, it does **not** need to resolve any names — the IPNS public key is right there in the `publicKey` parameter. The client can go directly to the HTTP routers in the magnet to find peers and fetch the IPNS record. Name resolution is only needed when the user has a human-readable name but no magnet link (e.g., someone told them "check out memes.eth"). The `name` param in the magnet exists solely as a display hint.
+
+**Why only one name in the magnet:** The magnet URI includes a single optional `name` rather than the full `names[]` array. The censorship-resistance argument for multiple names applies to `SubplebbitIpfs.names` — where clients actually perform blockchain resolution and need fallback names across chains — but not to the magnet, which bypasses name resolution entirely. Since the magnet's `name` is just an unverified display hint shown while loading, duplicating the full `names` list would add bytes without meaningful benefit. The complete `names[]` array is available in the `SubplebbitIpfs` record once the client fetches it via the magnet's `publicKey` + `httpRouter` params.
 
 **Performance benefit for multisubs:** A multisub list with 100+ communities would be extremely slow to load if every entry required blockchain RPC resolution — RPCs throttle aggressively and each resolution is a separate network call. With magnet links, the client uses the `publicKey` + `httpRouter` params to fetch all 100+ IPNS records in parallel via HTTP routers, with zero blockchain involvement. Name resolution can be deferred to when the user actually navigates to a specific community, turning 100+ blocking RPC calls into 0 on initial load.
 
@@ -156,7 +158,7 @@ The identifiers form a hierarchy of censorship resistance vs. human readability:
 
 ### Name verification
 
-**Trust model:** `names` in both SubplebbitIpfs and magnet links are **untrusted claims** by the sub owner. The sub owner's cryptographic signature only proves they _claim_ to own these names — it does not prove the names actually resolve to their public key on the blockchain. A malicious or misconfigured sub could claim any names it wants. The only way to verify name ownership is to do a blockchain RPC resolution call and check that the resolved IPNS key matches the subplebbit's `publicKey`. Until this verification is done, all names should be treated as unverified display hints.
+**Trust model:** `names` in SubplebbitIpfs (and the single `name` in magnet links) are **untrusted claims** by the sub owner. The sub owner's cryptographic signature only proves they _claim_ to own these names — it does not prove the names actually resolve to their public key on the blockchain. A malicious or misconfigured sub could claim any names it wants. The only way to verify name ownership is to do a blockchain RPC resolution call and check that the resolved IPNS key matches the subplebbit's `publicKey`. Until this verification is done, all names should be treated as unverified display hints.
 
 **plebbit-js** should provide an on-demand method for name verification — hooks call it when the user navigates to a community, and consume the results:
 
@@ -335,7 +337,7 @@ The signature verification (`verifySubplebbit`) already confirms the record was 
 ```ts
 interface MagnetUriComponents {
     publicKey: string;
-    names: string[];
+    name?: string;
     httpRouters: string[];
 }
 
