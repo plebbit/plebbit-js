@@ -55,7 +55,7 @@ pkc-magnet:?publicKey=12D3KooWNMYbPn...&name=memes.eth&name=memes.sol&httpRouter
 **Components:**
 
 -   `publicKey` — the IPNS public key (the cryptographic identity of the subplebbit), matches `subplebbit.publicKey`
--   `name` (repeated) — human-readable names across different chains
+-   `name` (repeated) — human-readable names, used as **unverified display hints** while the IPNS record is loading (must be verified via `verifyNames()` before being trusted)
 -   `httpRouter` (repeated) — HTTP router URLs used to discover peers, matches `plebbitOptions.httpRouters`
 -   `timestamp` — unix timestamp in seconds (same format as `subplebbit.updatedAt`), used by clients to determine freshness and keep the most recent magnet
 
@@ -71,10 +71,7 @@ pkc-magnet:?publicKey=12D3KooWNMYbPn...&name=memes.eth&name=memes.sol&httpRouter
 
 Similar to BitTorrent magnet links, a single `pkc-magnet:` string is fully self-contained. If someone shares `pkc-magnet:?publicKey=12D3KooW...&name=memes.eth&httpRouter=https://peers.pleb.bot`, the recipient has everything needed to find the community — the cryptographic identity, human-readable names to display (though needs to be verified), and the HTTP routers to discover peers. No external dependencies required.
 
-**Key insight:** If a client already has a `pkc-magnet:` string, it does **not** need to resolve any names — the IPNS public key is right there in the `publicKey` parameter. The client can go directly to the HTTP routers in the magnet to find peers and fetch the IPNS record. Name resolution is only needed when:
-
-1. The user has a human-readable name but no magnet link (e.g., someone told them "check out memes.eth")
-2. The stored magnet link is outdated (routers changed, etc.) and the client needs to re-discover via a name
+**Key insight:** If a client already has a `pkc-magnet:` string, it does **not** need to resolve any names — the IPNS public key is right there in the `publicKey` parameter. The client can go directly to the HTTP routers in the magnet to find peers and fetch the IPNS record. Name resolution is only needed when the user has a human-readable name but no magnet link (e.g., someone told them "check out memes.eth"). The `name` params in the magnet exist solely as display hints — they let the client show a human-readable label while the IPNS record is loading, but they resolve to the same IPNS key that's already in the magnet's `publicKey` param.
 
 **Performance benefit for multisubs:** A multisub list with 100+ communities would be extremely slow to load if every entry required blockchain RPC resolution — RPCs throttle aggressively and each resolution is a separate network call. With magnet links, the client uses the `publicKey` + `httpRouter` params to fetch all 100+ IPNS records in parallel via HTTP routers, with zero blockchain involvement. Name resolution can be deferred to when the user actually navigates to a specific community, turning 100+ blocking RPC calls into 0 on initial load.
 
@@ -166,13 +163,39 @@ Hooks SHOULD call this lazily (when the user navigates to the community, not on 
 
 **Multisub integration:** In the future, multisub lists (like [temporary-default-subplebbits](https://github.com/plebbit/temporary-default-subplebbits)) should include the `pkcMagnet` field per entry, giving clients a fully self-contained discovery string even if blockchain RPCs are unavailable.
 
+### Community identity
+
+The cryptographic key (IPNS public key) is the **permanent, canonical identity** of a community. Everything else — names, addresses, magnet links — are discovery mechanisms and human-readable aliases that point to this key.
+
+**Key rotation is not supported.** If a sub owner loses their private key, the community is gone — analogous to losing a Bitcoin private key. The private key is stored in the subplebbit's SQLite database, and securing it is the sub owner's responsibility (backups, encrypted storage, etc.).
+
+Names (ENS, DNS, `.sol`, etc.) are **human-readable aliases, not identity**. They can expire, be transferred. A name resolving to a different public key always means the name was lost or transferred — never that the community migrated to a new key.
+
+Clients MUST index communities by public key, not by name or address. This ensures the client never loses track of a community due to name changes, expiry, or transfer.
+
+Key rotation may be revisited in the future if there is real demand (e.g., via signed migration records where the old key signs a "migrating to new key X" message). This is out of scope for this proposal.
+
 ## Open questions
 
 -   **`verifyNames()` return type:** The exact shape of the `verifyNames()` return value needs refinement. The current sketch is `{ [name: string]: { publicKey: string, resolvedAt: number, error?: Error } }` — a map tracking the resolution result for each name attempted. `resolvedAt` is the timestamp (in seconds) of when the resolution was actually performed (not from cache), so hooks can decide which result is freshest. This lets hooks pick the first successfully verified name to display, while also giving visibility into which names failed and why. Should names that were skipped (no resolver available) be included in the map with a specific error? Should the method also return a convenience field like `verifiedName: string | undefined` for the first name that passed verification?
 
 -   **No resolvers available:** If the client has no resolvers but has the public key (directly or via magnet), it should still load the community without attempting resolution — the UI should display a warning that `names` are unverified rather than blocking access. Not sure if the warning should be surfaced from pkc-js, I think the hooks should do it.
 
--   **Name ownership transfer:** If a sub owner loses control of one of their names (e.g., domain expires and someone else registers it), that name could start resolving to a different public key. Clients should disregard any name that resolves to a mismatched public key and move on to the next name. But what happens if **all** names resolve to wrong keys (or fail)? One option is to treat this as a critical error and refuse to load the community. Another option is to still allow access via the raw public key from the magnet but display a warning that no names could be verified. This needs further discussion.
+-   **Should `pkcMagnet` include `name` params?** The names in the magnet resolve to the same IPNS key that's already in the `publicKey` param — they don't provide an alternative discovery path. Arguments for and against:
+
+    **For including names:**
+    - Gives the client a human-readable label to display immediately while the IPNS record is loading (which could be slow or fail entirely) — without names, the user just sees a raw `12D3KooW...` key
+    - Useful in sharing contexts (chat, QR code) where the recipient sees a recognizable name before loading anything
+    - Cheap in bytes — a few names add negligible size to the magnet
+
+    **Against including names:**
+    - Names in the magnet are **unverified claims** — a malicious multisub can attach any name to any public key (e.g., `pkc-magnet:?publicKey=EVIL_KEY&name=memes.eth`), and the only way to verify is `verifyNames()` which does an actual blockchain RPC resolution
+    - The authoritative, signed `names` list is already in `subplebbitIpfs.names` once the IPNS record loads — the magnet names are redundant after that point
+    - Adds a source of potential confusion (unverified names in magnet vs. signed names in the record)
+
+    Current leaning: **include them** — the pre-load display UX benefit outweighs the downsides, as long as clients treat them as unverified hints until `verifyNames()` confirms them.
+
+-   **Name ownership transfer:** If a sub owner loses control of one of their names (e.g., domain expires and someone else registers it), that name could start resolving to a different public key. Since key rotation is not supported (see "Community identity" above), a name resolving to a different key always means the name was lost — not that the community migrated. Clients should disregard any name that resolves to a mismatched public key and move on to the next name. If **all** names resolve to wrong keys or fail, the community is still accessible via its public key + HTTP routers — clients should display the community with an "unverified" indicator or fall back to showing the public key, but **never refuse to load it**. The cryptographic key is the identity; names are just aliases.
 
 ## Prerequisite: allow loading subplebbits by public key
 
