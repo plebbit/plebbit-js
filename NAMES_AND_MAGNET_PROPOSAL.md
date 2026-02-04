@@ -84,15 +84,15 @@ We benchmarked the name resolution phase in isolation using the actual [temporar
 
 **39 subs resolving in parallel** (name resolution phase only):
 
-| Metric | Time |
-| --- | --- |
-| First sub resolved | 0.6s |
-| Median per-sub | 4.9s |
-| Average per-sub | 3.9s |
-| P90 per-sub | 6.7s |
-| Slowest per-sub | 6.7s |
+| Metric                       | Time     |
+| ---------------------------- | -------- |
+| First sub resolved           | 0.6s     |
+| Median per-sub               | 4.9s     |
+| Average per-sub              | 3.9s     |
+| P90 per-sub                  | 6.7s     |
+| Slowest per-sub              | 6.7s     |
 | **Total wall time (all 39)** | **7.5s** |
-| Failed (timed out at 120s) | 2 subs |
+| Failed (timed out at 120s)   | 2 subs   |
 
 Resolution timeline showing how rate limiting creates waves of delays:
 
@@ -107,12 +107,21 @@ Resolution timeline showing how rate limiting creates waves of delays:
 ```
 
 Key observations:
-- **Rate limiting creates visible "waves"** — the first ~14 subs resolve in ~1.1s, then RPC providers start throttling (429 Too Many Requests), and the remaining subs stall for 4-6s waiting through exponential backoff.
-- **Infura rate limit notice appeared** — the default ethers.js provider explicitly warned about exceeding the community API key rate limit, even with just 39 parallel requests.
-- **2 subs timed out entirely** at 120s — one had no text record, the other couldn't resolve at all. These block the UI for 2 minutes each.
-- With only 39 subs, the total wall time was 7.5s (for those that succeeded). **At 100+ subs, rate limiting would compound further** — RPC providers that throttle at ~15 concurrent requests would create waves of 6-10s backoff delays, easily pushing total resolution time to 30-60s+ before any IPNS fetching even begins.
+
+-   **Rate limiting creates visible "waves"** — the first ~14 subs resolve in ~1.1s, then RPC providers start throttling (429 Too Many Requests), and the remaining subs stall for 4-6s waiting through exponential backoff.
+-   **Infura rate limit notice appeared** — the default ethers.js provider explicitly warned about exceeding the community API key rate limit, even with just 39 parallel requests.
+-   **2 subs timed out entirely** at 120s — one had no text record, the other couldn't resolve at all. These block the UI for 2 minutes each.
+-   With only 39 subs, the total wall time was 7.5s (for those that succeeded). **At 100+ subs, rate limiting would compound further** — RPC providers that throttle at ~15 concurrent requests would create waves of 6-10s backoff delays, easily pushing total resolution time to 30-60s+ before any IPNS fetching even begins.
 
 **With pkcMagnet: all of the above becomes 0s.** The client skips blockchain RPC entirely and goes straight to IPNS fetching via the public key + HTTP routers embedded in the magnet link. No rate limits, no backoff delays, no timeouts from unresolvable domains.
+
+#### Why not separate `names` + `publicKey` fields in multisubs? Why we need `pkcMagnet` specifically?
+
+A multisub entry could include `names` and `publicKey` as separate JSON fields, letting clients skip blockchain resolution the same way. So why bundle everything into a magnet string?
+
+1.  **HTTP routers are the critical missing piece** — having the `publicKey` alone isn't enough to fetch the IPNS record; the client also needs to know _which HTTP routers_ to query. Without routers, the client falls back to whatever defaults it has, which may not carry announcements for that subplebbit. So you'd need `publicKey` + `names` + `httpRouters` as separate fields — at which point you're reinventing the magnet as individual JSON fields.
+2.  **Portability** — a magnet is a single self-contained string shareable in any context (chat message, QR code, tweet, URL). Separate JSON fields only work within structured multisub data.
+3.  **Freshness via `timestamp`** — clients can compare two magnets for the same community and keep the more recent one. When routers of subplebbit change, the latest magnet reflects that.
 
 ### Discovery hierarchy
 
