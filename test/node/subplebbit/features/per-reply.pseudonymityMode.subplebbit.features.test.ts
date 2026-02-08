@@ -1081,6 +1081,90 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
             }
         });
 
+        it("Spec: author.subplebbit in CommentUpdate does NOT include karma from original author's prior comments when pseudonymityMode is per-reply", async () => {
+            // This test verifies that enabling pseudonymity mode doesn't leak prior karma into new aliases
+            // 1. Author builds karma without pseudonymity mode
+            // 2. Enable pseudonymity mode
+            // 3. Author publishes new comment (gets an alias)
+            // 4. Alias's author.subplebbit should show 0 karma, not the original author's prior karma
+
+            const plebbit = await mockPlebbit();
+            const sub = await createSubWithNoChallenge({}, plebbit);
+
+            // Ensure pseudonymity mode is initially disabled
+            await sub.edit({ features: { pseudonymityMode: undefined } });
+            await sub.start();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
+
+            const author = await plebbit.createSigner();
+            const voter = await plebbit.createSigner();
+
+            try {
+                // Step 1: Build up karma without pseudonymity mode
+                const nonPseudonymousPost = await publishRandomPost(sub.address, plebbit, { signer: author });
+                await waitForStoredCommentUpdateWithAssertions(sub as LocalSubplebbit, nonPseudonymousPost);
+
+                // Upvote the post to give author post karma
+                const upvote = await plebbit.createVote({
+                    subplebbitAddress: sub.address,
+                    commentCid: nonPseudonymousPost.cid,
+                    vote: 1,
+                    signer: voter
+                });
+                await publishWithExpectedResult(upvote, true);
+
+                // Verify original author has post karma
+                await resolveWhenConditionIsTrue({
+                    toUpdate: sub,
+                    predicate: async () => {
+                        const authorSubplebbit = (sub as LocalSubplebbit)._dbHandler.querySubplebbitAuthor(author.address);
+                        return authorSubplebbit?.postScore === 1;
+                    }
+                });
+
+                const originalAuthorKarma = (sub as LocalSubplebbit)._dbHandler.querySubplebbitAuthor(author.address);
+                expect(originalAuthorKarma?.postScore).to.equal(1);
+
+                // Step 2: Enable pseudonymity mode
+                await sub.edit({ features: { pseudonymityMode: "per-reply" } });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: sub,
+                    predicate: async () => sub.features?.pseudonymityMode === "per-reply"
+                });
+
+                // Step 3: Author publishes a new comment (gets an alias)
+                const pseudonymousReply = await publishRandomReply(nonPseudonymousPost as CommentIpfsWithCidDefined, plebbit, {
+                    signer: author
+                });
+                await waitForStoredCommentUpdateWithAssertions(sub as LocalSubplebbit, pseudonymousReply);
+
+                // Step 4: Verify the alias's CommentUpdate shows isolated karma (0), not original author's karma (1)
+                const replyUpdate = (sub as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: pseudonymousReply.cid }) as StoredCommentUpdate;
+
+                // The alias should have its own isolated karma, not the original author's karma
+                expect(replyUpdate?.author?.subplebbit?.postScore).to.equal(0);
+                expect(replyUpdate?.author?.subplebbit?.replyScore).to.equal(0);
+
+                // Verify the alias is different from the original author
+                const aliasRow = (sub as LocalSubplebbit)._dbHandler.queryPseudonymityAliasByCommentCid(pseudonymousReply.cid);
+                expect(aliasRow).to.exist;
+                expect(aliasRow?.originalAuthorSignerPublicKey).to.equal(author.publicKey);
+
+                // Double-check: original author's karma should still be 1
+                const originalAuthorKarmaAfter = (sub as LocalSubplebbit)._dbHandler.querySubplebbitAuthor(author.address);
+                expect(originalAuthorKarmaAfter?.postScore).to.equal(1);
+
+                await nonPseudonymousPost.stop();
+                await pseudonymousReply.stop();
+            } finally {
+                await sub.stop();
+                await plebbit.destroy();
+            }
+        });
+
         it("Spec: banning a reply in per-reply mode surfaces banExpiresAt on that reply and blocks further replies and posts", async () => {
             const localContext = await createPerReplySubplebbit();
             const localAuthor = await localContext.publisherPlebbit.createSigner();

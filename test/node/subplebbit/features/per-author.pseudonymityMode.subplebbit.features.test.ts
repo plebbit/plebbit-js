@@ -885,6 +885,75 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
             }
         });
 
+        it("Spec: author.subplebbit karma IS shared across different posts when pseudonymityMode is per-author", async () => {
+            // In per-author mode, all posts by the same author share the same alias
+            // Karma from post1 SHOULD appear in post2's author.subplebbit
+
+            const localContext = await createPerAuthorSubplebbit();
+            const localAuthor = await localContext.publisherPlebbit.createSigner();
+            const voter = await localContext.publisherPlebbit.createSigner();
+
+            try {
+                // Create first post and upvote it
+                const post1 = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit as LocalSubplebbit, post1);
+
+                const upvotePost1 = await localContext.publisherPlebbit.createVote({
+                    subplebbitAddress: localContext.subplebbit.address,
+                    commentCid: post1.cid,
+                    vote: 1,
+                    signer: voter
+                });
+                await publishWithExpectedResult(upvotePost1, true);
+
+                // Wait for post1 to have postScore = 1
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: async () => {
+                        const update = (localContext.subplebbit as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: post1.cid }) as StoredCommentUpdate | undefined;
+                        return update?.author?.subplebbit?.postScore === 1;
+                    }
+                });
+
+                // Create second post - same alias in per-author mode
+                const post2 = await publishRandomPost(localContext.subplebbit.address, localContext.publisherPlebbit, {
+                    signer: localAuthor
+                });
+                await waitForStoredCommentUpdateWithAssertions(localContext.subplebbit as LocalSubplebbit, post2);
+
+                // Wait for post2's update to reflect the shared karma
+                await resolveWhenConditionIsTrue({
+                    toUpdate: localContext.subplebbit,
+                    predicate: async () => {
+                        const update = (localContext.subplebbit as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: post2.cid }) as StoredCommentUpdate | undefined;
+                        return update?.author?.subplebbit?.postScore === 1;
+                    }
+                });
+
+                // Verify post1's alias has postScore = 1
+                const post1Update = (localContext.subplebbit as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: post1.cid }) as StoredCommentUpdate;
+                expect(post1Update?.author?.subplebbit?.postScore).to.equal(1);
+
+                // Verify post2's alias also has postScore = 1 (shared from post1)
+                const post2Update = (localContext.subplebbit as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: post2.cid }) as StoredCommentUpdate;
+                expect(post2Update?.author?.subplebbit?.postScore).to.equal(1);
+
+                // Verify they have the SAME alias by checking the alias private keys
+                const post1Alias = (localContext.subplebbit as LocalSubplebbit)._dbHandler.queryPseudonymityAliasByCommentCid(post1.cid) as AliasRow;
+                const post2Alias = (localContext.subplebbit as LocalSubplebbit)._dbHandler.queryPseudonymityAliasByCommentCid(post2.cid) as AliasRow;
+                expect(post1Alias).to.exist;
+                expect(post2Alias).to.exist;
+                expect(post1Alias.aliasPrivateKey).to.equal(post2Alias.aliasPrivateKey);
+
+                await post1.stop();
+                await post2.stop();
+            } finally {
+                await localContext.cleanup();
+            }
+        });
+
         it("Spec: author.subplebbit.firstCommentTimestamp is present and matches the first comment time for per-author mode", async () => {
             const localContext = await createPerAuthorSubplebbit();
             const localAuthor = await localContext.publisherPlebbit.createSigner();
@@ -923,6 +992,88 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                 await secondComment.stop();
             } finally {
                 await localContext.cleanup();
+            }
+        });
+
+        it("Spec: author.subplebbit in CommentUpdate does NOT include karma from original author's prior comments when pseudonymityMode is per-author", async () => {
+            // This test verifies that enabling pseudonymity mode doesn't leak prior karma into new aliases
+            // 1. Author builds karma without pseudonymity mode
+            // 2. Enable pseudonymity mode
+            // 3. Author publishes new post (gets a persistent alias for per-author mode)
+            // 4. Alias's author.subplebbit should show 0 karma, not the original author's prior karma
+
+            const plebbit = await mockPlebbit();
+            const sub = await createSubWithNoChallenge({}, plebbit);
+
+            // Ensure pseudonymity mode is initially disabled
+            await sub.edit({ features: { pseudonymityMode: undefined } });
+            await sub.start();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
+
+            const author = await plebbit.createSigner();
+            const voter = await plebbit.createSigner();
+
+            try {
+                // Step 1: Build up karma without pseudonymity mode
+                const nonPseudonymousPost = await publishRandomPost(sub.address, plebbit, { signer: author });
+                await waitForStoredCommentUpdateWithAssertions(sub as LocalSubplebbit, nonPseudonymousPost);
+
+                // Upvote the post to give author post karma
+                const upvote = await plebbit.createVote({
+                    subplebbitAddress: sub.address,
+                    commentCid: nonPseudonymousPost.cid,
+                    vote: 1,
+                    signer: voter
+                });
+                await publishWithExpectedResult(upvote, true);
+
+                // Verify original author has post karma
+                await resolveWhenConditionIsTrue({
+                    toUpdate: sub,
+                    predicate: async () => {
+                        const authorSubplebbit = (sub as LocalSubplebbit)._dbHandler.querySubplebbitAuthor(author.address);
+                        return authorSubplebbit?.postScore === 1;
+                    }
+                });
+
+                const originalAuthorKarma = (sub as LocalSubplebbit)._dbHandler.querySubplebbitAuthor(author.address);
+                expect(originalAuthorKarma?.postScore).to.equal(1);
+
+                // Step 2: Enable pseudonymity mode
+                await sub.edit({ features: { pseudonymityMode: "per-author" } });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: sub,
+                    predicate: async () => sub.features?.pseudonymityMode === "per-author"
+                });
+
+                // Step 3: Author publishes a new post (gets a persistent alias for per-author mode)
+                const pseudonymousPost = await publishRandomPost(sub.address, plebbit, { signer: author });
+                await waitForStoredCommentUpdateWithAssertions(sub as LocalSubplebbit, pseudonymousPost);
+
+                // Step 4: Verify the alias's CommentUpdate shows isolated karma (0), not original author's karma (1)
+                const postUpdate = (sub as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: pseudonymousPost.cid }) as StoredCommentUpdate;
+
+                // The alias should have its own isolated karma, not the original author's karma
+                expect(postUpdate?.author?.subplebbit?.postScore).to.equal(0);
+                expect(postUpdate?.author?.subplebbit?.replyScore).to.equal(0);
+
+                // Verify the alias is different from the original author
+                const aliasRow = (sub as LocalSubplebbit)._dbHandler.queryPseudonymityAliasByCommentCid(pseudonymousPost.cid);
+                expect(aliasRow).to.exist;
+                expect(aliasRow?.originalAuthorSignerPublicKey).to.equal(author.publicKey);
+
+                // Double-check: original author's karma should still be 1
+                const originalAuthorKarmaAfter = (sub as LocalSubplebbit)._dbHandler.querySubplebbitAuthor(author.address);
+                expect(originalAuthorKarmaAfter?.postScore).to.equal(1);
+
+                await nonPseudonymousPost.stop();
+                await pseudonymousPost.stop();
+            } finally {
+                await sub.stop();
+                await plebbit.destroy();
             }
         });
     });
