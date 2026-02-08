@@ -108,16 +108,19 @@ The following dependencies are in the @plebbit namespace and need separate repos
 - [ ] `src/runtime/browser/subplebbit/challenges/` → `src/runtime/browser/community/challenges/`
 
 ### 3.4 Test File Renaming
+
+**Note:** All test files should use the `.test.ts` TypeScript extension (see `test/TYPESCRIPT_MIGRATION_PROGRESS.md`).
+
 All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
-- [ ] `*.subplebbit.test.js` → `*.community.test.js`
+- [ ] `*.subplebbit.test.ts` → `*.community.test.ts`
 
 **test/node/plebbit/** (directory to be renamed to test/node/pkc/):
-- [ ] `plebbit.test.js` → `pkc.test.js`
-- [ ] `validatecomment.plebbit.test.js` → `validatecomment.pkc.test.js`
-- [ ] `started-subplebbits.test.js` → `started-communities.test.js`
+- [ ] `plebbit.test.ts` → `pkc.test.ts`
+- [ ] `validatecomment.plebbit.test.ts` → `validatecomment.pkc.test.ts`
+- [ ] `started-subplebbits.test.ts` → `started-communities.test.ts`
 
 **test/node-and-browser/plebbit/** (directory to be renamed to test/node-and-browser/pkc/):
-- [ ] `_updatingSubplebbits.plebbit.test.js` → `_updatingCommunities.pkc.test.js`
+- [ ] `_updatingSubplebbits.plebbit.test.ts` → `_updatingCommunities.pkc.test.ts`
 
 ---
 
@@ -208,7 +211,10 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `PlebbitParsedOptionsSchema` → `PKCParsedOptionsSchema`
 - [ ] Property: `plebbitRpcClientsOptions` → `pkcRpcClientsOptions`
 
-### 5.2 Subplebbit Schemas (src/subplebbit/schema.ts)
+### 5.2 Author Schemas (src/schema/schema.ts)
+- [ ] `SubplebbitAuthorSchema` → `CommunityAuthorSchema`
+
+### 5.4 Subplebbit Schemas (src/subplebbit/schema.ts)
 - [ ] `SubplebbitEncryptionSchema` → `CommunityEncryptionSchema`
 - [ ] `SubplebbitRoleSchema` → `CommunityRoleSchema`
 - [ ] `SubplebbitRoleNames` → `CommunityRoleNames`
@@ -229,11 +235,11 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `ChallengeExcludeSubplebbitSchema` → `ChallengeExcludeCommunitySchema`
 - [ ] `RpcRemoteSubplebbitUpdateEventResultSchema` → `RpcRemoteCommunityUpdateEventResultSchema`
 
-### 5.3 RPC Client Schemas (src/clients/rpc-client/schema.ts)
+### 5.5 RPC Client Schemas (src/clients/rpc-client/schema.ts)
 - [ ] `RpcSubplebbitAddressParamSchema` → `RpcCommunityAddressParamSchema`
 - [ ] `RpcSubplebbitPageParamSchema` → `RpcCommunityPageParamSchema`
 
-### 5.4 Schema Parser Functions (src/schema/schema-util.ts)
+### 5.6 Schema Parser Functions (src/schema/schema-util.ts)
 - [ ] All `parse*PlebbitErrorIfItFails` → `parse*PKCErrorIfItFails`
 - [ ] All `parse*SubplebbitSchemaWithPlebbitErrorIfItFails` → `parse*CommunitySchemaWithPKCErrorIfItFails`
 
@@ -282,6 +288,9 @@ All test files in test/node/subplebbit/ and test/node-and-browser/subplebbit/:
 - [ ] `commentEdit.subplebbitAddress` → `commentEdit.communityAddress`
 - [ ] `commentModeration.subplebbitAddress` → `commentModeration.communityAddress`
 - [ ] `publication.shortSubplebbitAddress` → `publication.shortCommunityAddress`
+
+### 6.3.1 Author Properties (src/schema/schema.ts)
+- [ ] `author.subplebbit` → `author.community` (property on AuthorIpfsSchema containing community-specific author data)
 
 ### 6.4 Timeout Keys (src/plebbit/plebbit.ts)
 - [ ] `"subplebbit-ipns"` → `"community-ipns"`
@@ -485,72 +494,72 @@ Replace all logger prefixes:
 Rename all test files with "subplebbit" in the name (48 files total):
 
 **test/node/subplebbit/**
-- [ ] `create.subplebbit.test.js` → `create.community.test.js`
-- [ ] `delete.subplebbit.test.js` → `delete.community.test.js`
-- [ ] `edit.subplebbit.test.js` → `edit.community.test.js`
-- [ ] `start.subplebbit.test.js` → `start.community.test.js`
-- [ ] `state.subplebbit.test.js` → `state.community.test.js`
-- [ ] `update.subplebbit.test.js` → `update.community.test.js`
-- [ ] `editable.subplebbit.test.js` → `editable.community.test.js`
-- [ ] `error.start.subplebbit.test.js` → `error.start.community.test.js`
-- [ ] `local.publishing.subplebbit.test.js` → `local.publishing.community.test.js`
-- [ ] `misc.subplebbit.test.js` → `misc.community.test.js`
-- [ ] `updateCid.subplebbit.test.js` → `updateCid.community.test.js`
-- [ ] `unique.migration.db.subplebbit.test.js` → `unique.migration.db.community.test.js`
-- [ ] `db.subplebbit.test.js` → `db.community.test.js`
-- [ ] `commentsToUpdate.db.subplebbit.test.js` → `commentsToUpdate.db.community.test.js`
-- [ ] `parsing.db.subplebbit.test.js` → `parsing.db.community.test.js`
-- [ ] `startedState.subplebbit.test.js` → `startedState.community.test.js`
-- [ ] `stats.subplebbit.test.js` → `stats.community.test.js`
-- [ ] `updatingstate.subplebbit.test.js` → `updatingstate.community.test.js`
-- [ ] `republishing.subplebbit.test.js` → `republishing.community.test.js`
-- [ ] `postUpdates.subplebbit.test.js` → `postUpdates.community.test.js`
-- [ ] `gateway.loading.subplebbit.test.js` → `gateway.loading.community.test.js`
-- [ ] `commentUpdate.fields.db.subplebbit.test.js` → `commentUpdate.fields.db.community.test.js`
-- [ ] `unique.publishing.subplebbit.test.js` → `unique.publishing.community.test.js`
-- [ ] `garbage.collection.subplebbit.test.js` → `garbage.collection.community.test.js`
+- [ ] `create.subplebbit.test.ts` → `create.community.test.ts`
+- [ ] `delete.subplebbit.test.ts` → `delete.community.test.ts`
+- [ ] `edit.subplebbit.test.ts` → `edit.community.test.ts`
+- [ ] `start.subplebbit.test.ts` → `start.community.test.ts`
+- [ ] `state.subplebbit.test.ts` → `state.community.test.ts`
+- [ ] `update.subplebbit.test.ts` → `update.community.test.ts`
+- [ ] `editable.subplebbit.test.ts` → `editable.community.test.ts`
+- [ ] `error.start.subplebbit.test.ts` → `error.start.community.test.ts`
+- [ ] `local.publishing.subplebbit.test.ts` → `local.publishing.community.test.ts`
+- [ ] `misc.subplebbit.test.ts` → `misc.community.test.ts`
+- [ ] `updateCid.subplebbit.test.ts` → `updateCid.community.test.ts`
+- [ ] `unique.migration.db.subplebbit.test.ts` → `unique.migration.db.community.test.ts`
+- [ ] `db.subplebbit.test.ts` → `db.community.test.ts`
+- [ ] `commentsToUpdate.db.subplebbit.test.ts` → `commentsToUpdate.db.community.test.ts`
+- [ ] `parsing.db.subplebbit.test.ts` → `parsing.db.community.test.ts`
+- [ ] `startedState.subplebbit.test.ts` → `startedState.community.test.ts`
+- [ ] `stats.subplebbit.test.ts` → `stats.community.test.ts`
+- [ ] `updatingstate.subplebbit.test.ts` → `updatingstate.community.test.ts`
+- [ ] `republishing.subplebbit.test.ts` → `republishing.community.test.ts`
+- [ ] `postUpdates.subplebbit.test.ts` → `postUpdates.community.test.ts`
+- [ ] `gateway.loading.subplebbit.test.ts` → `gateway.loading.community.test.ts`
+- [ ] `commentUpdate.fields.db.subplebbit.test.ts` → `commentUpdate.fields.db.community.test.ts`
+- [ ] `unique.publishing.subplebbit.test.ts` → `unique.publishing.community.test.ts`
+- [ ] `garbage.collection.subplebbit.test.ts` → `garbage.collection.community.test.ts`
 
 **test/node/subplebbit/ipns/**
-- [ ] `resolve.ipns.subplebbit.test.js` → `resolve.ipns.community.test.js`
+- [ ] `resolve.ipns.subplebbit.test.ts` → `resolve.ipns.community.test.ts`
 
 **test/node/subplebbit/modqueue/**
-- [ ] `modqueue.subplebbit.test.js` → `modqueue.community.test.js`
-- [ ] `purge.expire.rejection.modqueue.subplebbit.test.js` → `purge.expire.rejection.modqueue.community.test.js`
-- [ ] `approved.modqueue.subplebbit.test.js` → `approved.modqueue.community.test.js`
-- [ ] `limit.modqueue.subplebbit.test.js` → `limit.modqueue.community.test.js`
-- [ ] `page.modqueue.subplebbit.test.js` → `page.modqueue.community.test.js`
-- [ ] `pendingapproval.modqueue.subplebbit.test.js` → `pendingapproval.modqueue.community.test.js`
-- [ ] `rejection.modqueue.subplebbit.test.js` → `rejection.modqueue.community.test.js`
+- [ ] `modqueue.subplebbit.test.ts` → `modqueue.community.test.ts`
+- [ ] `purge.expire.rejection.modqueue.subplebbit.test.ts` → `purge.expire.rejection.modqueue.community.test.ts`
+- [ ] `approved.modqueue.subplebbit.test.ts` → `approved.modqueue.community.test.ts`
+- [ ] `limit.modqueue.subplebbit.test.ts` → `limit.modqueue.community.test.ts`
+- [ ] `page.modqueue.subplebbit.test.ts` → `page.modqueue.community.test.ts`
+- [ ] `pendingapproval.modqueue.subplebbit.test.ts` → `pendingapproval.modqueue.community.test.ts`
+- [ ] `rejection.modqueue.subplebbit.test.ts` → `rejection.modqueue.community.test.ts`
 
 **test/node/subplebbit/page-generation/**
-- [ ] `chunking.page.generation.subplebbit.test.js` → `chunking.page.generation.community.test.js`
-- [ ] `edgecases.page.generation.subplebbit.test.js` → `edgecases.page.generation.community.test.js`
+- [ ] `chunking.page.generation.subplebbit.test.ts` → `chunking.page.generation.community.test.ts`
+- [ ] `edgecases.page.generation.subplebbit.test.ts` → `edgecases.page.generation.community.test.ts`
 
 **test/node/subplebbit/features/**
-- [ ] `features.subplebbit.test.js` → `features.community.test.js`
-- [ ] `per-post.pseudonymityMode.subplebbit.features.test.js` → `per-post.pseudonymityMode.community.features.test.js`
-- [ ] `per-reply.pseudonymityMode.subplebbit.features.test.js` → `per-reply.pseudonymityMode.community.features.test.js`
-- [ ] `per-author.pseudonymityMode.subplebbit.features.test.js` → `per-author.pseudonymityMode.community.features.test.js`
+- [ ] `features.subplebbit.test.ts` → `features.community.test.ts`
+- [ ] `per-post.pseudonymityMode.subplebbit.features.test.ts` → `per-post.pseudonymityMode.community.features.test.ts`
+- [ ] `per-reply.pseudonymityMode.subplebbit.features.test.ts` → `per-reply.pseudonymityMode.community.features.test.ts`
+- [ ] `per-author.pseudonymityMode.subplebbit.features.test.ts` → `per-author.pseudonymityMode.community.features.test.ts`
 
 **test/node/plebbit/**
-- [ ] `started-subplebbits.test.js` → `started-communities.test.js`
+- [ ] `started-subplebbits.test.ts` → `started-communities.test.ts`
 
 **test/node-and-browser/subplebbit/**
-- [ ] `state.subplebbit.test.js` → `state.community.test.js`
-- [ ] `backward.compatibility.subplebbit.test.js` → `backward.compatibility.community.test.js`
-- [ ] `updateCid.subplebbit.test.js` → `updateCid.community.test.js`
-- [ ] `getsubplebbit.plebbit.test.js` → `getcommunity.pkc.test.js`
-- [ ] `createsubplebbit.plebbit.test.js` → `createcommunity.pkc.test.js`
-- [ ] `update.subplebbit.test.js` → `update.community.test.js`
+- [ ] `state.subplebbit.test.ts` → `state.community.test.ts`
+- [ ] `backward.compatibility.subplebbit.test.ts` → `backward.compatibility.community.test.ts`
+- [ ] `updateCid.subplebbit.test.ts` → `updateCid.community.test.ts`
+- [ ] `getsubplebbit.plebbit.test.ts` → `getcommunity.pkc.test.ts`
+- [ ] `createsubplebbit.plebbit.test.ts` → `createcommunity.pkc.test.ts`
+- [ ] `update.subplebbit.test.ts` → `update.community.test.ts`
 
 **test/node-and-browser/subplebbit/ipns/**
-- [ ] `ipns.fields.subplebbit.test.js` → `ipns.fields.community.test.js`
+- [ ] `ipns.fields.subplebbit.test.ts` → `ipns.fields.community.test.ts`
 
 **test/node-and-browser/signatures/**
-- [ ] `subplebbit.test.js` → `community.test.js`
+- [ ] `subplebbit.test.ts` → `community.test.ts`
 
 **test/node-and-browser/publications/subplebbit-edit/**
-- [ ] `subplebbit.edit.publication.test.js` → `community.edit.publication.test.js`
+- [ ] `subplebbit.edit.publication.test.ts` → `community.edit.publication.test.ts`
 
 ### 11.2 Test Content Updates
 - [ ] Update all test imports to use new module paths
@@ -977,6 +986,21 @@ const plebbit = await PKC({
 - At resolve time, finds config by TLD, looks up resolver in `PKC.domainResolvers`, passes `chainProviders` to `resolve()`
 - If no matching resolver found, throws `ERR_NO_RESOLVER_FOR_TLD`
 - Challenges merge URLs from all resolver configs with matching chainTicker
+
+**RPC-Side Resolution:**
+
+Domain resolution must happen on the RPC server side, not the client side. This allows RPC clients to resolve domain names even if they have zero resolvers configured locally.
+
+- When an RPC client calls `getCommunity("memes.eth")`, the RPC server performs the resolution using its own registered resolvers
+- RPC clients don't need `domainResolvers` config - they delegate resolution to the server
+- The RPC server returns the resolved IPNS address to the client
+- This is important for lightweight clients (browsers, mobile) that shouldn't need web3 dependencies
+
+**Implementation considerations:**
+- [ ] Ensure `getSubplebbit` / `getCommunity` RPC method resolves domains server-side
+- [ ] RPC client should NOT attempt local resolution before calling RPC
+- [ ] `subplebbitUpdateSubscribe` / `communityUpdateSubscribe` should accept domain names and resolve server-side
+- [ ] Document that RPC servers need resolvers configured, not RPC clients
 
 ### 17.2 External Challenge Registration
 
