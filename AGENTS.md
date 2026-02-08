@@ -7,6 +7,7 @@
 -   You should never use removeAllListeners because it removes error listener initialized in constructor which may cause process to crash
 -   If you need to troubleshoot or debug anything related to a local subplebbit, you can run sqlite queries against its database at `${plebbitDataPath}/subplebbits/${subplebbitAddress}`
 -   You can't add code that only works in node under src/, it has to be under src/runtime/node, or otherwise it will fail browser build
+-   Tests that use `LocalSubplebbit` or other Node-only types must be placed under `test/node/`, not `test/node-and-browser/`. The `test/node-and-browser/` directory is for tests that can run in both environments.
 -   Do not include this.timeout in tests, that is not supported by vitest
 -   When I report a bug or regression to you we need to figure out how to reproduce it determinstically in a test case first and then we can brainstorm how to fix it.
 -   Test files should be written in TypeScript (.test.ts). The test runner will type-check all TypeScript test files before running them.

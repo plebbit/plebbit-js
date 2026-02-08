@@ -958,10 +958,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const modSignerAddress = await getPlebbitAddressFromPublicKey(commentModRaw.signature.publicKey);
 
+        // Determine the target author signer address if this moderation affects the author (ban/flair)
+        let targetAuthorSignerAddress: string | undefined;
+        if (strippedOutModPublication.commentModeration.author) {
+            // Check if the comment was published with pseudonymity - if so, get the original author address
+            const aliasInfo = this._dbHandler.queryPseudonymityAliasByCommentCid(commentModRaw.commentCid);
+            if (aliasInfo) {
+                targetAuthorSignerAddress = await getPlebbitAddressFromPublicKey(aliasInfo.originalAuthorSignerPublicKey);
+            } else {
+                targetAuthorSignerAddress = commentToBeEdited.authorSignerAddress;
+            }
+        }
+
         const modTableRow = <CommentModerationTableRow>{
             ...strippedOutModPublication,
             modSignerAddress,
-            insertedAt: timestamp()
+            insertedAt: timestamp(),
+            targetAuthorSignerAddress
         };
 
         const isCommentModDuplicate = this._dbHandler.hasCommentModerationWithSignatureEncoded(modTableRow.signature.signature);

@@ -54,7 +54,8 @@ export const CommentModerationPubsubMessagePublicationSchema = CreateCommentMode
 export const CommentModerationsTableRowSchema = CommentModerationPubsubMessagePublicationSchema.extend({
     insertedAt: PlebbitTimestampSchema,
     modSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    extraProps: z.looseObject({}).optional()
+    extraProps: z.looseObject({}).optional(),
+    targetAuthorSignerAddress: SignerWithAddressPublicKeySchema.shape.address.optional() // the signer address of the comment author being moderated (for bans/flairs)
 });
 
 export const CommentModerationChallengeRequestToEncryptSchema = CreateCommentModerationOptionsSchema.shape.challengeRequest
