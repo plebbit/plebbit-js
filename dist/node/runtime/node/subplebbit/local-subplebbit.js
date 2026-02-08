@@ -959,7 +959,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
         else if (request.comment) {
             const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
-            const storedComment = await this.storeComment({ commentPubsub: publication, pendingApproval, pseudonymityMode: anonymity?.mode });
+            const storedComment = await this.storeComment({
+                commentPubsub: publication,
+                pendingApproval,
+                pseudonymityMode: anonymity?.mode
+            });
             if (anonymity)
                 this._dbHandler.insertPseudonymityAliases([
                     {
@@ -2281,8 +2285,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         for (const clientType of clientKeys)
             if (this.clients[clientType])
                 for (const clientUrl of Object.keys(this.clients[clientType])) {
-                    if (clientType !== "chainProviders")
-                        this.clients[clientType][clientUrl].mirror(this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl]);
+                    if (clientType !== "chainProviders") {
+                        if (clientUrl in this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType])
+                            this.clients[clientType][clientUrl].mirror(this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl]);
+                    }
                     else
                         for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                             if (clientUrlDeeper in this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl])
