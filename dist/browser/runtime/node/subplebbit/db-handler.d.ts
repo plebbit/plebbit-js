@@ -86,6 +86,7 @@ export declare class DbHandler {
     _createOrMigrateTablesIfNeeded(): Promise<void>;
     private _tableExists;
     private _backfillApprovedCommentNumbers;
+    private _backfillTargetAuthorSignerAddress;
     private _getColumnNames;
     private _copyTable;
     private _purgePublicationTablesWithDuplicateSignatures;

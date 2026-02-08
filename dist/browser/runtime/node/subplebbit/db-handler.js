@@ -307,10 +307,11 @@ export class DbHandler {
                 modSignerAddress TEXT NOT NULL,
                 protocolVersion TEXT NOT NULL,
                 subplebbitAddress TEXT NOT NULL,
-                timestamp INTEGER CHECK(timestamp > 0) NOT NULL, 
+                timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
                 commentModeration TEXT NOT NULL, -- JSON
-                insertedAt INTEGER NOT NULL, 
-                extraProps TEXT NULLABLE -- JSON
+                insertedAt INTEGER NOT NULL,
+                extraProps TEXT NULLABLE, -- JSON
+                targetAuthorSignerAddress TEXT NULLABLE -- the signer address of the comment author being moderated (for bans/flairs)
             )
         `);
     }
@@ -401,6 +402,8 @@ export class DbHandler {
             await this._purgePublicationTablesWithDuplicateSignatures();
             if (currentDbVersion < 29)
                 this._backfillApprovedCommentNumbers();
+            if (currentDbVersion < 31)
+                this._backfillTargetAuthorSignerAddress();
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
             await this.initDbIfNeeded(); // to init keyv
@@ -461,6 +464,47 @@ export class DbHandler {
         });
         updateMany(comments);
         log(`Backfilled number/postNumber for ${comments.length} non-pending comments`);
+    }
+    _backfillTargetAuthorSignerAddress() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_backfillTargetAuthorSignerAddress");
+        // Find comment moderations that have author-related edits (bans/flairs) but no targetAuthorSignerAddress
+        const moderationsToUpdate = this._db
+            .prepare(`
+            SELECT cm.rowid, cm.commentCid, c.authorSignerAddress,
+                   pa.originalAuthorSignerPublicKey
+            FROM ${TABLES.COMMENT_MODERATIONS} cm
+            LEFT JOIN ${TABLES.COMMENTS} c ON cm.commentCid = c.cid
+            LEFT JOIN ${TABLES.PSEUDONYMITY_ALIASES} pa ON cm.commentCid = pa.commentCid
+            WHERE cm.targetAuthorSignerAddress IS NULL
+              AND json_extract(cm.commentModeration, '$.author') IS NOT NULL
+        `)
+            .all();
+        if (moderationsToUpdate.length === 0)
+            return;
+        const updateStmt = this._db.prepare(`UPDATE ${TABLES.COMMENT_MODERATIONS} SET targetAuthorSignerAddress = ? WHERE rowid = ?`);
+        const updateMany = this._db.transaction((items) => {
+            for (const mod of items) {
+                let targetAddress = null;
+                // If the comment was published with pseudonymity, use the original author's address
+                if (mod.originalAuthorSignerPublicKey) {
+                    try {
+                        targetAddress = getPlebbitAddressFromPublicKeySync(mod.originalAuthorSignerPublicKey);
+                    }
+                    catch {
+                        // If we can't derive the address from the public key, fall back to authorSignerAddress
+                        targetAddress = mod.authorSignerAddress;
+                    }
+                }
+                else {
+                    targetAddress = mod.authorSignerAddress;
+                }
+                if (targetAddress) {
+                    updateStmt.run(targetAddress, mod.rowid);
+                }
+            }
+        });
+        updateMany(moderationsToUpdate);
+        log(`Backfilled targetAuthorSignerAddress for ${moderationsToUpdate.length} comment moderations`);
     }
     _getColumnNames(tableName) {
         const results = this._db.pragma(`table_info(${tableName})`);
@@ -770,8 +814,8 @@ export class DbHandler {
         const columnNames = this._getColumnNames(TABLES.COMMENT_MODERATIONS);
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_MODERATIONS}
-            (commentCid, author, signature, modSignerAddress, protocolVersion, subplebbitAddress, timestamp, commentModeration, insertedAt, extraProps)
-            VALUES (@commentCid, @author, @signature, @modSignerAddress, @protocolVersion, @subplebbitAddress, @timestamp, @commentModeration, @insertedAt, @extraProps)
+            (commentCid, author, signature, modSignerAddress, protocolVersion, subplebbitAddress, timestamp, commentModeration, insertedAt, extraProps, targetAuthorSignerAddress)
+            VALUES (@commentCid, @author, @signature, @modSignerAddress, @protocolVersion, @subplebbitAddress, @timestamp, @commentModeration, @insertedAt, @extraProps, @targetAuthorSignerAddress)
         `);
         const defaults = remeda.mapToObj(columnNames, (column) => [column, null]);
         const insertMany = this._db.transaction((items) => {
@@ -1651,19 +1695,14 @@ export class DbHandler {
     queryAuthorModEdits(authorSignerAddresses) {
         if (authorSignerAddresses.length === 0)
             return {};
-        const placeholdersForAuthors = authorSignerAddresses.map(() => "?").join(",");
-        const authorCommentCids = this._db
-            .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE authorSignerAddress IN (${placeholdersForAuthors})`)
-            .all(...authorSignerAddresses).map((r) => r.cid);
-        if (authorCommentCids.length === 0)
-            return {};
-        const placeholders = authorCommentCids.map(() => "?").join(",");
+        const placeholders = authorSignerAddresses.map(() => "?").join(",");
+        // Query directly by targetAuthorSignerAddress to find bans/flairs even for purged comments
         const modAuthorEditsRaw = this._db
             .prepare(`
             SELECT json_extract(commentModeration, '$.author') AS commentAuthorJson FROM ${TABLES.COMMENT_MODERATIONS}
-            WHERE commentCid IN (${placeholders}) AND json_extract(commentModeration, '$.author') IS NOT NULL ORDER BY rowid DESC
+            WHERE targetAuthorSignerAddress IN (${placeholders}) AND json_extract(commentModeration, '$.author') IS NOT NULL ORDER BY rowid DESC
         `)
-            .all(...authorCommentCids);
+            .all(...authorSignerAddresses);
         const modAuthorEdits = modAuthorEditsRaw.map((r) => JSON.parse(r.commentAuthorJson));
         const banAuthor = modAuthorEdits.find((modEdit) => typeof modEdit?.banExpiresAt === "number");
         const authorFlairByMod = modAuthorEdits.find((modEdit) => modEdit?.flair);
@@ -1720,6 +1759,8 @@ export class DbHandler {
         if (authorSignerAddressArray.length === 0)
             return undefined;
         const placeholders = authorSignerAddressArray.map(() => "?").join(", ");
+        // Check for bans/flairs first - these should persist even if comments are purged
+        const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddressArray);
         const authorCommentsData = this._db
             .prepare(`
             SELECT c.depth, c.rowid, c.timestamp, c.cid,
@@ -1729,8 +1770,13 @@ export class DbHandler {
             WHERE c.authorSignerAddress IN (${placeholders}) GROUP BY c.cid
         `)
             .all(...authorSignerAddressArray);
-        if (authorCommentsData.length === 0)
+        // If author has no comments but has a ban, return ban info
+        if (authorCommentsData.length === 0) {
+            if (Object.keys(modAuthorEdits).length > 0) {
+                return modAuthorEdits;
+            }
             return undefined;
+        }
         const authorPosts = authorCommentsData.filter((c) => c.depth === 0);
         const authorReplies = authorCommentsData.filter((c) => c.depth > 0);
         const postScore = remeda.sumBy(authorPosts, (p) => p.upvoteCount) - remeda.sumBy(authorPosts, (p) => p.downvoteCount);
@@ -1741,7 +1787,6 @@ export class DbHandler {
         const firstCommentTimestamp = remeda.minBy(authorCommentsData, (c) => c.rowid)?.timestamp;
         if (typeof firstCommentTimestamp !== "number")
             throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
-        const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddressArray);
         return { postScore, replyScore, lastCommentCid, ...modAuthorEdits, firstCommentTimestamp };
     }
     _getAllDescendantCids(cid) {

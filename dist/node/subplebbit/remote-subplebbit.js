@@ -443,6 +443,8 @@ export class RemoteSubplebbit extends TypedEmitter {
         this._updatingSubInstanceWithListeners = undefined;
     }
     async stop() {
+        if (this.state === "stopped")
+            return; // no-op if already stopped, mirrors update()'s idempotency
         if (this.state !== "updating")
             throw new PlebbitError("ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE", { address: this.address });
         const log = Logger("plebbit-js:remote-subplebbit:stop");
