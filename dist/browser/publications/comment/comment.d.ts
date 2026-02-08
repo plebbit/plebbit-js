@@ -27,6 +27,7 @@ export declare class Comment extends Publication implements Partial<CommentUpdat
     previousCid?: CommentIpfsType["previousCid"];
     depth?: CommentIpfsType["depth"];
     postCid?: CommentIpfsType["postCid"];
+    pseudonymityMode?: CommentIpfsType["pseudonymityMode"];
     linkHtmlTagName?: CommentPubsubMessagePublication["linkHtmlTagName"];
     original?: CommentWithinRepliesPostsPageJson["original"];
     upvoteCount?: CommentUpdateType["upvoteCount"];

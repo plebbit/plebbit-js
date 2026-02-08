@@ -60,6 +60,11 @@ export declare const RpcCommentEventResultSchema: z.ZodObject<{
     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodString>;
+    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+        "per-post": "per-post";
+        "per-reply": "per-reply";
+        "per-author": "per-author";
+    }>>;
 }, z.core.$loose>;
 export declare const RpcCommentUpdateResultSchema: z.ZodObject<{
     cid: z.ZodString;
@@ -228,6 +233,11 @@ export declare const RpcCommentUpdateResultSchema: z.ZodObject<{
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject</*elided*/ any, z.core.$loose>;
             }, z.core.$strip>>>;

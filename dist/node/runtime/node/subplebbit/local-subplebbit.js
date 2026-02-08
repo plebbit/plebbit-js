@@ -872,13 +872,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         });
         return commentEditSignedByAlias;
     }
-    async storeComment(commentPubsub, pendingApproval) {
+    async storeComment(opts) {
+        const { commentPubsub, pendingApproval, pseudonymityMode } = opts;
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storeComment");
         const commentIpfs = {
             ...commentPubsub,
             ...(await this._calculateLinkProps(commentPubsub.link)),
             ...(this.isPublicationPost(commentPubsub) && (await this._calculateLatestPostProps())),
-            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub)))
+            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub))),
+            ...(pseudonymityMode ? { pseudonymityMode } : {})
         };
         const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
         const file = pendingApproval
@@ -944,7 +946,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
         else if (request.comment) {
             const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
-            const storedComment = await this.storeComment(publication, pendingApproval);
+            const storedComment = await this.storeComment({ commentPubsub: publication, pendingApproval, pseudonymityMode: anonymity?.mode });
             if (anonymity)
                 this._dbHandler.insertPseudonymityAliases([
                     {

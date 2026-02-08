@@ -92,6 +92,7 @@ export declare function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(mod
             thumbnailUrlWidth?: number | undefined;
             thumbnailUrlHeight?: number | undefined;
             previousCid?: string | undefined;
+            pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
         };
         commentUpdate: {
             [x: string]: unknown;
@@ -252,6 +253,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                         thumbnailUrlWidth?: number | undefined;
                         thumbnailUrlHeight?: number | undefined;
                         previousCid?: string | undefined;
+                        pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
                     };
                     commentUpdate: {
                         [x: string]: unknown;
@@ -1211,6 +1213,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
                     previousCid?: string | undefined;
+                    pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
                 };
                 commentUpdate: {
                     [x: string]: unknown;
@@ -1675,6 +1678,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
                     previousCid?: string | undefined;
+                    pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
                 };
                 commentUpdate: {
                     [x: string]: unknown;
@@ -1920,6 +1924,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
                     previousCid?: string | undefined;
+                    pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
                 };
                 commentUpdate: {
                     [x: string]: unknown;
@@ -2384,6 +2389,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
                     previousCid?: string | undefined;
+                    pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
                 };
                 commentUpdate: {
                     [x: string]: unknown;

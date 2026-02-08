@@ -464,6 +464,11 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodString>;
+    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+        "per-post": "per-post";
+        "per-reply": "per-reply";
+        "per-author": "per-author";
+    }>>;
 }, z.core.$strict>;
 export declare const CommentIpfsWithRefinmentSchema: z.ZodObject<{
     timestamp: z.ZodNumber;
@@ -525,6 +530,11 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodObject<{
     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodString>;
+    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+        "per-post": "per-post";
+        "per-reply": "per-reply";
+        "per-author": "per-author";
+    }>>;
 }, z.core.$strict>;
 export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
     address: z.ZodString;
@@ -735,6 +745,11 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject</*elided*/ any, z.core.$loose>;
             }, z.core.$strip>>>;
@@ -924,6 +939,11 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodString>;
+    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+        "per-post": "per-post";
+        "per-reply": "per-reply";
+        "per-author": "per-author";
+    }>>;
     cid: z.ZodString;
     postCid: z.ZodString;
     insertedAt: z.ZodNumber;
@@ -1100,6 +1120,11 @@ export declare const CommentUpdateTableRowSchema: z.ZodObject<{
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;

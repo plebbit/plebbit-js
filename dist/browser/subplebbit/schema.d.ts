@@ -548,6 +548,11 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
@@ -873,6 +878,11 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                         thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                         thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                         previousCid: z.ZodOptional<z.ZodString>;
+                        pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                            "per-post": "per-post";
+                            "per-reply": "per-reply";
+                            "per-author": "per-author";
+                        }>>;
                     }, z.core.$loose>;
                     commentUpdate: z.ZodObject<{
                         cid: z.ZodString;
@@ -1316,6 +1326,11 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
@@ -2022,6 +2037,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
@@ -2240,6 +2260,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
@@ -2680,6 +2705,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
@@ -2898,6 +2928,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
@@ -3556,6 +3591,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
@@ -3774,6 +3814,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     thumbnailUrlWidth: z.ZodOptional<z.ZodNumber>;
                     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
                     previousCid: z.ZodOptional<z.ZodString>;
+                    pseudonymityMode: z.ZodOptional<z.ZodEnum<{
+                        "per-post": "per-post";
+                        "per-reply": "per-reply";
+                        "per-author": "per-author";
+                    }>>;
                 }, z.core.$loose>;
                 commentUpdate: z.ZodObject<{
                     cid: z.ZodString;
