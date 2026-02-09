@@ -1687,6 +1687,41 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     return messages.ERR_REPLY_POST_CID_IS_NOT_PARENT_OF_REPLY;
             }
 
+            // Validate quotedCids
+            if (commentPublication.quotedCids && commentPublication.quotedCids.length > 0) {
+                // Check for duplicates
+                const uniqueQuotedCids = new Set(commentPublication.quotedCids);
+                if (uniqueQuotedCids.size !== commentPublication.quotedCids.length) {
+                    return messages.ERR_QUOTED_CIDS_HAS_DUPLICATES;
+                }
+
+                // Only replies can have quotedCids
+                if (!commentPublication.parentCid) {
+                    return messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS;
+                }
+
+                const threadPostCid = commentPublication.postCid!; // postCid is always defined for replies
+
+                for (const quotedCid of commentPublication.quotedCids) {
+                    // 1. Check existence
+                    const quotedComment = this._dbHandler.queryComment(quotedCid);
+                    if (!quotedComment) {
+                        return messages.ERR_QUOTED_CID_DOES_NOT_EXIST;
+                    }
+
+                    // 2. Check quoted comment is under the same post
+                    const quotedPostCid = quotedComment.depth === 0 ? quotedComment.cid : quotedComment.postCid;
+                    if (quotedPostCid !== threadPostCid) {
+                        return messages.ERR_QUOTED_CID_NOT_UNDER_POST;
+                    }
+
+                    // 3. Check not pending approval
+                    if (quotedComment.pendingApproval) {
+                        return messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL;
+                    }
+                }
+            }
+
             const isCommentDuplicate = this._dbHandler.hasCommentWithSignatureEncoded(commentPublication.signature.signature);
             if (isCommentDuplicate) return messages.ERR_DUPLICATE_COMMENT;
         } else if (request.vote) {

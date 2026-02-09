@@ -151,7 +151,8 @@ describe("createSchemaRowParser", () => {
             spoiler: null,
             nsfw: null,
             pendingApproval: null,
-            extraProps: null
+            extraProps: null,
+            quotedCids: null
         };
 
         const parsed = parseCommentsTableRow(rawRow);
@@ -161,6 +162,31 @@ describe("createSchemaRowParser", () => {
         expect(parsed.flair).to.be.undefined;
         expect(parsed.pendingApproval).to.be.undefined;
         expect(parsed.extraProps).to.be.undefined;
+        expect(parsed.quotedCids).to.be.undefined;
+    });
+
+    it("parses quotedCids from JSON string to array", () => {
+        const signature = buildSignature();
+        const quotedCids = ["QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f", "QmX7yV8dWgyMUiw5DSBt5ABToBWqi55GVEtnidAbNGGFoG"];
+        const rawRow: Record<string, string | number | null> = {
+            cid: "QmZg4TCKqKoMTVHCpQbVmGBkcGaA4vHwaC7xaoZ3nfJm8k",
+            postCid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f",
+            parentCid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f",
+            depth: 1,
+            authorSignerAddress: "signer",
+            subplebbitAddress: "sub",
+            timestamp: 1700000500,
+            insertedAt: 1700000501,
+            protocolVersion: "1",
+            author: JSON.stringify({ address: "authorAddress" }),
+            signature: JSON.stringify(signature),
+            content: "Reply with quotes",
+            quotedCids: JSON.stringify(quotedCids)
+        };
+
+        const parsed = parseCommentsTableRow(rawRow);
+
+        expect(parsed.quotedCids).to.deep.equal(quotedCids);
     });
 });
 

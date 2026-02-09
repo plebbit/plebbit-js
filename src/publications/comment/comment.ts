@@ -69,6 +69,7 @@ export class Comment
     thumbnailUrlHeight?: CommentIpfsType["thumbnailUrlHeight"];
     cid?: CommentIpfsWithCidPostCidDefined["cid"];
     parentCid?: CommentIpfsType["parentCid"];
+    quotedCids?: CommentPubsubMessagePublication["quotedCids"];
     content?: CommentPubsubMessagePublication["content"];
     // Props that get defined after challengeverification
     previousCid?: CommentIpfsType["previousCid"];
@@ -196,6 +197,7 @@ export class Comment
         this.nsfw = props.nsfw;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
+        this.quotedCids = props.quotedCids;
         // Initializing Comment Ipfs props
         if ("depth" in props && typeof props.depth === "number") {
             this.depth = props.depth;

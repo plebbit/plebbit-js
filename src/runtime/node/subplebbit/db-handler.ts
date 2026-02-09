@@ -297,6 +297,7 @@ export class DbHandler {
                 postNumber INTEGER NULLABLE,
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 pseudonymityMode TEXT NULLABLE,
+                quotedCids TEXT NULLABLE, -- JSON array
                 extraProps TEXT NULLABLE, -- JSON
                 protocolVersion TEXT NOT NULL,
                 insertedAt INTEGER NOT NULL
@@ -970,8 +971,8 @@ export class DbHandler {
         // Adding a new column to the comments table requires updating this list manually, which is error-prone.
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENTS}
-            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, pendingApproval, number, postNumber, nsfw, pseudonymityMode, extraProps, protocolVersion, insertedAt)
-            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @pendingApproval, @number, @postNumber, @nsfw, @pseudonymityMode, @extraProps, @protocolVersion, @insertedAt)
+            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, pendingApproval, number, postNumber, nsfw, pseudonymityMode, quotedCids, extraProps, protocolVersion, insertedAt)
+            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @pendingApproval, @number, @postNumber, @nsfw, @pseudonymityMode, @quotedCids, @extraProps, @protocolVersion, @insertedAt)
         `);
 
         // Create default object with null values for all columns
@@ -2641,7 +2642,7 @@ export class DbHandler {
         return records.map((record) => {
             const processed = { ...record };
             for (const [key, value] of remeda.entries(processed)) {
-                if (remeda.isPlainObject(value)) (processed as any)[key] = JSON.stringify(value);
+                if (remeda.isPlainObject(value) || Array.isArray(value)) (processed as any)[key] = JSON.stringify(value);
                 else if (typeof value === "boolean") (processed as any)[key] = value ? 1 : 0;
             }
             return processed;
