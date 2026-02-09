@@ -171,6 +171,23 @@ export declare class DbHandler {
     queryAllCommentsOrderedByIdAsc(): CommentsTableRow[];
     queryAuthorModEdits(authorSignerAddresses: string[]): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
     querySubplebbitAuthor(authorSignerAddress: string): SubplebbitAuthor | undefined;
+    /** Shared helper: query karma for a set of addresses, with optional separate addresses for mod edits */
+    private _querySubplebbitAuthorByAddresses;
+    /**
+     * Returns author.subplebbit for CommentUpdates, respecting pseudonymity mode boundaries.
+     *
+     * The alias address already encodes the isolation boundary:
+     * - per-reply: Each reply has a unique alias, so querying by alias = that one comment's karma
+     * - per-post: All comments in a thread share an alias, so querying by alias = thread karma
+     * - per-author: One alias for all comments, so querying by alias = total karma
+     *
+     * We query karma for ONLY the alias address (no lookup to other aliases like querySubplebbitAuthor does),
+     * but include mod edits from both alias and original author.
+     */
+    querySubplebbitAuthorForCommentUpdate(opts: {
+        authorSignerAddress: string;
+        commentCid: string;
+    }): SubplebbitAuthor | undefined;
     private _getAllDescendantCids;
     purgeComment(cid: string, isNestedCall?: boolean): PurgedCommentTableRows[];
     changeDbFilename(oldDbName: string, newDbName: string): Promise<void>;

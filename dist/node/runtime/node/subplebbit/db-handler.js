@@ -658,7 +658,12 @@ export class DbHandler {
                 ...commentEditRecord.signature.signedPropertyNames,
                 "signature"
             ]);
-            const validRes = await verifyCommentEdit({ edit: commentEditPubsub, resolveAuthorAddresses: false, clientsManager: this._subplebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+            const validRes = await verifyCommentEdit({
+                edit: commentEditPubsub,
+                resolveAuthorAddresses: false,
+                clientsManager: this._subplebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
             if (!validRes.valid && validRes.reason === messages.ERR_SIGNATURE_IS_INVALID) {
                 log.error(`Comment edit (${commentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB has invalid signature due to ${validRes.reason}. Removing comment edit entry.`);
                 this._deleteCommentEditRow(rawCommentEditRecord.rowid);
@@ -1640,7 +1645,10 @@ export class DbHandler {
         };
     }
     queryCalculatedCommentUpdate(comment) {
-        const authorSubplebbit = this.querySubplebbitAuthor(comment.authorSignerAddress);
+        const authorSubplebbit = this.querySubplebbitAuthorForCommentUpdate({
+            authorSignerAddress: comment.authorSignerAddress,
+            commentCid: comment.cid
+        });
         const authorEdit = this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress);
         const commentUpdateCounts = this._queryCommentCounts(comment.cid);
         const moderatorReason = this._queryLatestModeratorReason(comment);
@@ -1755,12 +1763,14 @@ export class DbHandler {
                 // ignore malformed keys
             }
         }
-        const authorSignerAddressArray = [...authorSignerAddresses];
-        if (authorSignerAddressArray.length === 0)
+        return this._querySubplebbitAuthorByAddresses([...authorSignerAddresses]);
+    }
+    /** Shared helper: query karma for a set of addresses, with optional separate addresses for mod edits */
+    _querySubplebbitAuthorByAddresses(karmaAddresses, modEditAddresses = karmaAddresses) {
+        if (karmaAddresses.length === 0)
             return undefined;
-        const placeholders = authorSignerAddressArray.map(() => "?").join(", ");
-        // Check for bans/flairs first - these should persist even if comments are purged
-        const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddressArray);
+        const placeholders = karmaAddresses.map(() => "?").join(", ");
+        const modAuthorEdits = this.queryAuthorModEdits(modEditAddresses);
         const authorCommentsData = this._db
             .prepare(`
             SELECT c.depth, c.rowid, c.timestamp, c.cid,
@@ -1769,8 +1779,7 @@ export class DbHandler {
             FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.VOTES} v ON c.cid = v.commentCid
             WHERE c.authorSignerAddress IN (${placeholders}) GROUP BY c.cid
         `)
-            .all(...authorSignerAddressArray);
-        // If author has no comments but has a ban, return ban info
+            .all(...karmaAddresses);
         if (authorCommentsData.length === 0) {
             if (Object.keys(modAuthorEdits).length > 0) {
                 return modAuthorEdits;
@@ -1786,8 +1795,41 @@ export class DbHandler {
             throw Error("Failed to query subplebbitAuthor.lastCommentCid");
         const firstCommentTimestamp = remeda.minBy(authorCommentsData, (c) => c.rowid)?.timestamp;
         if (typeof firstCommentTimestamp !== "number")
-            throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
+            throw Error("Failed to query subplebbitAuthor.firstCommentTimestamp");
         return { postScore, replyScore, lastCommentCid, ...modAuthorEdits, firstCommentTimestamp };
+    }
+    /**
+     * Returns author.subplebbit for CommentUpdates, respecting pseudonymity mode boundaries.
+     *
+     * The alias address already encodes the isolation boundary:
+     * - per-reply: Each reply has a unique alias, so querying by alias = that one comment's karma
+     * - per-post: All comments in a thread share an alias, so querying by alias = thread karma
+     * - per-author: One alias for all comments, so querying by alias = total karma
+     *
+     * We query karma for ONLY the alias address (no lookup to other aliases like querySubplebbitAuthor does),
+     * but include mod edits from both alias and original author.
+     */
+    querySubplebbitAuthorForCommentUpdate(opts) {
+        const { authorSignerAddress, commentCid } = opts;
+        // Check if this comment has a pseudonymity alias
+        const aliasRow = this.queryPseudonymityAliasByCommentCid(commentCid);
+        if (!aliasRow) {
+            // No pseudonymity mode - use standard aggregated karma
+            return this.querySubplebbitAuthor(authorSignerAddress);
+        }
+        // Get original author's address for mod edits (bans/flairs are applied to original author)
+        const modEditAddresses = [authorSignerAddress];
+        try {
+            const originalAddress = getPlebbitAddressFromPublicKeySync(aliasRow.originalAuthorSignerPublicKey);
+            if (originalAddress !== authorSignerAddress) {
+                modEditAddresses.push(originalAddress);
+            }
+        }
+        catch {
+            // ignore malformed keys
+        }
+        // Query karma for just this alias, but mod edits from both alias and original
+        return this._querySubplebbitAuthorByAddresses([authorSignerAddress], modEditAddresses);
     }
     _getAllDescendantCids(cid) {
         const allCids = [cid];
