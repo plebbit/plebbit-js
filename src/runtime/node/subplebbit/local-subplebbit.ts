@@ -41,7 +41,9 @@ import {
     retryKuboBlockPutPinAndProvidePubsubTopic,
     calculateIpfsCidV0,
     calculateStringSizeSameAsIpfsAddCidV0,
-    getIpnsRecordInLocalKuboNode
+    getIpnsRecordInLocalKuboNode,
+    contentContainsMarkdownImages,
+    contentContainsMarkdownVideos
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -1678,6 +1680,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.features?.requirePostLinkIsMedia && commentPublication.link && !isLinkOfMedia(commentPublication.link))
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
 
+            if (this.features?.noMarkdownImages && commentPublication.content && contentContainsMarkdownImages(commentPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE;
+
+            if (this.features?.noMarkdownVideos && commentPublication.content && contentContainsMarkdownVideos(commentPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
+
             if (commentPublication.parentCid && !commentPublication.postCid) return messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID;
 
             if (commentPublication.parentCid) {
@@ -1810,6 +1818,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
                 if (!editSignedByOriginalAuthor) return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
             }
+
+            // Validate markdown content restrictions for comment edits
+            if (
+                this.features?.noMarkdownImages &&
+                commentEditPublication.content &&
+                contentContainsMarkdownImages(commentEditPublication.content)
+            )
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE;
+
+            if (
+                this.features?.noMarkdownVideos &&
+                commentEditPublication.content &&
+                contentContainsMarkdownVideos(commentEditPublication.content)
+            )
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
         }
 
         return undefined;

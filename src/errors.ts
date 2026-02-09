@@ -248,6 +248,8 @@ export enum messages {
     INCORRECT_VOTE_VALUE = "The vote can only be 1 or 0 or -1",
     ERR_COMMENT_HAS_INVALID_LINK_FIELD = "The comment arguments you provided contain an invalid .link",
     ERR_POST_LINK_IS_NOT_OF_MEDIA = "Publishing to the subplebbit requires a post with a link pointing to media (audio, video, image)",
+    ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE = "This subplebbit does not allow embedding images in markdown content",
+    ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO = "This subplebbit does not allow embedding videos in markdown content",
     ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE = "Comment has no content, link or title",
     ERR_REQUEST_ENCRYPTED_IS_INVALID_JSON_AFTER_DECRYPTION = "request.encrypted is an invalid json after decrypting",
     ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING = "request.encrypted has an invalid schema after decrypting",

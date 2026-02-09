@@ -2,6 +2,7 @@ import {
     mockPlebbit,
     createSubWithNoChallenge,
     generateMockPost,
+    generateMockComment,
     overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
     mockPlebbitNoDataPathWithOnlyKuboClient,
@@ -391,5 +392,219 @@ describe.concurrent(`subplebbit.features.noReplyUpvotes`, async () => {
         const downvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, -1, remotePlebbit);
 
         await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
+    });
+});
+
+describe.concurrent(`subplebbit.features.noMarkdownImages`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature) to test comment edits later
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noMarkdownImages: true } });
+        expect(subplebbit.features?.noMarkdownImages).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noMarkdownImages === true });
+        expect(remoteSub.features?.noMarkdownImages).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with markdown image syntax`, async () => {
+        const contentWithMarkdownImage = "Here is some text with an image: ![alt text](https://example.com/image.png)";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithMarkdownImage });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+    });
+
+    it(`Can't publish a post with HTML img tag`, async () => {
+        const contentWithHtmlImg = 'Here is some text with an image: <img src="https://example.com/image.png" />';
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithHtmlImg });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+    });
+
+    it(`Can't publish a reply with markdown image`, async () => {
+        const contentWithMarkdownImage = "Reply with image: ![photo](https://example.com/photo.jpg)";
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: contentWithMarkdownImage
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+    });
+
+    it(`Can publish a post with plain text content`, async () => {
+        const plainContent = "This is just plain text without any images";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: plainContent });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with regular markdown link (not image)`, async () => {
+        const contentWithLink = "Check out this [link](https://example.com)";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithLink });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with direct link field (not markdown content)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/image.png",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't edit a comment to add markdown image`, async () => {
+        const contentWithMarkdownImage = "Edited to include an image: ![img](https://example.com/new.png)";
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            content: contentWithMarkdownImage,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+    });
+
+    it(`Can edit a comment with plain text content`, async () => {
+        const plainContent = "Edited to plain text content";
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            content: plainContent,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature) to test comment edits later
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noMarkdownVideos: true } });
+        expect(subplebbit.features?.noMarkdownVideos).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noMarkdownVideos === true });
+        expect(remoteSub.features?.noMarkdownVideos).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with markdown video syntax (video extension)`, async () => {
+        const contentWithMarkdownVideo = "Here is a video: ![video](https://example.com/video.mp4)";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithMarkdownVideo });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO);
+    });
+
+    it(`Can't publish a post with HTML video tag`, async () => {
+        const contentWithHtmlVideo = 'Here is a video: <video src="https://example.com/video.mp4"></video>';
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithHtmlVideo });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO);
+    });
+
+    it(`Can't publish a post with HTML iframe tag`, async () => {
+        const contentWithIframe = 'Embedded video: <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>';
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithIframe });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO);
+    });
+
+    it(`Can't publish a reply with markdown video`, async () => {
+        const contentWithMarkdownVideo = "Reply with video: ![clip](https://example.com/clip.webm)";
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: contentWithMarkdownVideo
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO);
+    });
+
+    it(`Can publish a post with plain text content`, async () => {
+        const plainContent = "This is just plain text without any videos";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: plainContent });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with markdown image (not video)`, async () => {
+        // noMarkdownVideos should not block images
+        const contentWithImage = "Here is an image: ![img](https://example.com/photo.jpg)";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithImage });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with direct link field to video (not markdown content)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/video.mp4",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't edit a comment to add markdown video`, async () => {
+        const contentWithMarkdownVideo = "Edited to include a video: ![vid](https://example.com/new.mp4)";
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            content: contentWithMarkdownVideo,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO);
+    });
+
+    it(`Can't edit a comment to add iframe embed`, async () => {
+        const contentWithIframe = 'Edited: <iframe src="https://youtube.com/embed/xyz"></iframe>';
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            content: contentWithIframe,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO);
+    });
+
+    it(`Can edit a comment with plain text content`, async () => {
+        const plainContent = "Edited to plain text content";
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            content: plainContent,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, true);
     });
 });

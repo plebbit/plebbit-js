@@ -52,16 +52,16 @@ export const SubplebbitFeaturesSchema = z.looseObject({
     noImageReplies: z.boolean().optional(), // Not implemented
     noPolls: z.boolean().optional(), // Not impllemented
     noCrossposts: z.boolean().optional(), // Not implemented
-    noAuthors: z.boolean().optional(), // Not implemented. No authors at all, like 4chan
-    anonymousAuthors: z.boolean().optional(), // Not implemented. Authors are given anonymous ids inside threads, like 4chan
+    noAuthors: z.boolean().optional(), // Not implemented. We may need to remove this No authors at all, like 4chan
+    anonymousAuthors: z.boolean().optional(), // Not implemented.We may need to remove this Authors are given anonymous ids inside threads, like 4chan
     noNestedReplies: z.boolean().optional(), // Not implemented. No nested replies, like old school forums and 4chan
     safeForWork: z.boolean().optional(), // Not implemented
     authorFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own author flairs (otherwise only mods can)
     requireAuthorFlairs: z.boolean().optional(), // Not implemented. Force authors to choose an author flair before posting
     postFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own post flairs (otherwise only mods can)
     requirePostFlairs: z.boolean().optional(), // Not implemented. Force authors to choose a post flair before posting
-    noMarkdownImages: z.boolean().optional(), // Not implemented. Don't embed images in text posts markdown
-    noMarkdownVideos: z.boolean().optional(), // Not implemented. Don't embed videos in text posts markdown
+    noMarkdownImages: z.boolean().optional(), // Don't allow embedding images in markdown content (![alt](url) or <img> tags)
+    noMarkdownVideos: z.boolean().optional(), // Don't allow embedding videos in markdown content (![alt](video-url), <video> or <iframe> tags)
     markdownImageReplies: z.boolean().optional(), // Not implemented
     markdownVideoReplies: z.boolean().optional(), // Not implemented
     noPostUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1 to comment with depth = 0

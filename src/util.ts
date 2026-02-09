@@ -231,6 +231,72 @@ export function isLinkOfMedia(link: string): boolean {
     return false;
 }
 
+function getMimeFromUrl(url: string): string | undefined {
+    try {
+        return extName(new URL(url).pathname.toLowerCase().replace("/", ""))[0]?.mime;
+    } catch {
+        return undefined;
+    }
+}
+
+function isUrlOfImage(url: string): boolean {
+    const mime = getMimeFromUrl(url);
+    return mime?.startsWith("image") ?? false;
+}
+
+function isUrlOfVideo(url: string): boolean {
+    const mime = getMimeFromUrl(url);
+    return mime?.startsWith("video") ?? false;
+}
+
+export function contentContainsMarkdownImages(content: string): boolean {
+    if (!content) return false;
+
+    // Check for HTML img tags
+    const htmlImgTagRegex = /<img\s+[^>]*src\s*=\s*["']([^"']+)["'][^>]*\/?>/gi;
+    if (htmlImgTagRegex.test(content)) return true;
+
+    // Check for markdown image syntax: ![alt](url)
+    // Negative lookbehind (?<!\\) ensures it's not escaped
+    const markdownImageRegex = /(?<!\\)!\[[^\]]*\]\(([^)]+)\)/g;
+    const matches = content.matchAll(markdownImageRegex);
+    for (const match of matches) {
+        const url = match[1];
+        // If URL has image extension OR no extension (could be an image), flag it
+        if (isUrlOfImage(url)) return true;
+        // Also flag URLs without extensions (e.g., imgur direct links)
+        const mime = getMimeFromUrl(url);
+        if (mime === undefined) {
+            // URL has no recognizable extension, still flag markdown images
+            return true;
+        }
+    }
+
+    return false;
+}
+
+export function contentContainsMarkdownVideos(content: string): boolean {
+    if (!content) return false;
+
+    // Check for HTML video tags
+    const htmlVideoTagRegex = /<video[\s>]/gi;
+    if (htmlVideoTagRegex.test(content)) return true;
+
+    // Check for HTML iframe tags (YouTube/Vimeo embeds)
+    const htmlIframeTagRegex = /<iframe[\s>]/gi;
+    if (htmlIframeTagRegex.test(content)) return true;
+
+    // Check for markdown image syntax with video URLs: ![alt](url)
+    const markdownImageRegex = /(?<!\\)!\[[^\]]*\]\(([^)]+)\)/g;
+    const matches = content.matchAll(markdownImageRegex);
+    for (const match of matches) {
+        const url = match[1];
+        if (isUrlOfVideo(url)) return true;
+    }
+
+    return false;
+}
+
 export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
     const out: T[] = [];
     for await (const x of gen) {
