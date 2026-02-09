@@ -106,6 +106,7 @@ export declare class PageGenerator {
                     linkHtmlTagName?: string | undefined;
                     parentCid?: string | undefined;
                     postCid?: string | undefined;
+                    quotedCids?: string[] | undefined;
                     thumbnailUrl?: string | undefined;
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
@@ -291,6 +292,7 @@ export declare class PageGenerator {
                         linkHtmlTagName?: string | undefined;
                         parentCid?: string | undefined;
                         postCid?: string | undefined;
+                        quotedCids?: string[] | undefined;
                         thumbnailUrl?: string | undefined;
                         thumbnailUrlWidth?: number | undefined;
                         thumbnailUrlHeight?: number | undefined;

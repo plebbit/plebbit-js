@@ -88,6 +88,7 @@ export declare function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(mod
             linkHtmlTagName?: string | undefined;
             parentCid?: string | undefined;
             postCid?: string | undefined;
+            quotedCids?: string[] | undefined;
             thumbnailUrl?: string | undefined;
             thumbnailUrlWidth?: number | undefined;
             thumbnailUrlHeight?: number | undefined;
@@ -249,6 +250,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                         linkHtmlTagName?: string | undefined;
                         parentCid?: string | undefined;
                         postCid?: string | undefined;
+                        quotedCids?: string[] | undefined;
                         thumbnailUrl?: string | undefined;
                         thumbnailUrlWidth?: number | undefined;
                         thumbnailUrlHeight?: number | undefined;
@@ -1209,6 +1211,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     linkHtmlTagName?: string | undefined;
                     parentCid?: string | undefined;
                     postCid?: string | undefined;
+                    quotedCids?: string[] | undefined;
                     thumbnailUrl?: string | undefined;
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
@@ -1674,6 +1677,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     linkHtmlTagName?: string | undefined;
                     parentCid?: string | undefined;
                     postCid?: string | undefined;
+                    quotedCids?: string[] | undefined;
                     thumbnailUrl?: string | undefined;
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
@@ -1920,6 +1924,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     linkHtmlTagName?: string | undefined;
                     parentCid?: string | undefined;
                     postCid?: string | undefined;
+                    quotedCids?: string[] | undefined;
                     thumbnailUrl?: string | undefined;
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
@@ -2385,6 +2390,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     linkHtmlTagName?: string | undefined;
                     parentCid?: string | undefined;
                     postCid?: string | undefined;
+                    quotedCids?: string[] | undefined;
                     thumbnailUrl?: string | undefined;
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;
@@ -2571,6 +2577,7 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
     linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
+    quotedCids?: string[] | undefined;
 };
 export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CreateCommentOptionsSchema>): {
     signer: {
@@ -2595,6 +2602,7 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
     linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
+    quotedCids?: string[] | undefined;
     author?: {
         [x: string]: unknown;
         address?: string | undefined;

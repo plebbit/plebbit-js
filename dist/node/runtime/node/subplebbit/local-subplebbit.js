@@ -693,23 +693,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!commentToBeEdited)
             throw Error("The comment to edit doesn't exist"); // unlikely error to happen, but always a good idea to verify
         const modSignerAddress = await getPlebbitAddressFromPublicKey(commentModRaw.signature.publicKey);
-        // Determine the target author signer address if this moderation affects the author (ban/flair)
+        // Determine the target author signer address and domain if this moderation affects the author (ban/flair)
         let targetAuthorSignerAddress;
+        let targetAuthorDomain;
         if (strippedOutModPublication.commentModeration.author) {
-            // Check if the comment was published with pseudonymity - if so, get the original author address
+            // Check if the comment was published with pseudonymity - if so, get the original author address/domain
             const aliasInfo = this._dbHandler.queryPseudonymityAliasByCommentCid(commentModRaw.commentCid);
             if (aliasInfo) {
                 targetAuthorSignerAddress = await getPlebbitAddressFromPublicKey(aliasInfo.originalAuthorSignerPublicKey);
+                targetAuthorDomain = aliasInfo.originalAuthorDomain || undefined;
             }
             else {
                 targetAuthorSignerAddress = commentToBeEdited.authorSignerAddress;
+                // Check if the comment author used a domain address
+                if (isStringDomain(commentToBeEdited.author.address)) {
+                    targetAuthorDomain = commentToBeEdited.author.address;
+                }
             }
         }
         const modTableRow = {
             ...strippedOutModPublication,
             modSignerAddress,
             insertedAt: timestamp(),
-            targetAuthorSignerAddress
+            targetAuthorSignerAddress,
+            targetAuthorDomain
         };
         const isCommentModDuplicate = this._dbHandler.hasCommentModerationWithSignatureEncoded(modTableRow.signature.signature);
         if (isCommentModDuplicate) {
@@ -970,6 +977,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                         commentCid: storedComment.cid,
                         aliasPrivateKey: anonymity.aliasPrivateKey,
                         originalAuthorSignerPublicKey: anonymity.originalAuthorSignerPublicKey,
+                        originalAuthorDomain: isStringDomain(anonymity.originalComment.author.address)
+                            ? anonymity.originalComment.author.address
+                            : null,
                         mode: anonymity.mode,
                         insertedAt: timestamp()
                     }
@@ -1096,7 +1106,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!commentAfterAddingToIpfs)
             return undefined;
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentAfterAddingToIpfs.comment.signature.publicKey);
-        const authorSubplebbit = this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
+        const authorDomain = isStringDomain(commentAfterAddingToIpfs.comment.author.address)
+            ? commentAfterAddingToIpfs.comment.author.address
+            : undefined;
+        const authorSubplebbit = this._dbHandler.querySubplebbitAuthor(authorSignerAddress, authorDomain);
         if (!authorSubplebbit)
             throw Error("author.subplebbit can never be undefined after adding a comment");
         const commentNumberPostNumber = this._dbHandler._assignNumbersForComment(commentAfterAddingToIpfs.cid);
@@ -1247,6 +1260,35 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 if (parentsOfComment[parentsOfComment.length - 1].cid !== commentPublication.postCid)
                     return messages.ERR_REPLY_POST_CID_IS_NOT_PARENT_OF_REPLY;
             }
+            // Validate quotedCids
+            if (commentPublication.quotedCids && commentPublication.quotedCids.length > 0) {
+                // Check for duplicates
+                const uniqueQuotedCids = new Set(commentPublication.quotedCids);
+                if (uniqueQuotedCids.size !== commentPublication.quotedCids.length) {
+                    return messages.ERR_QUOTED_CIDS_HAS_DUPLICATES;
+                }
+                // Only replies can have quotedCids
+                if (!commentPublication.parentCid) {
+                    return messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS;
+                }
+                const threadPostCid = commentPublication.postCid; // postCid is always defined for replies
+                for (const quotedCid of commentPublication.quotedCids) {
+                    // 1. Check existence
+                    const quotedComment = this._dbHandler.queryComment(quotedCid);
+                    if (!quotedComment) {
+                        return messages.ERR_QUOTED_CID_DOES_NOT_EXIST;
+                    }
+                    // 2. Check quoted comment is under the same post
+                    const quotedPostCid = quotedComment.depth === 0 ? quotedComment.cid : quotedComment.postCid;
+                    if (quotedPostCid !== threadPostCid) {
+                        return messages.ERR_QUOTED_CID_NOT_UNDER_POST;
+                    }
+                    // 3. Check not pending approval
+                    if (quotedComment.pendingApproval) {
+                        return messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL;
+                    }
+                }
+            }
             const isCommentDuplicate = this._dbHandler.hasCommentWithSignatureEncoded(commentPublication.signature.signature);
             if (isCommentDuplicate)
                 return messages.ERR_DUPLICATE_COMMENT;
@@ -1389,8 +1431,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (publicationCount > 1)
             return this._publishFailedChallengeVerification({ reason: messages.ERR_CHALLENGE_REQUEST_ENCRYPTED_HAS_MULTIPLE_PUBLICATIONS_AFTER_DECRYPTING }, request.challengeRequestId);
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+        const authorDomain = isStringDomain(publication.author.address) ? publication.author.address : undefined;
         // Check publication props validity
-        const subplebbitAuthor = this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
+        const subplebbitAuthor = this._dbHandler.querySubplebbitAuthor(authorSignerAddress, authorDomain);
         const decryptedRequestMsg = { ...request, ...decryptedRequest };
         const decryptedRequestWithSubplebbitAuthor = (remeda.clone(decryptedRequestMsg));
         // set author.subplebbit for all publication fields (vote, comment, commentEdit, commentModeration) if they exist
@@ -1555,7 +1598,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
         const storedCommentUpdate = this._dbHandler.queryStoredCommentUpdate(comment);
-        const calculatedCommentUpdate = this._dbHandler.queryCalculatedCommentUpdate(comment);
+        const authorDomain = isStringDomain(comment.author.address) ? comment.author.address : undefined;
+        const calculatedCommentUpdate = this._dbHandler.queryCalculatedCommentUpdate({ comment, authorDomain });
         log.trace("Calculated comment update for comment", comment.cid, "on subplebbit", this.address, "with reply count", calculatedCommentUpdate.replyCount);
         const currentTimestamp = timestamp();
         const newUpdatedAt = typeof storedCommentUpdate?.updatedAt === "number" && storedCommentUpdate.updatedAt >= currentTimestamp

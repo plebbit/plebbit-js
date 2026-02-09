@@ -184,6 +184,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
                         linkHtmlTagName?: string | undefined;
                         parentCid?: string | undefined;
                         postCid?: string | undefined;
+                        quotedCids?: string[] | undefined;
                         thumbnailUrl?: string | undefined;
                         thumbnailUrlWidth?: number | undefined;
                         thumbnailUrlHeight?: number | undefined;
