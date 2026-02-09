@@ -19,4 +19,5 @@
 -   When you're debugging a failure or a test failure in CI, you should check `test_server.log` for subplebbit logs and `test_node_${config}.stdout.log`/`test_node_${config}.stderr.log` artifacts for client logs (where config is e.g. `remote-kubo-rpc`)
 -   When I report a bug or test failure, you need to try to understand the root cause instead of trying to fix it with timeouts
 -   When you modify a test file you need to make sure it passes test build process of tsc with test/tsconfig.json
+-   When adding a new JSON column to the database, add a test in `test/node/subplebbit/parsing.db.subplebbit.test.ts` for parsing it, and if it's on a comment, add an integration test for `dbHandler.queryComment` returning the proper JSON value (not a string)
 - Do not commit /dist to git
