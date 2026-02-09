@@ -608,3 +608,430 @@ describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
         await publishWithExpectedResult(commentEdit, true);
     });
 });
+
+describe.concurrent(`subplebbit.features.noImages`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noImages: true } });
+        expect(subplebbit.features?.noImages).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noImages === true });
+        expect(remoteSub.features?.noImages).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with image link`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/image.png",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE);
+    });
+
+    it(`Can't publish a reply with image link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/photo.jpg"
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE);
+    });
+
+    it(`Can publish a post with video link (noImages doesn't block videos)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/video.mp4",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with plain content (no link)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Just plain text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with markdown image in content (noImages only checks link field)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Here is an image: ![alt](https://example.com/image.png)"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noVideos`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noVideos: true } });
+        expect(subplebbit.features?.noVideos).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noVideos === true });
+        expect(remoteSub.features?.noVideos).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with video link`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/video.mp4",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
+    });
+
+    it(`Can't publish a reply with video link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/movie.webm"
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
+    });
+
+    it(`Can publish a post with image link (noVideos doesn't block images)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/image.png",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with plain content (no link)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Just plain text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noSpoilers`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noSpoilers: true } });
+        expect(subplebbit.features?.noSpoilers).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noSpoilers === true });
+        expect(remoteSub.features?.noSpoilers).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with spoiler=true`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Spoiler content",
+            spoiler: true
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_SPOILER_ENABLED);
+    });
+
+    it(`Can't publish a reply with spoiler=true`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: "Spoiler reply",
+            spoiler: true
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_HAS_SPOILER_ENABLED);
+    });
+
+    it(`Can publish a post without spoiler`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Normal content"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with spoiler=false`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Normal content",
+            spoiler: false
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't edit a comment to set spoiler=true`, async () => {
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            spoiler: true,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_HAS_SPOILER_ENABLED);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noImageReplies`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noImageReplies: true } });
+        expect(subplebbit.features?.noImageReplies).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noImageReplies === true });
+        expect(remoteSub.features?.noImageReplies).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can publish a post with image link (noImageReplies only blocks replies)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/image.png",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't publish a reply with image link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/photo.jpg"
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE);
+    });
+
+    it(`Can publish a reply without image link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: "Just text reply"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can publish a reply with video link (noImageReplies doesn't block videos)`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/video.mp4"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noVideoReplies`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noVideoReplies: true } });
+        expect(subplebbit.features?.noVideoReplies).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noVideoReplies === true });
+        expect(remoteSub.features?.noVideoReplies).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can publish a post with video link (noVideoReplies only blocks replies)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/video.mp4",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't publish a reply with video link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/movie.webm"
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO);
+    });
+
+    it(`Can publish a reply without video link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: "Just text reply"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can publish a reply with image link (noVideoReplies doesn't block images)`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/image.png"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noSpoilerReplies`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+    let publishedReply: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post and a reply first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+        publishedReply = await publishRandomReply(publishedPost as CommentIpfsWithCidDefined, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noSpoilerReplies: true } });
+        expect(subplebbit.features?.noSpoilerReplies).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noSpoilerReplies === true });
+        expect(remoteSub.features?.noSpoilerReplies).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can publish a post with spoiler=true (noSpoilerReplies only blocks replies)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Spoiler content",
+            spoiler: true
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't publish a reply with spoiler=true`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: "Spoiler reply",
+            spoiler: true
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_SPOILER_ENABLED);
+    });
+
+    it(`Can publish a reply without spoiler`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: "Normal reply"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can't edit a reply to set spoiler=true`, async () => {
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedReply.cid!,
+            spoiler: true,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedReply.signer
+        });
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_REPLY_HAS_SPOILER_ENABLED);
+    });
+
+    it(`Can edit a post to set spoiler=true (noSpoilerReplies doesn't affect posts)`, async () => {
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            spoiler: true,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, true);
+    });
+});

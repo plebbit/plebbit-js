@@ -182,13 +182,15 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   noReplyDownvotes?: boolean
   requirePostLink?: boolean // require post.link be defined and a valid https url
   requirePostLinkIsMedia?: boolean // require post.link be media, e.g. for imageboards
+  noMarkdownImages?: boolean // don't embed images in text posts markdown
+  noMarkdownVideos?: boolean // don't embed videos in text posts markdown
+  noVideos?: boolean // block all comments with video links
+  noImages?: boolean // block all comments with image links
+  noSpoilers?: boolean // author can't set spoiler = true on any comment
+  noVideoReplies?: boolean // block only replies with video links
+  noImageReplies?: boolean // block only replies with image links
+  noSpoilerReplies?: boolean // author can't set spoiler = true on replies
   // not implemented
-  noVideos?: boolean
-  noSpoilers?: boolean // author can't comment.spoiler = true their own comments
-  noImages?: boolean
-  noVideoReplies?: boolean
-  noSpoilerReplies?: boolean
-  noImageReplies?: boolean
   noPolls?: boolean
   noCrossposts?: boolean
   noAuthors?: boolean // no authors at all, like 4chan
@@ -199,10 +201,9 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   requireAuthorFlairs?: boolean // force authors to choose an author flair before posting
   postFlairs?: boolean // authors can choose their own post flairs (otherwise only mods can)
   requirePostFlairs?: boolean // force authors to choose a post flair before posting
-  noMarkdownImages?: boolean // don't embed images in text posts markdown
-  noMarkdownVideos?: boolean // don't embed videos in text posts markdown
   markdownImageReplies?: boolean
   markdownVideoReplies?: boolean
+  pseudonymityMode?: 'per-post' | 'per-reply' | 'per-author' // not implemented
 }
 SubplebbitEncryption {
   type: 'ed25519-aes-gcm' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md

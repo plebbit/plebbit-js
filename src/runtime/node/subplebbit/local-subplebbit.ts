@@ -28,6 +28,8 @@ import {
     hideClassPrivateProps,
     ipnsNameToIpnsOverPubsubTopic,
     isLinkOfMedia,
+    isLinkOfImage,
+    isLinkOfVideo,
     isLinkValid,
     isStringDomain,
     pubsubTopicToDhtKey,
@@ -1686,6 +1688,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.features?.noMarkdownVideos && commentPublication.content && contentContainsMarkdownVideos(commentPublication.content))
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
 
+            // noImages - block ALL comments with image links
+            if (this.features?.noImages && commentPublication.link && isLinkOfImage(commentPublication.link))
+                return messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE;
+
+            // noVideos - block ALL comments with video links
+            if (this.features?.noVideos && commentPublication.link && isLinkOfVideo(commentPublication.link))
+                return messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO;
+
+            // noSpoilers - block ALL comments with spoiler=true
+            if (this.features?.noSpoilers && commentPublication.spoiler === true)
+                return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
+
+            // noImageReplies - block only replies with image links
+            if (this.features?.noImageReplies && commentPublication.parentCid && commentPublication.link && isLinkOfImage(commentPublication.link))
+                return messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE;
+
+            // noVideoReplies - block only replies with video links
+            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && isLinkOfVideo(commentPublication.link))
+                return messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO;
+
+            // noSpoilerReplies - block only replies with spoiler=true
+            if (this.features?.noSpoilerReplies && commentPublication.parentCid && commentPublication.spoiler === true)
+                return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
+
             if (commentPublication.parentCid && !commentPublication.postCid) return messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID;
 
             if (commentPublication.parentCid) {
@@ -1833,6 +1859,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 contentContainsMarkdownVideos(commentEditPublication.content)
             )
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
+
+            // noSpoilers - block ALL comment edits that set spoiler=true
+            if (this.features?.noSpoilers && commentEditPublication.spoiler === true)
+                return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
+
+            // noSpoilerReplies - block only reply edits that set spoiler=true
+            if (this.features?.noSpoilerReplies && commentToBeEdited.depth > 0 && commentEditPublication.spoiler === true)
+                return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
         }
 
         return undefined;

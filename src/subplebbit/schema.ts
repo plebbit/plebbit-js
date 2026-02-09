@@ -44,12 +44,12 @@ export const SubplebbitSuggestedSchema = z.looseObject({
 
 export const SubplebbitFeaturesSchema = z.looseObject({
     // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
-    noVideos: z.boolean().optional(), // Not implemented
-    noSpoilers: z.boolean().optional(), // Not implemented. Author can't comment.spoiler = true their own comments
-    noImages: z.boolean().optional(), // Not implemented
-    noVideoReplies: z.boolean().optional(), // Not implemented
-    noSpoilerReplies: z.boolean().optional(), // Not implemented
-    noImageReplies: z.boolean().optional(), // Not implemented
+    noVideos: z.boolean().optional(), // Block all comments with video links
+    noSpoilers: z.boolean().optional(), // Author can't set spoiler = true on any comment
+    noImages: z.boolean().optional(), // Block all comments with image links
+    noVideoReplies: z.boolean().optional(), // Block only replies with video links
+    noSpoilerReplies: z.boolean().optional(), // Author can't set spoiler = true on replies
+    noImageReplies: z.boolean().optional(), // Block only replies with image links
     noPolls: z.boolean().optional(), // Not impllemented
     noCrossposts: z.boolean().optional(), // Not implemented
     noAuthors: z.boolean().optional(), // Not implemented. We may need to remove this No authors at all, like 4chan

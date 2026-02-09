@@ -249,6 +249,16 @@ function isUrlOfVideo(url: string): boolean {
     return mime?.startsWith("video") ?? false;
 }
 
+export function isLinkOfImage(link: string): boolean {
+    if (!link) return false;
+    return isUrlOfImage(link);
+}
+
+export function isLinkOfVideo(link: string): boolean {
+    if (!link) return false;
+    return isUrlOfVideo(link);
+}
+
 export function contentContainsMarkdownImages(content: string): boolean {
     if (!content) return false;
 
