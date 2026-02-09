@@ -3,7 +3,11 @@ import assert from "assert";
 import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler.js";
 import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
-import type { CommentsTableRowInsert, CommentUpdatesTableRowInsert, CommentUpdateType } from "../../../dist/node/publications/comment/types.js";
+import type {
+    CommentsTableRowInsert,
+    CommentUpdatesTableRowInsert,
+    CommentUpdateType
+} from "../../../dist/node/publications/comment/types.js";
 import type { VotesTableRowInsert } from "../../../dist/node/publications/vote/types.js";
 
 const PROTOCOL_VERSION = "1.0.0";
@@ -27,7 +31,7 @@ type CalculatedCommentUpdate = Omit<CommentUpdateType, "signature" | "updatedAt"
 type AssignedNumbers = Pick<CommentsTableRowInsert, "number" | "postNumber">;
 
 describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
-    let dbHandler: DbHandler | undefined;
+    let _dbHandler: DbHandler | undefined;
     let subplebbitAddress: string;
     let cidCounter = 0;
 
@@ -53,11 +57,11 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
         authorSignerAddress = `12D3KooAuthor${cid}`,
         overrides = {}
     }: InsertCommentOptions = {}): InsertedComment => {
-        assert(dbHandler, "DbHandler not initialised");
+        assert(_dbHandler, "DbHandler not initialised");
         const resolvedPostCid = postCid ?? (depth === 0 ? cid : parentCid ?? nextCid("post"));
         const pendingApproval = overrides["pendingApproval"] ?? null;
         const shouldAssignNumbers = !pendingApproval;
-        const assignedNumbers: AssignedNumbers = shouldAssignNumbers ? dbHandler.getNextCommentNumbers(depth) : {};
+        const assignedNumbers: AssignedNumbers = shouldAssignNumbers ? _dbHandler.getNextCommentNumbers(depth) : {};
         const comment: CommentsTableRowInsert = {
             cid,
             authorSignerAddress,
@@ -80,7 +84,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             spoiler: overrides["spoiler"],
             nsfw: overrides["nsfw"]
         };
-        dbHandler.insertComments([comment]);
+        _dbHandler.insertComments([comment]);
         return {
             cid,
             depth,
@@ -110,9 +114,9 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             publishedToPostUpdatesMFS = false,
             insertedAt
         } = options;
-        assert(dbHandler, "DbHandler not initialised");
+        assert(_dbHandler, "DbHandler not initialised");
         const resolvedInsertedAt = insertedAt ?? currentTimestamp();
-        dbHandler.upsertCommentUpdates([
+        _dbHandler.upsertCommentUpdates([
             {
                 cid: comment.cid,
                 upvoteCount,
@@ -145,7 +149,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
 
     const insertVote = (comment: InsertedComment, options: InsertVoteOptions = {}): void => {
         const { vote = 1, authorSignerAddress = `12D3KooVote${comment.cid}`, timestamp = currentTimestamp(), insertedAt } = options;
-        assert(dbHandler, "DbHandler not initialised");
+        assert(_dbHandler, "DbHandler not initialised");
         const resolvedInsertedAt = insertedAt ?? timestamp;
         const voteRecord: VotesTableRowInsert = {
             commentCid: comment.cid,
@@ -155,15 +159,17 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             protocolVersion: PROTOCOL_VERSION,
             insertedAt: resolvedInsertedAt
         };
-        dbHandler.insertVotes([voteRecord]);
+        _dbHandler.insertVotes([voteRecord]);
     };
 
     const queryCalculated = (comment: InsertedComment): CalculatedCommentUpdate => {
-        assert(dbHandler, "DbHandler not initialised");
-        return dbHandler.queryCalculatedCommentUpdate({
-            cid: comment.cid,
-            authorSignerAddress: comment.authorSignerAddress,
-            timestamp: comment.timestamp
+        assert(_dbHandler, "DbHandler not initialised");
+        return _dbHandler.queryCalculatedCommentUpdate({
+            comment: {
+                cid: comment.cid,
+                authorSignerAddress: comment.authorSignerAddress,
+                timestamp: comment.timestamp
+            }
         });
     };
 
@@ -174,14 +180,14 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
     };
 
     beforeEach(async () => {
-        dbHandler = await createTestDbHandler();
-        assert(dbHandler, "Failed to initialise DbHandler");
+        _dbHandler = await createTestDbHandler();
+        assert(_dbHandler, "Failed to initialise DbHandler");
     });
 
     afterEach(async () => {
-        if (dbHandler) {
-            await dbHandler.destoryConnection();
-            dbHandler = undefined;
+        if (_dbHandler) {
+            await _dbHandler.destoryConnection();
+            _dbHandler = undefined;
         }
         cidCounter = 0;
     });
@@ -345,7 +351,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             expect(approvedCalc.number).to.equal(approvedPost.number);
             expect(approvedCalc.postNumber).to.equal(approvedPost.postNumber);
 
-            dbHandler!.approvePendingComment({ cid: pendingPost.cid });
+            _dbHandler!.approvePendingComment({ cid: pendingPost.cid });
             const pendingCalc = queryCalculated(pendingPost);
             expect(pendingCalc.number).to.equal(approvedPost.number! + 1);
             expect(pendingCalc.postNumber).to.equal(approvedPost.postNumber! + 1);
@@ -371,7 +377,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             expect(approvedCalc.number).to.equal(post.number! + 1);
             expect(approvedCalc.postNumber).to.be.undefined;
 
-            dbHandler!.approvePendingComment({ cid: pendingReply.cid });
+            _dbHandler!.approvePendingComment({ cid: pendingReply.cid });
             const pendingCalc = queryCalculated(pendingReply);
             expect(pendingCalc.number).to.equal(approvedCalc.number! + 1);
             expect(pendingCalc.postNumber).to.be.undefined;
@@ -381,7 +387,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             const pendingPost = insertComment({ depth: 0, overrides: { pendingApproval: true } });
             insertCommentUpdate(pendingPost);
             // Access internal _db for test manipulation
-            const db = (dbHandler as unknown as { _db: { prepare: (sql: string) => { run: (...args: (string | number)[]) => void } } })._db;
+            const db = (_dbHandler as unknown as { _db: { prepare: (sql: string) => { run: (...args: (string | number)[]) => void } } })._db;
             db.prepare(`UPDATE comments SET number = ?, postNumber = ? WHERE cid = ?`).run(7, 3, pendingPost.cid);
             db.prepare(`UPDATE commentUpdates SET number = ?, postNumber = ? WHERE cid = ?`).run(7, 3, pendingPost.cid);
 
@@ -401,7 +407,16 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
         it("prefers stored number and postNumber values from comments", () => {
             const post = createCommentWithUpdate({ depth: 0 });
             // Access internal _db for test manipulation
-            const db = (dbHandler as unknown as { _db: { prepare: (sql: string) => { get: (cid: string) => { number: number; postNumber: number }; run: (...args: (string | number)[]) => void } } })._db;
+            const db = (
+                _dbHandler as unknown as {
+                    _db: {
+                        prepare: (sql: string) => {
+                            get: (cid: string) => { number: number; postNumber: number };
+                            run: (...args: (string | number)[]) => void;
+                        };
+                    };
+                }
+            )._db;
             const commentRow = db.prepare(`SELECT number, postNumber FROM comments WHERE cid = ?`).get(post.cid);
             db.prepare(`UPDATE commentUpdates SET number = ?, postNumber = ? WHERE cid = ?`).run(42, 7, post.cid);
 

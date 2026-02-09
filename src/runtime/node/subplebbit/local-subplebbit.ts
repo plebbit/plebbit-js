@@ -958,15 +958,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const modSignerAddress = await getPlebbitAddressFromPublicKey(commentModRaw.signature.publicKey);
 
-        // Determine the target author signer address if this moderation affects the author (ban/flair)
+        // Determine the target author signer address and domain if this moderation affects the author (ban/flair)
         let targetAuthorSignerAddress: string | undefined;
+        let targetAuthorDomain: string | undefined;
         if (strippedOutModPublication.commentModeration.author) {
-            // Check if the comment was published with pseudonymity - if so, get the original author address
+            // Check if the comment was published with pseudonymity - if so, get the original author address/domain
             const aliasInfo = this._dbHandler.queryPseudonymityAliasByCommentCid(commentModRaw.commentCid);
             if (aliasInfo) {
                 targetAuthorSignerAddress = await getPlebbitAddressFromPublicKey(aliasInfo.originalAuthorSignerPublicKey);
+                targetAuthorDomain = aliasInfo.originalAuthorDomain || undefined;
             } else {
                 targetAuthorSignerAddress = commentToBeEdited.authorSignerAddress;
+                // Check if the comment author used a domain address
+                if (isStringDomain(commentToBeEdited.author.address)) {
+                    targetAuthorDomain = commentToBeEdited.author.address;
+                }
             }
         }
 
@@ -974,7 +980,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...strippedOutModPublication,
             modSignerAddress,
             insertedAt: timestamp(),
-            targetAuthorSignerAddress
+            targetAuthorSignerAddress,
+            targetAuthorDomain
         };
 
         const isCommentModDuplicate = this._dbHandler.hasCommentModerationWithSignatureEncoded(modTableRow.signature.signature);
@@ -1318,6 +1325,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                         commentCid: storedComment.cid,
                         aliasPrivateKey: anonymity.aliasPrivateKey,
                         originalAuthorSignerPublicKey: anonymity.originalAuthorSignerPublicKey,
+                        originalAuthorDomain: isStringDomain(anonymity.originalComment.author.address)
+                            ? anonymity.originalComment.author.address
+                            : null,
                         mode: anonymity.mode,
                         insertedAt: timestamp()
                     }
@@ -1477,8 +1487,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const commentAfterAddingToIpfs = await this.storePublication(request, pendingApproval);
         if (!commentAfterAddingToIpfs) return undefined;
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentAfterAddingToIpfs.comment.signature.publicKey);
+        const authorDomain = isStringDomain(commentAfterAddingToIpfs.comment.author.address)
+            ? commentAfterAddingToIpfs.comment.author.address
+            : undefined;
 
-        const authorSubplebbit = this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
+        const authorSubplebbit = this._dbHandler.querySubplebbitAuthor(authorSignerAddress, authorDomain);
         if (!authorSubplebbit) throw Error("author.subplebbit can never be undefined after adding a comment");
         const commentNumberPostNumber = this._dbHandler._assignNumbersForComment(commentAfterAddingToIpfs.cid);
 
@@ -1842,9 +1855,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             );
 
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+        const authorDomain = isStringDomain(publication.author.address) ? publication.author.address : undefined;
 
         // Check publication props validity
-        const subplebbitAuthor = this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
+        const subplebbitAuthor = this._dbHandler.querySubplebbitAuthor(authorSignerAddress, authorDomain);
         const decryptedRequestMsg = <DecryptedChallengeRequestMessageType>{ ...request, ...decryptedRequest };
         const decryptedRequestWithSubplebbitAuthor = <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>(
             remeda.clone(decryptedRequestMsg)
@@ -2055,7 +2069,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
         const storedCommentUpdate = this._dbHandler.queryStoredCommentUpdate(comment);
-        const calculatedCommentUpdate = this._dbHandler.queryCalculatedCommentUpdate(comment);
+        const authorDomain = isStringDomain(comment.author.address) ? comment.author.address : undefined;
+        const calculatedCommentUpdate = this._dbHandler.queryCalculatedCommentUpdate({ comment, authorDomain });
         log.trace(
             "Calculated comment update for comment",
             comment.cid,

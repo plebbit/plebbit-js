@@ -1,4 +1,4 @@
-import { hideClassPrivateProps, removeNullUndefinedValues, throwWithErrorCode, timestamp } from "../../../util.js";
+import { hideClassPrivateProps, isStringDomain, removeNullUndefinedValues, throwWithErrorCode, timestamp } from "../../../util.js";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
@@ -68,7 +68,7 @@ const TABLES = Object.freeze({
 });
 
 export class DbHandler {
-    private _db!: BetterSqlite3Database;
+    _db!: BetterSqlite3Database;
     private _subplebbit!: LocalSubplebbit;
     private _transactionDepth!: number;
     private _dbConfig!: { filename: string } & Database.Options;
@@ -388,7 +388,8 @@ export class DbHandler {
                 commentModeration TEXT NOT NULL, -- JSON
                 insertedAt INTEGER NOT NULL,
                 extraProps TEXT NULLABLE, -- JSON
-                targetAuthorSignerAddress TEXT NULLABLE -- the signer address of the comment author being moderated (for bans/flairs)
+                targetAuthorSignerAddress TEXT NULLABLE, -- the signer address of the comment author being moderated (for bans/flairs)
+                targetAuthorDomain TEXT NULLABLE -- the domain address (e.g., spammer.eth) of the comment author being moderated
             )
         `);
     }
@@ -399,6 +400,7 @@ export class DbHandler {
                 commentCid TEXT NOT NULL PRIMARY KEY UNIQUE REFERENCES ${TABLES.COMMENTS}(cid) ON DELETE CASCADE,
                 aliasPrivateKey TEXT NOT NULL,
                 originalAuthorSignerPublicKey TEXT NOT NULL,
+                originalAuthorDomain TEXT NULLABLE, -- the original author's domain address (e.g., user.eth) if they used one
                 mode TEXT NOT NULL CHECK(mode IN ('per-post', 'per-reply', 'per-author')),
                 insertedAt INTEGER NOT NULL
             )
@@ -491,6 +493,7 @@ export class DbHandler {
             await this._purgePublicationTablesWithDuplicateSignatures();
             if (currentDbVersion < 29) this._backfillApprovedCommentNumbers();
             if (currentDbVersion < 31) this._backfillTargetAuthorSignerAddress();
+            if (currentDbVersion < 32) this._backfillTargetAuthorDomain();
 
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
@@ -613,6 +616,64 @@ export class DbHandler {
 
         updateMany(moderationsToUpdate);
         log(`Backfilled targetAuthorSignerAddress for ${moderationsToUpdate.length} comment moderations`);
+    }
+
+    private _backfillTargetAuthorDomain() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_backfillTargetAuthorDomain");
+
+        // Find comment moderations that have author-related edits (bans/flairs) but no targetAuthorDomain
+        // and the comment author used a domain address
+        const moderationsToUpdate = this._db
+            .prepare(
+                `
+            SELECT cm.rowid, c.author as commentAuthor,
+                   pa.originalAuthorDomain
+            FROM ${TABLES.COMMENT_MODERATIONS} cm
+            LEFT JOIN ${TABLES.COMMENTS} c ON cm.commentCid = c.cid
+            LEFT JOIN ${TABLES.PSEUDONYMITY_ALIASES} pa ON cm.commentCid = pa.commentCid
+            WHERE cm.targetAuthorDomain IS NULL
+              AND json_extract(cm.commentModeration, '$.author') IS NOT NULL
+        `
+            )
+            .all() as {
+            rowid: number;
+            commentAuthor: string | null;
+            originalAuthorDomain: string | null;
+        }[];
+
+        if (moderationsToUpdate.length === 0) return;
+
+        const updateStmt = this._db.prepare(`UPDATE ${TABLES.COMMENT_MODERATIONS} SET targetAuthorDomain = ? WHERE rowid = ?`);
+
+        let updatedCount = 0;
+        const updateMany = this._db.transaction((items: typeof moderationsToUpdate) => {
+            for (const mod of items) {
+                let targetDomain: string | null = null;
+
+                // If the comment was published with pseudonymity, use the original author's domain
+                if (mod.originalAuthorDomain) {
+                    targetDomain = mod.originalAuthorDomain;
+                } else if (mod.commentAuthor) {
+                    // Parse the author JSON and check if address is a domain
+                    try {
+                        const author = JSON.parse(mod.commentAuthor) as { address?: string };
+                        if (author.address && isStringDomain(author.address)) {
+                            targetDomain = author.address;
+                        }
+                    } catch {
+                        // Ignore parse errors
+                    }
+                }
+
+                if (targetDomain) {
+                    updateStmt.run(targetDomain, mod.rowid);
+                    updatedCount++;
+                }
+            }
+        });
+
+        updateMany(moderationsToUpdate);
+        log(`Backfilled targetAuthorDomain for ${updatedCount} comment moderations`);
     }
 
     private _getColumnNames(tableName: string): string[] {
@@ -932,8 +993,8 @@ export class DbHandler {
         const processedAliases = this._processRecordsForDbBeforeInsert(aliases);
         const stmt = this._db.prepare(`
             INSERT OR REPLACE INTO ${TABLES.PSEUDONYMITY_ALIASES}
-            (commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt)
-            VALUES (@commentCid, @aliasPrivateKey, @originalAuthorSignerPublicKey, @mode, @insertedAt)
+            (commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, originalAuthorDomain, mode, insertedAt)
+            VALUES (@commentCid, @aliasPrivateKey, @originalAuthorSignerPublicKey, @originalAuthorDomain, @mode, @insertedAt)
         `);
 
         const insertMany = this._db.transaction((items: PseudonymityAliasRow[]) => {
@@ -989,8 +1050,8 @@ export class DbHandler {
 
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_MODERATIONS}
-            (commentCid, author, signature, modSignerAddress, protocolVersion, subplebbitAddress, timestamp, commentModeration, insertedAt, extraProps, targetAuthorSignerAddress)
-            VALUES (@commentCid, @author, @signature, @modSignerAddress, @protocolVersion, @subplebbitAddress, @timestamp, @commentModeration, @insertedAt, @extraProps, @targetAuthorSignerAddress)
+            (commentCid, author, signature, modSignerAddress, protocolVersion, subplebbitAddress, timestamp, commentModeration, insertedAt, extraProps, targetAuthorSignerAddress, targetAuthorDomain)
+            VALUES (@commentCid, @author, @signature, @modSignerAddress, @protocolVersion, @subplebbitAddress, @timestamp, @commentModeration, @insertedAt, @extraProps, @targetAuthorSignerAddress, @targetAuthorDomain)
         `);
 
         const defaults = remeda.mapToObj(columnNames, (column) => [column, null]);
@@ -1520,7 +1581,7 @@ export class DbHandler {
     queryPseudonymityAliasByCommentCid(commentCid: string): PseudonymityAliasRow | undefined {
         const row = this._db
             .prepare(
-                `SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt FROM ${TABLES.PSEUDONYMITY_ALIASES} WHERE commentCid = ?`
+                `SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, originalAuthorDomain, mode, insertedAt FROM ${TABLES.PSEUDONYMITY_ALIASES} WHERE commentCid = ?`
             )
             .get(commentCid) as PseudonymityAliasRow | undefined;
         return row;
@@ -1530,7 +1591,7 @@ export class DbHandler {
         const row = this._db
             .prepare(
                 `
-            SELECT alias.commentCid, alias.aliasPrivateKey, alias.originalAuthorSignerPublicKey, alias.mode, alias.insertedAt
+            SELECT alias.commentCid, alias.aliasPrivateKey, alias.originalAuthorSignerPublicKey, alias.originalAuthorDomain, alias.mode, alias.insertedAt
             FROM ${TABLES.PSEUDONYMITY_ALIASES} AS alias
             INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
             WHERE alias.mode = 'per-post' AND alias.originalAuthorSignerPublicKey = ? AND comments.postCid = ?
@@ -1546,7 +1607,7 @@ export class DbHandler {
         const row = this._db
             .prepare(
                 `
-            SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, mode, insertedAt
+            SELECT commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, originalAuthorDomain, mode, insertedAt
             FROM ${TABLES.PSEUDONYMITY_ALIASES}
             WHERE mode = 'per-author' AND originalAuthorSignerPublicKey = ?
             ORDER BY insertedAt ASC
@@ -1955,12 +2016,16 @@ export class DbHandler {
         };
     }
 
-    queryCalculatedCommentUpdate(
-        comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">
-    ): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion"> {
+    queryCalculatedCommentUpdate(opts: {
+        comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">;
+        authorDomain?: string;
+    }): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion"> {
+        const { comment, authorDomain } = opts;
+
         const authorSubplebbit = this.querySubplebbitAuthorForCommentUpdate({
             authorSignerAddress: comment.authorSignerAddress,
-            commentCid: comment.cid
+            commentCid: comment.cid,
+            authorDomain
         });
         const authorEdit = this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress);
         const commentUpdateCounts = this._queryCommentCounts(comment.cid);
@@ -2022,19 +2087,36 @@ export class DbHandler {
         return results.map((r) => this._parseCommentsTableRow(r));
     }
 
-    queryAuthorModEdits(authorSignerAddresses: string[]): Pick<SubplebbitAuthor, "banExpiresAt" | "flair"> {
-        if (authorSignerAddresses.length === 0) return {};
-        const placeholders = authorSignerAddresses.map(() => "?").join(",");
+    queryAuthorModEdits(opts: {
+        authorSignerAddresses: string[];
+        authorDomain?: string;
+    }): Pick<SubplebbitAuthor, "banExpiresAt" | "flair"> {
+        const { authorSignerAddresses, authorDomain } = opts;
+        if (authorSignerAddresses.length === 0 && !authorDomain) return {};
 
-        // Query directly by targetAuthorSignerAddress to find bans/flairs even for purged comments
+        const conditions: string[] = [];
+        const params: string[] = [];
+
+        if (authorSignerAddresses.length > 0) {
+            const placeholders = authorSignerAddresses.map(() => "?").join(",");
+            conditions.push(`targetAuthorSignerAddress IN (${placeholders})`);
+            params.push(...authorSignerAddresses);
+        }
+
+        if (authorDomain) {
+            conditions.push(`targetAuthorDomain = ?`);
+            params.push(authorDomain);
+        }
+
+        // Query directly by targetAuthorSignerAddress or targetAuthorDomain to find bans/flairs even for purged comments
         const modAuthorEditsRaw = this._db
             .prepare(
                 `
             SELECT json_extract(commentModeration, '$.author') AS commentAuthorJson FROM ${TABLES.COMMENT_MODERATIONS}
-            WHERE targetAuthorSignerAddress IN (${placeholders}) AND json_extract(commentModeration, '$.author') IS NOT NULL ORDER BY rowid DESC
+            WHERE (${conditions.join(" OR ")}) AND json_extract(commentModeration, '$.author') IS NOT NULL ORDER BY rowid DESC
         `
             )
-            .all(...authorSignerAddresses) as { commentAuthorJson: string }[];
+            .all(...params) as { commentAuthorJson: string }[];
 
         const modAuthorEdits = modAuthorEditsRaw.map(
             (r) => JSON.parse(r.commentAuthorJson) as CommentModerationTableRow["commentModeration"]["author"]
@@ -2047,7 +2129,7 @@ export class DbHandler {
         return aggregateAuthor;
     }
 
-    querySubplebbitAuthor(authorSignerAddress: string): SubplebbitAuthor | undefined {
+    querySubplebbitAuthor(authorSignerAddress: string, authorDomain?: string): SubplebbitAuthor | undefined {
         const authorSignerAddresses = new Set<string>([authorSignerAddress]);
 
         // If the provided address is the original signer, include all alias signer addresses for that author.
@@ -2093,18 +2175,19 @@ export class DbHandler {
             }
         }
 
-        return this._querySubplebbitAuthorByAddresses([...authorSignerAddresses]);
+        return this._querySubplebbitAuthorByAddresses([...authorSignerAddresses], undefined, authorDomain);
     }
 
     /** Shared helper: query karma for a set of addresses, with optional separate addresses for mod edits */
     private _querySubplebbitAuthorByAddresses(
         karmaAddresses: string[],
-        modEditAddresses: string[] = karmaAddresses
+        modEditAddresses: string[] = karmaAddresses,
+        authorDomain?: string
     ): SubplebbitAuthor | undefined {
         if (karmaAddresses.length === 0) return undefined;
         const placeholders = karmaAddresses.map(() => "?").join(", ");
 
-        const modAuthorEdits = this.queryAuthorModEdits(modEditAddresses);
+        const modAuthorEdits = this.queryAuthorModEdits({ authorSignerAddresses: modEditAddresses, authorDomain });
 
         const authorCommentsData = this._db
             .prepare(
@@ -2151,14 +2234,18 @@ export class DbHandler {
      * We query karma for ONLY the alias address (no lookup to other aliases like querySubplebbitAuthor does),
      * but include mod edits from both alias and original author.
      */
-    querySubplebbitAuthorForCommentUpdate(opts: { authorSignerAddress: string; commentCid: string }): SubplebbitAuthor | undefined {
-        const { authorSignerAddress, commentCid } = opts;
+    querySubplebbitAuthorForCommentUpdate(opts: {
+        authorSignerAddress: string;
+        commentCid: string;
+        authorDomain?: string;
+    }): SubplebbitAuthor | undefined {
+        const { authorSignerAddress, commentCid, authorDomain } = opts;
 
         // Check if this comment has a pseudonymity alias
         const aliasRow = this.queryPseudonymityAliasByCommentCid(commentCid);
         if (!aliasRow) {
             // No pseudonymity mode - use standard aggregated karma
-            return this.querySubplebbitAuthor(authorSignerAddress);
+            return this.querySubplebbitAuthor(authorSignerAddress, authorDomain);
         }
 
         // Get original author's address for mod edits (bans/flairs are applied to original author)
@@ -2172,8 +2259,11 @@ export class DbHandler {
             // ignore malformed keys
         }
 
+        // For mod edits (bans/flairs), use the original author's domain if available
+        const modEditDomain = aliasRow.originalAuthorDomain || authorDomain;
+
         // Query karma for just this alias, but mod edits from both alias and original
-        return this._querySubplebbitAuthorByAddresses([authorSignerAddress], modEditAddresses);
+        return this._querySubplebbitAuthorByAddresses([authorSignerAddress], modEditAddresses, modEditDomain);
     }
 
     private _getAllDescendantCids(cid: string): string[] {

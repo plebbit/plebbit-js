@@ -79,14 +79,14 @@ describeSkipIfRpc("comment.update publishing depth coverage", function () {
 });
 
 async function createPublishingTestContext({ targetDepth }: { targetDepth: number }): Promise<PublishingTestContext> {
-    const dbHandler = await createTestDbHandler();
+    const _dbHandler = await createTestDbHandler();
     const { rows, childrenByParent } = await seedCommentChain({
         depth: targetDepth,
-        dbHandler
+        _dbHandler
     });
     const rowsByDepth = new Map(rows.map((row) => [row.depth, row]));
     const calculatedUpdates = new Map(
-        rows.map((row) => [row.cid, dbHandler.queryCalculatedCommentUpdate({ comment: row }) as CommentUpdateType])
+        rows.map((row) => [row.cid, _dbHandler.queryCalculatedCommentUpdate({ comment: row }) as CommentUpdateType])
     );
     const pageGenerator = new MockPageGenerator(childrenByParent, calculatedUpdates);
     const signer = await createSigner();
@@ -99,7 +99,7 @@ async function createPublishingTestContext({ targetDepth }: { targetDepth: numbe
         _plebbit: { validatePages: false },
         _cidsToUnPin: new Set<string>(),
         _mfsPathsToRemove: new Set<string>(),
-        dbHandler: {
+        _dbHandler: {
             queryStoredCommentUpdate: (): undefined => undefined,
             queryCalculatedCommentUpdate: (opts: Parameters<DbHandler["queryCalculatedCommentUpdate"]>[0]) =>
                 clone(calculatedUpdates.get(opts.comment.cid))
@@ -123,7 +123,7 @@ async function createPublishingTestContext({ targetDepth }: { targetDepth: numbe
                 localMfsPath: string | undefined;
             }>,
         cleanup: async () => {
-            await dbHandler.destoryConnection();
+            await _dbHandler.destoryConnection();
         }
     };
 }
@@ -140,10 +140,10 @@ async function createTestDbHandler(): Promise<DbHandler> {
 
 async function seedCommentChain({
     depth,
-    dbHandler
+    _dbHandler
 }: {
     depth: number;
-    dbHandler: DbHandler;
+    _dbHandler: DbHandler;
 }): Promise<{ rows: CommentsTableRowInsert[]; childrenByParent: Map<string, CommentsTableRowInsert[]> }> {
     const rows: CommentsTableRowInsert[] = [];
     const childrenByParent = new Map<string, CommentsTableRowInsert[]>();
@@ -182,7 +182,7 @@ async function seedCommentChain({
             thumbnailUrlHeight: null,
             extraProps: null
         };
-        dbHandler.insertComments([row as never]);
+        _dbHandler.insertComments([row as never]);
         rows.push(row);
         if (row.parentCid) {
             if (!childrenByParent.has(row.parentCid)) childrenByParent.set(row.parentCid, []);
