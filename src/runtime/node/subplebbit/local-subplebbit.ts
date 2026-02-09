@@ -1712,6 +1712,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.features?.noSpoilerReplies && commentPublication.parentCid && commentPublication.spoiler === true)
                 return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
 
+            // noNestedReplies - block replies with depth > 1 (replies to replies)
+            if (this.features?.noNestedReplies && commentPublication.parentCid) {
+                const parent = this._dbHandler.queryComment(commentPublication.parentCid);
+                if (parent && parent.depth > 0) {
+                    return messages.ERR_NESTED_REPLIES_NOT_ALLOWED;
+                }
+            }
+
             if (commentPublication.parentCid && !commentPublication.postCid) return messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID;
 
             if (commentPublication.parentCid) {

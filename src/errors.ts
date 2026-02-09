@@ -256,6 +256,7 @@ export enum messages {
     ERR_REPLY_HAS_LINK_THAT_IS_IMAGE = "This subplebbit does not allow replies with image links",
     ERR_REPLY_HAS_LINK_THAT_IS_VIDEO = "This subplebbit does not allow replies with video links",
     ERR_REPLY_HAS_SPOILER_ENABLED = "This subplebbit does not allow authors to mark replies as spoilers",
+    ERR_NESTED_REPLIES_NOT_ALLOWED = "This subplebbit does not allow nested replies (depth > 1)",
     ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE = "Comment has no content, link or title",
     ERR_REQUEST_ENCRYPTED_IS_INVALID_JSON_AFTER_DECRYPTION = "request.encrypted is an invalid json after decrypting",
     ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING = "request.encrypted has an invalid schema after decrypting",

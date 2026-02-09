@@ -190,20 +190,20 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   noVideoReplies?: boolean // block only replies with video links
   noImageReplies?: boolean // block only replies with image links
   noSpoilerReplies?: boolean // author can't set spoiler = true on replies
+  noNestedReplies?: boolean // no nested replies, like old school forums and 4chan. Maximum depth is 1
+  safeForWork?: boolean // informational flag indicating this subplebbit is safe for work
   // not implemented
   noPolls?: boolean
   noCrossposts?: boolean
   noAuthors?: boolean // no authors at all, like 4chan
   anonymousAuthors?: boolean // authors are given anonymous ids inside threads, like 4chan
-  noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
-  safeForWork?: boolean
   authorFlairs?: boolean // authors can choose their own author flairs (otherwise only mods can)
   requireAuthorFlairs?: boolean // force authors to choose an author flair before posting
   postFlairs?: boolean // authors can choose their own post flairs (otherwise only mods can)
   requirePostFlairs?: boolean // force authors to choose a post flair before posting
   markdownImageReplies?: boolean
   markdownVideoReplies?: boolean
-  pseudonymityMode?: 'per-post' | 'per-reply' | 'per-author' // not implemented
+  pseudonymityMode?: 'per-post' | 'per-reply' | 'per-author'
 }
 SubplebbitEncryption {
   type: 'ed25519-aes-gcm' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
