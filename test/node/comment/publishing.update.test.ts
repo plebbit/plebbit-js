@@ -86,7 +86,7 @@ async function createPublishingTestContext({ targetDepth }: { targetDepth: numbe
     });
     const rowsByDepth = new Map(rows.map((row) => [row.depth, row]));
     const calculatedUpdates = new Map(
-        rows.map((row) => [row.cid, dbHandler.queryCalculatedCommentUpdate(row) as CommentUpdateType])
+        rows.map((row) => [row.cid, dbHandler.queryCalculatedCommentUpdate({ comment: row }) as CommentUpdateType])
     );
     const pageGenerator = new MockPageGenerator(childrenByParent, calculatedUpdates);
     const signer = await createSigner();
@@ -99,9 +99,10 @@ async function createPublishingTestContext({ targetDepth }: { targetDepth: numbe
         _plebbit: { validatePages: false },
         _cidsToUnPin: new Set<string>(),
         _mfsPathsToRemove: new Set<string>(),
-        _dbHandler: {
+        dbHandler: {
             queryStoredCommentUpdate: (): undefined => undefined,
-            queryCalculatedCommentUpdate: (comment: { cid: string }) => clone(calculatedUpdates.get(comment.cid))
+            queryCalculatedCommentUpdate: (opts: Parameters<DbHandler["queryCalculatedCommentUpdate"]>[0]) =>
+                clone(calculatedUpdates.get(opts.comment.cid))
         }
     };
 
