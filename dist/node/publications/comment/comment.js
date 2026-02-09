@@ -80,6 +80,7 @@ export class Comment extends Publication {
         this.nsfw = props.nsfw;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
+        this.quotedCids = props.quotedCids;
         // Initializing Comment Ipfs props
         if ("depth" in props && typeof props.depth === "number") {
             this.depth = props.depth;

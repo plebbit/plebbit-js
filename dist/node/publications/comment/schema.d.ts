@@ -16,6 +16,7 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     signer: z.ZodObject<{
         type: z.ZodEnum<{
             ed25519: "ed25519";
@@ -76,6 +77,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     signer: z.ZodObject<{
         type: z.ZodEnum<{
             ed25519: "ed25519";
@@ -119,7 +121,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodObject<{
         challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     }, z.core.$strip>>;
 }, z.core.$strict>;
-export declare const CommentSignedPropertyNames: ("timestamp" | "flair" | "subplebbitAddress" | "author" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "link" | "title" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid")[];
+export declare const CommentSignedPropertyNames: ("timestamp" | "flair" | "subplebbitAddress" | "author" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "link" | "title" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid" | "quotedCids")[];
 export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
@@ -175,6 +177,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strict>;
 export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     timestamp: z.ZodNumber;
@@ -202,6 +205,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -258,6 +262,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -343,6 +348,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strict>;
 export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString>>;
@@ -373,6 +379,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodString>;
         postCid: z.ZodOptional<z.ZodString>;
+        quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -430,6 +437,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -496,6 +504,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -711,6 +720,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -905,6 +915,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -1086,6 +1097,7 @@ export declare const CommentUpdateTableRowSchema: z.ZodObject<{
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;

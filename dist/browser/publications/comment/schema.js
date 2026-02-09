@@ -24,7 +24,8 @@ export const CreateCommentOptionsSchema = z
     linkHeight: z.number().positive().optional(),
     linkHtmlTagName: z.string().min(1).optional(),
     parentCid: CidStringSchema.optional(), // The parent comment CID
-    postCid: CidStringSchema.optional() // the post cid, required if the comment is reply
+    postCid: CidStringSchema.optional(), // the post cid, required if the comment is reply
+    quotedCids: z.array(CidStringSchema).optional() // CIDs of comments being quoted/referenced in this reply
 })
     .merge(CreatePublicationUserOptionsSchema)
     .strict();

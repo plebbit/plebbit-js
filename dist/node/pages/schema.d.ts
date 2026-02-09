@@ -27,6 +27,7 @@ export declare const PageIpfsSchema: z.ZodObject<{
             linkHtmlTagName: z.ZodOptional<z.ZodString>;
             parentCid: z.ZodOptional<z.ZodString>;
             postCid: z.ZodOptional<z.ZodString>;
+            quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -242,6 +243,7 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                 linkHtmlTagName: z.ZodOptional<z.ZodString>;
                 parentCid: z.ZodOptional<z.ZodString>;
                 postCid: z.ZodOptional<z.ZodString>;
+                quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                 author: z.ZodObject<{
                     address: z.ZodString;
                     previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -447,6 +449,7 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                 linkHtmlTagName: z.ZodOptional<z.ZodString>;
                 parentCid: z.ZodOptional<z.ZodString>;
                 postCid: z.ZodOptional<z.ZodString>;
+                quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                 author: z.ZodObject<{
                     address: z.ZodString;
                     previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -629,6 +632,7 @@ export declare const ModQueuePageIpfsSchema: z.ZodObject<{
             linkHtmlTagName: z.ZodOptional<z.ZodString>;
             parentCid: z.ZodOptional<z.ZodString>;
             postCid: z.ZodOptional<z.ZodString>;
+            quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodString>;

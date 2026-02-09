@@ -26,6 +26,7 @@ export declare const RpcCommentEventResultSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodString>;
     postCid: z.ZodOptional<z.ZodString>;
+    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -199,6 +200,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodObject<{
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;

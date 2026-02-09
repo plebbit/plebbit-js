@@ -12,6 +12,7 @@ export type PseudonymityAliasRow = {
     commentCid: CommentsTableRow["cid"];
     aliasPrivateKey: SignerType["privateKey"];
     originalAuthorSignerPublicKey: NonNullable<SignerType["publicKey"]>;
+    originalAuthorDomain: string | null;
     mode: PseudonymityMode;
     insertedAt: number;
 };

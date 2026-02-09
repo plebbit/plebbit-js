@@ -514,6 +514,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -844,6 +845,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                         linkHtmlTagName: z.ZodOptional<z.ZodString>;
                         parentCid: z.ZodOptional<z.ZodString>;
                         postCid: z.ZodOptional<z.ZodString>;
+                        quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                         author: z.ZodObject<{
                             address: z.ZodString;
                             previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -1292,6 +1294,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -2003,6 +2006,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -2226,6 +2230,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -2671,6 +2676,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -2894,6 +2900,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -3557,6 +3564,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;
@@ -3780,6 +3788,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     linkHtmlTagName: z.ZodOptional<z.ZodString>;
                     parentCid: z.ZodOptional<z.ZodString>;
                     postCid: z.ZodOptional<z.ZodString>;
+                    quotedCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
                     author: z.ZodObject<{
                         address: z.ZodString;
                         previousCommentCid: z.ZodOptional<z.ZodString>;

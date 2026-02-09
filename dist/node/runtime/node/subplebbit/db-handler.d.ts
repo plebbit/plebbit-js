@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import Database, { type Database as BetterSqlite3Database } from "better-sqlite3";
 import type { PageOptions } from "./page-generator.js";
 import type { InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitStats } from "../../../subplebbit/types.js";
 import type { CommentEditsTableRow, CommentEditsTableRowInsert } from "../../../publications/comment-edit/types.js";
@@ -8,7 +8,7 @@ import type { CommentModerationsTableRowInsert } from "../../../publications/com
 import type { VotesTableRow, VotesTableRowInsert } from "../../../publications/vote/types.js";
 import type { PseudonymityAliasRow, CommentCidWithReplies, PurgedCommentTableRows } from "./db-handler-types.js";
 export declare class DbHandler {
-    private _db;
+    _db: BetterSqlite3Database;
     private _subplebbit;
     private _transactionDepth;
     private _dbConfig;
@@ -87,6 +87,7 @@ export declare class DbHandler {
     private _tableExists;
     private _backfillApprovedCommentNumbers;
     private _backfillTargetAuthorSignerAddress;
+    private _backfillTargetAuthorDomain;
     private _getColumnNames;
     private _copyTable;
     private _purgePublicationTablesWithDuplicateSignatures;
@@ -165,12 +166,18 @@ export declare class DbHandler {
         approved: boolean;
     } | undefined;
     private _calculateCommentNumbers;
-    queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">;
+    queryCalculatedCommentUpdate(opts: {
+        comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">;
+        authorDomain?: string;
+    }): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">;
     queryLatestPostCid(): Pick<CommentsTableRow, "cid"> | undefined;
     queryLatestCommentCid(): Pick<CommentsTableRow, "cid"> | undefined;
     queryAllCommentsOrderedByIdAsc(): CommentsTableRow[];
-    queryAuthorModEdits(authorSignerAddresses: string[]): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
-    querySubplebbitAuthor(authorSignerAddress: string): SubplebbitAuthor | undefined;
+    queryAuthorModEdits(opts: {
+        authorSignerAddresses: string[];
+        authorDomain?: string;
+    }): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
+    querySubplebbitAuthor(authorSignerAddress: string, authorDomain?: string): SubplebbitAuthor | undefined;
     /** Shared helper: query karma for a set of addresses, with optional separate addresses for mod edits */
     private _querySubplebbitAuthorByAddresses;
     /**
@@ -187,6 +194,7 @@ export declare class DbHandler {
     querySubplebbitAuthorForCommentUpdate(opts: {
         authorSignerAddress: string;
         commentCid: string;
+        authorDomain?: string;
     }): SubplebbitAuthor | undefined;
     private _getAllDescendantCids;
     purgeComment(cid: string, isNestedCall?: boolean): PurgedCommentTableRows[];

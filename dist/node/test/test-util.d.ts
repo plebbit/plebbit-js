@@ -255,6 +255,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                         linkHtmlTagName?: string | undefined;
                         parentCid?: string | undefined;
                         postCid?: string | undefined;
+                        quotedCids?: string[] | undefined;
                         thumbnailUrl?: string | undefined;
                         thumbnailUrlWidth?: number | undefined;
                         thumbnailUrlHeight?: number | undefined;
@@ -730,6 +731,7 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                     linkHtmlTagName?: string | undefined;
                     parentCid?: string | undefined;
                     postCid?: string | undefined;
+                    quotedCids?: string[] | undefined;
                     thumbnailUrl?: string | undefined;
                     thumbnailUrlWidth?: number | undefined;
                     thumbnailUrlHeight?: number | undefined;

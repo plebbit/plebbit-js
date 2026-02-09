@@ -230,6 +230,7 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<{
     modSignerAddress: z.ZodString;
     extraProps: z.ZodOptional<z.ZodObject<{}, z.core.$loose>>;
     targetAuthorSignerAddress: z.ZodOptional<z.ZodString>;
+    targetAuthorDomain: z.ZodOptional<z.ZodString>;
 }, z.core.$strict>;
 export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString>>;

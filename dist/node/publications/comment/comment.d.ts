@@ -23,6 +23,7 @@ export declare class Comment extends Publication implements Partial<CommentUpdat
     thumbnailUrlHeight?: CommentIpfsType["thumbnailUrlHeight"];
     cid?: CommentIpfsWithCidPostCidDefined["cid"];
     parentCid?: CommentIpfsType["parentCid"];
+    quotedCids?: CommentPubsubMessagePublication["quotedCids"];
     content?: CommentPubsubMessagePublication["content"];
     previousCid?: CommentIpfsType["previousCid"];
     depth?: CommentIpfsType["depth"];
