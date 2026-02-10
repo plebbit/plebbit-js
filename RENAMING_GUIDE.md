@@ -1062,3 +1062,18 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 - `chainProviders` removed from PlebbitOptions - now configured per-resolver in `domainResolvers` config
 - Must register resolvers in `PKC.domainResolvers` static registry before use
 - Challenges fall back to resolver URLs, then to their own hardcoded defaults
+
+### 17.6 Challenge System Cleanup
+
+**Default Challenge:**
+- [ ] Change default challenge from `publication-match` to `question` (question/answer challenge)
+  - File: `src/runtime/node/subplebbit/local-subplebbit.ts` (line ~193, `_defaultSubplebbitChallenges`)
+
+**Remove Built-in Challenges:**
+- [ ] Remove `mintpass` challenge from `plebbitJsChallenges`
+  - Delete directory: `src/runtime/node/subplebbit/challenges/plebbit-js-challenges/mintpass/`
+  - Remove import and entry from: `src/runtime/node/subplebbit/challenges/index.ts`
+- [ ] Remove `captcha-canvas-v3` challenge from `plebbitJsChallenges`
+  - Delete directory: `src/runtime/node/subplebbit/challenges/plebbit-js-challenges/captcha-canvas-v3/`
+  - Remove import and entry from: `src/runtime/node/subplebbit/challenges/index.ts`
+  - Remove `canvas` and related dependencies from `package.json`
