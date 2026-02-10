@@ -28,7 +28,10 @@ export declare class BasePages {
     protected _initClientsManager(plebbit: Plebbit): void;
     resetPages(): void;
     _validatePage(pageIpfs: PageIpfs | ModQueuePageIpfs, pageCid?: string): Promise<void>;
-    _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs | ModQueuePageIpfs>;
+    _fetchAndVerifyPage(opts: {
+        pageCid: string;
+        pageMaxSize?: number;
+    }): Promise<PageIpfs | ModQueuePageIpfs>;
     _parseRawPageIpfs(pageIpfs: PageIpfs | ModQueuePageIpfs): ModQueuePageTypeJson | PageTypeJson;
     getPage(pageCid: GetPageParam): Promise<PageTypeJson | ModQueuePageTypeJson>;
     validatePage(page: PageIpfs | PageTypeJson): Promise<void>;
@@ -43,7 +46,10 @@ export declare class RepliesPages extends BasePages {
     constructor(props: RepliesProps);
     updateProps(props: Omit<RepliesProps, "plebbit" | "parentComment">): void;
     protected _initClientsManager(plebbit: Plebbit): void;
-    _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs>;
+    _fetchAndVerifyPage(opts: {
+        pageCid: string;
+        pageMaxSize?: number;
+    }): Promise<PageIpfs>;
     _parseRawPageIpfs(pageIpfs: PageIpfs): PageTypeJson;
     getPage(args: GetPageParam): Promise<PageTypeJson>;
     _validatePage(pageIpfs: PageIpfs, pageCid?: string): Promise<void>;
@@ -58,7 +64,10 @@ export declare class PostsPages extends BasePages {
     constructor(props: PostsProps);
     updateProps(props: Omit<PostsProps, "plebbit">): void;
     protected _initClientsManager(plebbit: Plebbit): void;
-    _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs>;
+    _fetchAndVerifyPage(opts: {
+        pageCid: string;
+        pageMaxSize?: number;
+    }): Promise<PageIpfs>;
     _parseRawPageIpfs(pageIpfs: PageIpfs): PageTypeJson;
     getPage(getPageArgs: GetPageParam): Promise<PageTypeJson>;
     _validatePage(pageIpfs: PageIpfs, pageCid?: string): Promise<void>;
@@ -71,7 +80,10 @@ export declare class ModQueuePages extends BasePages {
     constructor(props: ModQueueProps);
     resetPages(): void;
     protected _initClientsManager(plebbit: Plebbit): void;
-    _fetchAndVerifyPage(pageCid: string): Promise<ModQueuePageIpfs>;
+    _fetchAndVerifyPage(opts: {
+        pageCid: string;
+        pageMaxSize?: number;
+    }): Promise<ModQueuePageIpfs>;
     _parseRawPageIpfs(pageIpfs: ModQueuePageIpfs): ModQueuePageTypeJson;
     getPage(getPageArgs: GetPageParam): Promise<ModQueuePageTypeJson>;
     _validatePage(pageIpfs: ModQueuePageIpfs, pageCid?: string): Promise<void>;

@@ -9,7 +9,8 @@ export const RpcSubplebbitAddressParamSchema = z.object({ address: SubplebbitAdd
 export const RpcAuthorAddressParamSchema = z.object({ address: AuthorAddressSchema });
 export const RpcSubplebbitPageParamSchema = RpcCidParamSchema.extend({
     subplebbitAddress: SubplebbitAddressSchema,
-    type: z.enum(["posts", "modqueue"])
+    type: z.enum(["posts", "modqueue"]),
+    pageMaxSize: z.number().positive().int()
 });
 export const RpcCommentRepliesPageParamSchema = RpcSubplebbitPageParamSchema.omit({ type: true }).extend({ commentCid: CidStringSchema });
 //# sourceMappingURL=schema.js.map

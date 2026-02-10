@@ -35,10 +35,10 @@ export class BasePages {
     async _validatePage(pageIpfs, pageCid) {
         throw Error("should be implemented");
     }
-    async _fetchAndVerifyPage(pageCid) {
-        const pageIpfs = await this._clientsManager.fetchPage(pageCid);
+    async _fetchAndVerifyPage(opts) {
+        const pageIpfs = await this._clientsManager.fetchPage(opts.pageCid, opts.pageMaxSize);
         if (!this._clientsManager._plebbit._plebbitRpcClient && this._clientsManager._plebbit.validatePages)
-            await this._validatePage(pageIpfs, pageCid);
+            await this._validatePage(pageIpfs, opts.pageCid);
         return pageIpfs;
     }
     _parseRawPageIpfs(pageIpfs) {
@@ -48,7 +48,7 @@ export class BasePages {
         if (!this._subplebbit?.address)
             throw Error("Subplebbit address needs to be defined under page");
         const parsedArgs = parsePageCidParams(pageCid);
-        const pageIpfs = await this._fetchAndVerifyPage(parsedArgs.cid);
+        const pageIpfs = await this._fetchAndVerifyPage({ pageCid: parsedArgs.cid });
         return this._parseRawPageIpfs(pageIpfs);
     }
     // method below will be present in both subplebbit.posts and comment.replies
@@ -73,8 +73,8 @@ export class RepliesPages extends BasePages {
         this._clientsManager = new RepliesPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
-    async _fetchAndVerifyPage(pageCid) {
-        return await super._fetchAndVerifyPage(pageCid);
+    async _fetchAndVerifyPage(opts) {
+        return await super._fetchAndVerifyPage(opts);
     }
     _parseRawPageIpfs(pageIpfs) {
         return parsePageIpfs(pageIpfs);
@@ -154,8 +154,8 @@ export class PostsPages extends BasePages {
         this._clientsManager = new SubplebbitPostsPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
-    async _fetchAndVerifyPage(pageCid) {
-        return await super._fetchAndVerifyPage(pageCid);
+    async _fetchAndVerifyPage(opts) {
+        return await super._fetchAndVerifyPage(opts);
     }
     _parseRawPageIpfs(pageIpfs) {
         return parsePageIpfs(pageIpfs);
@@ -203,8 +203,8 @@ export class ModQueuePages extends BasePages {
         this._clientsManager = new SubplebbitModQueueClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
-    async _fetchAndVerifyPage(pageCid) {
-        return await super._fetchAndVerifyPage(pageCid);
+    async _fetchAndVerifyPage(opts) {
+        return await super._fetchAndVerifyPage(opts);
     }
     _parseRawPageIpfs(pageIpfs) {
         return parseModQueuePageIpfs(pageIpfs);

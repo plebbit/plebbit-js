@@ -362,8 +362,22 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             };
             const checkResponseHeadersIfOldCid = async (gatewayRes) => {
                 const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag")?.toString();
-                if (cidOfIpnsFromEtagHeader && // clean up " from the etag header
-                    this._updateCidsAlreadyLoaded.has(CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join("")).toV0().toString())) {
+                // If etag is missing, skip early-abort optimization and let the body be fetched
+                if (!cidOfIpnsFromEtagHeader) {
+                    return; // Continue to fetch and validate the body normally
+                }
+                let parsedCid;
+                try {
+                    // clean up W/ prefix and quotes from the etag header
+                    parsedCid = CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join(""))
+                        .toV0()
+                        .toString();
+                }
+                catch (e) {
+                    // Malformed etag header - skip optimization and let body be fetched
+                    return; // Continue to fetch and validate the body normally
+                }
+                if (this._updateCidsAlreadyLoaded.has(parsedCid)) {
                     abortController.abort("Aborting subplebbit IPNS request because we already loaded this record");
                     return new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
                         cidOfIpnsFromEtagHeader,
