@@ -3,13 +3,15 @@ import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import { mockGatewayPlebbit, mockPlebbit } from "../../../dist/node/test/test-util.js";
 import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { messages } from "../../../dist/node/errors.js";
 import { convertBase58IpnsNameToBase36Cid } from "../../../dist/node/signer/util.js";
 
 import type { Plebbit } from "../../../dist/node/plebbit/plebbit.js";
 import type { SignerWithPublicKeyAddress } from "../../../dist/node/signer/index.js";
 import type { SubplebbitIpfsType } from "../../../dist/node/subplebbit/types.js";
 
+// Tests for gateway responses with missing or malformed etag headers
+// Since etag is now optional, gateways with missing/malformed etag should still succeed
+// as long as the body can be fetched and validated
 describe("Test gateway response with malformed etag headers", async () => {
     // Mock gateway ports (chosen to avoid conflicts with test-server.js and multiplegateways tests)
     const MALFORMED_ETAG_GATEWAY_PORT = 25020;
@@ -165,7 +167,8 @@ describe("Test gateway response with malformed etag headers", async () => {
         }
     });
 
-    it(`Gateway with malformed etag is marked as failed, valid gateway succeeds`, async () => {
+    it(`Gateway with malformed etag still succeeds by fetching body`, async () => {
+        // Since etag is optional, malformed etag just skips the optimization
         const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [malformedEtagGateway, validGateway] } });
         try {
             const sub = await customPlebbit.getSubplebbit({ address: subAddress });
@@ -179,7 +182,8 @@ describe("Test gateway response with malformed etag headers", async () => {
         }
     });
 
-    it(`Gateway with weak etag containing malformed CID is marked as failed`, async () => {
+    it(`Gateway with weak etag containing malformed CID still succeeds`, async () => {
+        // Since etag is optional, malformed CID in etag just skips the optimization
         const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [weakMalformedEtagGateway, validGateway] } });
         try {
             const sub = await customPlebbit.getSubplebbit({ address: subAddress });
@@ -190,28 +194,11 @@ describe("Test gateway response with malformed etag headers", async () => {
         }
     });
 
-    it(`All gateways with malformed etag headers fail with proper error`, async () => {
+    it(`All gateways with malformed etag headers still succeed by fetching body`, async () => {
+        // Since etag is optional, gateways with malformed etag will fetch body and succeed
         const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [malformedEtagGateway, weakMalformedEtagGateway] } });
         try {
-            await customPlebbit.getSubplebbit({ address: subAddress });
-            expect.fail("Should have thrown");
-        } catch (e) {
-            expect((e as { code: string }).code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-            const gatewayToError = (e as { details: { gatewayToError: Record<string, { code: string }> } }).details.gatewayToError;
-            // Both gateways should have failed with etag parsing error
-            expect(gatewayToError[malformedEtagGateway].code).to.equal("ERR_FAILED_TO_PARSE_CID_FROM_GATEWAY_RESPONSE_ETAG");
-            expect(gatewayToError[weakMalformedEtagGateway].code).to.equal("ERR_FAILED_TO_PARSE_CID_FROM_GATEWAY_RESPONSE_ETAG");
-        } finally {
-            await customPlebbit.destroy();
-        }
-    });
-
-    it(`Gateway with empty etag is marked as failed`, async () => {
-        // Empty etag should be treated as missing - the gateway should fail
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [emptyEtagGateway, validGateway] } });
-        try {
             const sub = await customPlebbit.getSubplebbit({ address: subAddress });
-            // Should succeed via valid gateway
             expect(sub.address).to.equal(subAddress);
             expect(sub.updatedAt).to.be.a("number");
         } finally {
@@ -219,26 +206,35 @@ describe("Test gateway response with malformed etag headers", async () => {
         }
     });
 
-    it(`All gateways with empty/missing etag headers fail with proper error`, async () => {
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [emptyEtagGateway] } });
+    it(`Gateway with empty etag still succeeds by fetching body`, async () => {
+        // Empty etag is treated as missing, but the body is still fetched and validated
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [emptyEtagGateway, validGateway] } });
         try {
-            await customPlebbit.getSubplebbit({ address: subAddress });
-            expect.fail("Should have thrown");
-        } catch (e) {
-            expect((e as { code: string }).code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-            const gatewayToError = (e as { details: { gatewayToError: Record<string, { code: string }> } }).details.gatewayToError;
-            expect(gatewayToError[emptyEtagGateway].code).to.equal("ERR_GATEWAY_MISSING_ETAG_HEADER");
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.address).to.equal(subAddress);
+            expect(sub.updatedAt).to.be.a("number");
         } finally {
             await customPlebbit.destroy();
         }
     });
 
-    it(`Gateway with quotes-only etag fails with parsing error`, async () => {
-        // etag: "" becomes empty string after stripping quotes, which fails CID.parse()
+    it(`Single gateway with empty etag header still succeeds`, async () => {
+        // Even with only one gateway that has empty etag, the body is fetched and validated
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [emptyEtagGateway] } });
+        try {
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.address).to.equal(subAddress);
+            expect(sub.updatedAt).to.be.a("number");
+        } finally {
+            await customPlebbit.destroy();
+        }
+    });
+
+    it(`Gateway with quotes-only etag still succeeds by fetching body`, async () => {
+        // etag: "" is treated as malformed, but body is still fetched and validated
         const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [quotesOnlyEtagGateway, validGateway] } });
         try {
             const sub = await customPlebbit.getSubplebbit({ address: subAddress });
-            // Should succeed via valid gateway
             expect(sub.address).to.equal(subAddress);
             expect(sub.updatedAt).to.be.a("number");
         } finally {

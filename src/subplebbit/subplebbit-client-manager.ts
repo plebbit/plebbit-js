@@ -472,14 +472,9 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
 
             const checkResponseHeadersIfOldCid = async (gatewayRes: Response) => {
                 const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag")?.toString();
-                // etag is required for optimizing IPNS record loading - fail if missing
+                // If etag is missing, skip early-abort optimization and let the body be fetched
                 if (!cidOfIpnsFromEtagHeader) {
-                    abortController.abort("Aborting subplebbit IPNS request because gateway is missing etag header");
-                    return new PlebbitError("ERR_GATEWAY_MISSING_ETAG_HEADER", {
-                        ipnsName,
-                        gatewayRes,
-                        gatewayUrl
-                    });
+                    return; // Continue to fetch and validate the body normally
                 }
                 let parsedCid: string;
                 try {
@@ -488,15 +483,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                         .toV0()
                         .toString();
                 } catch (e) {
-                    // Malformed etag header - abort and mark gateway as failed
-                    abortController.abort("Aborting subplebbit IPNS request because gateway returned malformed etag");
-                    return new PlebbitError("ERR_FAILED_TO_PARSE_CID_FROM_GATEWAY_RESPONSE_ETAG", {
-                        cidOfIpnsFromEtagHeader,
-                        ipnsName,
-                        gatewayRes,
-                        gatewayUrl,
-                        parseError: String(e)
-                    });
+                    // Malformed etag header - skip optimization and let body be fetched
+                    return; // Continue to fetch and validate the body normally
                 }
                 if (this._updateCidsAlreadyLoaded.has(parsedCid)) {
                     abortController.abort("Aborting subplebbit IPNS request because we already loaded this record");

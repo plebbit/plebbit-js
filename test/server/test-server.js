@@ -173,7 +173,9 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["Gateway"]["PublicGateways"]["localhost"] = publicGatewayConfig;
     ipfsConfig["Gateway"]["PublicGateways"]["[::1]"] = publicGatewayConfig;
     ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+    ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
+    ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Expose-Headers"] = ["*"];
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
     ipfsConfig["Addresses"]["Swarm"] = [`/ip4/0.0.0.0/tcp/${nodeArgs.swarmPort}/ws`];
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
@@ -394,7 +396,10 @@ const setUpMockGateways = async () => {
         const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
         const subplebbitRecordThirtyMinuteOldIpfs = JSON.parse(JSON.stringify(subplebbitRecordThirtyMinuteOld.toJSONIpfs()));
         subplebbitRecordThirtyMinuteOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
-        subplebbitRecordThirtyMinuteOldIpfs.signature = await signSubplebbit({ subplebbit: subplebbitRecordThirtyMinuteOldIpfs, signer: signers[0] });
+        subplebbitRecordThirtyMinuteOldIpfs.signature = await signSubplebbit({
+            subplebbit: subplebbitRecordThirtyMinuteOldIpfs,
+            signer: signers[0]
+        });
         const updateCid = await calculateIpfsHash(JSON.stringify(subplebbitRecordThirtyMinuteOldIpfs));
         res.setHeader("x-ipfs-roots", updateCid);
         res.setHeader("etag", updateCid);
@@ -434,7 +439,10 @@ const setUpMockGateways = async () => {
         const subplebbitRecordTwoHoursOldIpfs = JSON.parse(JSON.stringify(subplebbitRecordTwoHoursOld.toJSONIpfs()));
 
         subplebbitRecordTwoHoursOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
-        subplebbitRecordTwoHoursOldIpfs.signature = await signSubplebbit({ subplebbit: subplebbitRecordTwoHoursOldIpfs, signer: signers[0] });
+        subplebbitRecordTwoHoursOldIpfs.signature = await signSubplebbit({
+            subplebbit: subplebbitRecordTwoHoursOldIpfs,
+            signer: signers[0]
+        });
         const updateCid = await calculateIpfsHash(JSON.stringify(subplebbitRecordTwoHoursOldIpfs));
         res.setHeader("x-ipfs-roots", updateCid);
         res.setHeader("etag", updateCid);
