@@ -1,6 +1,7 @@
 import { messages } from "../../../dist/node/errors.js";
 
 import {
+    createMockedSubplebbitIpns,
     getAvailablePlebbitConfigsToTestAgainst,
     isPlebbitFetchingUsingGateways,
     publishSubplebbitRecordWithExtraProp,
@@ -9,6 +10,7 @@ import {
 import { describe, it } from "vitest";
 
 import type { PlebbitError } from "../../../dist/node/plebbit-error.js";
+import type { SubplebbitIpfsType } from "../../../dist/node/subplebbit/types.js";
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe.concurrent(`plebbit.createSubplebbit - Backward Compatiblity - ${config.name}`, async () => {
@@ -96,6 +98,167 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(sub.updatedAt).to.be.undefined; // should not accept update
 
             await sub.stop();
+            await remotePlebbit.destroy();
+        });
+    });
+
+    describe.concurrent(`Subplebbit with extra props in nested objects - ${config.name}`, async () => {
+        // Type for subplebbit with unknown nested props
+        type SubplebbitWithNestedExtraProps = SubplebbitIpfsType & {
+            features?: SubplebbitIpfsType["features"] & { extraFeature?: boolean };
+            suggested?: SubplebbitIpfsType["suggested"] & { extraSuggested?: string };
+            encryption?: SubplebbitIpfsType["encryption"] & { extraEncryption?: string };
+            roles?: Record<string, { role: string; extraRoleProp?: string }>;
+        };
+
+        it(`features.extraProp is preserved through createSubplebbit and update()`, async () => {
+            const extraFeatures = { noVideos: true, extraFeature: true };
+            const { subplebbitRecord } = await createMockedSubplebbitIpns({
+                features: extraFeatures
+            });
+
+            const remotePlebbit = await config.plebbitInstancePromise();
+
+            // Test createSubplebbit with record directly
+            const sub = await remotePlebbit.createSubplebbit(subplebbitRecord);
+            const subJson = sub.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(subJson.features?.extraFeature).to.equal(true);
+            expect(subJson.features?.noVideos).to.equal(true);
+
+            // Test recreation from instance
+            const recreatedSub = await remotePlebbit.createSubplebbit(sub);
+            const recreatedJson = recreatedSub.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(recreatedJson.features?.extraFeature).to.equal(true);
+
+            // Test recreation from JSON
+            const recreatedFromJson = await remotePlebbit.createSubplebbit(JSON.parse(JSON.stringify(sub)));
+            const recreatedFromJsonJson = recreatedFromJson.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(recreatedFromJsonJson.features?.extraFeature).to.equal(true);
+
+            // Test update() flow
+            const subToUpdate = await remotePlebbit.createSubplebbit({ address: subplebbitRecord.address });
+            await subToUpdate.update();
+            await resolveWhenConditionIsTrue({ toUpdate: subToUpdate, predicate: async () => typeof subToUpdate.updatedAt === "number" });
+
+            const updatedJson = subToUpdate.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(updatedJson.features?.extraFeature).to.equal(true);
+            expect(updatedJson.features?.noVideos).to.equal(true);
+
+            await subToUpdate.stop();
+            await remotePlebbit.destroy();
+        });
+
+        it(`suggested.extraProp is preserved through createSubplebbit and update()`, async () => {
+            const extraSuggested = { primaryColor: "#ff0000", extraSuggested: "customValue" };
+            const { subplebbitRecord } = await createMockedSubplebbitIpns({
+                suggested: extraSuggested
+            });
+
+            const remotePlebbit = await config.plebbitInstancePromise();
+
+            // Test createSubplebbit with record directly
+            const sub = await remotePlebbit.createSubplebbit(subplebbitRecord);
+            const subJson = sub.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(subJson.suggested?.extraSuggested).to.equal("customValue");
+            expect(subJson.suggested?.primaryColor).to.equal("#ff0000");
+
+            // Test update() flow
+            const subToUpdate = await remotePlebbit.createSubplebbit({ address: subplebbitRecord.address });
+            await subToUpdate.update();
+            await resolveWhenConditionIsTrue({ toUpdate: subToUpdate, predicate: async () => typeof subToUpdate.updatedAt === "number" });
+
+            const updatedJson = subToUpdate.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(updatedJson.suggested?.extraSuggested).to.equal("customValue");
+            expect(updatedJson.suggested?.primaryColor).to.equal("#ff0000");
+
+            await subToUpdate.stop();
+            await remotePlebbit.destroy();
+        });
+
+        it(`encryption.extraProp is preserved through createSubplebbit and update()`, async () => {
+            // We need to preserve the existing encryption fields (type, publicKey) while adding extra
+            const { subplebbitRecord } = await createMockedSubplebbitIpns({});
+            // Manually add extra prop to encryption after getting the base record
+            const recordWithExtraEncryption = {
+                ...subplebbitRecord,
+                encryption: { ...subplebbitRecord.encryption, extraEncryption: "extraData" }
+            };
+
+            const remotePlebbit = await config.plebbitInstancePromise();
+
+            // Test createSubplebbit with modified record
+            const sub = await remotePlebbit.createSubplebbit(recordWithExtraEncryption);
+            const subJson = sub.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(subJson.encryption?.extraEncryption).to.equal("extraData");
+            expect(subJson.encryption?.type).to.equal(subplebbitRecord.encryption.type);
+
+            // Test recreation from JSON
+            const recreatedFromJson = await remotePlebbit.createSubplebbit(JSON.parse(JSON.stringify(sub)));
+            const recreatedJson = recreatedFromJson.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(recreatedJson.encryption?.extraEncryption).to.equal("extraData");
+
+            await remotePlebbit.destroy();
+        });
+
+        it(`roles[address].extraProp is preserved through createSubplebbit and update()`, async () => {
+            const testAddress = "12D3KooWTestAddress1234567890abcdefghij";
+            const rolesWithExtra = {
+                [testAddress]: { role: "moderator", extraRoleProp: "customRoleData" }
+            };
+            const { subplebbitRecord } = await createMockedSubplebbitIpns({
+                roles: rolesWithExtra
+            });
+
+            const remotePlebbit = await config.plebbitInstancePromise();
+
+            // Test createSubplebbit with record directly
+            const sub = await remotePlebbit.createSubplebbit(subplebbitRecord);
+            const subJson = sub.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(subJson.roles?.[testAddress]?.extraRoleProp).to.equal("customRoleData");
+            expect(subJson.roles?.[testAddress]?.role).to.equal("moderator");
+
+            // Test update() flow
+            const subToUpdate = await remotePlebbit.createSubplebbit({ address: subplebbitRecord.address });
+            await subToUpdate.update();
+            await resolveWhenConditionIsTrue({ toUpdate: subToUpdate, predicate: async () => typeof subToUpdate.updatedAt === "number" });
+
+            const updatedJson = subToUpdate.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(updatedJson.roles?.[testAddress]?.extraRoleProp).to.equal("customRoleData");
+            expect(updatedJson.roles?.[testAddress]?.role).to.equal("moderator");
+
+            await subToUpdate.stop();
+            await remotePlebbit.destroy();
+        });
+
+        it(`Multiple nested objects with extra props are all preserved`, async () => {
+            const testAddress = "12D3KooWTestAddress1234567890abcdefghij";
+            const { subplebbitRecord } = await createMockedSubplebbitIpns({
+                features: { noVideos: true, extraFeature: true },
+                suggested: { primaryColor: "#00ff00", extraSuggested: "suggestedValue" },
+                roles: { [testAddress]: { role: "admin", extraRoleProp: "roleValue" } }
+            });
+
+            const remotePlebbit = await config.plebbitInstancePromise();
+
+            const sub = await remotePlebbit.createSubplebbit(subplebbitRecord);
+            const subJson = sub.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+
+            // Verify all nested extra props
+            expect(subJson.features?.extraFeature).to.equal(true);
+            expect(subJson.suggested?.extraSuggested).to.equal("suggestedValue");
+            expect(subJson.roles?.[testAddress]?.extraRoleProp).to.equal("roleValue");
+
+            // Test update() flow
+            const subToUpdate = await remotePlebbit.createSubplebbit({ address: subplebbitRecord.address });
+            await subToUpdate.update();
+            await resolveWhenConditionIsTrue({ toUpdate: subToUpdate, predicate: async () => typeof subToUpdate.updatedAt === "number" });
+
+            const updatedJson = subToUpdate.toJSONIpfs() as SubplebbitWithNestedExtraProps;
+            expect(updatedJson.features?.extraFeature).to.equal(true);
+            expect(updatedJson.suggested?.extraSuggested).to.equal("suggestedValue");
+            expect(updatedJson.roles?.[testAddress]?.extraRoleProp).to.equal("roleValue");
+
+            await subToUpdate.stop();
             await remotePlebbit.destroy();
         });
     });
