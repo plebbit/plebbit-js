@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isLinkValid, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0, getIpnsRecordInLocalKuboNode } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isLinkOfImage, isLinkOfVideo, isLinkValid, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0, getIpnsRecordInLocalKuboNode, contentContainsMarkdownImages, contentContainsMarkdownVideos } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -1252,6 +1252,35 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_COMMENT_HAS_INVALID_LINK_FIELD;
             if (this.features?.requirePostLinkIsMedia && commentPublication.link && !isLinkOfMedia(commentPublication.link))
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
+            if (this.features?.noMarkdownImages && commentPublication.content && contentContainsMarkdownImages(commentPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE;
+            if (this.features?.noMarkdownVideos && commentPublication.content && contentContainsMarkdownVideos(commentPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
+            // noImages - block ALL comments with image links
+            if (this.features?.noImages && commentPublication.link && isLinkOfImage(commentPublication.link))
+                return messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE;
+            // noVideos - block ALL comments with video links
+            if (this.features?.noVideos && commentPublication.link && isLinkOfVideo(commentPublication.link))
+                return messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO;
+            // noSpoilers - block ALL comments with spoiler=true
+            if (this.features?.noSpoilers && commentPublication.spoiler === true)
+                return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
+            // noImageReplies - block only replies with image links
+            if (this.features?.noImageReplies && commentPublication.parentCid && commentPublication.link && isLinkOfImage(commentPublication.link))
+                return messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE;
+            // noVideoReplies - block only replies with video links
+            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && isLinkOfVideo(commentPublication.link))
+                return messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO;
+            // noSpoilerReplies - block only replies with spoiler=true
+            if (this.features?.noSpoilerReplies && commentPublication.parentCid && commentPublication.spoiler === true)
+                return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
+            // noNestedReplies - block replies with depth > 1 (replies to replies)
+            if (this.features?.noNestedReplies && commentPublication.parentCid) {
+                const parent = this._dbHandler.queryComment(commentPublication.parentCid);
+                if (parent && parent.depth > 0) {
+                    return messages.ERR_NESTED_REPLIES_NOT_ALLOWED;
+                }
+            }
             if (commentPublication.parentCid && !commentPublication.postCid)
                 return messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID;
             if (commentPublication.parentCid) {
@@ -1374,6 +1403,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 if (!editSignedByOriginalAuthor)
                     return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
             }
+            // Validate markdown content restrictions for comment edits
+            if (this.features?.noMarkdownImages &&
+                commentEditPublication.content &&
+                contentContainsMarkdownImages(commentEditPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE;
+            if (this.features?.noMarkdownVideos &&
+                commentEditPublication.content &&
+                contentContainsMarkdownVideos(commentEditPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
+            // noSpoilers - block ALL comment edits that set spoiler=true
+            if (this.features?.noSpoilers && commentEditPublication.spoiler === true)
+                return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
+            // noSpoilerReplies - block only reply edits that set spoiler=true
+            if (this.features?.noSpoilerReplies && commentToBeEdited.depth > 0 && commentEditPublication.spoiler === true)
+                return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
         }
         return undefined;
     }

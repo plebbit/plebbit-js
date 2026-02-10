@@ -25,6 +25,10 @@ export declare function doesDomainAddressHaveCapitalLetter(domainAddress: string
 export declare function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number): string[];
 export declare function isLinkValid(link: string): boolean;
 export declare function isLinkOfMedia(link: string): boolean;
+export declare function isLinkOfImage(link: string): boolean;
+export declare function isLinkOfVideo(link: string): boolean;
+export declare function contentContainsMarkdownImages(content: string): boolean;
+export declare function contentContainsMarkdownVideos(content: string): boolean;
 export declare function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]>;
 export declare function isStringDomain(x: string | undefined): boolean;
 export declare function isIpns(x: string): boolean;
