@@ -928,26 +928,26 @@ These repositories are outside plebbit-js but will need coordinated updates:
 
 ## Phase 17: Web3 Modularization
 
-Make plebbit-js (pkc-js) a neutral, core library that only handles IPNS/IPFS natively. Domain resolution (.eth, .sol) and EVM challenges become external plugins in separate GitHub repos.
+Make plebbit-js (pkc-js) a neutral, core library that only handles IPNS/IPFS natively. Name resolution (.eth, .sol) and EVM challenges become external plugins in separate GitHub repos.
 
-### 17.1 Domain Resolver Plugin System
+### 17.1 Name Resolver Plugin System
 
-> **See [DOMAIN_RESOLVER_PLAN.md](./DOMAIN_RESOLVER_PLAN.md) for the full detailed design.**
+> **See [NAME_RESOLVER_PLAN.md](./NAME_RESOLVER_PLAN.md) for the full detailed design.**
 
 **Key Design Points:**
 - No global `chainProviders` - removed from PlebbitOptions entirely
-- `PKC.domainResolvers` static registry (like `Plebbit.challenges`)
+- `PKC.nameResolvers` static registry (like `Plebbit.challenges`)
 - `chainProviders` passed as arg to `resolve()`, not stored on resolver instance
 - JSON config stores `{ name, chainProviders }` - looked up by name at runtime
 - Challenges fall back to resolver URLs, then to hardcoded defaults
 
-**DomainResolver Interface:**
+**NameResolver Interface:**
 ```typescript
-export interface DomainResolverResult {
+export interface NameResolverResult {
   resolvedTextRecordValue: string;
 }
 
-export interface DomainResolverInstance {
+export interface NameResolverInstance {
   name: string;
   tlds: string[];  // e.g., ['.eth'] or ['.sol']
   resolve: (args: {
@@ -955,7 +955,7 @@ export interface DomainResolverInstance {
     txtRecordName: string;
     chainProviders: ChainProviders;  // passed at resolve time, not stored on instance
     plebbit: Plebbit;
-  }) => Promise<DomainResolverResult>;
+  }) => Promise<NameResolverResult>;
 }
 ```
 
@@ -966,12 +966,12 @@ import PKC from '@pkc/pkc-js';
 import { ensResolver } from '@bitsocial/resolver-ens';
 import { snsResolver } from '@bitsocial/resolver-sns';
 
-PKC.domainResolvers['ens'] = ensResolver;
-PKC.domainResolvers['sns'] = snsResolver;
+PKC.nameResolvers['ens'] = ensResolver;
+PKC.nameResolvers['sns'] = snsResolver;
 
 // Create instance with user config (JSON-serializable)
 const plebbit = await PKC({
-  domainResolvers: [
+  nameResolvers: [
     { name: 'ens', chainProviders: { eth: { urls: ['https://ethrpc.xyz'], chainId: 1 } } },
     { name: 'sns', chainProviders: { sol: { urls: ['https://solana-rpc.com'], chainId: -1 } } }
   ]
@@ -982,22 +982,22 @@ const plebbit = await PKC({
 ```
 
 **Behavior:**
-- `domainResolvers` config is optional in PlebbitOptions
-- At resolve time, finds config by TLD, looks up resolver in `PKC.domainResolvers`, passes `chainProviders` to `resolve()`
+- `nameResolvers` config is optional in PlebbitOptions
+- At resolve time, finds config by TLD, looks up resolver in `PKC.nameResolvers`, passes `chainProviders` to `resolve()`
 - If no matching resolver found, throws `ERR_NO_RESOLVER_FOR_TLD`
 - Challenges merge URLs from all resolver configs with matching chainTicker
 
 **RPC-Side Resolution:**
 
-Domain resolution must happen on the RPC server side, not the client side. This allows RPC clients to resolve domain names even if they have zero resolvers configured locally.
+Name resolution must happen on the RPC server side, not the client side. This allows RPC clients to resolve domain names even if they have zero resolvers configured locally.
 
 - When an RPC client calls `getCommunity("memes.eth")`, the RPC server performs the resolution using its own registered resolvers
-- RPC clients don't need `domainResolvers` config - they delegate resolution to the server
+- RPC clients don't need `nameResolvers` config - they delegate resolution to the server
 - The RPC server returns the resolved IPNS address to the client
 - This is important for lightweight clients (browsers, mobile) that shouldn't need web3 dependencies
 
 **Implementation considerations:**
-- [ ] Ensure `getSubplebbit` / `getCommunity` RPC method resolves domains server-side
+- [ ] Ensure `getSubplebbit` / `getCommunity` RPC method resolves names server-side
 - [ ] RPC client should NOT attempt local resolution before calling RPC
 - [ ] `subplebbitUpdateSubscribe` / `communityUpdateSubscribe` should accept domain names and resolve server-side
 - [ ] Document that RPC servers need resolvers configured, not RPC clients
@@ -1019,19 +1019,19 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 
 ### 17.3 TODO Items
 
-> **See [DOMAIN_RESOLVER_PLAN.md](./DOMAIN_RESOLVER_PLAN.md) for detailed implementation steps.**
+> **See [NAME_RESOLVER_PLAN.md](./NAME_RESOLVER_PLAN.md) for detailed implementation steps.**
 
-**Domain Resolver System:**
-- [ ] Add `DomainResolverInstance` and `DomainResolverResult` interfaces to `src/types.ts`
-- [ ] Add `DomainResolverConfig` type (`{ name, chainProviders? }`) to `src/types.ts`
-- [ ] Add `DomainResolverConfigSchema` to `src/schema.ts`
-- [ ] Add optional `domainResolvers: DomainResolverConfig[]` to `PKCUserOptionsSchema`
+**Name Resolver System:**
+- [ ] Add `NameResolverInstance` and `NameResolverResult` interfaces to `src/types.ts`
+- [ ] Add `NameResolverConfig` type (`{ name, chainProviders? }`) to `src/types.ts`
+- [ ] Add `NameResolverConfigSchema` to `src/schema.ts`
+- [ ] Add optional `nameResolvers: NameResolverConfig[]` to `PKCUserOptionsSchema`
 - [ ] Remove `chainProviders` from `PKCUserOptionsSchema` (breaking change)
-- [ ] Add static `PKC.domainResolvers` registry object
-- [ ] Refactor `src/domain-resolver.ts` to use plugin system
+- [ ] Add static `PKC.nameResolvers` registry object
+- [ ] Refactor `src/name-resolver.ts` to use plugin system
 - [ ] Update `src/clients/base-client-manager.ts` resolution flow
 - [ ] Add `ERR_NO_RESOLVER_FOR_TLD` error when no resolver matches
-- [ ] Export `DomainResolverInstance` type from `src/index.ts`
+- [ ] Export `NameResolverInstance` type from `src/index.ts`
 - [ ] Remove hardcoded ENS/SNS logic from core
 
 **External Challenges:**
@@ -1043,24 +1043,24 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 - [ ] Remove web3 dependencies: `viem`, `ethers`, `@bonfida/spl-name-service`, `@solana/web3.js` from pkc-js
 
 **Downstream Apps:**
-- [ ] Update plebbit-cli to install and register domain resolvers
-- [ ] Update desktop apps to install and register domain resolvers
+- [ ] Update plebbit-cli to install and register name resolvers
+- [ ] Update desktop apps to install and register name resolvers
 
 ### 17.4 External Repos to Create
 
 | Repository | Purpose | Dependencies |
 |------------|---------|--------------|
-| @bitsocial/resolver-ens | ENS (.eth) domain resolution | viem, ethers |
+| @bitsocial/resolver-ens | ENS (.eth) name resolution | viem, ethers |
 | @bitsocial/resolver-sns | Solana Name Service (.sol) resolution | @bonfida/spl-name-service, @solana/web3.js |
 | @bitsocial/challenge-evm-contract | EVM contract call challenge | viem |
 
 ### 17.5 Breaking Changes
 
-- No default domain resolvers - pkc-js only handles IPNS/IPFS natively
-- Users must explicitly provide `domainResolvers` config to resolve `.eth`/`.sol` addresses
+- No default name resolvers - pkc-js only handles IPNS/IPFS natively
+- Users must explicitly provide `nameResolvers` config to resolve `.eth`/`.sol` addresses
 - `evm-contract-call` challenge no longer built-in
-- `chainProviders` removed from PlebbitOptions - now configured per-resolver in `domainResolvers` config
-- Must register resolvers in `PKC.domainResolvers` static registry before use
+- `chainProviders` removed from PlebbitOptions - now configured per-resolver in `nameResolvers` config
+- Must register resolvers in `PKC.nameResolvers` static registry before use
 - Challenges fall back to resolver URLs, then to their own hardcoded defaults
 
 ### 17.6 Challenge System Cleanup
