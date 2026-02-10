@@ -472,12 +472,33 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
 
             const checkResponseHeadersIfOldCid = async (gatewayRes: Response) => {
                 const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag")?.toString();
-                if (
-                    cidOfIpnsFromEtagHeader && // clean up " from the etag header
-                    this._updateCidsAlreadyLoaded.has(
-                        CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join("")).toV0().toString()
-                    )
-                ) {
+                // etag is required for optimizing IPNS record loading - fail if missing
+                if (!cidOfIpnsFromEtagHeader) {
+                    abortController.abort("Aborting subplebbit IPNS request because gateway is missing etag header");
+                    return new PlebbitError("ERR_GATEWAY_MISSING_ETAG_HEADER", {
+                        ipnsName,
+                        gatewayRes,
+                        gatewayUrl
+                    });
+                }
+                let parsedCid: string;
+                try {
+                    // clean up W/ prefix and quotes from the etag header
+                    parsedCid = CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join(""))
+                        .toV0()
+                        .toString();
+                } catch (e) {
+                    // Malformed etag header - abort and mark gateway as failed
+                    abortController.abort("Aborting subplebbit IPNS request because gateway returned malformed etag");
+                    return new PlebbitError("ERR_FAILED_TO_PARSE_CID_FROM_GATEWAY_RESPONSE_ETAG", {
+                        cidOfIpnsFromEtagHeader,
+                        ipnsName,
+                        gatewayRes,
+                        gatewayUrl,
+                        parseError: String(e)
+                    });
+                }
+                if (this._updateCidsAlreadyLoaded.has(parsedCid)) {
                     abortController.abort("Aborting subplebbit IPNS request because we already loaded this record");
                     return new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
                         cidOfIpnsFromEtagHeader,
