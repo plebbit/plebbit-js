@@ -26,24 +26,24 @@ export const SubplebbitSuggestedSchema = z.looseObject({
 });
 export const SubplebbitFeaturesSchema = z.looseObject({
     // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
-    noVideos: z.boolean().optional(), // Not implemented
-    noSpoilers: z.boolean().optional(), // Not implemented. Author can't comment.spoiler = true their own comments
-    noImages: z.boolean().optional(), // Not implemented
-    noVideoReplies: z.boolean().optional(), // Not implemented
-    noSpoilerReplies: z.boolean().optional(), // Not implemented
-    noImageReplies: z.boolean().optional(), // Not implemented
+    noVideos: z.boolean().optional(), // Block all comments with video links
+    noSpoilers: z.boolean().optional(), // Author can't set spoiler = true on any comment
+    noImages: z.boolean().optional(), // Block all comments with image links
+    noVideoReplies: z.boolean().optional(), // Block only replies with video links
+    noSpoilerReplies: z.boolean().optional(), // Author can't set spoiler = true on replies
+    noImageReplies: z.boolean().optional(), // Block only replies with image links
     noPolls: z.boolean().optional(), // Not impllemented
     noCrossposts: z.boolean().optional(), // Not implemented
-    noAuthors: z.boolean().optional(), // Not implemented. No authors at all, like 4chan
-    anonymousAuthors: z.boolean().optional(), // Not implemented. Authors are given anonymous ids inside threads, like 4chan
-    noNestedReplies: z.boolean().optional(), // Not implemented. No nested replies, like old school forums and 4chan
-    safeForWork: z.boolean().optional(), // Not implemented
+    noAuthors: z.boolean().optional(), // Not implemented. We may need to remove this No authors at all, like 4chan
+    anonymousAuthors: z.boolean().optional(), // Not implemented.We may need to remove this Authors are given anonymous ids inside threads, like 4chan
+    noNestedReplies: z.boolean().optional(), // No nested replies, like old school forums and 4chan. Maximum depth is 1
+    safeForWork: z.boolean().optional(), // Informational flag indicating this subplebbit is safe for work
     authorFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own author flairs (otherwise only mods can)
     requireAuthorFlairs: z.boolean().optional(), // Not implemented. Force authors to choose an author flair before posting
     postFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own post flairs (otherwise only mods can)
     requirePostFlairs: z.boolean().optional(), // Not implemented. Force authors to choose a post flair before posting
-    noMarkdownImages: z.boolean().optional(), // Not implemented. Don't embed images in text posts markdown
-    noMarkdownVideos: z.boolean().optional(), // Not implemented. Don't embed videos in text posts markdown
+    noMarkdownImages: z.boolean().optional(), // Don't allow embedding images in markdown content (![alt](url) or <img> tags)
+    noMarkdownVideos: z.boolean().optional(), // Don't allow embedding videos in markdown content (![alt](video-url), <video> or <iframe> tags)
     markdownImageReplies: z.boolean().optional(), // Not implemented
     markdownVideoReplies: z.boolean().optional(), // Not implemented
     noPostUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1 to comment with depth = 0
@@ -54,7 +54,7 @@ export const SubplebbitFeaturesSchema = z.looseObject({
     noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
     requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
     requirePostLinkIsMedia: z.boolean().optional(), // post.link must be of media (audio, video, image)
-    pseudonymityMode: z.enum(["per-post", "per-reply", "per-author"]).optional()
+    pseudonymityMode: z.enum(["per-post", "per-reply", "per-author"]).optional() // Controls author address anonymization: per-post (new address each post), per-reply (new address each reply), per-author (consistent address)
 });
 // Local subplebbit challenge here (Challenges API)
 export const ChallengeOptionInputSchema = z.looseObject({
