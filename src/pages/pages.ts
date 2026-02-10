@@ -68,10 +68,10 @@ export class BasePages {
         throw Error("should be implemented");
     }
 
-    async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs | ModQueuePageIpfs> {
-        const pageIpfs = await this._clientsManager.fetchPage(pageCid);
+    async _fetchAndVerifyPage(opts: { pageCid: string; pageMaxSize?: number }): Promise<PageIpfs | ModQueuePageIpfs> {
+        const pageIpfs = await this._clientsManager.fetchPage(opts.pageCid, opts.pageMaxSize);
         if (!this._clientsManager._plebbit._plebbitRpcClient && this._clientsManager._plebbit.validatePages)
-            await this._validatePage(pageIpfs, pageCid);
+            await this._validatePage(pageIpfs, opts.pageCid);
 
         return pageIpfs;
     }
@@ -84,7 +84,7 @@ export class BasePages {
         if (!this._subplebbit?.address) throw Error("Subplebbit address needs to be defined under page");
         const parsedArgs = parsePageCidParams(pageCid);
 
-        const pageIpfs = await this._fetchAndVerifyPage(parsedArgs.cid);
+        const pageIpfs = await this._fetchAndVerifyPage({ pageCid: parsedArgs.cid });
         return this._parseRawPageIpfs(pageIpfs);
     }
 
@@ -125,8 +125,8 @@ export class RepliesPages extends BasePages {
         this.clients = this._clientsManager.clients;
     }
 
-    override async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
-        return <PageIpfs>await super._fetchAndVerifyPage(pageCid);
+    override async _fetchAndVerifyPage(opts: { pageCid: string; pageMaxSize?: number }): Promise<PageIpfs> {
+        return <PageIpfs>await super._fetchAndVerifyPage(opts);
     }
 
     override _parseRawPageIpfs(pageIpfs: PageIpfs): PageTypeJson {
@@ -228,8 +228,8 @@ export class PostsPages extends BasePages {
         this.clients = this._clientsManager.clients;
     }
 
-    override async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
-        return <PageIpfs>await super._fetchAndVerifyPage(pageCid);
+    override async _fetchAndVerifyPage(opts: { pageCid: string; pageMaxSize?: number }): Promise<PageIpfs> {
+        return <PageIpfs>await super._fetchAndVerifyPage(opts);
     }
 
     override _parseRawPageIpfs(pageIpfs: PageIpfs): PageTypeJson {
@@ -288,8 +288,8 @@ export class ModQueuePages extends BasePages {
         this.clients = this._clientsManager.clients;
     }
 
-    override async _fetchAndVerifyPage(pageCid: string): Promise<ModQueuePageIpfs> {
-        return <ModQueuePageIpfs>await super._fetchAndVerifyPage(pageCid);
+    override async _fetchAndVerifyPage(opts: { pageCid: string; pageMaxSize?: number }): Promise<ModQueuePageIpfs> {
+        return <ModQueuePageIpfs>await super._fetchAndVerifyPage(opts);
     }
 
     override _parseRawPageIpfs(pageIpfs: ModQueuePageIpfs): ModQueuePageTypeJson {

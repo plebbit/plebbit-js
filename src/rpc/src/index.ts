@@ -306,7 +306,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async getSubplebbitPage(params: any): Promise<PageIpfs | ModQueuePageIpfs> {
-        const { cid: pageCid, subplebbitAddress, type } = parseRpcSubplebbitPageParam(params[0]);
+        const { cid: pageCid, subplebbitAddress, type, pageMaxSize } = parseRpcSubplebbitPageParam(params[0]);
         const plebbit = await this._getPlebbitInstance();
 
         // Use started subplebbit to fetch the page if possible, to expediete the process
@@ -314,15 +314,18 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             subplebbitAddress in this._startedSubplebbits
                 ? await this.getStartedSubplebbit(subplebbitAddress)
                 : <RemoteSubplebbit | LocalSubplebbit>await plebbit.createSubplebbit({ address: subplebbitAddress });
-        const page = type === "posts" ? await sub.posts._fetchAndVerifyPage(pageCid) : await sub.modQueue._fetchAndVerifyPage(pageCid);
+        const page =
+            type === "posts"
+                ? await sub.posts._fetchAndVerifyPage({ pageCid, pageMaxSize })
+                : await sub.modQueue._fetchAndVerifyPage({ pageCid, pageMaxSize });
         return page;
     }
 
     async getCommentPage(params: any): Promise<PageIpfs> {
-        const { cid: pageCid, commentCid, subplebbitAddress } = parseRpcCommentRepliesPageParam(params[0]);
+        const { cid: pageCid, commentCid, subplebbitAddress, pageMaxSize } = parseRpcCommentRepliesPageParam(params[0]);
         const plebbit = await this._getPlebbitInstance();
         const comment = await plebbit.createComment({ cid: commentCid, subplebbitAddress });
-        const page = await comment.replies._fetchAndVerifyPage(pageCid);
+        const page = await comment.replies._fetchAndVerifyPage({ pageCid, pageMaxSize });
         return page;
     }
 

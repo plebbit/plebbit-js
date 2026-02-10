@@ -1,7 +1,6 @@
 import { beforeAll, afterAll, beforeEach } from "vitest";
 import {
     addStringToIpfs,
-    describeSkipIfRpc,
     getAvailablePlebbitConfigsToTestAgainst,
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
@@ -73,7 +72,7 @@ async function createMockPageOfSize(baseSize: number, nextCid: string | null = n
 }
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describeSkipIfRpc.concurrent(`Page size loading tests - ${config.name}`, async () => {
+    describe.concurrent(`Page size loading tests - ${config.name}`, async () => {
         let plebbit: Plebbit;
         let mockSubplebbit: RemoteSubplebbit;
 
@@ -171,7 +170,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const error = e as PlebbitError;
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
                     expect(error.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
-                    expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                    expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal(
+                        "ERR_OVER_DOWNLOAD_LIMIT"
+                    );
                 } else {
                     // fetching with kubo/helia
                     expect(error.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
@@ -195,11 +196,36 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const error = e as PlebbitError;
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
                     expect(error.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
-                    expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                    expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal(
+                        "ERR_OVER_DOWNLOAD_LIMIT"
+                    );
                 } else {
                     // fetching with kubo/helia
                     expect(error.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
                 }
+            }
+        });
+
+        it("should throw when fetching a page CID not in pageCids with no cached max size", async () => {
+            // When pageCids is non-empty and the requested CID is not among them,
+            // and there's no cached pageMaxSize, fetchPage cannot determine the download limit.
+            // In normal usage this doesn't happen because pages are navigated sequentially
+            // (each page caches pageMaxSize*2 for its nextCid).
+
+            const page: PageIpfs = JSON.parse(JSON.stringify(validPageFixture));
+            delete page.nextCid;
+            const pageCid = await addStringToIpfs(JSON.stringify(page));
+
+            // Set pageCids to a dummy value so it's non-empty, but does NOT include our pageCid
+            mockSubplebbit.posts.pageCids = { ...mockSubplebbit.posts.pageCids, hot: "QmDummyFirstPageCidThatIsNotOurTargetPage" };
+
+            try {
+                await mockSubplebbit.posts.getPage({ cid: pageCid });
+                expect.fail("Should have thrown an error for page with unknown max size");
+            } catch (e) {
+                expect((e as Error).message).to.equal(
+                    "Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?"
+                );
             }
         });
     });

@@ -191,28 +191,34 @@ export class BasePagesClientsManager extends BaseClientsManager {
         throw Error("should be implemented");
     }
 
-    protected async _requestPageFromRPC(
-        pageCid: string,
-        log: Logger,
-        sortTypes: string[] | undefined
-    ): Promise<ModQueuePageIpfs | PageIpfs> {
+    protected async _requestPageFromRPC(opts: {
+        pageCid: string;
+        log: Logger;
+        sortTypes: string[] | undefined;
+        pageMaxSize: number;
+    }): Promise<ModQueuePageIpfs | PageIpfs> {
         throw Error("Should be implemented");
     }
 
-    private async _fetchPageWithRpc(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<ModQueuePageIpfs | PageIpfs> {
+    private async _fetchPageWithRpc(opts: {
+        pageCid: string;
+        log: Logger;
+        sortTypes: string[] | undefined;
+        pageMaxSize: number;
+    }): Promise<ModQueuePageIpfs | PageIpfs> {
         const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
 
         this.preFetchPage();
-        log.trace(`Fetching page cid (${pageCid}) using rpc`);
-        this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
+        opts.log.trace(`Fetching page cid (${opts.pageCid}) using rpc`);
+        this.updateRpcState("fetching-ipfs", currentRpcUrl, opts.sortTypes);
 
         try {
-            return this._requestPageFromRPC(pageCid, log, sortTypes);
+            return this._requestPageFromRPC(opts);
         } catch (e) {
-            log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
+            opts.log.error(`Failed to retrieve page (${opts.pageCid}) with rpc due to error:`, e);
             throw e;
         } finally {
-            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
+            this.updateRpcState("stopped", currentRpcUrl, opts.sortTypes);
         }
     }
 
@@ -262,7 +268,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
         return pageIpfs;
     }
-    async fetchPage(pageCid: string): Promise<PageIpfs | ModQueuePageIpfs> {
+    async fetchPage(pageCid: string, overridePageMaxSize?: number): Promise<PageIpfs | ModQueuePageIpfs> {
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypesFromPageCids = remeda.keys
             .strict(this._pages.pageCids)
@@ -273,16 +279,18 @@ export class BasePagesClientsManager extends BaseClientsManager {
         const sortTypesFromMemcache: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
 
         const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
-        const pageMaxSize = this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
-            ? this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
-            : isFirstPage
-              ? 1024 * 1024
-              : undefined;
+        const pageMaxSize = overridePageMaxSize
+            ? overridePageMaxSize
+            : this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
+              ? this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
+              : isFirstPage
+                ? 1024 * 1024
+                : undefined;
         if (!pageMaxSize) throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page: PageIpfs | ModQueuePageIpfs;
         try {
             if (this._plebbit._plebbitRpcClient) {
-                page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
+                page = await this._fetchPageWithRpc({ pageCid, log, sortTypes: sortTypesFromMemcache, pageMaxSize });
             } else if (
                 Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
                 Object.keys(this._plebbit.clients.libp2pJsClients).length > 0
@@ -325,11 +333,17 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
 
         if (!this._pages._parentComment?.cid) throw Error("Parent comment cid is not defined");
     }
-    protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
+    protected override async _requestPageFromRPC(opts: {
+        pageCid: string;
+        log: Logger;
+        sortTypes: string[] | undefined;
+        pageMaxSize: number;
+    }): Promise<PageIpfs> {
         return this._plebbit._plebbitRpcClient!.getCommentPage({
-            cid: pageCid,
+            cid: opts.pageCid,
             commentCid: this._pages._parentComment!.cid!,
-            subplebbitAddress: this._pages._subplebbit.address
+            subplebbitAddress: this._pages._subplebbit.address,
+            pageMaxSize: opts.pageMaxSize
         });
     }
 }
@@ -352,11 +366,17 @@ export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager 
         if (!this._pages._subplebbit.address) throw Error("Subplebbit address is not defined");
     }
 
-    protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
+    protected override async _requestPageFromRPC(opts: {
+        pageCid: string;
+        log: Logger;
+        sortTypes: string[] | undefined;
+        pageMaxSize: number;
+    }): Promise<PageIpfs> {
         return this._plebbit._plebbitRpcClient!.getSubplebbitPage({
-            cid: pageCid,
+            cid: opts.pageCid,
             subplebbitAddress: this._pages._subplebbit.address,
-            type: "posts"
+            type: "posts",
+            pageMaxSize: opts.pageMaxSize
         }) as Promise<PageIpfs>;
     }
 }
@@ -373,8 +393,8 @@ export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
         return ["pendingApproval"];
     }
 
-    override async fetchPage(pageCid: string): Promise<ModQueuePageIpfs> {
-        return <ModQueuePageIpfs>await super.fetchPage(pageCid);
+    override async fetchPage(pageCid: string, overridePageMaxSize?: number): Promise<ModQueuePageIpfs> {
+        return <ModQueuePageIpfs>await super.fetchPage(pageCid, overridePageMaxSize);
     }
 
     protected override preFetchPage(): void {
@@ -388,11 +408,17 @@ export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
         return parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(json as any) as ModQueuePageIpfs;
     }
 
-    protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<ModQueuePageIpfs> {
+    protected override async _requestPageFromRPC(opts: {
+        pageCid: string;
+        log: Logger;
+        sortTypes: string[] | undefined;
+        pageMaxSize: number;
+    }): Promise<ModQueuePageIpfs> {
         return this._plebbit._plebbitRpcClient!.getSubplebbitPage({
             type: "modqueue",
-            cid: pageCid,
-            subplebbitAddress: this._pages._subplebbit.address
+            cid: opts.pageCid,
+            subplebbitAddress: this._pages._subplebbit.address,
+            pageMaxSize: opts.pageMaxSize
         }) as Promise<ModQueuePageIpfs>;
     }
 }
