@@ -603,7 +603,12 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     async _awaitSubplebbitsToIncludeSub(subAddress: string): Promise<void> {
         if (this.subplebbits.includes(subAddress)) return;
-        else await resolveWhenPredicateIsTrue({ toUpdate: this, predicate: () => this.subplebbits.includes(subAddress), eventName: "subplebbitschange" });
+        else
+            await resolveWhenPredicateIsTrue({
+                toUpdate: this,
+                predicate: () => this.subplebbits.includes(subAddress),
+                eventName: "subplebbitschange"
+            });
     }
 
     private async _createRemoteSubplebbitInstance(options: z.infer<typeof CreateRemoteSubplebbitFunctionArgumentSchema>) {
@@ -997,7 +1002,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                     await client._client.pubsub.unsubscribe(topic);
                 }
             } catch (e) {
-                console.error("Error unsubscribing from pubsub topics", e);
+                log.error("Error unsubscribing from pubsub topics", e);
             }
         }
 
