@@ -60,6 +60,9 @@ export const SubplebbitFeaturesSchema = z.looseObject({
     requirePostFlairs: z.boolean().optional(), // Not implemented. Force authors to choose a post flair before posting
     noMarkdownImages: z.boolean().optional(), // Don't allow embedding images in markdown content (![alt](url) or <img> tags)
     noMarkdownVideos: z.boolean().optional(), // Don't allow embedding videos in markdown content (![alt](video-url), <video> or <iframe> tags)
+    noMarkdownAudio: z.boolean().optional(), // Don't allow embedding audio in markdown content (![alt](audio-url) or <audio> tags)
+    noAudio: z.boolean().optional(), // Block all comments with audio links
+    noAudioReplies: z.boolean().optional(), // Block only replies with audio links
     markdownImageReplies: z.boolean().optional(), // Not implemented
     markdownVideoReplies: z.boolean().optional(), // Not implemented
     noPostUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1 to comment with depth = 0

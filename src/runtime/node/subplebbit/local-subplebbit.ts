@@ -46,7 +46,9 @@ import {
     calculateStringSizeSameAsIpfsAddCidV0,
     getIpnsRecordInLocalKuboNode,
     contentContainsMarkdownImages,
-    contentContainsMarkdownVideos
+    contentContainsMarkdownVideos,
+    isLinkOfAudio,
+    contentContainsMarkdownAudio
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -1689,6 +1691,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.features?.noMarkdownVideos && commentPublication.content && contentContainsMarkdownVideos(commentPublication.content))
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
 
+            if (this.features?.noMarkdownAudio && commentPublication.content && contentContainsMarkdownAudio(commentPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO;
+
             // noImages - block ALL comments with image links
             if (this.features?.noImages && commentPublication.link && isLinkOfImage(commentPublication.link))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE;
@@ -1708,6 +1713,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // noVideoReplies - block only replies with video links (including animated images like GIF/APNG)
             if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO;
+
+            // noAudio - block ALL comments with audio links
+            if (this.features?.noAudio && commentPublication.link && isLinkOfAudio(commentPublication.link))
+                return messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO;
+
+            // noAudioReplies - block only replies with audio links
+            if (this.features?.noAudioReplies && commentPublication.parentCid && commentPublication.link && isLinkOfAudio(commentPublication.link))
+                return messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO;
 
             // noSpoilerReplies - block only replies with spoiler=true
             if (this.features?.noSpoilerReplies && commentPublication.parentCid && commentPublication.spoiler === true)
@@ -1868,6 +1881,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 contentContainsMarkdownVideos(commentEditPublication.content)
             )
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
+
+            if (
+                this.features?.noMarkdownAudio &&
+                commentEditPublication.content &&
+                contentContainsMarkdownAudio(commentEditPublication.content)
+            )
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO;
 
             // noSpoilers - block ALL comment edits that set spoiler=true
             if (this.features?.noSpoilers && commentEditPublication.spoiler === true)

@@ -1162,3 +1162,240 @@ describe.concurrent(`subplebbit.features.safeForWork`, async () => {
         await remoteSub.stop();
     });
 });
+
+describe.concurrent(`subplebbit.features.noAudio`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noAudio: true } });
+        expect(subplebbit.features?.noAudio).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noAudio === true });
+        expect(remoteSub.features?.noAudio).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with audio link (.mp3)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/song.mp3",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO);
+    });
+
+    it(`Can't publish a reply with audio link (.ogg)`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/track.ogg"
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO);
+    });
+
+    it(`Can publish a post with image link (noAudio doesn't block images)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/image.png",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with video link (noAudio doesn't block videos)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/video.mp4",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with plain content (no link)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            content: "Just plain text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noAudioReplies`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noAudioReplies: true } });
+        expect(subplebbit.features?.noAudioReplies).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noAudioReplies === true });
+        expect(remoteSub.features?.noAudioReplies).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can publish a post with audio link (noAudioReplies only blocks replies)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/song.mp3",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't publish a reply with audio link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/track.flac"
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO);
+    });
+
+    it(`Can publish a reply without audio link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: "Just text reply"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can publish a reply with image link (noAudioReplies doesn't block images)`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/image.png"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.noMarkdownAudio`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature) to test comment edits later
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, noMarkdownAudio: true } });
+        expect(subplebbit.features?.noMarkdownAudio).to.be.true;
+
+        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.noMarkdownAudio === true });
+        expect(remoteSub.features?.noMarkdownAudio).to.be.true;
+        await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with markdown audio syntax (.mp3)`, async () => {
+        const contentWithMarkdownAudio = "Here is audio: ![song](https://example.com/song.mp3)";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithMarkdownAudio });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+    });
+
+    it(`Can't publish a post with HTML audio tag`, async () => {
+        const contentWithHtmlAudio = 'Here is audio: <audio src="https://example.com/song.mp3"></audio>';
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithHtmlAudio });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+    });
+
+    it(`Can't publish a reply with markdown audio`, async () => {
+        const contentWithMarkdownAudio = "Reply with audio: ![track](https://example.com/track.ogg)";
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: contentWithMarkdownAudio
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+    });
+
+    it(`Can publish a post with plain text content`, async () => {
+        const plainContent = "This is just plain text without any audio";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: plainContent });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with markdown image (not audio)`, async () => {
+        const contentWithImage = "Here is an image: ![img](https://example.com/photo.jpg)";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithImage });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a post with direct link field to audio URL (not markdown content)`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/song.mp3",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't edit a comment to add markdown audio`, async () => {
+        const contentWithMarkdownAudio = "Edited to include audio: ![song](https://example.com/new.mp3)";
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            content: contentWithMarkdownAudio,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+    });
+
+    it(`Can edit a comment with plain text content`, async () => {
+        const plainContent = "Edited to plain text content";
+        const commentEdit = await remotePlebbit.createCommentEdit({
+            commentCid: publishedPost.cid!,
+            content: plainContent,
+            subplebbitAddress: subplebbit.address,
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(commentEdit, true);
+    });
+});

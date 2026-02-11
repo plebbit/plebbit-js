@@ -272,6 +272,16 @@ export function isLinkOfAnimatedImage(link: string): boolean {
     return isUrlOfAnimatedImage(link);
 }
 
+function isUrlOfAudio(url: string): boolean {
+    const mime = getMimeFromUrl(url);
+    return mime?.startsWith("audio") ?? false;
+}
+
+export function isLinkOfAudio(link: string): boolean {
+    if (!link) return false;
+    return isUrlOfAudio(link);
+}
+
 export function contentContainsMarkdownImages(content: string): boolean {
     if (!content) return false;
 
@@ -293,6 +303,24 @@ export function contentContainsMarkdownImages(content: string): boolean {
             // URL has no recognizable extension, still flag markdown images
             return true;
         }
+    }
+
+    return false;
+}
+
+export function contentContainsMarkdownAudio(content: string): boolean {
+    if (!content) return false;
+
+    // Check for HTML audio tags
+    const htmlAudioTagRegex = /<audio[\s>]/gi;
+    if (htmlAudioTagRegex.test(content)) return true;
+
+    // Check for markdown image syntax with audio URLs: ![alt](url)
+    const markdownImageRegex = /(?<!\\)!\[[^\]]*\]\(([^)]+)\)/g;
+    const matches = content.matchAll(markdownImageRegex);
+    for (const match of matches) {
+        const url = match[1];
+        if (isUrlOfAudio(url)) return true;
     }
 
     return false;
