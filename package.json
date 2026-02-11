@@ -67,7 +67,7 @@
         "@libp2p/peer-id": "6.0.4",
         "@libp2p/peer-id-factory": "4.2.4",
         "@libp2p/websockets": "10.1.2",
-        "@mintpass/challenge": "1.1.10",
+        "@mintpass/challenge": "1.1.11",
         "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger#355a96d7659ed820047980049dfa627d30d83a69",
         "@plebbit/proper-lockfile": "github:plebbit/node-proper-lockfile#7fd6332117340c1d3d98dd0afee2d31cc06f72b8",
         "@types/proper-lockfile": "4.1.2",
