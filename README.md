@@ -195,8 +195,6 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   // not implemented
   noPolls?: boolean
   noCrossposts?: boolean
-  noAuthors?: boolean // no authors at all, like 4chan
-  anonymousAuthors?: boolean // authors are given anonymous ids inside threads, like 4chan
   authorFlairs?: boolean // authors can choose their own author flairs (otherwise only mods can)
   requireAuthorFlairs?: boolean // force authors to choose an author flair before posting
   postFlairs?: boolean // authors can choose their own post flairs (otherwise only mods can)

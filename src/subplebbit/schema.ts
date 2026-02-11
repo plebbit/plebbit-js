@@ -52,8 +52,6 @@ export const SubplebbitFeaturesSchema = z.looseObject({
     noImageReplies: z.boolean().optional(), // Block only replies with image links
     noPolls: z.boolean().optional(), // Not impllemented
     noCrossposts: z.boolean().optional(), // Not implemented
-    noAuthors: z.boolean().optional(), // Not implemented. We may need to remove this No authors at all, like 4chan
-    anonymousAuthors: z.boolean().optional(), // Not implemented.We may need to remove this Authors are given anonymous ids inside threads, like 4chan
     noNestedReplies: z.boolean().optional(), // No nested replies, like old school forums and 4chan. Maximum depth is 1
     safeForWork: z.boolean().optional(), // Informational flag indicating this subplebbit is safe for work
     authorFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own author flairs (otherwise only mods can)
