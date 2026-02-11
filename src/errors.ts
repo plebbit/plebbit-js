@@ -92,7 +92,6 @@ export enum messages {
     ERR_QUOTED_CID_DOES_NOT_EXIST = "One or more quoted CIDs do not exist in this subplebbit",
     ERR_QUOTED_CID_NOT_UNDER_POST = "One or more quoted CIDs are not under the same post",
     ERR_QUOTED_CID_IS_PENDING_APPROVAL = "One or more quoted CIDs are pending approval",
-    ERR_QUOTED_CIDS_HAS_DUPLICATES = "quotedCids array contains duplicate CIDs",
     ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA = "The loaded Subplebbit record has an invalid schema",
     ERR_INVALID_COMMENT_UPDATE_SCHEMA = "The schema of Comment Update is invalid",
     ERR_INVALID_PAGE_IPFS_SCHEMA = "The schema of Page ipfs file is invalid",

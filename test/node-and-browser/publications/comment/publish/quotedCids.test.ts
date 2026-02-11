@@ -146,12 +146,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CID_NOT_UNDER_POST);
             });
 
-            it("Reply with duplicate quotedCids is rejected", async () => {
+            it("Reply with duplicate quotedCids is accepted", async () => {
                 const reply = await generateMockComment(post as CommentIpfsWithCidDefined, plebbit, false, {
                     signer: signers[1],
                     quotedCids: [post.cid!, post.cid!]
                 });
-                await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CIDS_HAS_DUPLICATES);
+                await publishWithExpectedResult(reply, true);
             });
 
             it("Reply with one valid and one non-existent quotedCid is rejected", async () => {

@@ -1745,12 +1745,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             // Validate quotedCids
             if (commentPublication.quotedCids && commentPublication.quotedCids.length > 0) {
-                // Check for duplicates
-                const uniqueQuotedCids = new Set(commentPublication.quotedCids);
-                if (uniqueQuotedCids.size !== commentPublication.quotedCids.length) {
-                    return messages.ERR_QUOTED_CIDS_HAS_DUPLICATES;
-                }
-
                 // Only replies can have quotedCids
                 if (!commentPublication.parentCid) {
                     return messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS;
