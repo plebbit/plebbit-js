@@ -560,6 +560,12 @@ describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
         await publishWithExpectedResult(post, true);
     });
 
+    it(`Can't publish a post with markdown GIF`, async () => {
+        const contentWithGif = "Here is a gif: ![gif](https://example.com/animation.gif)";
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithGif });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO);
+    });
+
     it(`Can publish a post with markdown image (not video)`, async () => {
         // noMarkdownVideos should not block images
         const contentWithImage = "Here is an image: ![img](https://example.com/photo.jpg)";
@@ -738,6 +744,22 @@ describe.concurrent(`subplebbit.features.noVideos`, async () => {
             content: "Just text"
         });
         await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't publish a post with GIF link`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/animation.gif",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
+    });
+
+    it(`Can't publish a post with APNG link`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            link: "https://example.com/animation.apng",
+            content: "Just text"
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
     });
 
     it(`Can publish a post with plain content (no link)`, async () => {
@@ -945,6 +967,13 @@ describe.concurrent(`subplebbit.features.noVideoReplies`, async () => {
             content: "Just text reply"
         });
         await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can't publish a reply with GIF link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: "https://example.com/animation.gif"
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO);
     });
 
     it(`Can publish a reply with image link (noVideoReplies doesn't block images)`, async () => {

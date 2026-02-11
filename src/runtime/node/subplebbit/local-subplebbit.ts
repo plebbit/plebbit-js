@@ -30,6 +30,7 @@ import {
     isLinkOfMedia,
     isLinkOfImage,
     isLinkOfVideo,
+    isLinkOfAnimatedImage,
     isLinkValid,
     isStringDomain,
     pubsubTopicToDhtKey,
@@ -1692,8 +1693,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.features?.noImages && commentPublication.link && isLinkOfImage(commentPublication.link))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE;
 
-            // noVideos - block ALL comments with video links
-            if (this.features?.noVideos && commentPublication.link && isLinkOfVideo(commentPublication.link))
+            // noVideos - block ALL comments with video links (including animated images like GIF/APNG)
+            if (this.features?.noVideos && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO;
 
             // noSpoilers - block ALL comments with spoiler=true
@@ -1704,8 +1705,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.features?.noImageReplies && commentPublication.parentCid && commentPublication.link && isLinkOfImage(commentPublication.link))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE;
 
-            // noVideoReplies - block only replies with video links
-            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && isLinkOfVideo(commentPublication.link))
+            // noVideoReplies - block only replies with video links (including animated images like GIF/APNG)
+            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO;
 
             // noSpoilerReplies - block only replies with spoiler=true

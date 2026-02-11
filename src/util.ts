@@ -259,6 +259,19 @@ export function isLinkOfVideo(link: string): boolean {
     return isUrlOfVideo(link);
 }
 
+// Known animated image MIME types
+const ANIMATED_IMAGE_MIMES = new Set(["image/gif", "image/apng"]);
+
+function isUrlOfAnimatedImage(url: string): boolean {
+    const mime = getMimeFromUrl(url);
+    return mime !== undefined && ANIMATED_IMAGE_MIMES.has(mime);
+}
+
+export function isLinkOfAnimatedImage(link: string): boolean {
+    if (!link) return false;
+    return isUrlOfAnimatedImage(link);
+}
+
 export function contentContainsMarkdownImages(content: string): boolean {
     if (!content) return false;
 
@@ -301,7 +314,7 @@ export function contentContainsMarkdownVideos(content: string): boolean {
     const matches = content.matchAll(markdownImageRegex);
     for (const match of matches) {
         const url = match[1];
-        if (isUrlOfVideo(url)) return true;
+        if (isUrlOfVideo(url) || isUrlOfAnimatedImage(url)) return true;
     }
 
     return false;
