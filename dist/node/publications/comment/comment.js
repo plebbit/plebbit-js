@@ -71,7 +71,7 @@ export class Comment extends Publication {
         // Initializing CommentPubsubMessage
         super._initBaseRemoteProps(props);
         this.content = props.content;
-        this.flair = props.flair;
+        this.flairs = props.flairs;
         this.link = props.link;
         this.linkHeight = props.linkHeight;
         this.linkWidth = props.linkWidth;
@@ -134,8 +134,9 @@ export class Comment extends Publication {
             Object.assign(this.author, props.author);
         if (props.edit?.content)
             this.content = props.edit.content;
-        this.flair = props.flair || props.edit?.flair || this.flair;
-        this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
+        // TODO flairs merging strategy will likely change — currently first-defined wins (mod > author edit > existing)
+        this.flairs = props.flairs || props.edit?.flairs || this.flairs;
+        this.author.flairs = props.author?.subplebbit?.flairs || props.edit?.author?.flairs || this.author?.flairs;
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
         this._updateRepliesPostsInstance(props.replies, subplebbit);

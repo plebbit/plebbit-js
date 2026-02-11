@@ -1,11 +1,11 @@
 import { z } from "zod";
 export declare const ModeratorOptionsSchema: z.ZodObject<{
-    flair: z.ZodOptional<z.ZodObject<{
+    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.core.$loose>>;
+    }, z.core.$loose>>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -15,12 +15,12 @@ export declare const ModeratorOptionsSchema: z.ZodObject<{
     purged: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
     author: z.ZodOptional<z.ZodObject<{
-        flair: z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>>>;
         banExpiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.core.$loose>>;
 }, z.core.$strict>;
@@ -53,12 +53,12 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<{
                 type: z.ZodString;
             }, z.core.$strip>;
         }, z.core.$loose>>>;
-        flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>>;
+        }, z.core.$loose>>>>;
     }, z.core.$loose>>;
     subplebbitAddress: z.ZodString;
     protocolVersion: z.ZodOptional<z.ZodString>;
@@ -68,12 +68,12 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<{
         challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodString>>;
     }, z.core.$strip>>;
     commentModeration: z.ZodObject<{
-        flair: z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
@@ -83,12 +83,12 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<{
         purged: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
         author: z.ZodOptional<z.ZodObject<{
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
             banExpiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.core.$loose>>;
     }, z.core.$loose>;
@@ -126,22 +126,22 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
                 type: z.ZodString;
             }, z.core.$strip>;
         }, z.core.$loose>>;
-        flair: z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>>>;
     }, z.core.$loose>;
     protocolVersion: z.ZodString;
     commentCid: z.ZodString;
     commentModeration: z.ZodObject<{
-        flair: z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
@@ -151,12 +151,12 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
         purged: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
         author: z.ZodOptional<z.ZodObject<{
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
             banExpiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.core.$loose>>;
     }, z.core.$loose>;
@@ -192,22 +192,22 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<{
                 type: z.ZodString;
             }, z.core.$strip>;
         }, z.core.$loose>>;
-        flair: z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>>>;
     }, z.core.$loose>;
     protocolVersion: z.ZodString;
     commentCid: z.ZodString;
     commentModeration: z.ZodObject<{
-        flair: z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
@@ -217,12 +217,12 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<{
         purged: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
         author: z.ZodOptional<z.ZodObject<{
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
             banExpiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.core.$loose>>;
     }, z.core.$loose>;
@@ -266,22 +266,22 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                     type: z.ZodString;
                 }, z.core.$strip>;
             }, z.core.$loose>>;
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
         }, z.core.$loose>;
         protocolVersion: z.ZodString;
         commentCid: z.ZodString;
         commentModeration: z.ZodObject<{
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
             nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
@@ -291,12 +291,12 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
             purged: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
             author: z.ZodOptional<z.ZodObject<{
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
                 banExpiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.core.$loose>>;
         }, z.core.$loose>;

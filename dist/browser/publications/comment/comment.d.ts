@@ -38,7 +38,7 @@ export declare class Comment extends Publication implements Partial<CommentUpdat
     updatedAt?: CommentUpdateType["updatedAt"];
     replies: RepliesPages;
     edit?: CommentUpdateType["edit"];
-    flair?: CommentPubsubMessagePublication["flair"];
+    flairs?: CommentPubsubMessagePublication["flairs"];
     deleted?: CommentWithinRepliesPostsPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
     nsfw?: CommentIpfsType["nsfw"];

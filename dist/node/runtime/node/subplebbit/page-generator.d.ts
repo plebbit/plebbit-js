@@ -80,22 +80,22 @@ export declare class PageGenerator {
                                 type: string;
                             };
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                     };
                     depth: number;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     content?: string | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
@@ -166,34 +166,34 @@ export declare class PageGenerator {
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         deleted?: boolean | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         reason?: string | undefined;
                     } | undefined;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
@@ -210,13 +210,13 @@ export declare class PageGenerator {
                             firstCommentTimestamp: number;
                             lastCommentCid: string;
                             banExpiresAt?: number | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         } | undefined;
                     } | undefined;
                     lastChildCid?: string | undefined;
@@ -266,22 +266,22 @@ export declare class PageGenerator {
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
                         depth: number;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
@@ -352,34 +352,34 @@ export declare class PageGenerator {
                                         type: string;
                                     };
                                 } | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             };
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                             content?: string | undefined;
                             deleted?: boolean | undefined;
                             spoiler?: boolean | undefined;
                             nsfw?: boolean | undefined;
                             reason?: string | undefined;
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
@@ -396,13 +396,13 @@ export declare class PageGenerator {
                                 firstCommentTimestamp: number;
                                 lastCommentCid: string;
                                 banExpiresAt?: number | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             } | undefined;
                         } | undefined;
                         lastChildCid?: string | undefined;

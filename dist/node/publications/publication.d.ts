@@ -158,22 +158,22 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
                         depth: number;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
@@ -244,34 +244,34 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
                                         type: string;
                                     };
                                 } | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             };
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                             content?: string | undefined;
                             deleted?: boolean | undefined;
                             spoiler?: boolean | undefined;
                             nsfw?: boolean | undefined;
                             reason?: string | undefined;
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
@@ -288,13 +288,13 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
                                 firstCommentTimestamp: number;
                                 lastCommentCid: string;
                                 banExpiresAt?: number | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             } | undefined;
                         } | undefined;
                         lastChildCid?: string | undefined;
@@ -333,8 +333,6 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
             noImageReplies?: boolean | undefined;
             noPolls?: boolean | undefined;
             noCrossposts?: boolean | undefined;
-            noAuthors?: boolean | undefined;
-            anonymousAuthors?: boolean | undefined;
             noNestedReplies?: boolean | undefined;
             safeForWork?: boolean | undefined;
             authorFlairs?: boolean | undefined;
@@ -343,6 +341,9 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
             requirePostFlairs?: boolean | undefined;
             noMarkdownImages?: boolean | undefined;
             noMarkdownVideos?: boolean | undefined;
+            noMarkdownAudio?: boolean | undefined;
+            noAudio?: boolean | undefined;
+            noAudioReplies?: boolean | undefined;
             markdownImageReplies?: boolean | undefined;
             markdownVideoReplies?: boolean | undefined;
             noPostUpvotes?: boolean | undefined;

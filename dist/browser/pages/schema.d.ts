@@ -9,12 +9,12 @@ export declare const PageIpfsSchema: z.ZodObject<{
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString>;
             }, z.core.$strip>;
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
             subplebbitAddress: z.ZodString;
             protocolVersion: z.ZodString;
             content: z.ZodOptional<z.ZodString>;
@@ -50,12 +50,12 @@ export declare const PageIpfsSchema: z.ZodObject<{
                         type: z.ZodString;
                     }, z.core.$strip>;
                 }, z.core.$loose>>;
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
             }, z.core.$loose>;
             depth: z.ZodNumber;
             thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -84,12 +84,12 @@ export declare const PageIpfsSchema: z.ZodObject<{
                     publicKey: z.ZodString;
                     signedPropertyNames: z.ZodArray<z.ZodString>;
                 }, z.core.$strip>;
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
                 subplebbitAddress: z.ZodString;
                 protocolVersion: z.ZodString;
                 commentCid: z.ZodString;
@@ -120,20 +120,20 @@ export declare const PageIpfsSchema: z.ZodObject<{
                             type: z.ZodString;
                         }, z.core.$strip>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                 }, z.core.$loose>;
             }, z.core.$loose>>;
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
             nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
@@ -147,12 +147,12 @@ export declare const PageIpfsSchema: z.ZodObject<{
                     postScore: z.ZodNumber;
                     replyScore: z.ZodNumber;
                     banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     firstCommentTimestamp: z.ZodNumber;
                     lastCommentCid: z.ZodString;
                 }, z.core.$loose>>;
@@ -225,12 +225,12 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                     publicKey: z.ZodString;
                     signedPropertyNames: z.ZodArray<z.ZodString>;
                 }, z.core.$strip>;
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
                 subplebbitAddress: z.ZodString;
                 protocolVersion: z.ZodString;
                 content: z.ZodOptional<z.ZodString>;
@@ -266,12 +266,12 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                             type: z.ZodString;
                         }, z.core.$strip>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                 }, z.core.$loose>;
                 depth: z.ZodNumber;
                 thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -300,12 +300,12 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     commentCid: z.ZodString;
@@ -336,20 +336,20 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                 }, z.core.$loose>>;
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
                 spoiler: z.ZodOptional<z.ZodBoolean>;
                 nsfw: z.ZodOptional<z.ZodBoolean>;
                 pinned: z.ZodOptional<z.ZodBoolean>;
@@ -363,12 +363,12 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                         postScore: z.ZodNumber;
                         replyScore: z.ZodNumber;
                         banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         firstCommentTimestamp: z.ZodNumber;
                         lastCommentCid: z.ZodString;
                     }, z.core.$loose>>;
@@ -431,12 +431,12 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                     publicKey: z.ZodString;
                     signedPropertyNames: z.ZodArray<z.ZodString>;
                 }, z.core.$strip>;
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
                 subplebbitAddress: z.ZodString;
                 protocolVersion: z.ZodString;
                 content: z.ZodOptional<z.ZodString>;
@@ -472,12 +472,12 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                             type: z.ZodString;
                         }, z.core.$strip>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                 }, z.core.$loose>;
                 depth: z.ZodNumber;
                 thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -506,12 +506,12 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     commentCid: z.ZodString;
@@ -542,20 +542,20 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                 }, z.core.$loose>>;
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
                 spoiler: z.ZodOptional<z.ZodBoolean>;
                 nsfw: z.ZodOptional<z.ZodBoolean>;
                 pinned: z.ZodOptional<z.ZodBoolean>;
@@ -569,12 +569,12 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                         postScore: z.ZodNumber;
                         replyScore: z.ZodNumber;
                         banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         firstCommentTimestamp: z.ZodNumber;
                         lastCommentCid: z.ZodString;
                     }, z.core.$loose>>;
@@ -614,12 +614,12 @@ export declare const ModQueuePageIpfsSchema: z.ZodObject<{
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString>;
             }, z.core.$strip>;
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
             subplebbitAddress: z.ZodString;
             protocolVersion: z.ZodString;
             content: z.ZodOptional<z.ZodString>;
@@ -655,12 +655,12 @@ export declare const ModQueuePageIpfsSchema: z.ZodObject<{
                         type: z.ZodString;
                     }, z.core.$strip>;
                 }, z.core.$loose>>;
-                flair: z.ZodOptional<z.ZodObject<{
+                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                     text: z.ZodString;
                     backgroundColor: z.ZodOptional<z.ZodString>;
                     textColor: z.ZodOptional<z.ZodString>;
                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                }, z.core.$loose>>;
+                }, z.core.$loose>>>;
             }, z.core.$loose>;
             depth: z.ZodNumber;
             thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -686,12 +686,12 @@ export declare const ModQueuePageIpfsSchema: z.ZodObject<{
                     postScore: z.ZodNumber;
                     replyScore: z.ZodNumber;
                     banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     firstCommentTimestamp: z.ZodNumber;
                     lastCommentCid: z.ZodString;
                 }, z.core.$loose>>;

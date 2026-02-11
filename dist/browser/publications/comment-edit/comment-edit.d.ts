@@ -8,7 +8,7 @@ export declare class CommentEdit extends Publication implements CommentEditPubsu
     content?: CommentEditPubsubMessagePublication["content"];
     reason?: CommentEditPubsubMessagePublication["reason"];
     deleted?: CommentEditPubsubMessagePublication["deleted"];
-    flair?: CommentEditPubsubMessagePublication["flair"];
+    flairs?: CommentEditPubsubMessagePublication["flairs"];
     spoiler?: CommentEditPubsubMessagePublication["spoiler"];
     nsfw?: CommentEditPubsubMessagePublication["nsfw"];
     signature: CommentEditPubsubMessagePublication["signature"];

@@ -27,12 +27,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                 type: import("zod").ZodString;
             }, import("zod/v4/core").$strip>;
         }, import("zod/v4/core").$loose>>>;
-        flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
+        flairs: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodObject<{
             text: import("zod").ZodString;
             backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
             textColor: import("zod").ZodOptional<import("zod").ZodString>;
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod/v4/core").$loose>>>;
+        }, import("zod/v4/core").$loose>>>>;
     }, import("zod/v4/core").$loose>>;
     subplebbitAddress: import("zod").ZodString;
     protocolVersion: import("zod").ZodOptional<import("zod").ZodString>;
@@ -43,6 +43,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
     }, import("zod/v4/core").$strip>>;
     subplebbitEdit: import("zod").ZodObject<{
         address: import("zod").ZodOptional<import("zod").ZodString>;
+        flairs: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodArray<import("zod").ZodObject<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod/v4/core").$loose>>>>>;
         title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
@@ -56,8 +62,6 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             noImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noPolls: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noCrossposts: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            anonymousAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noNestedReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             safeForWork: import("zod").ZodOptional<import("zod").ZodBoolean>;
             authorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -66,6 +70,9 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             requirePostFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noMarkdownImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noMarkdownVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            noMarkdownAudio: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            noAudio: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            noAudioReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             markdownImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             markdownVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noPostUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -90,12 +97,6 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             backgroundUrl: import("zod").ZodOptional<import("zod").ZodString>;
             language: import("zod").ZodOptional<import("zod").ZodString>;
         }, import("zod/v4/core").$loose>>>;
-        flairs: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodArray<import("zod").ZodObject<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod/v4/core").$loose>>>>>;
         settings: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             fetchThumbnailUrls: import("zod").ZodOptional<import("zod").ZodBoolean>;
             fetchThumbnailUrlsProxyUrl: import("zod").ZodOptional<import("zod").ZodString>;
@@ -179,16 +180,22 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                 type: import("zod").ZodString;
             }, import("zod/v4/core").$strip>;
         }, import("zod/v4/core").$loose>>;
-        flair: import("zod").ZodOptional<import("zod").ZodObject<{
+        flairs: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodObject<{
             text: import("zod").ZodString;
             backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
             textColor: import("zod").ZodOptional<import("zod").ZodString>;
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod/v4/core").$loose>>;
+        }, import("zod/v4/core").$loose>>>;
     }, import("zod/v4/core").$loose>;
     protocolVersion: import("zod").ZodString;
     subplebbitEdit: import("zod").ZodObject<{
         address: import("zod").ZodOptional<import("zod").ZodString>;
+        flairs: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodArray<import("zod").ZodObject<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod/v4/core").$loose>>>>>;
         title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
@@ -202,8 +209,6 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             noImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noPolls: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noCrossposts: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            noAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-            anonymousAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noNestedReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             safeForWork: import("zod").ZodOptional<import("zod").ZodBoolean>;
             authorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -212,6 +217,9 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             requirePostFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noMarkdownImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noMarkdownVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            noMarkdownAudio: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            noAudio: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            noAudioReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             markdownImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             markdownVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
             noPostUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -236,12 +244,6 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             backgroundUrl: import("zod").ZodOptional<import("zod").ZodString>;
             language: import("zod").ZodOptional<import("zod").ZodString>;
         }, import("zod/v4/core").$loose>>>;
-        flairs: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodArray<import("zod").ZodObject<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod/v4/core").$loose>>>>>;
         settings: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             fetchThumbnailUrls: import("zod").ZodOptional<import("zod").ZodBoolean>;
             fetchThumbnailUrlsProxyUrl: import("zod").ZodOptional<import("zod").ZodString>;
@@ -327,16 +329,22 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                     type: import("zod").ZodString;
                 }, import("zod/v4/core").$strip>;
             }, import("zod/v4/core").$loose>>;
-            flair: import("zod").ZodOptional<import("zod").ZodObject<{
+            flairs: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodObject<{
                 text: import("zod").ZodString;
                 backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
                 textColor: import("zod").ZodOptional<import("zod").ZodString>;
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod/v4/core").$loose>>;
+            }, import("zod/v4/core").$loose>>>;
         }, import("zod/v4/core").$loose>;
         protocolVersion: import("zod").ZodString;
         subplebbitEdit: import("zod").ZodObject<{
             address: import("zod").ZodOptional<import("zod").ZodString>;
+            flairs: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodArray<import("zod").ZodObject<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod/v4/core").$loose>>>>>;
             title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
@@ -350,8 +358,6 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 noImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 noPolls: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 noCrossposts: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                noAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
-                anonymousAuthors: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 noNestedReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 safeForWork: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 authorFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -360,6 +366,9 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 requirePostFlairs: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 noMarkdownImages: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 noMarkdownVideos: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                noMarkdownAudio: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                noAudio: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                noAudioReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 markdownImageReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 markdownVideoReplies: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 noPostUpvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -384,12 +393,6 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 backgroundUrl: import("zod").ZodOptional<import("zod").ZodString>;
                 language: import("zod").ZodOptional<import("zod").ZodString>;
             }, import("zod/v4/core").$loose>>>;
-            flairs: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodArray<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod/v4/core").$loose>>>>>;
             settings: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
                 fetchThumbnailUrls: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 fetchThumbnailUrlsProxyUrl: import("zod").ZodOptional<import("zod").ZodString>;

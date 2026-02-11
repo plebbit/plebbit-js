@@ -160,7 +160,7 @@ export declare class DbHandler {
     private _queryLatestModeratorReason;
     queryCommentFlagsSetByMod(cid: string): Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">;
     queryAuthorEditDeleted(cid: string): Pick<CommentEditsTableRow, "deleted"> | undefined;
-    private _queryModCommentFlair;
+    private _queryModCommentFlairs;
     private _queryLastChildCidAndLastReplyTimestamp;
     _queryIsCommentApproved(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">): {
         approved: boolean;
@@ -176,7 +176,7 @@ export declare class DbHandler {
     queryAuthorModEdits(opts: {
         authorSignerAddresses: string[];
         authorDomain?: string;
-    }): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
+    }): Pick<SubplebbitAuthor, "banExpiresAt" | "flairs">;
     querySubplebbitAuthor(authorSignerAddress: string, authorDomain?: string): SubplebbitAuthor | undefined;
     /** Shared helper: query karma for a set of addresses, with optional separate addresses for mod edits */
     private _querySubplebbitAuthorByAddresses;

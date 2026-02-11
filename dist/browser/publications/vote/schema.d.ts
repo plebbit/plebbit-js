@@ -28,12 +28,12 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
                 type: z.ZodString;
             }, z.core.$strip>;
         }, z.core.$loose>>>;
-        flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>>;
+        }, z.core.$loose>>>>;
     }, z.core.$loose>>;
     subplebbitAddress: z.ZodString;
     protocolVersion: z.ZodOptional<z.ZodString>;
@@ -77,12 +77,12 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<{
                 type: z.ZodString;
             }, z.core.$strip>;
         }, z.core.$loose>>;
-        flair: z.ZodOptional<z.ZodObject<{
+        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>>>;
     }, z.core.$loose>;
     protocolVersion: z.ZodString;
     commentCid: z.ZodString;
@@ -131,12 +131,12 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                     type: z.ZodString;
                 }, z.core.$strip>;
             }, z.core.$loose>>;
-            flair: z.ZodOptional<z.ZodObject<{
+            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 text: z.ZodString;
                 backgroundColor: z.ZodOptional<z.ZodString>;
                 textColor: z.ZodOptional<z.ZodString>;
                 expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.core.$loose>>;
+            }, z.core.$loose>>>;
         }, z.core.$loose>;
         protocolVersion: z.ZodString;
         commentCid: z.ZodString;
