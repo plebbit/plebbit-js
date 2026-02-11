@@ -270,9 +270,11 @@ export declare const RpcSubplebbitPageParamSchema: z.ZodObject<{
         posts: "posts";
         modqueue: "modqueue";
     }>;
+    pageMaxSize: z.ZodNumber;
 }, z.core.$loose>;
 export declare const RpcCommentRepliesPageParamSchema: z.ZodObject<{
     subplebbitAddress: z.ZodString;
     cid: z.ZodString;
+    pageMaxSize: z.ZodNumber;
     commentCid: z.ZodString;
 }, z.core.$loose>;

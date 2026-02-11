@@ -456,6 +456,16 @@ export class BaseClientsManager {
         catch (error) {
             //@ts-expect-error
             error.details = { ...error.details, ipnsName, ipnsResolveOpts };
+            // Wrap ETIMEDOUT in PlebbitError so _isRetriableErrorWhenLoading recognizes it as retriable
+            if (error instanceof Error && "cause" in error && error.cause?.code === "ETIMEDOUT") {
+                throw new PlebbitError("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", {
+                    ipnsName,
+                    ipnsResolveOpts,
+                    error,
+                    errorMessage: error.message,
+                    errorName: error.name
+                });
+            }
             throw error;
         }
         throw Error("Should not reach this block in resolveIpnsToCidP2P");

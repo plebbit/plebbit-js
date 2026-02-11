@@ -15,10 +15,12 @@ export declare const parseRpcSubplebbitPageParam: (params: unknown) => {
     cid: string;
     subplebbitAddress: string;
     type: "posts" | "modqueue";
+    pageMaxSize: number;
 };
 export declare const parseRpcCommentRepliesPageParam: (params: unknown) => {
     [x: string]: unknown;
     subplebbitAddress: string;
     cid: string;
+    pageMaxSize: number;
     commentCid: string;
 };
