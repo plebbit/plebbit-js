@@ -8,7 +8,7 @@
         "publicKey": "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0",
         "signature": "gwJxMTDNb5dV+pA5ztgseaQYxRF18AaqvMal45K7yV6YBHpahLmDN1rVyjXK4ZWeOYH8V90FaMDwolfGtOD6Cg",
         "signedPropertyNames": [
-            "flair",
+            "flairs",
             "spoiler",
             "content",
             "title",

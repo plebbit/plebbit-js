@@ -176,7 +176,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
                 content: `edit-${comment.cid}`,
                 reason: null,
                 deleted: 0,
-                flair: null,
+                flairs: null,
                 spoiler: 0,
                 nsfw: 0,
                 isAuthorEdit: 1,
@@ -297,6 +297,19 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
 
         const cids = commentCidsNeedingUpdate();
         expect(cids).to.include(post.cid);
+    });
+
+    it("includes comments when a mod adds flairs via moderation after the stored update", async () => {
+        const post = insertComment();
+        const { updatedAt } = insertCommentUpdate(post, { publishedToPostUpdatesMFS: 1, updatedAt: currentTimestamp() });
+
+        insertCommentModeration(post, {
+            insertedAt: updatedAt + 5,
+            moderation: { flairs: [{ text: "Important" }, { text: "Verified", backgroundColor: "#00ff00" }] }
+        });
+
+        const cids = commentCidsNeedingUpdate();
+        expect(cids).to.include(post.cid, "comment should be enqueued when a mod adds flairs via moderation");
     });
 
     it("includes comments when new child comments arrive after the stored update", async () => {

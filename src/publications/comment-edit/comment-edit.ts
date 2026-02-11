@@ -11,7 +11,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     content?: CommentEditPubsubMessagePublication["content"];
     reason?: CommentEditPubsubMessagePublication["reason"];
     deleted?: CommentEditPubsubMessagePublication["deleted"];
-    flair?: CommentEditPubsubMessagePublication["flair"];
+    flairs?: CommentEditPubsubMessagePublication["flairs"];
     spoiler?: CommentEditPubsubMessagePublication["spoiler"];
     nsfw?: CommentEditPubsubMessagePublication["nsfw"];
 
@@ -46,7 +46,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
         this.content = props.content;
         this.reason = props.reason;
         this.deleted = props.deleted;
-        this.flair = props.flair;
+        this.flairs = props.flairs;
         this.spoiler = props.spoiler;
         this.nsfw = props.nsfw;
     }

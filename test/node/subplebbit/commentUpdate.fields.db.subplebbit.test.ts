@@ -80,7 +80,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             postNumber: assignedNumbers.postNumber,
             insertedAt: overrides["insertedAt"] ?? timestamp,
             extraProps: overrides["extraProps"] ?? undefined,
-            flair: overrides["flair"] ?? undefined,
+            flairs: overrides["flairs"] ?? undefined,
             spoiler: overrides["spoiler"],
             nsfw: overrides["nsfw"]
         };

@@ -31,7 +31,7 @@ const CommentContentSchema = z.string();
 
 export const CreateCommentOptionsSchema = z
     .object({
-        flair: FlairSchema.optional(), // Author chosen colored label for the comment
+        flairs: FlairSchema.array().optional(), // Author chosen colored labels for the comment
         spoiler: z.boolean().optional(), // Hide the comment thumbnail behind spoiler warning
         nsfw: z.boolean().optional(),
         content: CommentContentSchema.optional(),
@@ -125,8 +125,8 @@ export const CommentUpdateSchema = z
         childCount: z.number().nonnegative().int().optional(), // the total of direct children of the comment, does not include indirect children
         number: z.number().int().positive().optional(),
         postNumber: z.number().int().positive().optional(),
-        edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
-        flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
+        edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flairs override Comment instance props. Validate commentUpdate.edit.signature
+        flairs: FlairSchema.array().optional(), // arbitrary colored strings to describe the comment, added by mods, override comment.flairs and comment.edit.flairs (which are added by author)
         spoiler: z.boolean().optional(),
         nsfw: z.boolean().optional(),
         pinned: z.boolean().optional(),
@@ -135,7 +135,7 @@ export const CommentUpdateSchema = z
         reason: z.string().optional(), // reason the mod took a mood action,
         approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use moderation.pageCids.pendingApproval to fetch pending comments
         updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
-        author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
+        author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flairs with commentUpdate.author.subplebbit.flairs if any
         lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
         lastReplyTimestamp: PlebbitTimestampSchema.optional(), // The timestamp of the most recent direct or indirect child of the comment
         signature: JsonSignatureSchema, // signature of the CommentUpdate by the sub owner to protect against malicious gateway
@@ -158,7 +158,7 @@ export const CommentUpdateForDisapprovedPendingComment = CommentUpdateSchema.pic
     nsfw: true,
     locked: true,
     spoiler: true,
-    flair: true,
+    flairs: true,
     updatedAt: true,
     approved: true
 }).strict();

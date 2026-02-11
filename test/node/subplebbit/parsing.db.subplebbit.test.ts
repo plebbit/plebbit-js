@@ -34,7 +34,7 @@ describe("createSchemaRowParser", () => {
             downvoteCount: 2,
             replyCount: 4,
             childCount: 1,
-            flair: JSON.stringify({ text: "blue" }),
+            flairs: JSON.stringify([{ text: "blue" }]),
             spoiler: 1,
             nsfw: 0,
             pinned: 1,
@@ -86,7 +86,7 @@ describe("createSchemaRowParser", () => {
             commentUpdate_downvoteCount: 1,
             commentUpdate_replyCount: 0,
             commentUpdate_childCount: 0,
-            commentUpdate_flair: JSON.stringify({ text: "blue" }),
+            commentUpdate_flairs: JSON.stringify([{ text: "blue" }]),
             commentUpdate_spoiler: 0,
             commentUpdate_nsfw: 1,
             commentUpdate_pinned: 0,
@@ -147,7 +147,7 @@ describe("createSchemaRowParser", () => {
             thumbnailUrl: null,
             thumbnailUrlWidth: null,
             thumbnailUrlHeight: null,
-            flair: null,
+            flairs: null,
             spoiler: null,
             nsfw: null,
             pendingApproval: null,
@@ -159,7 +159,7 @@ describe("createSchemaRowParser", () => {
 
         expect(parsed.cid).to.equal("QmZg4TCKqKoMTVHCpQbVmGBkcGaA4vHwaC7xaoZ3nfJm8k");
         expect(parsed.content).to.be.undefined;
-        expect(parsed.flair).to.be.undefined;
+        expect(parsed.flairs).to.be.undefined;
         expect(parsed.pendingApproval).to.be.undefined;
         expect(parsed.extraProps).to.be.undefined;
         expect(parsed.quotedCids).to.be.undefined;
@@ -187,6 +187,75 @@ describe("createSchemaRowParser", () => {
         const parsed = parseCommentsTableRow(rawRow);
 
         expect(parsed.quotedCids).to.deep.equal(quotedCids);
+    });
+
+    it("parses flairs from JSON string to array in comments table", () => {
+        const signature = buildSignature();
+        const flairs = [{ text: "Discussion" }, { text: "Verified", backgroundColor: "#00ff00" }];
+        const rawRow: Record<string, string | number | null> = {
+            cid: "QmZg4TCKqKoMTVHCpQbVmGBkcGaA4vHwaC7xaoZ3nfJm8k",
+            postCid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f",
+            depth: 0,
+            authorSignerAddress: "signer",
+            subplebbitAddress: "sub",
+            timestamp: 1700000500,
+            insertedAt: 1700000501,
+            protocolVersion: "1",
+            author: JSON.stringify({ address: "authorAddress" }),
+            signature: JSON.stringify(signature),
+            flairs: JSON.stringify(flairs)
+        };
+
+        const parsed = parseCommentsTableRow(rawRow);
+        expect(parsed.flairs).to.deep.equal(flairs);
+    });
+
+    it("parses flairs from JSON string to array in comment updates table", () => {
+        const parseCommentUpdateRow = createSchemaRowParser(CommentUpdateTableRowSchema);
+        const flairs = [{ text: "Mod Tag", textColor: "#fff", backgroundColor: "#ff0000" }];
+
+        const rawRow = {
+            cid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f",
+            upvoteCount: 1,
+            downvoteCount: 0,
+            replyCount: 0,
+            childCount: 0,
+            flairs: JSON.stringify(flairs),
+            spoiler: 0,
+            nsfw: 0,
+            pinned: 0,
+            locked: 0,
+            removed: 0,
+            updatedAt: 1700000000,
+            signature: JSON.stringify(buildSignature()),
+            protocolVersion: "1",
+            publishedToPostUpdatesMFS: 1,
+            insertedAt: 1700000200
+        };
+
+        const { data } = parseCommentUpdateRow(rawRow);
+        expect(data.flairs).to.deep.equal(flairs);
+    });
+
+    it("parses single-element flairs array from JSON string", () => {
+        const parseCommentUpdateRow = createSchemaRowParser(CommentUpdateTableRowSchema);
+        const flairs = [{ text: "blue" }];
+
+        const rawRow = {
+            cid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f",
+            upvoteCount: 0,
+            downvoteCount: 0,
+            replyCount: 0,
+            flairs: JSON.stringify(flairs),
+            updatedAt: 1700000000,
+            signature: JSON.stringify(buildSignature()),
+            protocolVersion: "1",
+            publishedToPostUpdatesMFS: 0,
+            insertedAt: 1700000200
+        };
+
+        const { data } = parseCommentUpdateRow(rawRow);
+        expect(data.flairs).to.deep.equal(flairs);
     });
 });
 

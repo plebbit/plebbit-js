@@ -18,7 +18,7 @@ export const AuthorCommentEditOptionsSchema = z
         commentCid: CidStringSchema,
         content: z.string().optional(), // TODO Should use CommentIpfsSchema.content later on
         deleted: z.boolean().optional(),
-        flair: FlairSchema.optional(),
+        flairs: FlairSchema.array().optional(),
         spoiler: z.boolean().optional(),
         nsfw: z.boolean().optional(),
         reason: z.string().optional()

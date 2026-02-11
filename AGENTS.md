@@ -2,7 +2,7 @@
 -   Make sure to run npm run build if you're modifying files inside src/, and make sure it passes with no errors
 -   each http router keep provider announcement for only 24 hours
 -   If you're gonna edit schema make sure to check for docs relevant to the local zod version by checking package.json
--   Run every automated test suite through `node test/run-test-config.js --plebbit-config ${plebbit-config} ${testPath}` so our Vitest setup enforces bail/allowOnly/timeouts automatically. you need to supply test path to run-test-config.js. You also need to choose plebbit-config. If the test is inside test/node then choose "local-kubo-rpc"
+-   Run every automated test suite through `node test/run-test-config.js --plebbit-config ${plebbit-config} ${testPath}` so our Vitest setup enforces bail/allowOnly/timeouts automatically. you need to supply test path to run-test-config.js. You also need to choose plebbit-config. If the test is inside test/node then choose "local-kubo-rpc". For tests inside test/node-and-browser, choose "remote-kubo-rpc". Only use "local-kubo-rpc" when the test creates a new LocalSubplebbit instance.
 -   When running RPC tests (e.g. remove.test.js), set `USE_RPC=1` in the environment
 -   You should never use removeAllListeners because it removes error listener initialized in constructor which may cause process to crash
 -   If you need to troubleshoot or debug anything related to a local subplebbit, you can run sqlite queries against its database at `${plebbitDataPath}/subplebbits/${subplebbitAddress}`

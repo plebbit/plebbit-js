@@ -302,7 +302,7 @@ describeSkipIfRpc("Domain bans with pseudonymity mode", () => {
 });
 
 describe("Domain-based flairs", () => {
-    it.todo("should store targetAuthorDomain when setting flair for an author who used a domain address");
+    it.todo("should store targetAuthorDomain when setting flairs for an author who used a domain address");
 
-    it.todo("should apply flair to an author by their domain even if they change their public key");
+    it.todo("should apply flairs to an author by their domain even if they change their public key");
 });

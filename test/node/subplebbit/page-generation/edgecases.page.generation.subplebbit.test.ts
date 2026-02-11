@@ -646,7 +646,7 @@ async function buildTestCommentRowsFromTrees({ subplebbitAddress, trees }: { sub
             title: depth === 0 ? node.title ?? `title-${label}` : null,
             depth,
             linkHtmlTagName: null,
-            flair: null,
+            flairs: null,
             spoiler: null,
             pendingApproval: null,
             nsfw: null,

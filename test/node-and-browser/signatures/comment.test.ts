@@ -216,10 +216,66 @@ describeSkipIfRpc("verify Comment", async () => {
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });
     });
 
-    // TODO when flairs are implemented
-    it(`Can sign and verify a comment with flair`);
-    it(`Can verify a comment whose author.flair have been changed`);
-    it(`can verify a comment whose flair have been changed by mod`);
+    it(`Can sign and verify a comment with flairs`, async () => {
+        const signer = await plebbit.createSigner();
+        const commentToSign: CommentOptionsToSign = {
+            subplebbitAddress: signers[0].address,
+            author: { address: signer.address },
+            timestamp: timestamp(),
+            protocolVersion: PROTOCOL_VERSION,
+            title: "Post with flairs",
+            content: "Testing flairs",
+            flairs: [{ text: "Discussion" }, { text: "Verified", backgroundColor: "#00ff00" }],
+            signer
+        };
+        const signature = await signComment({ comment: commentToSign, plebbit });
+        const signedComment: CommentPubsubMessagePublication = { signature, ...remeda.omit(commentToSign, ["signer"]) };
+        const verification = await verifyCommentPubsubMessage({ comment: signedComment, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        expect(verification).to.deep.equal({ valid: true });
+        expect(signedComment.signature.signedPropertyNames).to.include("flairs");
+    });
+
+    it(`Can verify a comment whose author.flairs have been changed`, async () => {
+        const signer = await plebbit.createSigner();
+        const commentToSign: CommentOptionsToSign = {
+            subplebbitAddress: signers[0].address,
+            author: { address: signer.address, flairs: [{ text: "Original" }] },
+            timestamp: timestamp(),
+            protocolVersion: PROTOCOL_VERSION,
+            title: "Post with author flairs",
+            content: "Testing author flairs",
+            signer
+        };
+        const signature = await signComment({ comment: commentToSign, plebbit });
+        const signedComment: CommentPubsubMessagePublication = { signature, ...remeda.omit(commentToSign, ["signer"]) };
+
+        // Tamper with author.flairs
+        signedComment.author.flairs = [{ text: "Tampered" }];
+        const verification = await verifyCommentPubsubMessage({ comment: signedComment, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+    });
+
+    it(`can verify a comment whose flairs have been changed by mod`, async () => {
+        // Signing a comment with flairs, then modifying the flairs should invalidate the signature
+        const signer = await plebbit.createSigner();
+        const commentToSign: CommentOptionsToSign = {
+            subplebbitAddress: signers[0].address,
+            author: { address: signer.address },
+            timestamp: timestamp(),
+            protocolVersion: PROTOCOL_VERSION,
+            title: "Post to be mod-flaired",
+            content: "Testing mod flairs tampering",
+            flairs: [{ text: "Original" }],
+            signer
+        };
+        const signature = await signComment({ comment: commentToSign, plebbit });
+        const signedComment: CommentPubsubMessagePublication = { signature, ...remeda.omit(commentToSign, ["signer"]) };
+
+        // Tamper with flairs as if a mod changed them
+        signedComment.flairs = [{ text: "Mod Changed" }];
+        const verification = await verifyCommentPubsubMessage({ comment: signedComment, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
+    });
 });
 
 // Clients of RPC will trust the response of RPC and won't validate

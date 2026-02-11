@@ -22,7 +22,7 @@
         "publicKey": "fhnnUqE9NCCtgcEfwSRNSk7KCbm2lzD1HGhzaol9n/k",
         "type": "ed25519",
         "signedPropertyNames": [
-            "flair",
+            "flairs",
             "spoiler",
             "content",
             "title",

@@ -52,7 +52,7 @@
             "downvoteCount",
             "replyCount",
             "edit",
-            "flair",
+            "flairs",
             "spoiler",
             "pinned",
             "locked",

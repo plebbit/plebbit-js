@@ -290,7 +290,7 @@ export class DbHandler {
                 title TEXT NULLABLE,
                 depth INTEGER NOT NULL,
                 linkHtmlTagName TEXT NULLABLE,
-                flair TEXT NULLABLE, -- JSON
+                flairs TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 pendingApproval INTEGER NULLABLE, -- BOOLEAN (0/1)
                 number INTEGER NULLABLE,
@@ -316,7 +316,7 @@ export class DbHandler {
                 childCount INTEGER NOT NULL,
                 number INTEGER NULLABLE,
                 postNumber INTEGER NULLABLE,
-                flair TEXT NULLABLE, -- JSON
+                flairs TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 pinned INTEGER NULLABLE, -- BOOLEAN (0/1)
@@ -366,7 +366,7 @@ export class DbHandler {
                 content TEXT NULLABLE,
                 reason TEXT NULLABLE,
                 deleted INTEGER NULLABLE, -- BOOLEAN (0/1)
-                flair TEXT NULLABLE, -- JSON
+                flairs TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 isAuthorEdit INTEGER NOT NULL, -- BOOLEAN (0/1)
@@ -971,8 +971,8 @@ export class DbHandler {
         // Adding a new column to the comments table requires updating this list manually, which is error-prone.
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENTS}
-            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, pendingApproval, number, postNumber, nsfw, pseudonymityMode, quotedCids, extraProps, protocolVersion, insertedAt)
-            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @pendingApproval, @number, @postNumber, @nsfw, @pseudonymityMode, @quotedCids, @extraProps, @protocolVersion, @insertedAt)
+            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flairs, spoiler, pendingApproval, number, postNumber, nsfw, pseudonymityMode, quotedCids, extraProps, protocolVersion, insertedAt)
+            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flairs, @spoiler, @pendingApproval, @number, @postNumber, @nsfw, @pseudonymityMode, @quotedCids, @extraProps, @protocolVersion, @insertedAt)
         `);
 
         // Create default object with null values for all columns
@@ -1013,13 +1013,13 @@ export class DbHandler {
 
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_UPDATES} 
-            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, number, postNumber, flair, spoiler, nsfw, pinned, locked, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt) 
-            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @number, @postNumber, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
+            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, number, postNumber, flairs, spoiler, nsfw, pinned, locked, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt)
+            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @number, @postNumber, @flairs, @spoiler, @nsfw, @pinned, @locked, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
             ON CONFLICT(cid) DO UPDATE SET
                 edit = excluded.edit, upvoteCount = excluded.upvoteCount, downvoteCount = excluded.downvoteCount, replyCount = excluded.replyCount, childCount = excluded.childCount,
                 number = COALESCE(excluded.number, ${TABLES.COMMENT_UPDATES}.number),
                 postNumber = COALESCE(excluded.postNumber, ${TABLES.COMMENT_UPDATES}.postNumber),
-                flair = excluded.flair, spoiler = excluded.spoiler, nsfw = excluded.nsfw, pinned = excluded.pinned, locked = excluded.locked,
+                flairs = excluded.flairs, spoiler = excluded.spoiler, nsfw = excluded.nsfw, pinned = excluded.pinned, locked = excluded.locked,
                 removed = excluded.removed, approved = excluded.approved, reason = excluded.reason, updatedAt = excluded.updatedAt, protocolVersion = excluded.protocolVersion,
                 signature = excluded.signature, author = excluded.author, replies = excluded.replies, lastChildCid = excluded.lastChildCid,
                 lastReplyTimestamp = excluded.lastReplyTimestamp, postUpdatesBucket = excluded.postUpdatesBucket,
@@ -1078,8 +1078,8 @@ export class DbHandler {
 
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_EDITS}
-            (commentCid, authorSignerAddress, author, signature, protocolVersion, subplebbitAddress, timestamp, content, reason, deleted, flair, spoiler, nsfw, isAuthorEdit, insertedAt, extraProps)
-            VALUES (@commentCid, @authorSignerAddress, @author, @signature, @protocolVersion, @subplebbitAddress, @timestamp, @content, @reason, @deleted, @flair, @spoiler, @nsfw, @isAuthorEdit, @insertedAt, @extraProps)
+            (commentCid, authorSignerAddress, author, signature, protocolVersion, subplebbitAddress, timestamp, content, reason, deleted, flairs, spoiler, nsfw, isAuthorEdit, insertedAt, extraProps)
+            VALUES (@commentCid, @authorSignerAddress, @author, @signature, @protocolVersion, @subplebbitAddress, @timestamp, @content, @reason, @deleted, @flairs, @spoiler, @nsfw, @isAuthorEdit, @insertedAt, @extraProps)
         `);
 
         const defaults = remeda.mapToObj(columnNames, (column) => [column, null]);
@@ -1934,19 +1934,19 @@ export class DbHandler {
         return result && result.deleted !== null ? { deleted: Boolean(result.deleted) } : undefined;
     }
 
-    private _queryModCommentFlair(
+    private _queryModCommentFlairs(
         comment: Pick<CommentsTableRow, "cid">
-    ): { flair?: CommentModerationTableRow["commentModeration"]["flair"] } | undefined {
+    ): { flairs?: CommentModerationTableRow["commentModeration"]["flairs"] } | undefined {
         const result = this._db
             .prepare(
                 `
-            SELECT json_extract(commentModeration, '$.flair') AS flair FROM ${TABLES.COMMENT_MODERATIONS}
-            WHERE commentCid = ? AND json_extract(commentModeration, '$.flair') IS NOT NULL ORDER BY rowid DESC LIMIT 1
+            SELECT json_extract(commentModeration, '$.flairs') AS flairs FROM ${TABLES.COMMENT_MODERATIONS}
+            WHERE commentCid = ? AND json_extract(commentModeration, '$.flairs') IS NOT NULL ORDER BY rowid DESC LIMIT 1
         `
             )
-            .get(comment.cid) as { flair: string } | undefined;
+            .get(comment.cid) as { flairs: string } | undefined;
         if (!result) return undefined;
-        return { flair: JSON.parse(result.flair) as CommentModerationTableRow["commentModeration"]["flair"] };
+        return { flairs: JSON.parse(result.flairs) as CommentModerationTableRow["commentModeration"]["flairs"] };
     }
 
     private _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid">) {
@@ -2032,7 +2032,7 @@ export class DbHandler {
         const commentUpdateCounts = this._queryCommentCounts(comment.cid);
         const moderatorReason = this._queryLatestModeratorReason(comment);
         const commentFlags = this.queryCommentFlagsSetByMod(comment.cid);
-        const commentModFlair = this._queryModCommentFlair(comment);
+        const commentModFlairs = this._queryModCommentFlairs(comment);
         const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
         const isThisCommentApproved = this._queryIsCommentApproved(comment);
         const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // automatically add removed:true if approved=false. Will be overridden if there's commentFlags.removed
@@ -2046,7 +2046,7 @@ export class DbHandler {
             ...(commentNumber !== undefined ? { number: commentNumber } : undefined),
             ...(postNumber !== undefined ? { postNumber } : undefined),
             ...commentUpdateCounts,
-            flair: commentModFlair?.flair || authorEdit?.flair,
+            flairs: commentModFlairs?.flairs || authorEdit?.flairs,
             ...commentFlags,
             reason: moderatorReason?.reason,
             author: { subplebbit: authorSubplebbit },
@@ -2091,7 +2091,7 @@ export class DbHandler {
     queryAuthorModEdits(opts: {
         authorSignerAddresses: string[];
         authorDomain?: string;
-    }): Pick<SubplebbitAuthor, "banExpiresAt" | "flair"> {
+    }): Pick<SubplebbitAuthor, "banExpiresAt" | "flairs"> {
         const { authorSignerAddresses, authorDomain } = opts;
         if (authorSignerAddresses.length === 0 && !authorDomain) return {};
 
@@ -2123,10 +2123,10 @@ export class DbHandler {
             (r) => JSON.parse(r.commentAuthorJson) as CommentModerationTableRow["commentModeration"]["author"]
         );
         const banAuthor = modAuthorEdits.find((modEdit) => typeof modEdit?.banExpiresAt === "number");
-        const authorFlairByMod = modAuthorEdits.find((modEdit) => modEdit?.flair);
-        const aggregateAuthor: Pick<SubplebbitAuthor, "banExpiresAt" | "flair"> = {};
+        const authorFlairsByMod = modAuthorEdits.find((modEdit) => modEdit?.flairs);
+        const aggregateAuthor: Pick<SubplebbitAuthor, "banExpiresAt" | "flairs"> = {};
         if (banAuthor?.banExpiresAt) aggregateAuthor.banExpiresAt = banAuthor.banExpiresAt;
-        if (authorFlairByMod?.flair) aggregateAuthor.flair = authorFlairByMod.flair;
+        if (authorFlairsByMod?.flairs) aggregateAuthor.flairs = authorFlairsByMod.flairs;
         return aggregateAuthor;
     }
 

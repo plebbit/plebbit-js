@@ -43,7 +43,7 @@ export const testCommentFieldsInPageJson = (comment: CommentWithinRepliesPostsPa
     expect(comment.upvoteCount).to.be.a("number");
     expect(comment.original.author.address).to.be.a("string");
     if (!comment.link) expect(comment.original.content).to.be.a("string");
-    // TODO verify flair here when implemented
+    // TODO verify flairs here when implemented
 
     if (comment.edit) {
         expect(comment.author.address).to.equal(comment.author.address);
@@ -101,7 +101,7 @@ export const testCommentFieldsInModQueuePageJson = (comment: Record<string, any>
     expect(comment.upvoteCount).to.be.undefined;
     expect(comment.original.author.address).to.be.a("string");
     if (!comment.link) expect(comment.original.content).to.be.a("string");
-    // TODO verify flair here when implemented
+    // TODO verify flairs here when implemented
 
     expect(comment.edit).to.be.undefined;
 

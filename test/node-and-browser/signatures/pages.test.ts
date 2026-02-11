@@ -136,8 +136,14 @@ describeSkipIfRpc(`verify pages`, async () => {
             expect(verificaiton).to.deep.equal({ valid: true });
         });
 
-        // TODO when comment.flair is implemented
-        it(`comment.flair (original)`);
+        it(`comment.flairs (original)`, async () => {
+            const invalidPage = remeda.clone(validPageIpfsFixture) as PageIpfs;
+            // Add flairs to a comment that had none — changing the comment object changes its CID hash,
+            // so the commentUpdate.cid no longer matches
+            invalidPage.comments[0].comment.flairs = [{ text: "Injected Flair" }];
+            const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
+            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT });
+        });
         it("comment.content (author has never modified comment.content before))", async () => {
             const invalidPage = remeda.clone(validPageIpfsFixture) as PageIpfs;
             const commentWithNoEditIndex = invalidPage.comments.findIndex((pageComment) => !pageComment.commentUpdate.edit?.content);

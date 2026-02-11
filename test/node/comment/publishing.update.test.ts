@@ -170,7 +170,7 @@ async function seedCommentChain({
             protocolVersion: PROTOCOL_VERSION,
             pendingApproval: null,
             insertedAt: timestamp,
-            flair: null,
+            flairs: null,
             spoiler: false,
             nsfw: false,
             previousCid: undefined,

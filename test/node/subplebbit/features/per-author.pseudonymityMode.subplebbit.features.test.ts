@@ -172,7 +172,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
             await domainPost.stop();
         });
 
-        it.sequential("Spec: anonymized publication keeps author displayName while stripping wallets/avatar/flair fields", async () => {
+        it.sequential("Spec: anonymized publication keeps author displayName while stripping wallets/avatar/flairs fields", async () => {
             const noisyAuthor = {
                 address: authorSigner.address,
                 displayName: "Noisy Display Name",
@@ -190,7 +190,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                     timestamp: Math.round(Date.now() / 1000),
                     signature: { signature: "signature", type: "ed25519" }
                 },
-                flair: { text: "flair" },
+                flairs: [{ text: "flair" }],
                 previousCommentCid: "QmYwAPJzv5CZsnAzt8auVTL8gdD5pqqBYn2fvDMLoG34he"
             };
             const noisyPost = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, {
@@ -241,7 +241,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                         signature: { signature: "signature", type: "ed25519" }
                     }
                 },
-                flair: { text: "OG flair" },
+                flairs: [{ text: "OG flair" }],
                 previousCommentCid: "QmYwAPJzv5CZsnAzt8auVTL8gdD5pqqBYn2fvDMLoG34he"
             };
             const originalContent = "Content before anonymization";
@@ -265,7 +265,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                 expect(authoredPost.original?.author?.address).to.equal(originalAuthor.address);
                 expect(authoredPost.original?.author?.displayName).to.equal(originalAuthor.displayName);
                 expect(authoredPost.original?.author?.wallets).to.deep.equal(originalAuthor.wallets);
-                expect(authoredPost.original?.author?.flair).to.deep.equal(originalAuthor.flair);
+                expect(authoredPost.original?.author?.flairs).to.deep.equal(originalAuthor.flairs);
                 expect(authoredPost.original?.author?.previousCommentCid).to.equal(originalAuthor.previousCommentCid);
                 expect(authoredPost.original?.content).to.equal(originalContent);
                 expect(authoredPost.original?.signature?.publicKey).to.equal(authorSigner.publicKey);
@@ -1150,7 +1150,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                             expect(postInPage?.author?.address).to.equal(aliasSigner.address);
                             expect(postInPage?.author?.displayName).to.equal(sharedContext.postDisplayName);
                             expect(postInPage?.author?.wallets).to.be.undefined;
-                            expect(postInPage?.author?.flair).to.be.undefined;
+                            expect(postInPage?.author?.flairs).to.be.undefined;
                             expect(postInPage?.signature?.publicKey).to.equal(aliasSigner.publicKey);
                             expect(postInPage?.pseudonymityMode).to.equal("per-author");
                         }

@@ -14,7 +14,7 @@ import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 
 export const ModeratorOptionsSchema = z
     .object({
-        flair: FlairSchema.optional(),
+        flairs: FlairSchema.array().optional(),
         spoiler: z.boolean().optional(),
         nsfw: z.boolean().optional(),
         pinned: z.boolean().optional(),
@@ -23,7 +23,7 @@ export const ModeratorOptionsSchema = z
         removed: z.boolean().optional(),
         purged: z.boolean().optional(),
         reason: z.string().optional(),
-        author: SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true }).loose().optional()
+        author: SubplebbitAuthorSchema.pick({ banExpiresAt: true, flairs: true }).loose().optional()
     })
     .strict();
 

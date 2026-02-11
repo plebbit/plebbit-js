@@ -169,7 +169,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
             await firstReply.stop();
             await secondReply.stop();
         });
-        it("Spec: anonymized publication keeps author displayName while stripping wallets/avatar/flair fields", async () => {
+        it("Spec: anonymized publication keeps author displayName while stripping wallets/avatar/flairs fields", async () => {
             const noisyAuthor = {
                 address: authorSigner.address,
                 displayName: "Noisy Display Name",
@@ -187,7 +187,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     timestamp: Math.round(Date.now() / 1000),
                     signature: { signature: "signature", type: "ed25519" }
                 },
-                flair: { text: "flair" },
+                flairs: [{ text: "flair" }],
                 previousCommentCid: "QmYwAPJzv5CZsnAzt8auVTL8gdD5pqqBYn2fvDMLoG34he"
             };
 
@@ -350,7 +350,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                         signature: { signature: "signature", type: "ed25519" }
                     }
                 },
-                flair: { text: "OG flair" },
+                flairs: [{ text: "OG flair" }],
                 previousCommentCid: "QmYwAPJzv5CZsnAzt8auVTL8gdD5pqqBYn2fvDMLoG34he"
             };
             const originalContent = "Content before anonymization";
@@ -377,7 +377,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 expect(authoredReply.original?.author?.address).to.equal(originalAuthor.address);
                 expect(authoredReply.original?.author?.displayName).to.equal(originalAuthor.displayName);
                 expect(authoredReply.original?.author?.wallets).to.deep.equal(originalAuthor.wallets);
-                expect(authoredReply.original?.author?.flair).to.deep.equal(originalAuthor.flair);
+                expect(authoredReply.original?.author?.flairs).to.deep.equal(originalAuthor.flairs);
                 expect(authoredReply.original?.author?.previousCommentCid).to.equal(originalAuthor.previousCommentCid);
                 expect(authoredReply.original?.content).to.equal(originalContent);
                 expect(authoredReply.original?.signature?.publicKey).to.equal(authorSigner.publicKey);
@@ -1351,7 +1351,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                         expect(remoteReply.author.address).to.not.equal(signingAuthor.address);
                         expect(remoteReply.author.displayName).to.equal(sharedContext.firstReplyDisplayName);
                         expect(remoteReply.author.wallets).to.be.undefined;
-                        expect(remoteReply.author.flair).to.be.undefined;
+                        expect(remoteReply.author.flairs).to.be.undefined;
                         expect(remoteReply.signature.publicKey).to.not.equal(signingAuthor.publicKey);
                         expect(remoteReply.pseudonymityMode).to.equal("per-reply");
 

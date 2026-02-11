@@ -1,0 +1,93 @@
+import signers from "../../../fixtures/signers.js";
+import {
+    getAvailablePlebbitConfigsToTestAgainst,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
+    publishRandomPost,
+    publishWithExpectedResult,
+    resolveWhenConditionIsTrue
+} from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
+import { describe, it, beforeAll, afterAll } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+
+const subplebbitAddress = signers[0].address;
+
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
+    describe.concurrent(`Authors can set flairs on their own comment - ${config.name}`, async () => {
+        let plebbit: Plebbit, authorPost: Comment;
+        beforeAll(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            authorPost = await publishRandomPost(subplebbitAddress, plebbit);
+            expect(authorPost.flairs).to.be.undefined;
+            await authorPost.update();
+            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => typeof authorPost.updatedAt === "number" });
+            expect(authorPost.flairs).to.be.undefined;
+        });
+
+        afterAll(async () => {
+            await authorPost?.stop();
+            await plebbit.destroy();
+        });
+
+        it(`Regular author can't set flairs on another author's comment`, async () => {
+            const flairsEdit = await plebbit.createCommentEdit({
+                subplebbitAddress: authorPost.subplebbitAddress,
+                commentCid: authorPost.cid,
+                flairs: [{ text: "Hacked" }],
+                signer: await plebbit.createSigner()
+            });
+            await publishWithExpectedResult(flairsEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+        });
+
+        it.sequential(`Author can set flairs on their own comment`, async () => {
+            expect(authorPost.flairs).to.be.undefined;
+
+            const flairsEdit = await plebbit.createCommentEdit({
+                subplebbitAddress: authorPost.subplebbitAddress,
+                commentCid: authorPost.cid,
+                flairs: [{ text: "Discussion" }],
+                signer: authorPost.signer,
+                reason: "Author adding flairs"
+            });
+            await publishWithExpectedResult(flairsEdit, true);
+        });
+
+        it.sequential(`A new CommentUpdate is published with flairs`, async () => {
+            await resolveWhenConditionIsTrue({
+                toUpdate: authorPost,
+                predicate: async () => authorPost.flairs !== undefined && authorPost.flairs.length > 0
+            });
+            expect(authorPost.edit.flairs).to.deep.equal([{ text: "Discussion" }]);
+            expect(authorPost.raw.commentUpdate.edit).to.exist;
+            expect(authorPost.raw.commentUpdate.edit.flairs).to.deep.equal([{ text: "Discussion" }]);
+
+            expect(authorPost.flairs).to.deep.equal([{ text: "Discussion" }]);
+        });
+
+        it(`flairs appear in pages of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit({ address: authorPost.subplebbitAddress });
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(authorPost.cid, sub.posts);
+            expect(commentInPage.flairs).to.deep.equal([{ text: "Discussion" }]);
+        });
+
+        it.sequential(`Author can update flairs with multiple entries`, async () => {
+            const flairsEdit = await plebbit.createCommentEdit({
+                subplebbitAddress: authorPost.subplebbitAddress,
+                commentCid: authorPost.cid,
+                flairs: [{ text: "Updated" }, { text: "Important", backgroundColor: "#ff0000" }],
+                signer: authorPost.signer,
+                reason: "Author updating flairs"
+            });
+            await publishWithExpectedResult(flairsEdit, true);
+        });
+
+        it.sequential(`A new CommentUpdate is published with updated flairs`, async () => {
+            await resolveWhenConditionIsTrue({
+                toUpdate: authorPost,
+                predicate: async () => authorPost.flairs !== undefined && authorPost.flairs.length === 2
+            });
+            expect(authorPost.flairs).to.deep.equal([{ text: "Updated" }, { text: "Important", backgroundColor: "#ff0000" }]);
+        });
+    });
+});
