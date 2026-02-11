@@ -62,22 +62,22 @@ export declare function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(mod
                         type: string;
                     };
                 } | undefined;
-                flair?: {
+                flairs?: {
                     [x: string]: unknown;
                     text: string;
                     backgroundColor?: string | undefined;
                     textColor?: string | undefined;
                     expiresAt?: number | undefined;
-                } | undefined;
+                }[] | undefined;
             };
             depth: number;
-            flair?: {
+            flairs?: {
                 [x: string]: unknown;
                 text: string;
                 backgroundColor?: string | undefined;
                 textColor?: string | undefined;
                 expiresAt?: number | undefined;
-            } | undefined;
+            }[] | undefined;
             content?: string | undefined;
             spoiler?: boolean | undefined;
             nsfw?: boolean | undefined;
@@ -115,13 +115,13 @@ export declare function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(mod
                     firstCommentTimestamp: number;
                     lastCommentCid: string;
                     banExpiresAt?: number | undefined;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                 } | undefined;
             } | undefined;
             postNumber?: number | undefined;
@@ -224,22 +224,22 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
                         depth: number;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
@@ -310,34 +310,34 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                                         type: string;
                                     };
                                 } | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             };
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                             content?: string | undefined;
                             deleted?: boolean | undefined;
                             spoiler?: boolean | undefined;
                             nsfw?: boolean | undefined;
                             reason?: string | undefined;
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
@@ -354,13 +354,13 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                                 firstCommentTimestamp: number;
                                 lastCommentCid: string;
                                 banExpiresAt?: number | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             } | undefined;
                         } | undefined;
                         lastChildCid?: string | undefined;
@@ -399,8 +399,6 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
             noImageReplies?: boolean | undefined;
             noPolls?: boolean | undefined;
             noCrossposts?: boolean | undefined;
-            noAuthors?: boolean | undefined;
-            anonymousAuthors?: boolean | undefined;
             noNestedReplies?: boolean | undefined;
             safeForWork?: boolean | undefined;
             authorFlairs?: boolean | undefined;
@@ -409,6 +407,9 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
             requirePostFlairs?: boolean | undefined;
             noMarkdownImages?: boolean | undefined;
             noMarkdownVideos?: boolean | undefined;
+            noMarkdownAudio?: boolean | undefined;
+            noAudio?: boolean | undefined;
+            noAudioReplies?: boolean | undefined;
             markdownImageReplies?: boolean | undefined;
             markdownVideoReplies?: boolean | undefined;
             noPostUpvotes?: boolean | undefined;
@@ -477,17 +478,24 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     };
     protocolVersion: string;
     subplebbitEdit: {
         address?: string | undefined;
+        flairs?: Record<string, {
+            [x: string]: unknown;
+            text: string;
+            backgroundColor?: string | undefined;
+            textColor?: string | undefined;
+            expiresAt?: number | undefined;
+        }[]> | undefined;
         title?: string | undefined;
         description?: string | undefined;
         pubsubTopic?: string | undefined;
@@ -502,8 +510,6 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
             noImageReplies?: boolean | undefined;
             noPolls?: boolean | undefined;
             noCrossposts?: boolean | undefined;
-            noAuthors?: boolean | undefined;
-            anonymousAuthors?: boolean | undefined;
             noNestedReplies?: boolean | undefined;
             safeForWork?: boolean | undefined;
             authorFlairs?: boolean | undefined;
@@ -512,6 +518,9 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
             requirePostFlairs?: boolean | undefined;
             noMarkdownImages?: boolean | undefined;
             noMarkdownVideos?: boolean | undefined;
+            noMarkdownAudio?: boolean | undefined;
+            noAudio?: boolean | undefined;
+            noAudioReplies?: boolean | undefined;
             markdownImageReplies?: boolean | undefined;
             markdownVideoReplies?: boolean | undefined;
             noPostUpvotes?: boolean | undefined;
@@ -533,13 +542,6 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
             backgroundUrl?: string | undefined;
             language?: string | undefined;
         } | undefined;
-        flairs?: Record<string, {
-            [x: string]: unknown;
-            text: string;
-            backgroundColor?: string | undefined;
-            textColor?: string | undefined;
-            expiresAt?: number | undefined;
-        }[]> | undefined;
         settings?: {
             fetchThumbnailUrls?: boolean | undefined;
             fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -594,6 +596,13 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
     subplebbitAddress: string;
     subplebbitEdit: {
         address?: string | undefined;
+        flairs?: Record<string, {
+            [x: string]: unknown;
+            text: string;
+            backgroundColor?: string | undefined;
+            textColor?: string | undefined;
+            expiresAt?: number | undefined;
+        }[]> | undefined;
         title?: string | undefined;
         description?: string | undefined;
         pubsubTopic?: string | undefined;
@@ -608,8 +617,6 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             noImageReplies?: boolean | undefined;
             noPolls?: boolean | undefined;
             noCrossposts?: boolean | undefined;
-            noAuthors?: boolean | undefined;
-            anonymousAuthors?: boolean | undefined;
             noNestedReplies?: boolean | undefined;
             safeForWork?: boolean | undefined;
             authorFlairs?: boolean | undefined;
@@ -618,6 +625,9 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             requirePostFlairs?: boolean | undefined;
             noMarkdownImages?: boolean | undefined;
             noMarkdownVideos?: boolean | undefined;
+            noMarkdownAudio?: boolean | undefined;
+            noAudio?: boolean | undefined;
+            noAudioReplies?: boolean | undefined;
             markdownImageReplies?: boolean | undefined;
             markdownVideoReplies?: boolean | undefined;
             noPostUpvotes?: boolean | undefined;
@@ -639,13 +649,6 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             backgroundUrl?: string | undefined;
             language?: string | undefined;
         } | undefined;
-        flairs?: Record<string, {
-            [x: string]: unknown;
-            text: string;
-            backgroundColor?: string | undefined;
-            textColor?: string | undefined;
-            expiresAt?: number | undefined;
-        }[]> | undefined;
         settings?: {
             fetchThumbnailUrls?: boolean | undefined;
             fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -715,13 +718,13 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     } | undefined;
     protocolVersion?: string | undefined;
     timestamp?: number | undefined;
@@ -748,13 +751,13 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
     subplebbitAddress: string;
     commentModeration: {
         [x: string]: unknown;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
         pinned?: boolean | undefined;
@@ -765,13 +768,13 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
         reason?: string | undefined;
         author?: {
             [x: string]: unknown;
-            flair?: {
+            flairs?: {
                 [x: string]: unknown;
                 text: string;
                 backgroundColor?: string | undefined;
                 textColor?: string | undefined;
                 expiresAt?: number | undefined;
-            } | undefined;
+            }[] | undefined;
             banExpiresAt?: number | undefined;
         } | undefined;
     };
@@ -800,13 +803,13 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     } | undefined;
     protocolVersion?: string | undefined;
     timestamp?: number | undefined;
@@ -848,25 +851,25 @@ export declare function parseCommentModerationPubsubMessagePublicationSchemaWith
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     };
     protocolVersion: string;
     commentCid: string;
     commentModeration: {
         [x: string]: unknown;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
         pinned?: boolean | undefined;
@@ -877,13 +880,13 @@ export declare function parseCommentModerationPubsubMessagePublicationSchemaWith
         reason?: string | undefined;
         author?: {
             [x: string]: unknown;
-            flair?: {
+            flairs?: {
                 [x: string]: unknown;
                 text: string;
                 backgroundColor?: string | undefined;
                 textColor?: string | undefined;
                 expiresAt?: number | undefined;
-            } | undefined;
+            }[] | undefined;
             banExpiresAt?: number | undefined;
         } | undefined;
     };
@@ -921,13 +924,13 @@ export declare function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(ar
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     } | undefined;
     protocolVersion?: string | undefined;
     timestamp?: number | undefined;
@@ -969,13 +972,13 @@ export declare function parseVotePubsubMessagePublicationSchemaWithPlebbitErrorI
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     };
     protocolVersion: string;
     commentCid: string;
@@ -1012,13 +1015,13 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     } | undefined;
     protocolVersion?: string | undefined;
     timestamp?: number | undefined;
@@ -1028,13 +1031,13 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
     } | undefined;
     content?: string | undefined;
     deleted?: boolean | undefined;
-    flair?: {
+    flairs?: {
         [x: string]: unknown;
         text: string;
         backgroundColor?: string | undefined;
         textColor?: string | undefined;
         expiresAt?: number | undefined;
-    } | undefined;
+    }[] | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     reason?: string | undefined;
@@ -1071,23 +1074,23 @@ export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbi
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     };
     protocolVersion: string;
     commentCid: string;
-    flair?: {
+    flairs?: {
         [x: string]: unknown;
         text: string;
         backgroundColor?: string | undefined;
         textColor?: string | undefined;
         expiresAt?: number | undefined;
-    } | undefined;
+    }[] | undefined;
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
@@ -1185,22 +1188,22 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                                 type: string;
                             };
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                     };
                     depth: number;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     content?: string | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
@@ -1271,34 +1274,34 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         deleted?: boolean | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         reason?: string | undefined;
                     } | undefined;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
@@ -1315,13 +1318,13 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                             firstCommentTimestamp: number;
                             lastCommentCid: string;
                             banExpiresAt?: number | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         } | undefined;
                     } | undefined;
                     lastChildCid?: string | undefined;
@@ -1360,8 +1363,6 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         noImageReplies?: boolean | undefined;
         noPolls?: boolean | undefined;
         noCrossposts?: boolean | undefined;
-        noAuthors?: boolean | undefined;
-        anonymousAuthors?: boolean | undefined;
         noNestedReplies?: boolean | undefined;
         safeForWork?: boolean | undefined;
         authorFlairs?: boolean | undefined;
@@ -1370,6 +1371,9 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         requirePostFlairs?: boolean | undefined;
         noMarkdownImages?: boolean | undefined;
         noMarkdownVideos?: boolean | undefined;
+        noMarkdownAudio?: boolean | undefined;
+        noAudio?: boolean | undefined;
+        noAudioReplies?: boolean | undefined;
         markdownImageReplies?: boolean | undefined;
         markdownVideoReplies?: boolean | undefined;
         noPostUpvotes?: boolean | undefined;
@@ -1399,6 +1403,13 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         expiresAt?: number | undefined;
     }[]> | undefined;
 } | {
+    flairs?: Record<string, {
+        [x: string]: unknown;
+        text: string;
+        backgroundColor?: string | undefined;
+        textColor?: string | undefined;
+        expiresAt?: number | undefined;
+    }[]> | undefined;
     title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
@@ -1413,8 +1424,6 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         noImageReplies?: boolean | undefined;
         noPolls?: boolean | undefined;
         noCrossposts?: boolean | undefined;
-        noAuthors?: boolean | undefined;
-        anonymousAuthors?: boolean | undefined;
         noNestedReplies?: boolean | undefined;
         safeForWork?: boolean | undefined;
         authorFlairs?: boolean | undefined;
@@ -1423,6 +1432,9 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         requirePostFlairs?: boolean | undefined;
         noMarkdownImages?: boolean | undefined;
         noMarkdownVideos?: boolean | undefined;
+        noMarkdownAudio?: boolean | undefined;
+        noAudio?: boolean | undefined;
+        noAudioReplies?: boolean | undefined;
         markdownImageReplies?: boolean | undefined;
         markdownVideoReplies?: boolean | undefined;
         noPostUpvotes?: boolean | undefined;
@@ -1444,13 +1456,6 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         backgroundUrl?: string | undefined;
         language?: string | undefined;
     } | undefined;
-    flairs?: Record<string, {
-        [x: string]: unknown;
-        text: string;
-        backgroundColor?: string | undefined;
-        textColor?: string | undefined;
-        expiresAt?: number | undefined;
-    }[]> | undefined;
     settings?: {
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -1575,8 +1580,6 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         noImageReplies?: boolean | undefined;
         noPolls?: boolean | undefined;
         noCrossposts?: boolean | undefined;
-        noAuthors?: boolean | undefined;
-        anonymousAuthors?: boolean | undefined;
         noNestedReplies?: boolean | undefined;
         safeForWork?: boolean | undefined;
         authorFlairs?: boolean | undefined;
@@ -1585,6 +1588,9 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         requirePostFlairs?: boolean | undefined;
         noMarkdownImages?: boolean | undefined;
         noMarkdownVideos?: boolean | undefined;
+        noMarkdownAudio?: boolean | undefined;
+        noAudio?: boolean | undefined;
+        noAudioReplies?: boolean | undefined;
         markdownImageReplies?: boolean | undefined;
         markdownVideoReplies?: boolean | undefined;
         noPostUpvotes?: boolean | undefined;
@@ -1651,22 +1657,22 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                                 type: string;
                             };
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                     };
                     depth: number;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     content?: string | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
@@ -1737,34 +1743,34 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         deleted?: boolean | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         reason?: string | undefined;
                     } | undefined;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
@@ -1781,13 +1787,13 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                             firstCommentTimestamp: number;
                             lastCommentCid: string;
                             banExpiresAt?: number | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         } | undefined;
                     } | undefined;
                     lastChildCid?: string | undefined;
@@ -1898,22 +1904,22 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                                 type: string;
                             };
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                     };
                     depth: number;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     content?: string | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
@@ -1984,34 +1990,34 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         deleted?: boolean | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         reason?: string | undefined;
                     } | undefined;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
@@ -2028,13 +2034,13 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                             firstCommentTimestamp: number;
                             lastCommentCid: string;
                             banExpiresAt?: number | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         } | undefined;
                     } | undefined;
                     lastChildCid?: string | undefined;
@@ -2073,8 +2079,6 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         noImageReplies?: boolean | undefined;
         noPolls?: boolean | undefined;
         noCrossposts?: boolean | undefined;
-        noAuthors?: boolean | undefined;
-        anonymousAuthors?: boolean | undefined;
         noNestedReplies?: boolean | undefined;
         safeForWork?: boolean | undefined;
         authorFlairs?: boolean | undefined;
@@ -2083,6 +2087,9 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         requirePostFlairs?: boolean | undefined;
         noMarkdownImages?: boolean | undefined;
         noMarkdownVideos?: boolean | undefined;
+        noMarkdownAudio?: boolean | undefined;
+        noAudio?: boolean | undefined;
+        noAudioReplies?: boolean | undefined;
         markdownImageReplies?: boolean | undefined;
         markdownVideoReplies?: boolean | undefined;
         noPostUpvotes?: boolean | undefined;
@@ -2112,6 +2119,13 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         expiresAt?: number | undefined;
     }[]> | undefined;
 } | {
+    flairs?: Record<string, {
+        [x: string]: unknown;
+        text: string;
+        backgroundColor?: string | undefined;
+        textColor?: string | undefined;
+        expiresAt?: number | undefined;
+    }[]> | undefined;
     title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
@@ -2126,8 +2140,6 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         noImageReplies?: boolean | undefined;
         noPolls?: boolean | undefined;
         noCrossposts?: boolean | undefined;
-        noAuthors?: boolean | undefined;
-        anonymousAuthors?: boolean | undefined;
         noNestedReplies?: boolean | undefined;
         safeForWork?: boolean | undefined;
         authorFlairs?: boolean | undefined;
@@ -2136,6 +2148,9 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         requirePostFlairs?: boolean | undefined;
         noMarkdownImages?: boolean | undefined;
         noMarkdownVideos?: boolean | undefined;
+        noMarkdownAudio?: boolean | undefined;
+        noAudio?: boolean | undefined;
+        noAudioReplies?: boolean | undefined;
         markdownImageReplies?: boolean | undefined;
         markdownVideoReplies?: boolean | undefined;
         noPostUpvotes?: boolean | undefined;
@@ -2157,13 +2172,6 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         backgroundUrl?: string | undefined;
         language?: string | undefined;
     } | undefined;
-    flairs?: Record<string, {
-        [x: string]: unknown;
-        text: string;
-        backgroundColor?: string | undefined;
-        textColor?: string | undefined;
-        expiresAt?: number | undefined;
-    }[]> | undefined;
     settings?: {
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -2288,8 +2296,6 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         noImageReplies?: boolean | undefined;
         noPolls?: boolean | undefined;
         noCrossposts?: boolean | undefined;
-        noAuthors?: boolean | undefined;
-        anonymousAuthors?: boolean | undefined;
         noNestedReplies?: boolean | undefined;
         safeForWork?: boolean | undefined;
         authorFlairs?: boolean | undefined;
@@ -2298,6 +2304,9 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         requirePostFlairs?: boolean | undefined;
         noMarkdownImages?: boolean | undefined;
         noMarkdownVideos?: boolean | undefined;
+        noMarkdownAudio?: boolean | undefined;
+        noAudio?: boolean | undefined;
+        noAudioReplies?: boolean | undefined;
         markdownImageReplies?: boolean | undefined;
         markdownVideoReplies?: boolean | undefined;
         noPostUpvotes?: boolean | undefined;
@@ -2364,22 +2373,22 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                                 type: string;
                             };
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                     };
                     depth: number;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     content?: string | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
@@ -2450,34 +2459,34 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         deleted?: boolean | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         reason?: string | undefined;
                     } | undefined;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
@@ -2494,13 +2503,13 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                             firstCommentTimestamp: number;
                             lastCommentCid: string;
                             banExpiresAt?: number | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         } | undefined;
                     } | undefined;
                     lastChildCid?: string | undefined;
@@ -2551,22 +2560,22 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     };
     protocolVersion: string;
-    flair?: {
+    flairs?: {
         [x: string]: unknown;
         text: string;
         backgroundColor?: string | undefined;
         textColor?: string | undefined;
         expiresAt?: number | undefined;
-    } | undefined;
+    }[] | undefined;
     content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
@@ -2585,13 +2594,13 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
         privateKey: string;
     };
     subplebbitAddress: string;
-    flair?: {
+    flairs?: {
         [x: string]: unknown;
         text: string;
         backgroundColor?: string | undefined;
         textColor?: string | undefined;
         expiresAt?: number | undefined;
-    } | undefined;
+    }[] | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     content?: string | undefined;
@@ -2627,13 +2636,13 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
                 type: string;
             };
         } | undefined;
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
     } | undefined;
     protocolVersion?: string | undefined;
     timestamp?: number | undefined;

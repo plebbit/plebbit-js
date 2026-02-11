@@ -237,6 +237,26 @@ export function isLinkOfVideo(link) {
         return false;
     return isUrlOfVideo(link);
 }
+// Known animated image MIME types
+const ANIMATED_IMAGE_MIMES = new Set(["image/gif", "image/apng"]);
+function isUrlOfAnimatedImage(url) {
+    const mime = getMimeFromUrl(url);
+    return mime !== undefined && ANIMATED_IMAGE_MIMES.has(mime);
+}
+export function isLinkOfAnimatedImage(link) {
+    if (!link)
+        return false;
+    return isUrlOfAnimatedImage(link);
+}
+function isUrlOfAudio(url) {
+    const mime = getMimeFromUrl(url);
+    return mime?.startsWith("audio") ?? false;
+}
+export function isLinkOfAudio(link) {
+    if (!link)
+        return false;
+    return isUrlOfAudio(link);
+}
 export function contentContainsMarkdownImages(content) {
     if (!content)
         return false;
@@ -262,6 +282,23 @@ export function contentContainsMarkdownImages(content) {
     }
     return false;
 }
+export function contentContainsMarkdownAudio(content) {
+    if (!content)
+        return false;
+    // Check for HTML audio tags
+    const htmlAudioTagRegex = /<audio[\s>]/gi;
+    if (htmlAudioTagRegex.test(content))
+        return true;
+    // Check for markdown image syntax with audio URLs: ![alt](url)
+    const markdownImageRegex = /(?<!\\)!\[[^\]]*\]\(([^)]+)\)/g;
+    const matches = content.matchAll(markdownImageRegex);
+    for (const match of matches) {
+        const url = match[1];
+        if (isUrlOfAudio(url))
+            return true;
+    }
+    return false;
+}
 export function contentContainsMarkdownVideos(content) {
     if (!content)
         return false;
@@ -278,7 +315,7 @@ export function contentContainsMarkdownVideos(content) {
     const matches = content.matchAll(markdownImageRegex);
     for (const match of matches) {
         const url = match[1];
-        if (isUrlOfVideo(url))
+        if (isUrlOfVideo(url) || isUrlOfAnimatedImage(url))
             return true;
     }
     return false;

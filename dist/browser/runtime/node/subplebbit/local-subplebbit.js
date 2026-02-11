@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isLinkOfImage, isLinkOfVideo, isLinkValid, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0, getIpnsRecordInLocalKuboNode, contentContainsMarkdownImages, contentContainsMarkdownVideos } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isLinkOfImage, isLinkOfVideo, isLinkOfAnimatedImage, isLinkValid, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0, getIpnsRecordInLocalKuboNode, contentContainsMarkdownImages, contentContainsMarkdownVideos, isLinkOfAudio, contentContainsMarkdownAudio } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -1256,11 +1256,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE;
             if (this.features?.noMarkdownVideos && commentPublication.content && contentContainsMarkdownVideos(commentPublication.content))
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
+            if (this.features?.noMarkdownAudio && commentPublication.content && contentContainsMarkdownAudio(commentPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO;
             // noImages - block ALL comments with image links
             if (this.features?.noImages && commentPublication.link && isLinkOfImage(commentPublication.link))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE;
-            // noVideos - block ALL comments with video links
-            if (this.features?.noVideos && commentPublication.link && isLinkOfVideo(commentPublication.link))
+            // noVideos - block ALL comments with video links (including animated images like GIF/APNG)
+            if (this.features?.noVideos && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO;
             // noSpoilers - block ALL comments with spoiler=true
             if (this.features?.noSpoilers && commentPublication.spoiler === true)
@@ -1268,9 +1270,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             // noImageReplies - block only replies with image links
             if (this.features?.noImageReplies && commentPublication.parentCid && commentPublication.link && isLinkOfImage(commentPublication.link))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE;
-            // noVideoReplies - block only replies with video links
-            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && isLinkOfVideo(commentPublication.link))
+            // noVideoReplies - block only replies with video links (including animated images like GIF/APNG)
+            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO;
+            // noAudio - block ALL comments with audio links
+            if (this.features?.noAudio && commentPublication.link && isLinkOfAudio(commentPublication.link))
+                return messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO;
+            // noAudioReplies - block only replies with audio links
+            if (this.features?.noAudioReplies && commentPublication.parentCid && commentPublication.link && isLinkOfAudio(commentPublication.link))
+                return messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO;
             // noSpoilerReplies - block only replies with spoiler=true
             if (this.features?.noSpoilerReplies && commentPublication.parentCid && commentPublication.spoiler === true)
                 return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
@@ -1291,11 +1299,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
             // Validate quotedCids
             if (commentPublication.quotedCids && commentPublication.quotedCids.length > 0) {
-                // Check for duplicates
-                const uniqueQuotedCids = new Set(commentPublication.quotedCids);
-                if (uniqueQuotedCids.size !== commentPublication.quotedCids.length) {
-                    return messages.ERR_QUOTED_CIDS_HAS_DUPLICATES;
-                }
                 // Only replies can have quotedCids
                 if (!commentPublication.parentCid) {
                     return messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS;
@@ -1412,6 +1415,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentEditPublication.content &&
                 contentContainsMarkdownVideos(commentEditPublication.content))
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO;
+            if (this.features?.noMarkdownAudio &&
+                commentEditPublication.content &&
+                contentContainsMarkdownAudio(commentEditPublication.content))
+                return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO;
             // noSpoilers - block ALL comment edits that set spoiler=true
             if (this.features?.noSpoilers && commentEditPublication.spoiler === true)
                 return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;

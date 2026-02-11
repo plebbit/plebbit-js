@@ -104,7 +104,7 @@ export function mapModqueuePageIpfsCommentToModQueuePageJsonComment(pageComment)
             ...pageComment.comment.author,
             ...pageComment.commentUpdate.author,
             shortAddress: shortifyAddress(pageComment.comment.author.address),
-            flair: pageComment.commentUpdate?.author?.subplebbit?.flair || pageComment.comment.author.flair
+            flairs: pageComment.commentUpdate?.author?.subplebbit?.flairs || pageComment.comment.author.flairs
         },
         shortCid: shortifyCid(pageComment.commentUpdate.cid),
         shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
@@ -139,9 +139,9 @@ export function mapPageIpfsCommentToPageJsonComment(pageComment) {
             ...pageComment.comment.author,
             ...pageComment.commentUpdate.author,
             shortAddress: shortifyAddress(pageComment.comment.author.address),
-            flair: pageComment.commentUpdate?.author?.subplebbit?.flair ||
-                pageComment.commentUpdate?.edit?.author?.flair ||
-                pageComment.comment.author.flair
+            flairs: pageComment.commentUpdate?.author?.subplebbit?.flairs ||
+                pageComment.commentUpdate?.edit?.author?.flairs ||
+                pageComment.comment.author.flairs
         },
         shortCid: shortifyCid(pageComment.commentUpdate.cid),
         shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
@@ -152,7 +152,8 @@ export function mapPageIpfsCommentToPageJsonComment(pageComment) {
         reason: pageComment.commentUpdate.reason,
         spoiler,
         nsfw,
-        flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
+        // TODO flairs merging strategy will likely change — currently: mod flairs > author edit flairs > original comment flairs
+        flairs: pageComment.commentUpdate.flairs || pageComment.commentUpdate.edit?.flairs || pageComment.comment.flairs,
         postCid,
         raw: {
             comment: pageComment.comment,

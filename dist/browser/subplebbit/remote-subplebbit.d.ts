@@ -62,7 +62,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     protected _updateIpnsPubsubPropsIfNeeded(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): void;
     initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): void;
     setAddress(newAddress: string): void;
-    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "encryption" | "createdAt" | "statsCid" | "challenges" | "description" | "pubsubTopic" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;
+    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "flairs" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "encryption" | "createdAt" | "statsCid" | "challenges" | "description" | "pubsubTopic" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested">;
     toJSONIpfs(): SubplebbitIpfsType;
     toJSONRpcRemote(): RpcRemoteSubplebbitType;
     get updatingState(): SubplebbitUpdatingState;

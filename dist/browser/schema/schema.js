@@ -58,7 +58,7 @@ export const AuthorPubsubSchema = z
     displayName: z.string().optional(),
     wallets: AuthorWalletsSchema.optional(),
     avatar: AuthorAvatarNftSchema.optional(),
-    flair: FlairSchema.optional()
+    flairs: FlairSchema.array().optional()
 })
     .strict();
 export const ChallengeAnswerStringSchema = z.string(); // TODO add validation for challenge answer
@@ -112,11 +112,11 @@ export const SubplebbitAuthorSchema = z.looseObject({
     postScore: z.number(), // total post karma in the subplebbit
     replyScore: z.number(), // total reply karma in the subplebbit
     banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
-    flair: FlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
+    flairs: FlairSchema.array().optional(), // not part of the signature, mod can edit it after comment is published
     firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
     lastCommentCid: CidStringSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
 });
-export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
+export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flairs: true });
 export const AuthorWithOptionalCommentUpdateSchema = AuthorPubsubSchema.extend({
     subplebbit: SubplebbitAuthorSchema.optional() // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
 });

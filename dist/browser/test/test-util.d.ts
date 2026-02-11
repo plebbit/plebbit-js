@@ -229,22 +229,22 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
                         depth: number;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
@@ -315,34 +315,34 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                                         type: string;
                                     };
                                 } | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             };
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                             content?: string | undefined;
                             deleted?: boolean | undefined;
                             spoiler?: boolean | undefined;
                             nsfw?: boolean | undefined;
                             reason?: string | undefined;
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
@@ -359,13 +359,13 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                                 firstCommentTimestamp: number;
                                 lastCommentCid: string;
                                 banExpiresAt?: number | undefined;
-                                flair?: {
+                                flairs?: {
                                     [x: string]: unknown;
                                     text: string;
                                     backgroundColor?: string | undefined;
                                     textColor?: string | undefined;
                                     expiresAt?: number | undefined;
-                                } | undefined;
+                                }[] | undefined;
                             } | undefined;
                         } | undefined;
                         lastChildCid?: string | undefined;
@@ -404,8 +404,6 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
             noImageReplies?: boolean | undefined;
             noPolls?: boolean | undefined;
             noCrossposts?: boolean | undefined;
-            noAuthors?: boolean | undefined;
-            anonymousAuthors?: boolean | undefined;
             noNestedReplies?: boolean | undefined;
             safeForWork?: boolean | undefined;
             authorFlairs?: boolean | undefined;
@@ -414,6 +412,9 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
             requirePostFlairs?: boolean | undefined;
             noMarkdownImages?: boolean | undefined;
             noMarkdownVideos?: boolean | undefined;
+            noMarkdownAudio?: boolean | undefined;
+            noAudio?: boolean | undefined;
+            noAudioReplies?: boolean | undefined;
             markdownImageReplies?: boolean | undefined;
             markdownVideoReplies?: boolean | undefined;
             noPostUpvotes?: boolean | undefined;
@@ -464,6 +465,13 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     address: SubplebbitIpfsType["address"];
     shortAddress: string;
     signature?: SubplebbitIpfsType["signature"] | undefined;
+    flairs?: Record<string, {
+        [x: string]: unknown;
+        text: string;
+        backgroundColor?: string | undefined;
+        textColor?: string | undefined;
+        expiresAt?: number | undefined;
+    }[]> | undefined;
     signer: import("../signer/index.js").SignerWithPublicKeyAddress;
     protocolVersion: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["protocolVersion"];
     lastCommentCid?: string | undefined;
@@ -496,8 +504,6 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
         noImageReplies?: boolean | undefined;
         noPolls?: boolean | undefined;
         noCrossposts?: boolean | undefined;
-        noAuthors?: boolean | undefined;
-        anonymousAuthors?: boolean | undefined;
         noNestedReplies?: boolean | undefined;
         safeForWork?: boolean | undefined;
         authorFlairs?: boolean | undefined;
@@ -506,6 +512,9 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
         requirePostFlairs?: boolean | undefined;
         noMarkdownImages?: boolean | undefined;
         noMarkdownVideos?: boolean | undefined;
+        noMarkdownAudio?: boolean | undefined;
+        noAudio?: boolean | undefined;
+        noAudioReplies?: boolean | undefined;
         markdownImageReplies?: boolean | undefined;
         markdownVideoReplies?: boolean | undefined;
         noPostUpvotes?: boolean | undefined;
@@ -527,13 +536,6 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
         backgroundUrl?: string | undefined;
         language?: string | undefined;
     } | undefined;
-    flairs?: Record<string, {
-        [x: string]: unknown;
-        text: string;
-        backgroundColor?: string | undefined;
-        textColor?: string | undefined;
-        expiresAt?: number | undefined;
-    }[]> | undefined;
     settings: import("../subplebbit/types.js").RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
     raw: {
         subplebbitIpfs?: SubplebbitIpfsType;
@@ -612,34 +614,34 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                     type: string;
                 };
             } | undefined;
-            flair?: {
+            flairs?: {
                 [x: string]: unknown;
                 text: string;
                 backgroundColor?: string | undefined;
                 textColor?: string | undefined;
                 expiresAt?: number | undefined;
-            } | undefined;
+            }[] | undefined;
         };
-        flair?: {
+        flairs?: {
             [x: string]: unknown;
             text: string;
             backgroundColor?: string | undefined;
             textColor?: string | undefined;
             expiresAt?: number | undefined;
-        } | undefined;
+        }[] | undefined;
         content?: string | undefined;
         deleted?: boolean | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
         reason?: string | undefined;
     } | undefined;
-    flair?: {
+    flairs?: {
         [x: string]: unknown;
         text: string;
         backgroundColor?: string | undefined;
         textColor?: string | undefined;
         expiresAt?: number | undefined;
-    } | undefined;
+    }[] | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     pinned?: boolean | undefined;
@@ -656,13 +658,13 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
             firstCommentTimestamp: number;
             lastCommentCid: string;
             banExpiresAt?: number | undefined;
-            flair?: {
+            flairs?: {
                 [x: string]: unknown;
                 text: string;
                 backgroundColor?: string | undefined;
                 textColor?: string | undefined;
                 expiresAt?: number | undefined;
-            } | undefined;
+            }[] | undefined;
         } | undefined;
     } | undefined;
     lastChildCid?: string | undefined;
@@ -705,22 +707,22 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                                 type: string;
                             };
                         } | undefined;
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                     };
                     depth: number;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     content?: string | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
@@ -791,34 +793,34 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                                     type: string;
                                 };
                             } | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         };
-                        flair?: {
+                        flairs?: {
                             [x: string]: unknown;
                             text: string;
                             backgroundColor?: string | undefined;
                             textColor?: string | undefined;
                             expiresAt?: number | undefined;
-                        } | undefined;
+                        }[] | undefined;
                         content?: string | undefined;
                         deleted?: boolean | undefined;
                         spoiler?: boolean | undefined;
                         nsfw?: boolean | undefined;
                         reason?: string | undefined;
                     } | undefined;
-                    flair?: {
+                    flairs?: {
                         [x: string]: unknown;
                         text: string;
                         backgroundColor?: string | undefined;
                         textColor?: string | undefined;
                         expiresAt?: number | undefined;
-                    } | undefined;
+                    }[] | undefined;
                     spoiler?: boolean | undefined;
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
@@ -835,13 +837,13 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                             firstCommentTimestamp: number;
                             lastCommentCid: string;
                             banExpiresAt?: number | undefined;
-                            flair?: {
+                            flairs?: {
                                 [x: string]: unknown;
                                 text: string;
                                 backgroundColor?: string | undefined;
                                 textColor?: string | undefined;
                                 expiresAt?: number | undefined;
-                            } | undefined;
+                            }[] | undefined;
                         } | undefined;
                     } | undefined;
                     lastChildCid?: string | undefined;

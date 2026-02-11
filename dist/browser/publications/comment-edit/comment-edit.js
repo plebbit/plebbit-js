@@ -21,7 +21,7 @@ export class CommentEdit extends Publication {
         this.content = props.content;
         this.reason = props.reason;
         this.deleted = props.deleted;
-        this.flair = props.flair;
+        this.flairs = props.flairs;
         this.spoiler = props.spoiler;
         this.nsfw = props.nsfw;
     }

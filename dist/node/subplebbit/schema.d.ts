@@ -35,8 +35,6 @@ export declare const SubplebbitFeaturesSchema: z.ZodObject<{
     noImageReplies: z.ZodOptional<z.ZodBoolean>;
     noPolls: z.ZodOptional<z.ZodBoolean>;
     noCrossposts: z.ZodOptional<z.ZodBoolean>;
-    noAuthors: z.ZodOptional<z.ZodBoolean>;
-    anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
     noNestedReplies: z.ZodOptional<z.ZodBoolean>;
     safeForWork: z.ZodOptional<z.ZodBoolean>;
     authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -45,6 +43,9 @@ export declare const SubplebbitFeaturesSchema: z.ZodObject<{
     requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
     noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
     noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+    noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+    noAudio: z.ZodOptional<z.ZodBoolean>;
+    noAudioReplies: z.ZodOptional<z.ZodBoolean>;
     markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
     markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
     noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -496,12 +497,12 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -537,12 +538,12 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -571,12 +572,12 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -607,20 +608,20 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -634,12 +635,12 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -762,8 +763,6 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -772,6 +771,9 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -803,7 +805,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.core.$loose>>>>;
 }, z.core.$strict>;
-export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "posts" | "encryption" | "createdAt" | "statsCid" | "modQueue" | "challenges" | "description" | "pubsubTopic" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
+export declare const SubplebbitSignedPropertyNames: ("address" | "flairs" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "posts" | "encryption" | "createdAt" | "statsCid" | "modQueue" | "challenges" | "description" | "pubsubTopic" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested")[];
 export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: z.ZodObject<{
         posts: z.ZodOptional<z.ZodObject<{
@@ -827,12 +829,12 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         content: z.ZodOptional<z.ZodString>;
@@ -868,12 +870,12 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                         depth: z.ZodNumber;
                         thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -902,12 +904,12 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                                 publicKey: z.ZodString;
                                 signedPropertyNames: z.ZodArray<z.ZodString>;
                             }, z.core.$strip>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             subplebbitAddress: z.ZodString;
                             protocolVersion: z.ZodString;
                             commentCid: z.ZodString;
@@ -938,20 +940,20 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                                         type: z.ZodString;
                                     }, z.core.$strip>;
                                 }, z.core.$loose>>;
-                                flair: z.ZodOptional<z.ZodObject<{
+                                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                     text: z.ZodString;
                                     backgroundColor: z.ZodOptional<z.ZodString>;
                                     textColor: z.ZodOptional<z.ZodString>;
                                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                                }, z.core.$loose>>;
+                                }, z.core.$loose>>>;
                             }, z.core.$loose>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         spoiler: z.ZodOptional<z.ZodBoolean>;
                         nsfw: z.ZodOptional<z.ZodBoolean>;
                         pinned: z.ZodOptional<z.ZodBoolean>;
@@ -965,12 +967,12 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                                 postScore: z.ZodNumber;
                                 replyScore: z.ZodNumber;
                                 banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                                flair: z.ZodOptional<z.ZodObject<{
+                                flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                     text: z.ZodString;
                                     backgroundColor: z.ZodOptional<z.ZodString>;
                                     textColor: z.ZodOptional<z.ZodString>;
                                     expiresAt: z.ZodOptional<z.ZodNumber>;
-                                }, z.core.$loose>>;
+                                }, z.core.$loose>>>;
                                 firstCommentTimestamp: z.ZodNumber;
                                 lastCommentCid: z.ZodString;
                             }, z.core.$loose>>;
@@ -1093,8 +1095,6 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             noImageReplies: z.ZodOptional<z.ZodBoolean>;
             noPolls: z.ZodOptional<z.ZodBoolean>;
             noCrossposts: z.ZodOptional<z.ZodBoolean>;
-            noAuthors: z.ZodOptional<z.ZodBoolean>;
-            anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
             noNestedReplies: z.ZodOptional<z.ZodBoolean>;
             safeForWork: z.ZodOptional<z.ZodBoolean>;
             authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -1103,6 +1103,9 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
             noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
             noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+            noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+            noAudio: z.ZodOptional<z.ZodBoolean>;
+            noAudioReplies: z.ZodOptional<z.ZodBoolean>;
             markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
             markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
             noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -1214,8 +1217,6 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -1224,6 +1225,9 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -1276,12 +1280,12 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -1317,12 +1321,12 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -1351,12 +1355,12 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -1387,20 +1391,20 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -1414,12 +1418,12 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -1523,6 +1527,12 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
 }, z.core.$strict>;
 export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     address: z.ZodOptional<z.ZodString>;
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.core.$loose>>>>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
@@ -1536,8 +1546,6 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -1546,6 +1554,9 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -1570,12 +1581,6 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         backgroundUrl: z.ZodOptional<z.ZodString>;
         language: z.ZodOptional<z.ZodString>;
     }, z.core.$loose>>>;
-    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.core.$loose>>>>>;
     settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
         fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
@@ -1627,6 +1632,12 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     }, z.core.$loose>, z.ZodUndefined]>>>>;
 }, z.core.$strict>;
 export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.core.$loose>>>>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
@@ -1640,8 +1651,6 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -1650,6 +1659,9 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -1674,12 +1686,6 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         backgroundUrl: z.ZodOptional<z.ZodString>;
         language: z.ZodOptional<z.ZodString>;
     }, z.core.$loose>>>;
-    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.core.$loose>>>>>;
     settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
         fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
@@ -1737,6 +1743,12 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
     }, z.core.$loose>>>;
 }, z.core.$strict>;
 export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.core.$loose>>>>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
@@ -1750,8 +1762,6 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -1760,6 +1770,9 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -1784,12 +1797,6 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         backgroundUrl: z.ZodOptional<z.ZodString>;
         language: z.ZodOptional<z.ZodString>;
     }, z.core.$loose>>>;
-    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.core.$loose>>>>>;
     settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
         fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
@@ -1926,8 +1933,6 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -1936,6 +1941,9 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -1988,12 +1996,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -2029,12 +2037,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -2063,12 +2071,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -2099,20 +2107,20 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -2126,12 +2134,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -2212,12 +2220,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -2253,12 +2261,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -2287,12 +2295,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -2323,20 +2331,20 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -2350,12 +2358,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -2478,8 +2486,6 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -2488,6 +2494,9 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -2596,8 +2605,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -2606,6 +2613,9 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -2658,12 +2668,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -2699,12 +2709,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -2733,12 +2743,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -2769,20 +2779,20 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -2796,12 +2806,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -2882,12 +2892,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -2923,12 +2933,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -2957,12 +2967,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -2993,20 +3003,20 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -3020,12 +3030,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -3148,8 +3158,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -3158,6 +3166,9 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -3189,6 +3200,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.core.$loose>>>>;
 }, z.core.$loose>]>, z.ZodObject<{
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.core.$loose>>>>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
@@ -3202,8 +3219,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -3212,6 +3227,9 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -3236,12 +3254,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         backgroundUrl: z.ZodOptional<z.ZodString>;
         language: z.ZodOptional<z.ZodString>;
     }, z.core.$loose>>>;
-    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.core.$loose>>>>>;
     settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
         fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
@@ -3299,6 +3311,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     }, z.core.$loose>>>;
 }, z.core.$strict>]>;
 export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodObject<{
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.core.$loose>>>>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
@@ -3312,8 +3330,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -3322,6 +3338,9 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -3346,12 +3365,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         backgroundUrl: z.ZodOptional<z.ZodString>;
         language: z.ZodOptional<z.ZodString>;
     }, z.core.$loose>>>;
-    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.core.$loose>>>>>;
     settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
         fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
@@ -3484,8 +3497,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -3494,6 +3505,9 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
@@ -3546,12 +3560,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -3587,12 +3601,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -3621,12 +3635,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -3657,20 +3671,20 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -3684,12 +3698,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -3770,12 +3784,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                         publicKey: z.ZodString;
                         signedPropertyNames: z.ZodArray<z.ZodString>;
                     }, z.core.$strip>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     subplebbitAddress: z.ZodString;
                     protocolVersion: z.ZodString;
                     content: z.ZodOptional<z.ZodString>;
@@ -3811,12 +3825,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                                 type: z.ZodString;
                             }, z.core.$strip>;
                         }, z.core.$loose>>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                     }, z.core.$loose>;
                     depth: z.ZodNumber;
                     thumbnailUrl: z.ZodOptional<z.ZodString>;
@@ -3845,12 +3859,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                             publicKey: z.ZodString;
                             signedPropertyNames: z.ZodArray<z.ZodString>;
                         }, z.core.$strip>;
-                        flair: z.ZodOptional<z.ZodObject<{
+                        flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                             text: z.ZodString;
                             backgroundColor: z.ZodOptional<z.ZodString>;
                             textColor: z.ZodOptional<z.ZodString>;
                             expiresAt: z.ZodOptional<z.ZodNumber>;
-                        }, z.core.$loose>>;
+                        }, z.core.$loose>>>;
                         subplebbitAddress: z.ZodString;
                         protocolVersion: z.ZodString;
                         commentCid: z.ZodString;
@@ -3881,20 +3895,20 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                                     type: z.ZodString;
                                 }, z.core.$strip>;
                             }, z.core.$loose>>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                         }, z.core.$loose>;
                     }, z.core.$loose>>;
-                    flair: z.ZodOptional<z.ZodObject<{
+                    flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                         text: z.ZodString;
                         backgroundColor: z.ZodOptional<z.ZodString>;
                         textColor: z.ZodOptional<z.ZodString>;
                         expiresAt: z.ZodOptional<z.ZodNumber>;
-                    }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
                     spoiler: z.ZodOptional<z.ZodBoolean>;
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
@@ -3908,12 +3922,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                             postScore: z.ZodNumber;
                             replyScore: z.ZodNumber;
                             banExpiresAt: z.ZodOptional<z.ZodNumber>;
-                            flair: z.ZodOptional<z.ZodObject<{
+                            flairs: z.ZodOptional<z.ZodArray<z.ZodObject<{
                                 text: z.ZodString;
                                 backgroundColor: z.ZodOptional<z.ZodString>;
                                 textColor: z.ZodOptional<z.ZodString>;
                                 expiresAt: z.ZodOptional<z.ZodNumber>;
-                            }, z.core.$loose>>;
+                            }, z.core.$loose>>>;
                             firstCommentTimestamp: z.ZodNumber;
                             lastCommentCid: z.ZodString;
                         }, z.core.$loose>>;
@@ -4036,8 +4050,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         noImageReplies: z.ZodOptional<z.ZodBoolean>;
         noPolls: z.ZodOptional<z.ZodBoolean>;
         noCrossposts: z.ZodOptional<z.ZodBoolean>;
-        noAuthors: z.ZodOptional<z.ZodBoolean>;
-        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
         noNestedReplies: z.ZodOptional<z.ZodBoolean>;
         safeForWork: z.ZodOptional<z.ZodBoolean>;
         authorFlairs: z.ZodOptional<z.ZodBoolean>;
@@ -4046,6 +4058,9 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
         noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
         noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudio: z.ZodOptional<z.ZodBoolean>;
+        noAudioReplies: z.ZodOptional<z.ZodBoolean>;
         markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
         markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
         noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
