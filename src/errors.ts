@@ -234,6 +234,7 @@ export enum messages {
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED = "The post of this publication has been deleted",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED = "The post of this publication has been removed",
     ERR_SUB_PUBLICATION_POST_IS_LOCKED = "The post of this publication has been locked",
+    ERR_SUB_PUBLICATION_POST_IS_ARCHIVED = "The post of this publication has been archived",
     ERR_FORBIDDEN_AUTHOR_FIELD = "The author field includes a forbidden field",
     ERR_FORBIDDEN_COMMENT_FIELD = "The comment/post contains a forbidden field",
     ERR_FORBIDDEN_SIGNER_FIELD = "The publication includes a signer field which is forbidden",
@@ -290,6 +291,7 @@ export enum messages {
 
     // Comment Edit errors
     ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
+    ERR_SUB_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY = "Can't archive replies. Only posts",
     ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD = "CommentEdit includes a field that cannot be used",
     ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS = "CommentEdit can't have both author and mod fields. Please publish a separate request for author and mod",
 

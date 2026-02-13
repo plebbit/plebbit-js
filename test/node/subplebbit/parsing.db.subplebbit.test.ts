@@ -39,6 +39,7 @@ describe("createSchemaRowParser", () => {
             nsfw: 0,
             pinned: 1,
             locked: "0",
+            archived: "0",
             removed: "1",
             approved: "true",
             reason: "moderated",
@@ -70,6 +71,7 @@ describe("createSchemaRowParser", () => {
         expect(data.nsfw).to.equal(false);
         expect(data.pinned).to.equal(true);
         expect(data.locked).to.equal(false);
+        expect(data.archived).to.equal(false);
         expect(data.removed).to.equal(true);
         expect(data.approved).to.equal(true);
         expect(data.signature).to.deep.equal(buildSignature());
@@ -91,6 +93,7 @@ describe("createSchemaRowParser", () => {
             commentUpdate_nsfw: 1,
             commentUpdate_pinned: 0,
             commentUpdate_locked: 0,
+            commentUpdate_archived: 0,
             commentUpdate_removed: 0,
             commentUpdate_updatedAt: 1700000300,
             commentUpdate_signature: JSON.stringify(buildSignature()),

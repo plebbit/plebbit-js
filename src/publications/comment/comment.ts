@@ -93,6 +93,7 @@ export class Comment
     nsfw?: CommentIpfsType["nsfw"];
     pinned?: CommentUpdateType["pinned"];
     locked?: CommentUpdateType["locked"];
+    archived?: CommentUpdateType["archived"];
     removed?: CommentUpdateType["removed"];
     reason?: CommentUpdateType["reason"];
     lastChildCid?: CommentUpdateType["lastChildCid"];
@@ -237,6 +238,7 @@ export class Comment
         this.deleted = props.edit?.deleted;
         this.pinned = props.pinned;
         this.locked = props.locked;
+        this.archived = props.archived;
         this.removed = props.removed;
         this.reason = props.reason;
         this.edit = props.edit;

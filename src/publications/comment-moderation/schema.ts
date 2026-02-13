@@ -19,6 +19,7 @@ export const ModeratorOptionsSchema = z
         nsfw: z.boolean().optional(),
         pinned: z.boolean().optional(),
         locked: z.boolean().optional(),
+        archived: z.boolean().optional(),
         approved: z.boolean().optional(), // approving a comment that's pending approval
         removed: z.boolean().optional(),
         purged: z.boolean().optional(),

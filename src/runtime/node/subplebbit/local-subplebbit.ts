@@ -1657,6 +1657,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (postFlags.locked && !request.commentModeration) return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
 
+            if (postFlags.archived && !request.commentModeration) return messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED;
+
             if (parent.timestamp > publication.timestamp) return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
 
             // if user publishes vote/reply/commentEdit under pending comment, it should fail
@@ -1810,6 +1812,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
+            if (isAuthorMod && commentModerationPublication.commentModeration.archived && commentToBeEdited.depth !== 0)
+                return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY;
             const commentModInDb = this._dbHandler.hasCommentModerationWithSignatureEncoded(
                 commentModerationPublication.signature.signature
             );

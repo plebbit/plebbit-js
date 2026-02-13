@@ -24,6 +24,7 @@
             "spoiler",
             "pinned",
             "locked",
+            "archived",
             "removed",
             "reason",
             "updatedAt",
