@@ -2134,6 +2134,21 @@ export class DbHandler {
         return aggregateAuthor;
     }
 
+    queryAuthorPublicationCounts(authorSignerAddress: string): { postCount: number; replyCount: number } {
+        const result = this._db
+            .prepare(
+                `
+            SELECT
+                COALESCE(SUM(CASE WHEN depth = 0 THEN 1 ELSE 0 END), 0) as postCount,
+                COALESCE(SUM(CASE WHEN depth > 0 THEN 1 ELSE 0 END), 0) as replyCount
+            FROM ${TABLES.COMMENTS}
+            WHERE authorSignerAddress = ?
+        `
+            )
+            .get(authorSignerAddress) as { postCount: number; replyCount: number };
+        return result;
+    }
+
     querySubplebbitAuthor(authorSignerAddress: string, authorDomain?: string): SubplebbitAuthor | undefined {
         const authorSignerAddresses = new Set<string>([authorSignerAddress]);
 

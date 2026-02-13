@@ -433,6 +433,280 @@ describe("shouldExcludePublication", () => {
         expect(resultModWithSubplebbit).to.equal(true);
     });
 
+    it("postCount", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 10 }]
+        };
+        const publication = { author: { address: "Qm..." }, signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" } };
+        const mockSubplebbitExact = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 10, replyCount: 0 }) }
+        };
+        const mockSubplebbitAbove = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 11, replyCount: 0 }) }
+        };
+        const mockSubplebbitBelow = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 9, replyCount: 0 }) }
+        };
+        const mockSubplebbitZero = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 0 }) }
+        };
+        // exact threshold -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitExact)).to.equal(true);
+        // above threshold -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitAbove)).to.equal(true);
+        // below threshold -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitBelow)).to.equal(false);
+        // zero posts -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitZero)).to.equal(false);
+    });
+
+    it("replyCount", () => {
+        const subplebbitChallenge = {
+            exclude: [{ replyCount: 5 }]
+        };
+        const publication = { author: { address: "Qm..." }, signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" } };
+        const mockSubplebbitExact = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 5 }) }
+        };
+        const mockSubplebbitAbove = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 20 }) }
+        };
+        const mockSubplebbitBelow = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 4 }) }
+        };
+        // exact threshold -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitExact)).to.equal(true);
+        // above threshold -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitAbove)).to.equal(true);
+        // below threshold -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitBelow)).to.equal(false);
+    });
+
+    it("postCount OR replyCount (separate exclude rules)", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 10 }, { replyCount: 10 }]
+        };
+        const publication = { author: { address: "Qm..." }, signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" } };
+        const mockHighPostOnly = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 10, replyCount: 0 }) }
+        };
+        const mockHighReplyOnly = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 50 }) }
+        };
+        const mockBothHigh = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 10, replyCount: 50 }) }
+        };
+        const mockBothLow = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 9, replyCount: 9 }) }
+        };
+        // postCount meets first exclude rule -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockHighPostOnly)).to.equal(true);
+        // replyCount meets second exclude rule -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockHighReplyOnly)).to.equal(true);
+        // both meet -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockBothHigh)).to.equal(true);
+        // neither meets -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockBothLow)).to.equal(false);
+    });
+
+    it("postCount AND replyCount (same exclude rule)", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 5, replyCount: 10 }]
+        };
+        const publication = { author: { address: "Qm..." }, signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" } };
+        const mockBothMeet = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 5, replyCount: 10 }) }
+        };
+        const mockOnlyPostMeets = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 5, replyCount: 9 }) }
+        };
+        const mockOnlyReplyMeets = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 4, replyCount: 10 }) }
+        };
+        const mockNeitherMeets = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 4, replyCount: 9 }) }
+        };
+        // both meet -> excluded (AND)
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockBothMeet)).to.equal(true);
+        // only postCount meets -> not excluded (AND requires both)
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockOnlyPostMeets)).to.equal(false);
+        // only replyCount meets -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockOnlyReplyMeets)).to.equal(false);
+        // neither meets -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockNeitherMeets)).to.equal(false);
+    });
+
+    it("postCount without _dbHandler", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 5 }]
+        };
+        const publication = { author: { address: "Qm..." }, signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" } };
+        // no subplebbit arg -> counts are undefined -> should not exclude
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication })).to.equal(false);
+        // empty subplebbit (no _dbHandler) -> should not exclude
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, {})).to.equal(false);
+    });
+
+    it("postCount with threshold of 0 (exclude everyone)", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 0 }]
+        };
+        const publication = { author: { address: "Qm..." }, signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" } };
+        const mockSubplebbitZero = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 0 }) }
+        };
+        const mockSubplebbitSome = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 3, replyCount: 0 }) }
+        };
+        // 0 >= 0 -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitZero)).to.equal(true);
+        // 3 >= 0 -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitSome)).to.equal(true);
+    });
+
+    it("postCount AND postScore in same exclude rule (AND logic)", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 5, postScore: 100 }]
+        };
+        const publication = {
+            author: { address: "Qm...", subplebbit: { postScore: 100 } },
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const publicationLowScore = {
+            author: { address: "Qm...", subplebbit: { postScore: 99 } },
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const mockSubplebbitHighCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 5, replyCount: 0 }) }
+        };
+        const mockSubplebbitLowCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 4, replyCount: 0 }) }
+        };
+        // both postCount (5 >= 5) AND postScore (100 >= 100) meet threshold -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitHighCount)).to.equal(true);
+        // postCount too low -> not excluded despite postScore being high
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitLowCount)).to.equal(false);
+        // postScore too low -> not excluded despite postCount being high
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publicationLowScore }, mockSubplebbitHighCount)).to.equal(false);
+    });
+
+    it("postCount AND firstCommentTimestamp in same exclude rule", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 3, firstCommentTimestamp: 60 * 60 * 24 * 100 }] // 100 days
+        };
+        const oldAuthor = {
+            author: {
+                address: "Qm...",
+                subplebbit: { firstCommentTimestamp: Math.round(Date.now() / 1000) - 60 * 60 * 24 * 101 } // 101 days
+            },
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const newAuthor = {
+            author: {
+                address: "Qm...",
+                subplebbit: { firstCommentTimestamp: Math.round(Date.now() / 1000) - 60 * 60 * 24 * 99 } // 99 days
+            },
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const mockHighCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 3, replyCount: 0 }) }
+        };
+        const mockLowCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 2, replyCount: 0 }) }
+        };
+        // old author AND high count -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: oldAuthor }, mockHighCount)).to.equal(true);
+        // old author AND low count -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: oldAuthor }, mockLowCount)).to.equal(false);
+        // new author AND high count -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: newAuthor }, mockHighCount)).to.equal(false);
+    });
+
+    it("postCount AND publicationType in same exclude rule", () => {
+        const subplebbitChallenge = {
+            exclude: [{ postCount: 5, publicationType: { post: true } }]
+        };
+        const postPub = {
+            content: "content",
+            author: { address: "Qm..." },
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const replyPub = {
+            content: "content",
+            parentCid: "Qm...",
+            author: { address: "Qm..." },
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const mockHighCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 5, replyCount: 0 }) }
+        };
+        // post with high count -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: postPub }, mockHighCount)).to.equal(true);
+        // reply with high count -> not excluded (publicationType doesn't match)
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: replyPub }, mockHighCount)).to.equal(false);
+    });
+
+    it("replyCount AND rateLimit in same exclude rule", () => {
+        const subplebbitChallenge = {
+            exclude: [{ replyCount: 3, rateLimit: 1 }]
+        };
+        const subplebbitChallenges = [subplebbitChallenge];
+        const address = getRandomAddress();
+        const publication = {
+            author: { address },
+            parentCid: "Qm...",
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const mockHighCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 3 }) }
+        };
+        const mockLowCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 0, replyCount: 2 }) }
+        };
+        // high count and not rate limited -> excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockHighCount)).to.equal(true);
+        // low count -> not excluded even before rate limit
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockLowCount)).to.equal(false);
+        // after rate limiting
+        testAddToRateLimiter(subplebbitChallenges, { comment: publication }, true);
+        // high count but rate limited -> not excluded
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockHighCount)).to.equal(false);
+    });
+
+    it("firstCommentTimestamp OR postCount (separate exclude rules)", () => {
+        const subplebbitChallenge = {
+            exclude: [
+                { firstCommentTimestamp: 60 * 60 * 24 * 100 }, // 100 days
+                { postCount: 5 }
+            ]
+        };
+        const oldAuthorNoSignature = {
+            author: {
+                address: "Qm...",
+                subplebbit: { firstCommentTimestamp: Math.round(Date.now() / 1000) - 60 * 60 * 24 * 101 } // 101 days
+            }
+        };
+        const newAuthorWithSignature = {
+            author: {
+                address: "Qm...",
+                subplebbit: { firstCommentTimestamp: Math.round(Date.now() / 1000) - 60 * 60 * 24 * 10 } // 10 days
+            },
+            signature: { publicKey: "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0" }
+        };
+        const mockHighCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 5, replyCount: 0 }) }
+        };
+        const mockLowCount = {
+            _dbHandler: { queryAuthorPublicationCounts: () => ({ postCount: 4, replyCount: 0 }) }
+        };
+        // old author -> excluded by firstCommentTimestamp rule (no DB needed)
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: oldAuthorNoSignature })).to.equal(true);
+        // new author but high count -> excluded by postCount rule
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: newAuthorWithSignature }, mockHighCount)).to.equal(true);
+        // new author and low count -> not excluded by either rule
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: newAuthorWithSignature }, mockLowCount)).to.equal(false);
+    });
+
     it("rateLimit", () => {
         const subplebbitChallenge = {
             exclude: [

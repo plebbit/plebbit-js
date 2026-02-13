@@ -130,6 +130,8 @@ export const ChallengeExcludeSchema = z.looseObject({
     subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
     postScore: z.number().int().optional(),
     replyScore: z.number().int().optional(),
+    postCount: z.number().nonnegative().int().optional(),
+    replyCount: z.number().nonnegative().int().optional(),
     firstCommentTimestamp: PlebbitTimestampSchema.optional(),
     challenges: z.number().nonnegative().int().array().optional(),
     role: SubplebbitRoleSchema.shape.role.array().optional(),
