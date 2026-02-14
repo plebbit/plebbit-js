@@ -184,14 +184,18 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   requirePostLinkIsMedia?: boolean // require post.link be media, e.g. for imageboards
   noMarkdownImages?: boolean // don't embed images in text posts markdown
   noMarkdownVideos?: boolean // don't embed videos in text posts markdown
+  noMarkdownAudio?: boolean // don't embed audio in text posts markdown
   noVideos?: boolean // block all comments with video links
   noImages?: boolean // block all comments with image links
+  noAudio?: boolean // block all comments with audio links
   noSpoilers?: boolean // author can't set spoiler = true on any comment
   noVideoReplies?: boolean // block only replies with video links
   noImageReplies?: boolean // block only replies with image links
+  noAudioReplies?: boolean // block only replies with audio links
   noSpoilerReplies?: boolean // author can't set spoiler = true on replies
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan. Maximum depth is 1
   safeForWork?: boolean // informational flag indicating this subplebbit is safe for work
+  pseudonymityMode?: 'per-post' | 'per-reply' | 'per-author'
   // not implemented
   noPolls?: boolean
   noCrossposts?: boolean
@@ -201,7 +205,6 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   requirePostFlairs?: boolean // force authors to choose a post flair before posting
   markdownImageReplies?: boolean
   markdownVideoReplies?: boolean
-  pseudonymityMode?: 'per-post' | 'per-reply' | 'per-author'
 }
 SubplebbitEncryption {
   type: 'ed25519-aes-gcm' // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
