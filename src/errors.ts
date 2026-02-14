@@ -288,6 +288,12 @@ export enum messages {
     ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_DOWNVOTES = "subplebbit.features.noReplyDownvotes is true which means no downvotes can be published to replies (depth > 0)",
     ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_UPVOTES = "subplebbit.features.noReplyUpvotes is true which means no upvotes can be published to replies (depth > 0)",
     ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL = "vote=0 is for canceling a previous vote, but the author doesn't have a previous vote on this comment",
+    ERR_POST_FLAIRS_NOT_ALLOWED = "Post flairs are not allowed unless subplebbit.features.postFlairs is true",
+    ERR_POST_FLAIRS_REQUIRED = "Post flairs are required when subplebbit.features.requirePostFlairs is true",
+    ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS = "Post flair must be from the allowed flairs in subplebbit.flairs['post']",
+    ERR_AUTHOR_FLAIRS_NOT_ALLOWED = "Author flairs are not allowed unless subplebbit.features.authorFlairs is true",
+    ERR_AUTHOR_FLAIRS_REQUIRED = "Author flairs are required when subplebbit.features.requireAuthorFlairs is true",
+    ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS = "Author flair must be from the allowed flairs in subplebbit.flairs['author']",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",

@@ -1,0 +1,117 @@
+import {
+    mockPlebbit,
+    createSubWithNoChallenge,
+    generateMockPost,
+    generateMockComment,
+    publishWithExpectedResult,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    resolveWhenConditionIsTrue,
+    publishRandomPost
+} from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
+import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { LocalSubplebbit } from "../../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+
+describe(`subplebbit.features.authorFlairs`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+    const validAuthorFlair = { text: "Verified", backgroundColor: "#00ff00", textColor: "#000000" };
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Set up allowed author flairs
+        await subplebbit.edit({ flairs: { author: [validAuthorFlair] } });
+
+        // Publish a post before enabling the feature
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it(`Can't publish a post with author flairs when authorFlairs feature is disabled (default)`, async () => {
+        expect(subplebbit.features?.authorFlairs).to.be.undefined;
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [validAuthorFlair] }
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED);
+    });
+
+    it(`Can't publish a reply with author flairs when authorFlairs feature is disabled (default)`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [validAuthorFlair] }
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED);
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        await subplebbit.edit({ features: { ...subplebbit.features, authorFlairs: true } });
+        expect(subplebbit.features?.authorFlairs).to.be.true;
+    });
+
+    it(`Can publish a post with valid author flair when feature is enabled`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [validAuthorFlair] }
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a reply with valid author flair when feature is enabled`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [validAuthorFlair] }
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can't publish a post with invalid author flair (not in allowed list)`, async () => {
+        const invalidFlair = { text: "Invalid", backgroundColor: "#ff0000" };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [invalidFlair] }
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+
+    it(`Can't publish a post with author flair that has wrong colors`, async () => {
+        const wrongColorFlair = { text: "Verified", backgroundColor: "#ff0000", textColor: "#ffffff" };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [wrongColorFlair] }
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+
+    it(`Can publish a post without author flairs when feature is enabled`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't publish a post with author flair that has extra properties`, async () => {
+        const flairWithExtraProps = { text: "Verified", backgroundColor: "#00ff00", textColor: "#000000", expiresAt: 12345 };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [flairWithExtraProps] }
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+
+    it(`Can't publish a post with author flair that is missing properties`, async () => {
+        // validAuthorFlair has all 3 props, this one only has text
+        const flairMissingProps = { text: "Verified" };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [flairMissingProps] }
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+});

@@ -14,7 +14,8 @@ import type {
     SubplebbitUpdatingState,
     SubplebbitState,
     SubplebbitRoleNameUnion,
-    SubplebbitEvents
+    SubplebbitEvents,
+    Flair
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
@@ -1701,19 +1702,32 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE;
 
             // noVideos - block ALL comments with video links (including animated images like GIF/APNG)
-            if (this.features?.noVideos && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
+            if (
+                this.features?.noVideos &&
+                commentPublication.link &&
+                (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link))
+            )
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO;
 
             // noSpoilers - block ALL comments with spoiler=true
-            if (this.features?.noSpoilers && commentPublication.spoiler === true)
-                return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
+            if (this.features?.noSpoilers && commentPublication.spoiler === true) return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
 
             // noImageReplies - block only replies with image links
-            if (this.features?.noImageReplies && commentPublication.parentCid && commentPublication.link && isLinkOfImage(commentPublication.link))
+            if (
+                this.features?.noImageReplies &&
+                commentPublication.parentCid &&
+                commentPublication.link &&
+                isLinkOfImage(commentPublication.link)
+            )
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE;
 
             // noVideoReplies - block only replies with video links (including animated images like GIF/APNG)
-            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
+            if (
+                this.features?.noVideoReplies &&
+                commentPublication.parentCid &&
+                commentPublication.link &&
+                (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link))
+            )
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO;
 
             // noAudio - block ALL comments with audio links
@@ -1721,7 +1735,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO;
 
             // noAudioReplies - block only replies with audio links
-            if (this.features?.noAudioReplies && commentPublication.parentCid && commentPublication.link && isLinkOfAudio(commentPublication.link))
+            if (
+                this.features?.noAudioReplies &&
+                commentPublication.parentCid &&
+                commentPublication.link &&
+                isLinkOfAudio(commentPublication.link)
+            )
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO;
 
             // noSpoilerReplies - block only replies with spoiler=true
@@ -1733,6 +1752,46 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 const parent = this._dbHandler.queryComment(commentPublication.parentCid);
                 if (parent && parent.depth > 0) {
                     return messages.ERR_NESTED_REPLIES_NOT_ALLOWED;
+                }
+            }
+
+            // Post flairs validation (comment.flairs)
+            if (commentPublication.flairs && commentPublication.flairs.length > 0) {
+                if (!this.features?.postFlairs) {
+                    return messages.ERR_POST_FLAIRS_NOT_ALLOWED;
+                }
+                const allowedPostFlairs = this.flairs?.["post"] || [];
+                for (const flair of commentPublication.flairs) {
+                    if (!this._isFlairInAllowedList(flair, allowedPostFlairs)) {
+                        return messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS;
+                    }
+                }
+            }
+
+            // requirePostFlairs - only for posts (depth=0)
+            if (this.features?.requirePostFlairs && !commentPublication.parentCid) {
+                if (!commentPublication.flairs || commentPublication.flairs.length === 0) {
+                    return messages.ERR_POST_FLAIRS_REQUIRED;
+                }
+            }
+
+            // Author flairs validation (comment.author.flairs)
+            if (commentPublication.author?.flairs && commentPublication.author.flairs.length > 0) {
+                if (!this.features?.authorFlairs) {
+                    return messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED;
+                }
+                const allowedAuthorFlairs = this.flairs?.["author"] || [];
+                for (const flair of commentPublication.author.flairs) {
+                    if (!this._isFlairInAllowedList(flair, allowedAuthorFlairs)) {
+                        return messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS;
+                    }
+                }
+            }
+
+            // requireAuthorFlairs - for all comments (posts and replies)
+            if (this.features?.requireAuthorFlairs) {
+                if (!commentPublication.author?.flairs || commentPublication.author.flairs.length === 0) {
+                    return messages.ERR_AUTHOR_FLAIRS_REQUIRED;
                 }
             }
 
@@ -1888,8 +1947,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO;
 
             // noSpoilers - block ALL comment edits that set spoiler=true
-            if (this.features?.noSpoilers && commentEditPublication.spoiler === true)
-                return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
+            if (this.features?.noSpoilers && commentEditPublication.spoiler === true) return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
 
             // noSpoilerReplies - block only reply edits that set spoiler=true
             if (this.features?.noSpoilerReplies && commentToBeEdited.depth > 0 && commentEditPublication.spoiler === true)
@@ -2048,6 +2106,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._challengeAnswerPromises.delete(challengeRequestIdString);
         this._challengeAnswerResolveReject.delete(challengeRequestIdString);
         delete this._challengeExchangesFromLocalPublishers[challengeRequestIdString];
+    }
+
+    private _isFlairInAllowedList(flair: Flair, allowedFlairs: Flair[]): boolean {
+        return allowedFlairs.some((allowed) => remeda.isDeepEqual(allowed, flair));
     }
 
     private async _parseChallengeAnswerOrRespondWithFailure(challengeAnswer: ChallengeAnswerMessageType, decryptedRawString: string) {

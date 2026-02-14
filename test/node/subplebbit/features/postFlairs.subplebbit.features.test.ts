@@ -1,0 +1,117 @@
+import {
+    mockPlebbit,
+    createSubWithNoChallenge,
+    generateMockPost,
+    generateMockComment,
+    publishWithExpectedResult,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    resolveWhenConditionIsTrue,
+    publishRandomPost
+} from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
+import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
+import type { LocalSubplebbit } from "../../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
+import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
+
+describe(`subplebbit.features.postFlairs`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+    const validPostFlair = { text: "Discussion", backgroundColor: "#0000ff", textColor: "#ffffff" };
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Set up allowed post flairs
+        await subplebbit.edit({ flairs: { post: [validPostFlair] } });
+
+        // Publish a post before enabling the feature
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it(`Can't publish a post with post flairs when postFlairs feature is disabled (default)`, async () => {
+        expect(subplebbit.features?.postFlairs).to.be.undefined;
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            flairs: [validPostFlair]
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIRS_NOT_ALLOWED);
+    });
+
+    it(`Can't publish a reply with post flairs when postFlairs feature is disabled (default)`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            flairs: [validPostFlair]
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_POST_FLAIRS_NOT_ALLOWED);
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        await subplebbit.edit({ features: { ...subplebbit.features, postFlairs: true } });
+        expect(subplebbit.features?.postFlairs).to.be.true;
+    });
+
+    it(`Can publish a post with valid post flair when feature is enabled`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            flairs: [validPostFlair]
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can publish a reply with valid post flair when feature is enabled`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            flairs: [validPostFlair]
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can't publish a post with invalid post flair (not in allowed list)`, async () => {
+        const invalidFlair = { text: "Invalid", backgroundColor: "#ff0000" };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            flairs: [invalidFlair]
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+
+    it(`Can't publish a post with flair that has wrong colors`, async () => {
+        const wrongColorFlair = { text: "Discussion", backgroundColor: "#ff0000", textColor: "#000000" };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            flairs: [wrongColorFlair]
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+
+    it(`Can publish a post without post flairs when feature is enabled`, async () => {
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Can't publish a post with flair that has extra properties`, async () => {
+        const flairWithExtraProps = { text: "Discussion", backgroundColor: "#0000ff", textColor: "#ffffff", expiresAt: 12345 };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            flairs: [flairWithExtraProps]
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+
+    it(`Can't publish a post with flair that is missing properties`, async () => {
+        // validPostFlair has all 3 props, this one only has text
+        const flairMissingProps = { text: "Discussion" };
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            flairs: [flairMissingProps]
+        });
+        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+});
