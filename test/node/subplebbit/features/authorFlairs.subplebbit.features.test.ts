@@ -1,6 +1,7 @@
 import {
     mockPlebbit,
     createSubWithNoChallenge,
+    describeSkipIfRpc,
     generateMockPost,
     generateMockComment,
     publishWithExpectedResult,
@@ -113,5 +114,67 @@ describe(`subplebbit.features.authorFlairs`, async () => {
             author: { displayName: "Test", flairs: [flairMissingProps] }
         });
         await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+});
+
+describeSkipIfRpc(`subplebbit.features.authorFlairs with pseudonymityMode`, () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+    const validAuthorFlair = { text: "Verified", backgroundColor: "#00ff00", textColor: "#000000" };
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.edit({
+            features: { pseudonymityMode: "per-author" },
+            flairs: { author: [validAuthorFlair] }
+        });
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it(`Author flairs validation is skipped when pseudonymityMode is active (flairs will be stripped)`, async () => {
+        // authorFlairs feature is NOT enabled, but pseudonymityMode is active
+        // so the flairs will be stripped during anonymization - no need to reject
+        expect(subplebbit.features?.authorFlairs).to.be.undefined;
+        expect(subplebbit.features?.pseudonymityMode).to.equal("per-author");
+
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [validAuthorFlair] }
+        });
+        await publishWithExpectedResult(post, true);
+    });
+
+    it(`Author flairs validation is skipped for replies when pseudonymityMode is active`, async () => {
+        expect(subplebbit.features?.authorFlairs).to.be.undefined;
+        expect(subplebbit.features?.pseudonymityMode).to.equal("per-author");
+
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            author: { displayName: "Test", flairs: [validAuthorFlair] }
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it.sequential(`requireAuthorFlairs is skipped when pseudonymityMode is active`, async () => {
+        // Enable requireAuthorFlairs alongside pseudonymityMode
+        await subplebbit.edit({ features: { ...subplebbit.features, authorFlairs: true, requireAuthorFlairs: true } });
+        expect(subplebbit.features?.requireAuthorFlairs).to.be.true;
+        expect(subplebbit.features?.pseudonymityMode).to.equal("per-author");
+
+        // Publishing without author flairs should succeed because pseudonymityMode
+        // would strip them anyway, so requiring them is meaningless
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
+        await publishWithExpectedResult(post, true);
     });
 });

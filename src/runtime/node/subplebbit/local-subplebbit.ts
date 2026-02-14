@@ -1788,7 +1788,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
 
             // Author flairs validation (comment.author.flairs)
-            if (commentPublication.author?.flairs && commentPublication.author.flairs.length > 0) {
+            if (commentPublication.author?.flairs && commentPublication.author.flairs.length > 0 && !this.features?.pseudonymityMode) {
                 if (!this.features?.authorFlairs) {
                     return messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED;
                 }
@@ -1801,7 +1801,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
 
             // requireAuthorFlairs - for all comments (posts and replies)
-            if (this.features?.requireAuthorFlairs) {
+            if (this.features?.requireAuthorFlairs && !this.features?.pseudonymityMode) {
                 if (!commentPublication.author?.flairs || commentPublication.author.flairs.length === 0) {
                     return messages.ERR_AUTHOR_FLAIRS_REQUIRED;
                 }
