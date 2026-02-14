@@ -28,8 +28,7 @@
         "test:server:wait-on": "wait-on http://localhost:14952 --timeout 300000",
         "clean": "rimraf dist",
         "prettier": "prettier {src,test,config}/**/*.{js,ts} --write --config config/prettier.config.js",
-        "test:prettier": "prettier-check {src,test,config}/**/*.{js,ts} --config config/prettier.config.js",
-        "prepare": "test -d dist || npm run build"
+        "test:prettier": "prettier-check {src,test,config}/**/*.{js,ts} --config config/prettier.config.js"
     },
     "main": "dist/node/index.js",
     "types": "dist/node/index.d.ts",
