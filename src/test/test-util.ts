@@ -386,6 +386,19 @@ export async function startSubplebbits(props: {
     });
     const mainSub = (await createSubWithNoChallenge({ signer: props.signers[0] }, plebbit)) as LocalSubplebbit; // most publications will be on this sub
 
+    // Enable flair features and set allowed flairs for flair tests
+    await mainSub.edit({
+        features: { postFlairs: true },
+        flairs: {
+            post: [
+                { text: "Author Flair" },
+                { text: "Discussion" },
+                { text: "Updated" },
+                { text: "Important", backgroundColor: "#ff0000" }
+            ]
+        }
+    });
+
     await mainSub.start();
 
     const mathSub = await _startMathCliSubplebbit(props.signers[1], plebbit);

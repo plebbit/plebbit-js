@@ -58,6 +58,16 @@ describe(`subplebbit.features.postFlairs`, async () => {
         await publishWithExpectedResult(reply, false, messages.ERR_POST_FLAIRS_NOT_ALLOWED);
     });
 
+    it(`Can't edit a comment with flairs when postFlairs feature is disabled`, async () => {
+        const flairsEdit = await remotePlebbit.createCommentEdit({
+            subplebbitAddress: subplebbit.address,
+            commentCid: publishedPost.cid,
+            flairs: [validPostFlair],
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(flairsEdit, false, messages.ERR_POST_FLAIRS_NOT_ALLOWED);
+    });
+
     it.sequential(`Feature is updated correctly in props`, async () => {
         await subplebbit.edit({ features: { ...subplebbit.features, postFlairs: true } });
         expect(subplebbit.features?.postFlairs).to.be.true;
@@ -91,6 +101,27 @@ describe(`subplebbit.features.postFlairs`, async () => {
             flairs: [wrongColorFlair]
         });
         await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+    });
+
+    it(`Can edit a comment with valid flair when feature is enabled`, async () => {
+        const flairsEdit = await remotePlebbit.createCommentEdit({
+            subplebbitAddress: subplebbit.address,
+            commentCid: publishedPost.cid,
+            flairs: [validPostFlair],
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(flairsEdit, true);
+    });
+
+    it(`Can't edit a comment with invalid flair (not in allowed list)`, async () => {
+        const invalidFlair = { text: "Invalid", backgroundColor: "#ff0000" };
+        const flairsEdit = await remotePlebbit.createCommentEdit({
+            subplebbitAddress: subplebbit.address,
+            commentCid: publishedPost.cid,
+            flairs: [invalidFlair],
+            signer: publishedPost.signer
+        });
+        await publishWithExpectedResult(flairsEdit, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
     });
 
     it(`Can publish a post without post flairs when feature is enabled`, async () => {

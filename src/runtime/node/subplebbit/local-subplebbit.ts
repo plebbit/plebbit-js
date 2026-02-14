@@ -1952,6 +1952,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // noSpoilerReplies - block only reply edits that set spoiler=true
             if (this.features?.noSpoilerReplies && commentToBeEdited.depth > 0 && commentEditPublication.spoiler === true)
                 return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
+
+            // Post flairs validation for comment edits
+            if (commentEditPublication.flairs && commentEditPublication.flairs.length > 0) {
+                if (!this.features?.postFlairs) {
+                    return messages.ERR_POST_FLAIRS_NOT_ALLOWED;
+                }
+                const allowedPostFlairs = this.flairs?.["post"] || [];
+                for (const flair of commentEditPublication.flairs) {
+                    if (!this._isFlairInAllowedList(flair, allowedPostFlairs)) {
+                        return messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS;
+                    }
+                }
+            }
         }
 
         return undefined;

@@ -14,7 +14,7 @@ import type { Comment } from "../../../../dist/node/publications/comment/comment
 const subplebbitAddress = signers[0].address;
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent(`Authors can set flairs on their own comment - ${config.name}`, async () => {
+    describe(`Authors can set flairs on their own comment - ${config.name}`, async () => {
         let plebbit: Plebbit, authorPost: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -38,6 +38,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: await plebbit.createSigner()
             });
             await publishWithExpectedResult(flairsEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+        });
+
+        it(`Author can't set flairs not in the allowed list`, async () => {
+            const flairsEdit = await plebbit.createCommentEdit({
+                subplebbitAddress: authorPost.subplebbitAddress,
+                commentCid: authorPost.cid,
+                flairs: [{ text: "NotAllowed" }],
+                signer: authorPost.signer
+            });
+            await publishWithExpectedResult(flairsEdit, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
         });
 
         it.sequential(`Author can set flairs on their own comment`, async () => {
