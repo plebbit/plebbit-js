@@ -1490,10 +1490,23 @@ export async function createNewIpns() {
     };
 }
 
+async function getTemplateSubplebbitRecord(plebbit: Plebbit): Promise<SubplebbitIpfsType> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+            const sub = await plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
+            return sub.toJSONIpfs();
+        } catch (e) {
+            lastError = e;
+            if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+    }
+    throw lastError;
+}
+
 export async function publishSubplebbitRecordWithExtraProp(opts?: { includeExtraPropInSignedPropertyNames: boolean; extraProps: Object }) {
     const ipnsObj = await createNewIpns();
-    const actualSub = await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
-    const subplebbitRecord = JSON.parse(JSON.stringify(actualSub.toJSONIpfs()));
+    const subplebbitRecord = JSON.parse(JSON.stringify(await getTemplateSubplebbitRecord(ipnsObj.plebbit)));
     subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
     delete subplebbitRecord.posts;
     if (opts?.extraProps) Object.assign(subplebbitRecord, opts.extraProps);
@@ -1514,7 +1527,7 @@ export async function publishSubplebbitRecordWithExtraProp(opts?: { includeExtra
 export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalSubplebbitUserOptions) {
     const ipnsObj = await createNewIpns();
     const subplebbitRecord = <SubplebbitIpfsType>{
-        ...(await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" })).toJSONIpfs(),
+        ...(await getTemplateSubplebbitRecord(ipnsObj.plebbit)),
         posts: undefined,
         address: ipnsObj.signer.address,
         pubsubTopic: ipnsObj.signer.address,
@@ -1542,7 +1555,7 @@ export async function createStaticSubplebbitRecordForComment(opts?: {
     let subplebbitRecord: SubplebbitIpfsType | undefined;
     try {
         subplebbitRecord = <SubplebbitIpfsType>{
-            ...(await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" })).toJSONIpfs(),
+            ...(await getTemplateSubplebbitRecord(ipnsObj.plebbit)),
             posts: undefined,
             address: ipnsObj.signer.address,
             pubsubTopic: ipnsObj.signer.address
