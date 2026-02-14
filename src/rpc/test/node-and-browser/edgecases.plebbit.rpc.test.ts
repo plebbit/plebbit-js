@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import signers from "../../../fixtures/signers.js";
+import signers from "../../../../test/fixtures/signers.js";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     resolveWhenConditionIsTrue,

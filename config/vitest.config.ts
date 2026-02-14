@@ -37,7 +37,7 @@ const parseIncludeOverride = (): string[] | undefined => {
 };
 
 const includeOverride = parseIncludeOverride();
-const defaultNodeInclude = ["test/node/**/*.test.{js,ts}", "test/node-and-browser/**/*.test.{js,ts}", "test/challenges/**/*.test.{js,ts}"];
+const defaultNodeInclude = ["test/node/**/*.test.{js,ts}", "test/node-and-browser/**/*.test.{js,ts}", "test/challenges/**/*.test.{js,ts}", "src/rpc/test/node/**/*.test.{js,ts}", "src/rpc/test/node-and-browser/**/*.test.{js,ts}"];
 const defaultBrowserInclude = ["test/*browser/**/*.test.{js,ts}"];
 const nodeTestInclude = includeOverride ?? defaultNodeInclude;
 const browserTestInclude = includeOverride ?? defaultBrowserInclude;

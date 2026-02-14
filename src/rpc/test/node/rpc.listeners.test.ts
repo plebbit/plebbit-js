@@ -1,10 +1,10 @@
 import { beforeAll, afterAll, afterEach } from "vitest";
 import tempy from "tempy";
 
-import PlebbitWsServerModule from "../../../dist/node/rpc/src/index.js";
-import { restorePlebbitJs } from "../../../dist/node/rpc/src/lib/plebbit-js/index.js";
-import { describeSkipIfRpc, mockRpcServerForTests, mockRpcServerPlebbit } from "../../../dist/node/test/test-util.js";
-import type { LocalSubplebbit } from "../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import PlebbitWsServerModule from "../../../../dist/node/rpc/src/index.js";
+import { restorePlebbitJs } from "../../../../dist/node/rpc/src/lib/plebbit-js/index.js";
+import { describeSkipIfRpc, mockRpcServerForTests, mockRpcServerPlebbit } from "../../../../dist/node/test/test-util.js";
+import type { LocalSubplebbit } from "../../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
 
 const { PlebbitWsServer: createPlebbitWsServer, setPlebbitJs } = PlebbitWsServerModule;
 

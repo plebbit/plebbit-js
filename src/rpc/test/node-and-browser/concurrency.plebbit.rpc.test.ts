@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import pTimeout from "p-timeout";
-import signers from "../../../fixtures/signers.js";
+import signers from "../../../../test/fixtures/signers.js";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     createSubWithNoChallenge,

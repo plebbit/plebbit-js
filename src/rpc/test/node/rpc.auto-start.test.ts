@@ -1,14 +1,14 @@
 import { beforeAll, afterAll, describe, it, expect, beforeEach, afterEach } from "vitest";
-import PlebbitWsServer from "../../../dist/node/rpc/src/index.js";
-import { describeSkipIfRpc, mockPlebbit } from "../../../dist/node/test/test-util.js";
+import PlebbitWsServer from "../../../../dist/node/rpc/src/index.js";
+import { describeSkipIfRpc, mockPlebbit } from "../../../../dist/node/test/test-util.js";
 import tempy from "tempy";
 import path from "path";
 import { promises as fs } from "fs";
 
-import Plebbit from "../../../dist/node/index.js";
-import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";
-import type { RpcLocalSubplebbit } from "../../../dist/node/subplebbit/rpc-local-subplebbit.js";
-import type { CreatePlebbitWsServerOptions } from "../../../dist/node/rpc/src/types.js";
+import Plebbit from "../../../../dist/node/index.js";
+import type { Plebbit as PlebbitType } from "../../../../dist/node/plebbit/plebbit.js";
+import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
+import type { CreatePlebbitWsServerOptions } from "../../../../dist/node/rpc/src/types.js";
 
 type PlebbitWsServerType = Awaited<ReturnType<typeof PlebbitWsServer.PlebbitWsServer>>;
 
