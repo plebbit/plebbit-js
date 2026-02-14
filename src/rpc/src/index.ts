@@ -1,4 +1,6 @@
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
+import { promises as fsPromises } from "fs";
+import path from "path";
 import PlebbitJs, { setPlebbitJs } from "./lib/plebbit-js/index.js";
 import {
     clone,
@@ -14,7 +16,9 @@ import type {
     JsonRpcSendNotificationOptions,
     CreatePlebbitWsServerOptions,
     PlebbitWsServerSettingsSerialized,
-    PlebbitRpcServerEvents
+    PlebbitRpcServerEvents,
+    RpcServerState,
+    RpcSubplebbitState
 } from "./types.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import type {
@@ -100,11 +104,13 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     } = {}; // TODO rename this to _afterSettingsChange
 
     private _startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {}; // TODO replace this with plebbit._startedSubplebbits
+    private _autoStartOnBoot: boolean = false;
 
-    constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
+    constructor({ port, server, plebbit, authKey, startStartedSubplebbitsOnStartup }: PlebbitWsServerClassOptions) {
         super();
         const log = Logger("plebbit-js:PlebbitWsServer");
         this.authKey = authKey;
+        this._autoStartOnBoot = startStartedSubplebbitsOnStartup ?? false;
         // don't instantiate plebbit in constructor because it's an async function
         this._initPlebbit(plebbit);
         this.rpcWebsockets = new RpcWebsocketsServer({
@@ -220,6 +226,128 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         if (this.listeners("error").length === 0)
             log.error("Unhandled error. This may crash your process, you need to listen for error event on PlebbitRpcWsServer", error);
         this.emit("error", error);
+    }
+
+    // State file management for auto-start functionality
+    private _getRpcStateFilePath(): string | undefined {
+        const dataPath = this.plebbit.dataPath;
+        if (!dataPath) return undefined;
+        return path.join(dataPath, "subplebbits", "rpc-state.json");
+    }
+
+    private async _readRpcState(): Promise<RpcServerState> {
+        const filePath = this._getRpcStateFilePath();
+        if (!filePath) {
+            return { subplebbitStates: {} };
+        }
+
+        try {
+            const content = await fsPromises.readFile(filePath, "utf-8");
+            const parsed = JSON.parse(content);
+            // Validate structure minimally
+            if (typeof parsed === "object" && parsed !== null && typeof parsed.subplebbitStates === "object") {
+                return parsed as RpcServerState;
+            }
+            log.error("Invalid rpc-state.json structure, returning empty state");
+            return { subplebbitStates: {} };
+        } catch (e: any) {
+            if (e.code === "ENOENT") {
+                // File doesn't exist yet - first run
+                return { subplebbitStates: {} };
+            }
+            log.error("Failed to read rpc-state.json", e);
+            return { subplebbitStates: {} };
+        }
+    }
+
+    private async _writeRpcState(state: RpcServerState): Promise<void> {
+        const filePath = this._getRpcStateFilePath();
+        if (!filePath) {
+            log("Cannot write RPC state - no dataPath defined");
+            return;
+        }
+
+        try {
+            // Ensure directory exists
+            await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
+            // Write atomically by writing to temp file first
+            const tempPath = filePath + ".tmp";
+            await fsPromises.writeFile(tempPath, JSON.stringify(state, null, 2), "utf-8");
+            await fsPromises.rename(tempPath, filePath);
+        } catch (e) {
+            log.error("Failed to write rpc-state.json", e);
+            this._emitError(e instanceof Error ? e : new Error(String(e)));
+        }
+    }
+
+    private async _updateSubplebbitState(address: string, update: Partial<RpcSubplebbitState>): Promise<void> {
+        const state = await this._readRpcState();
+        const existing = state.subplebbitStates[address] || { wasStarted: false, wasExplicitlyStopped: false };
+        state.subplebbitStates[address] = { ...existing, ...update };
+        await this._writeRpcState(state);
+    }
+
+    private async _removeSubplebbitState(address: string): Promise<void> {
+        const state = await this._readRpcState();
+        delete state.subplebbitStates[address];
+        await this._writeRpcState(state);
+    }
+
+    async _autoStartPreviousSubplebbits(): Promise<void> {
+        if (!this._autoStartOnBoot) {
+            return;
+        }
+
+        const autoStartLog = Logger("plebbit-js-rpc:plebbit-ws-server:auto-start");
+        autoStartLog("Checking for previously started subplebbits to auto-start");
+
+        const state = await this._readRpcState();
+        const plebbit = await this._getPlebbitInstance();
+        const localSubs = plebbit.subplebbits;
+
+        for (const [address, subState] of Object.entries(state.subplebbitStates)) {
+            if (subState.wasStarted && !subState.wasExplicitlyStopped) {
+                // Check if sub still exists
+                if (!localSubs.includes(address)) {
+                    autoStartLog(`Skipping auto-start for ${address} - subplebbit no longer exists`);
+                    await this._removeSubplebbitState(address);
+                    continue;
+                }
+
+                // Check if already started (shouldn't happen on fresh boot but be safe)
+                if (address in this._startedSubplebbits) {
+                    autoStartLog(`Skipping auto-start for ${address} - already started`);
+                    continue;
+                }
+
+                autoStartLog(`Auto-starting subplebbit: ${address}`);
+                try {
+                    await this._internalStartSubplebbit(address);
+                    autoStartLog(`Successfully auto-started: ${address}`);
+                } catch (e) {
+                    autoStartLog.error(`Failed to auto-start subplebbit ${address}`, e);
+                    // Don't remove from state - maybe transient error, can retry on next boot
+                    this._emitError(e instanceof Error ? e : new Error(`Failed to auto-start ${address}: ${String(e)}`));
+                }
+            }
+        }
+    }
+
+    private async _internalStartSubplebbit(address: string): Promise<LocalSubplebbit> {
+        const plebbit = await this._getPlebbitInstance();
+
+        this._startedSubplebbits[address] = "pending";
+        try {
+            const subplebbit = <LocalSubplebbit>await plebbit.createSubplebbit({ address });
+            subplebbit.started = true;
+            await subplebbit.start();
+            this._startedSubplebbits[address] = subplebbit;
+            await this._updateSubplebbitState(address, { wasStarted: true, wasExplicitlyStopped: false });
+            return subplebbit;
+        } catch (e) {
+            delete this._startedSubplebbits[address];
+            throw e;
+        }
     }
 
     // util function to log errors of registered methods
@@ -456,6 +584,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
                     subplebbit.emit("update", subplebbit); // Need to emit an update so rpc user can receive sub props prior to running
                     await subplebbit.start();
                     this._startedSubplebbits[address] = subplebbit;
+                    await this._updateSubplebbitState(address, { wasStarted: true, wasExplicitlyStopped: false });
                 } catch (e) {
                     const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
                     if (cleanup) await cleanup();
@@ -501,6 +630,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         // emit last updates so subscribed instances can set their state to stopped
         await this._postStoppingOrDeleting(startedSubplebbit);
         delete this._startedSubplebbits[address];
+        await this._updateSubplebbitState(address, { wasExplicitlyStopped: true });
 
         return true;
     }
@@ -545,6 +675,14 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             // if (editSubplebbitOptions.address && this._startedSubplebbits[address] && editSubplebbitOptions.address !== address) {
             this._startedSubplebbits[editSubplebbitOptions.address] = this._startedSubplebbits[address];
             delete this._startedSubplebbits[address];
+
+            // Update RPC state with new address
+            const state = await this._readRpcState();
+            if (state.subplebbitStates[address]) {
+                state.subplebbitStates[editSubplebbitOptions.address] = state.subplebbitStates[address];
+                delete state.subplebbitStates[address];
+                await this._writeRpcState(state);
+            }
         }
         if (typeof subplebbit.updatedAt === "number") return subplebbit.toJSONInternalRpcAfterFirstUpdate();
         else return subplebbit.toJSONInternalRpcBeforeFirstUpdate();
@@ -564,6 +702,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         await subplebbit.delete();
         await this._postStoppingOrDeleting(subplebbit);
         delete this._startedSubplebbits[address];
+        await this._removeSubplebbitState(address);
 
         return true;
     }
@@ -648,7 +787,6 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     }
 
     async setSettings(params: any) {
-        // TODO need to figure out how to move subscriptions from old plebbit to new plebbit
         const runSetSettings = async () => {
             const settings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(params[0]);
             const currentSettings = this._serializeSettingsFromPlebbit(this.plebbit);
@@ -1299,7 +1437,13 @@ const createPlebbitWsServer = async (options: CreatePlebbitWsServerOptions) => {
         plebbit,
         port: parsedOptions.port,
         server: parsedOptions.server,
-        authKey: parsedOptions.authKey
+        authKey: parsedOptions.authKey,
+        startStartedSubplebbitsOnStartup: parsedOptions.startStartedSubplebbitsOnStartup
+    });
+
+    // Auto-start previously started subplebbits (fire-and-forget, non-blocking)
+    plebbitWss._autoStartPreviousSubplebbits().catch((e) => {
+        log.error("Failed to auto-start previous subplebbits", e);
     });
 
     return plebbitWss;

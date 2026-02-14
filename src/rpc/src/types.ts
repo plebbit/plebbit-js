@@ -28,3 +28,13 @@ export type JsonRpcSendNotificationOptions = {
 export type PlebbitRpcServerEvents = {
     error: (error: PlebbitError | Error) => void;
 };
+
+// State tracking for auto-start functionality
+export interface RpcSubplebbitState {
+    wasStarted: boolean;
+    wasExplicitlyStopped: boolean;
+}
+
+export interface RpcServerState {
+    subplebbitStates: Record<string, RpcSubplebbitState>;
+}
