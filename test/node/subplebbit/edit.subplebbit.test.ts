@@ -419,6 +419,58 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         await sub.stop();
         await customPlebbit.destroy();
     });
+
+    it(`subplebbit.edit() changes persist through IPNS publish cycles`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        const localSub = sub as LocalSubplebbit;
+        await sub.start();
+        await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
+
+        // Access the kubo client to mock name.publish
+        const kuboClient = localSub._clientsManager.getDefaultKuboRpcClient();
+        const originalPublish = kuboClient._client.name.publish.bind(kuboClient._client.name);
+
+        let publishStartedResolve: () => void;
+        const publishStartedPromise = new Promise<void>((resolve) => {
+            publishStartedResolve = resolve;
+        });
+        let firstCall = true;
+
+        // Mock name.publish to signal when it starts and add delay.
+        // This creates a guaranteed window for edit() to run during the IPNS publish.
+        kuboClient._client.name.publish = (async (cid: any, options: any) => {
+            if (firstCall) {
+                firstCall = false;
+                publishStartedResolve();
+                // Delay so edit() executes during the publish
+                await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+            return originalPublish(cid, options);
+        }) as typeof kuboClient._client.name.publish;
+
+        // Edit #1: triggers a new publish cycle
+        await sub.edit({ title: "trigger publish " + Date.now() });
+
+        // Wait for name.publish to be called.
+        // At this point, lines 688-696 have already captured _pendingEditProps
+        // (which only contains edit #1), and the IPNS record was constructed WITHOUT features.
+        await publishStartedPromise;
+
+        // Edit #2: happens DURING the IPNS publish (after state was captured)
+        await sub.edit({ features: { authorFlairs: true } });
+        expect(sub.features?.authorFlairs).to.be.true;
+
+        // Wait for the publish cycle to complete
+        await new Promise((resolve) => sub.once("update", resolve));
+
+        // Without the fix, initSubplebbitIpfsPropsNoMerge overwrites this.features
+        // with the stale IPNS record (which was constructed before edit #2)
+        expect(sub.features?.authorFlairs).to.be.true;
+
+        // Restore original and cleanup
+        kuboClient._client.name.publish = originalPublish;
+        await sub.delete();
+    });
 });
 
 describe(`Edit misc`, async () => {

@@ -807,6 +807,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this.updateCid = file.path;
         this._pendingEditProps = this._pendingEditProps.filter((editProps) => !editIdsToIncludeInNextUpdate.includes(editProps.editId));
 
+        // Re-apply remaining pending edits to in-memory state.
+        // initSubplebbitIpfsPropsNoMerge above overwrites all SubplebbitIpfs properties from the
+        // published IPNS record. If edit() was called during the long IPNS publish await,
+        // those edits are still in _pendingEditProps but their in-memory values were overwritten.
+        if (this._pendingEditProps.length > 0) {
+            const remainingEditProps = Object.assign(
+                {}, //@ts-expect-error
+                ...this._pendingEditProps.map((editProps) => remeda.pick(editProps, remeda.keys.strict(SubplebbitIpfsSchema.shape)))
+            );
+            Object.assign(this, remainingEditProps);
+        }
+
         this._subplebbitUpdateTrigger = false;
         this._firstUpdateAfterStart = false;
 
