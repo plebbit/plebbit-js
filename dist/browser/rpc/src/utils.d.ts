@@ -1,7 +1,0 @@
-import type { DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType, EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType } from "../../pubsub-messages/types.js";
-export declare const clone: (obj: any) => any;
-export declare const generateSubscriptionId: () => number;
-export declare function encodeChallengeRequest(msg: DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): EncodedDecryptedChallengeRequestMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor;
-export declare function encodeChallengeMessage(msg: DecryptedChallengeMessageType): EncodedDecryptedChallengeMessageType;
-export declare function encodeChallengeAnswerMessage(msg: DecryptedChallengeAnswerMessageType): EncodedDecryptedChallengeAnswerMessageType;
-export declare function encodeChallengeVerificationMessage(msg: DecryptedChallengeVerificationMessageType): EncodedDecryptedChallengeVerificationMessageType;
