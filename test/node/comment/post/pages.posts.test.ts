@@ -41,7 +41,7 @@ describe("local subplebbit.posts pagination coverage", () => {
     });
 
     afterAll(async () => {
-        await cleanup();
+        await cleanup?.();
     });
 
     remotePlebbitLoadingConfigs.forEach((remotePlebbitConfig) => {

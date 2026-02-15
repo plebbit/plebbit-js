@@ -49,7 +49,7 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
     });
 
     afterAll(async () => {
-        await cleanup();
+        await cleanup?.();
     });
 
     remotePlebbitLoadingConfigs.map((config) => {
