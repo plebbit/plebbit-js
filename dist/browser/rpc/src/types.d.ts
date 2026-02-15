@@ -18,3 +18,7 @@ export type JsonRpcSendNotificationOptions = {
 export type PlebbitRpcServerEvents = {
     error: (error: PlebbitError | Error) => void;
 };
+export interface RpcSubplebbitState {
+    wasStarted: boolean;
+    wasExplicitlyStopped: boolean;
+}

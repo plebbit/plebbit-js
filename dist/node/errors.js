@@ -228,6 +228,7 @@ export var messages;
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED"] = "The post of this publication has been deleted";
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED"] = "The post of this publication has been removed";
     messages["ERR_SUB_PUBLICATION_POST_IS_LOCKED"] = "The post of this publication has been locked";
+    messages["ERR_SUB_PUBLICATION_POST_IS_ARCHIVED"] = "The post of this publication has been archived";
     messages["ERR_FORBIDDEN_AUTHOR_FIELD"] = "The author field includes a forbidden field";
     messages["ERR_FORBIDDEN_COMMENT_FIELD"] = "The comment/post contains a forbidden field";
     messages["ERR_FORBIDDEN_SIGNER_FIELD"] = "The publication includes a signer field which is forbidden";
@@ -281,8 +282,15 @@ export var messages;
     messages["ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_DOWNVOTES"] = "subplebbit.features.noReplyDownvotes is true which means no downvotes can be published to replies (depth > 0)";
     messages["ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_UPVOTES"] = "subplebbit.features.noReplyUpvotes is true which means no upvotes can be published to replies (depth > 0)";
     messages["ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL"] = "vote=0 is for canceling a previous vote, but the author doesn't have a previous vote on this comment";
+    messages["ERR_POST_FLAIRS_NOT_ALLOWED"] = "Post flairs are not allowed unless subplebbit.features.postFlairs is true";
+    messages["ERR_POST_FLAIRS_REQUIRED"] = "Post flairs are required when subplebbit.features.requirePostFlairs is true";
+    messages["ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS"] = "Post flair must be from the allowed flairs in subplebbit.flairs['post']";
+    messages["ERR_AUTHOR_FLAIRS_NOT_ALLOWED"] = "Author flairs are not allowed unless subplebbit.features.authorFlairs is true";
+    messages["ERR_AUTHOR_FLAIRS_REQUIRED"] = "Author flairs are required when subplebbit.features.requireAuthorFlairs is true";
+    messages["ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS"] = "Author flair must be from the allowed flairs in subplebbit.flairs['author']";
     // Comment Edit errors
     messages["ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY"] = "Can't lock replies. Only posts";
+    messages["ERR_SUB_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY"] = "Can't archive replies. Only posts";
     messages["ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD"] = "CommentEdit includes a field that cannot be used";
     messages["ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS"] = "CommentEdit can't have both author and mod fields. Please publish a separate request for author and mod";
     // Resolver errors

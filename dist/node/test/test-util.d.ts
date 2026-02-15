@@ -154,6 +154,8 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                 } | undefined;
                 postScore?: number | undefined;
                 replyScore?: number | undefined;
+                postCount?: number | undefined;
+                replyCount?: number | undefined;
                 firstCommentTimestamp?: number | undefined;
                 challenges?: number[] | undefined;
                 role?: string[] | undefined;
@@ -347,6 +349,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
                         locked?: boolean | undefined;
+                        archived?: boolean | undefined;
                         removed?: boolean | undefined;
                         reason?: string | undefined;
                         approved?: boolean | undefined;
@@ -646,6 +649,7 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
     nsfw?: boolean | undefined;
     pinned?: boolean | undefined;
     locked?: boolean | undefined;
+    archived?: boolean | undefined;
     removed?: boolean | undefined;
     reason?: string | undefined;
     approved?: boolean | undefined;
@@ -825,6 +829,7 @@ export declare function createCommentUpdateWithInvalidSignature(commentCid: stri
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
                     locked?: boolean | undefined;
+                    archived?: boolean | undefined;
                     removed?: boolean | undefined;
                     reason?: string | undefined;
                     approved?: boolean | undefined;

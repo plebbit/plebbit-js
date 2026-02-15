@@ -137,6 +137,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodObject<{
     nsfw: z.ZodOptional<z.ZodBoolean>;
     pinned: z.ZodOptional<z.ZodBoolean>;
     locked: z.ZodOptional<z.ZodBoolean>;
+    archived: z.ZodOptional<z.ZodBoolean>;
     removed: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
     approved: z.ZodOptional<z.ZodBoolean>;

@@ -401,7 +401,11 @@ export class Plebbit extends PlebbitTypedEmitter {
         if (this.subplebbits.includes(subAddress))
             return;
         else
-            await resolveWhenPredicateIsTrue({ toUpdate: this, predicate: () => this.subplebbits.includes(subAddress), eventName: "subplebbitschange" });
+            await resolveWhenPredicateIsTrue({
+                toUpdate: this,
+                predicate: () => this.subplebbits.includes(subAddress),
+                eventName: "subplebbitschange"
+            });
     }
     async _createRemoteSubplebbitInstance(options) {
         const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");
@@ -767,7 +771,7 @@ export class Plebbit extends PlebbitTypedEmitter {
                 }
             }
             catch (e) {
-                console.error("Error unsubscribing from pubsub topics", e);
+                log.error("Error unsubscribing from pubsub topics", e);
             }
         }
         const kuboClients = [...Object.values(this.clients.kuboRpcClients), ...Object.values(this.clients.pubsubKuboRpcClients)];

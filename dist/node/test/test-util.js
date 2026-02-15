@@ -224,6 +224,18 @@ export async function startSubplebbits(props) {
         updateInterval: 1000
     });
     const mainSub = (await createSubWithNoChallenge({ signer: props.signers[0] }, plebbit)); // most publications will be on this sub
+    // Enable flair features and set allowed flairs for flair tests
+    await mainSub.edit({
+        features: { postFlairs: true },
+        flairs: {
+            post: [
+                { text: "Author Flair" },
+                { text: "Discussion" },
+                { text: "Updated" },
+                { text: "Important", backgroundColor: "#ff0000" }
+            ]
+        }
+    });
     await mainSub.start();
     const mathSub = await _startMathCliSubplebbit(props.signers[1], plebbit);
     const ensSub = await _startEnsSubplebbit(props.signers, plebbit);
@@ -651,8 +663,7 @@ export async function waitTillPostInSubplebbitInstancePages(post, sub) {
     });
 }
 export async function waitTillPostInSubplebbitPages(post, plebbit) {
-    const sub = await plebbit.getSubplebbit({ address: post.subplebbitAddress });
-    await sub.update();
+    const sub = await plebbit.createSubplebbit({ address: post.subplebbitAddress });
     await waitTillPostInSubplebbitInstancePages(post, sub);
     await sub.stop();
 }
@@ -1089,10 +1100,17 @@ export async function createNewIpns() {
         plebbit
     };
 }
+async function getTemplateSubplebbitRecord(plebbit) {
+    const sub = await plebbit.createSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
+    await sub.update();
+    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
+    const result = sub.toJSONIpfs();
+    await sub.stop();
+    return result;
+}
 export async function publishSubplebbitRecordWithExtraProp(opts) {
     const ipnsObj = await createNewIpns();
-    const actualSub = await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
-    const subplebbitRecord = JSON.parse(JSON.stringify(actualSub.toJSONIpfs()));
+    const subplebbitRecord = JSON.parse(JSON.stringify(await getTemplateSubplebbitRecord(ipnsObj.plebbit)));
     subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
     delete subplebbitRecord.posts;
     if (opts?.extraProps)
@@ -1107,7 +1125,7 @@ export async function publishSubplebbitRecordWithExtraProp(opts) {
 export async function createMockedSubplebbitIpns(subplebbitOpts) {
     const ipnsObj = await createNewIpns();
     const subplebbitRecord = {
-        ...(await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" })).toJSONIpfs(),
+        ...(await getTemplateSubplebbitRecord(ipnsObj.plebbit)),
         posts: undefined,
         address: ipnsObj.signer.address,
         pubsubTopic: ipnsObj.signer.address,
@@ -1128,7 +1146,7 @@ export async function createStaticSubplebbitRecordForComment(opts) {
     let subplebbitRecord;
     try {
         subplebbitRecord = {
-            ...(await ipnsObj.plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" })).toJSONIpfs(),
+            ...(await getTemplateSubplebbitRecord(ipnsObj.plebbit)),
             posts: undefined,
             address: ipnsObj.signer.address,
             pubsubTopic: ipnsObj.signer.address
@@ -1610,9 +1628,12 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit, comment
         lastPublishedPost = post;
     }));
     await waitTillPostInSubplebbitPages(lastPublishedPost, subplebbit._plebbit);
-    const newSubplebbit = await subplebbit._plebbit.getSubplebbit({ address: subplebbit.address });
+    const newSubplebbit = await subplebbit._plebbit.createSubplebbit({ address: subplebbit.address });
+    await newSubplebbit.update();
+    await resolveWhenConditionIsTrue({ toUpdate: newSubplebbit, predicate: async () => typeof newSubplebbit.updatedAt === "number" });
     if (Object.keys(newSubplebbit.posts.pageCids).length === 0)
         throw Error("Failed to force the subplebbit to load all pages");
+    await newSubplebbit.stop();
 }
 export function mockReplyToUseParentPagesForUpdates(reply) {
     const updatingComment = reply._plebbit._updatingComments[reply.cid];
@@ -1670,8 +1691,11 @@ export async function mockCacheOfTextRecord(opts) {
     }
 }
 export async function getRandomPostCidFromSub(subplebbitAddress, plebbit) {
-    const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
+    const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+    await sub.update();
+    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
     const lastPostCid = sub.lastPostCid;
+    await sub.stop();
     if (!lastPostCid)
         throw Error("Subplebbit should have a last post cid");
     return lastPostCid;

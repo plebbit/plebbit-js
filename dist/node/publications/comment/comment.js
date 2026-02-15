@@ -118,6 +118,7 @@ export class Comment extends Publication {
         this.deleted = props.edit?.deleted;
         this.pinned = props.pinned;
         this.locked = props.locked;
+        this.archived = props.archived;
         this.removed = props.removed;
         this.reason = props.reason;
         this.edit = props.edit;

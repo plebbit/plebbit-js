@@ -10,6 +10,7 @@ export declare const ModeratorOptionsSchema: z.ZodObject<{
     nsfw: z.ZodOptional<z.ZodBoolean>;
     pinned: z.ZodOptional<z.ZodBoolean>;
     locked: z.ZodOptional<z.ZodBoolean>;
+    archived: z.ZodOptional<z.ZodBoolean>;
     approved: z.ZodOptional<z.ZodBoolean>;
     removed: z.ZodOptional<z.ZodBoolean>;
     purged: z.ZodOptional<z.ZodBoolean>;
@@ -78,6 +79,7 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<{
         nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
+        archived: z.ZodOptional<z.ZodBoolean>;
         approved: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
         purged: z.ZodOptional<z.ZodBoolean>;
@@ -146,6 +148,7 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
         nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
+        archived: z.ZodOptional<z.ZodBoolean>;
         approved: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
         purged: z.ZodOptional<z.ZodBoolean>;
@@ -212,6 +215,7 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<{
         nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
+        archived: z.ZodOptional<z.ZodBoolean>;
         approved: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
         purged: z.ZodOptional<z.ZodBoolean>;
@@ -286,6 +290,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
             nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
+            archived: z.ZodOptional<z.ZodBoolean>;
             approved: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
             purged: z.ZodOptional<z.ZodBoolean>;

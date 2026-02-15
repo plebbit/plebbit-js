@@ -198,6 +198,7 @@ export declare class PageGenerator {
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
                     locked?: boolean | undefined;
+                    archived?: boolean | undefined;
                     removed?: boolean | undefined;
                     reason?: string | undefined;
                     approved?: boolean | undefined;
@@ -384,6 +385,7 @@ export declare class PageGenerator {
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
                         locked?: boolean | undefined;
+                        archived?: boolean | undefined;
                         removed?: boolean | undefined;
                         reason?: string | undefined;
                         approved?: boolean | undefined;

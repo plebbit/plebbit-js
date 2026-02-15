@@ -81,6 +81,7 @@ export const CommentUpdateSchema = z
     nsfw: z.boolean().optional(),
     pinned: z.boolean().optional(),
     locked: z.boolean().optional(), // mod locked a post
+    archived: z.boolean().optional(), // mod archived a post
     removed: z.boolean().optional(), // mod deleted a comment
     reason: z.string().optional(), // reason the mod took a mood action,
     approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use moderation.pageCids.pendingApproval to fetch pending comments
@@ -105,6 +106,7 @@ export const CommentUpdateForDisapprovedPendingComment = CommentUpdateSchema.pic
     removed: true,
     nsfw: true,
     locked: true,
+    archived: true,
     spoiler: true,
     flairs: true,
     updatedAt: true,

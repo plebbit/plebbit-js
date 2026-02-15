@@ -80,6 +80,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _parseChallengeRequestPublicationOrRespondWithFailure;
     handleChallengeRequest(request: ChallengeRequestMessageType, isLocalPublisher: boolean): Promise<void>;
     private _cleanUpChallengeAnswerPromise;
+    private _isFlairInAllowedList;
     private _parseChallengeAnswerOrRespondWithFailure;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessageType): Promise<void>;
     private handleChallengeExchange;
