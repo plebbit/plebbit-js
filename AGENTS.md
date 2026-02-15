@@ -21,3 +21,4 @@
 -   When you modify a test file you need to make sure it passes test build process of tsc with test/tsconfig.json
 -   When adding a new JSON column to the database, add a test in `test/node/subplebbit/parsing.db.subplebbit.test.ts` for parsing it, and if it's on a comment, add an integration test for `dbHandler.queryComment` returning the proper JSON value (not a string)
 - Do not commit /dist to git
+-   In tests, prefer `createSubplebbit()` + `update()` over `getSubplebbit()`, since `getSubplebbit` does a one-shot fetch that fails randomly in CI

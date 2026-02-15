@@ -885,9 +885,7 @@ export async function waitTillPostInSubplebbitPages(
     post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>,
     plebbit: Plebbit
 ) {
-    const sub = await plebbit.getSubplebbit({ address: post.subplebbitAddress });
-
-    await sub.update();
+    const sub = await plebbit.createSubplebbit({ address: post.subplebbitAddress });
     await waitTillPostInSubplebbitInstancePages(post, sub);
     await sub.stop();
 }
@@ -1491,17 +1489,12 @@ export async function createNewIpns() {
 }
 
 async function getTemplateSubplebbitRecord(plebbit: Plebbit): Promise<SubplebbitIpfsType> {
-    let lastError: unknown;
-    for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-            const sub = await plebbit.getSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
-            return sub.toJSONIpfs();
-        } catch (e) {
-            lastError = e;
-            if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 5000));
-        }
-    }
-    throw lastError;
+    const sub = await plebbit.createSubplebbit({ address: "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z" });
+    await sub.update();
+    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
+    const result = sub.toJSONIpfs();
+    await sub.stop();
+    return result;
 }
 
 export async function publishSubplebbitRecordWithExtraProp(opts?: { includeExtraPropInSignedPropertyNames: boolean; extraProps: Object }) {
@@ -2167,8 +2160,11 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     );
 
     await waitTillPostInSubplebbitPages(lastPublishedPost as CommentIpfsWithCidDefined, subplebbit._plebbit);
-    const newSubplebbit = await subplebbit._plebbit.getSubplebbit({ address: subplebbit.address });
+    const newSubplebbit = await subplebbit._plebbit.createSubplebbit({ address: subplebbit.address });
+    await newSubplebbit.update();
+    await resolveWhenConditionIsTrue({ toUpdate: newSubplebbit, predicate: async () => typeof newSubplebbit.updatedAt === "number" });
     if (Object.keys(newSubplebbit.posts.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
+    await newSubplebbit.stop();
 }
 
 export function mockReplyToUseParentPagesForUpdates(reply: Comment) {
@@ -2235,8 +2231,11 @@ export async function mockCacheOfTextRecord(opts: { plebbit: Plebbit; domain: st
 }
 
 export async function getRandomPostCidFromSub(subplebbitAddress: string, plebbit: Plebbit) {
-    const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
+    const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+    await sub.update();
+    await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
     const lastPostCid = sub.lastPostCid;
+    await sub.stop();
     if (!lastPostCid) throw Error("Subplebbit should have a last post cid");
     return lastPostCid;
 }
