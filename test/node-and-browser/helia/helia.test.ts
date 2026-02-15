@@ -19,7 +19,7 @@ const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub i
 //flaky
 // for(let i =0;i <50; i++)
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((config) => {
-    describe(`Test publishing pubsub in real environment - ${config.name}`, async () => {
+    describe(`Test publishing pubsub in real environment - ${config.name}`, { retry: 2 }, async () => {
         let plebbit: Plebbit;
         let publishedPost: Comment;
 
