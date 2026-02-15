@@ -128,6 +128,8 @@ export declare const ChallengeExcludeSchema: z.ZodObject<{
     }, z.core.$strict>>;
     postScore: z.ZodOptional<z.ZodNumber>;
     replyScore: z.ZodOptional<z.ZodNumber>;
+    postCount: z.ZodOptional<z.ZodNumber>;
+    replyCount: z.ZodOptional<z.ZodNumber>;
     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
     role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -161,6 +163,8 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodObject<{
         }, z.core.$strict>>;
         postScore: z.ZodOptional<z.ZodNumber>;
         replyScore: z.ZodOptional<z.ZodNumber>;
+        postCount: z.ZodOptional<z.ZodNumber>;
+        replyCount: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
         role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -198,6 +202,8 @@ export declare const GetChallengeArgsSchema: z.ZodObject<{
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -252,6 +258,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -305,6 +313,8 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         }, z.core.$strict>>;
         postScore: z.ZodOptional<z.ZodNumber>;
         replyScore: z.ZodOptional<z.ZodNumber>;
+        postCount: z.ZodOptional<z.ZodNumber>;
+        replyCount: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
         role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -345,6 +355,8 @@ export declare const ChallengeFileFactoryArgsSchema: z.ZodObject<{
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -383,6 +395,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<readon
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -433,6 +447,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<readon
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -626,6 +642,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -700,6 +717,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -958,6 +977,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                         nsfw: z.ZodOptional<z.ZodBoolean>;
                         pinned: z.ZodOptional<z.ZodBoolean>;
                         locked: z.ZodOptional<z.ZodBoolean>;
+                        archived: z.ZodOptional<z.ZodBoolean>;
                         removed: z.ZodOptional<z.ZodBoolean>;
                         reason: z.ZodOptional<z.ZodString>;
                         approved: z.ZodOptional<z.ZodBoolean>;
@@ -1032,6 +1052,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -1155,6 +1177,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -1409,6 +1433,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -1500,6 +1525,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -1598,6 +1625,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -1703,6 +1732,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -1814,6 +1845,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -1871,6 +1904,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -2125,6 +2160,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -2349,6 +2385,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -2423,6 +2460,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -2543,6 +2582,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -2797,6 +2838,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -3021,6 +3063,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -3095,6 +3138,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -3271,6 +3316,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -3382,6 +3429,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 }, z.core.$strict>>;
                 postScore: z.ZodOptional<z.ZodNumber>;
                 replyScore: z.ZodOptional<z.ZodNumber>;
+                postCount: z.ZodOptional<z.ZodNumber>;
+                replyCount: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                 role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -3435,6 +3484,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -3689,6 +3740,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -3913,6 +3965,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
@@ -3987,6 +4040,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             }, z.core.$strict>>;
             postScore: z.ZodOptional<z.ZodNumber>;
             replyScore: z.ZodOptional<z.ZodNumber>;
+            postCount: z.ZodOptional<z.ZodNumber>;
+            replyCount: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
             role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{

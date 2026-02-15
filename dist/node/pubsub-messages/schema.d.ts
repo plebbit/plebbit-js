@@ -234,6 +234,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
+            archived: z.ZodOptional<z.ZodBoolean>;
             approved: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
             purged: z.ZodOptional<z.ZodBoolean>;
@@ -361,6 +362,8 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         }, z.core.$strict>>;
                         postScore: z.ZodOptional<z.ZodNumber>;
                         replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                         role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
@@ -599,6 +602,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
+            archived: z.ZodOptional<z.ZodBoolean>;
             approved: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
             purged: z.ZodOptional<z.ZodBoolean>;
@@ -726,6 +730,8 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         }, z.core.$strict>>;
                         postScore: z.ZodOptional<z.ZodNumber>;
                         replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
                         role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{

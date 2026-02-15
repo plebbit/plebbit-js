@@ -149,6 +149,8 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                 } | undefined;
                 postScore?: number | undefined;
                 replyScore?: number | undefined;
+                postCount?: number | undefined;
+                replyCount?: number | undefined;
                 firstCommentTimestamp?: number | undefined;
                 challenges?: number[] | undefined;
                 role?: string[] | undefined;
@@ -342,6 +344,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
                         locked?: boolean | undefined;
+                        archived?: boolean | undefined;
                         removed?: boolean | undefined;
                         reason?: string | undefined;
                         approved?: boolean | undefined;
@@ -560,6 +563,8 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
                     } | undefined;
                     postScore?: number | undefined;
                     replyScore?: number | undefined;
+                    postCount?: number | undefined;
+                    replyCount?: number | undefined;
                     firstCommentTimestamp?: number | undefined;
                     challenges?: number[] | undefined;
                     role?: string[] | undefined;
@@ -667,6 +672,8 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
                     } | undefined;
                     postScore?: number | undefined;
                     replyScore?: number | undefined;
+                    postCount?: number | undefined;
+                    replyCount?: number | undefined;
                     firstCommentTimestamp?: number | undefined;
                     challenges?: number[] | undefined;
                     role?: string[] | undefined;
@@ -762,6 +769,7 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
         nsfw?: boolean | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
+        archived?: boolean | undefined;
         approved?: boolean | undefined;
         removed?: boolean | undefined;
         purged?: boolean | undefined;
@@ -874,6 +882,7 @@ export declare function parseCommentModerationPubsubMessagePublicationSchemaWith
         nsfw?: boolean | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
+        archived?: boolean | undefined;
         approved?: boolean | undefined;
         removed?: boolean | undefined;
         purged?: boolean | undefined;
@@ -1113,6 +1122,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             } | undefined;
             postScore?: number | undefined;
             replyScore?: number | undefined;
+            postCount?: number | undefined;
+            replyCount?: number | undefined;
             firstCommentTimestamp?: number | undefined;
             challenges?: number[] | undefined;
             role?: string[] | undefined;
@@ -1306,6 +1317,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
                     locked?: boolean | undefined;
+                    archived?: boolean | undefined;
                     removed?: boolean | undefined;
                     reason?: string | undefined;
                     approved?: boolean | undefined;
@@ -1474,6 +1486,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 } | undefined;
                 postScore?: number | undefined;
                 replyScore?: number | undefined;
+                postCount?: number | undefined;
+                replyCount?: number | undefined;
                 firstCommentTimestamp?: number | undefined;
                 challenges?: number[] | undefined;
                 role?: string[] | undefined;
@@ -1523,6 +1537,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             } | undefined;
             postScore?: number | undefined;
             replyScore?: number | undefined;
+            postCount?: number | undefined;
+            replyCount?: number | undefined;
             firstCommentTimestamp?: number | undefined;
             challenges?: number[] | undefined;
             role?: string[] | undefined;
@@ -1775,6 +1791,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
                     locked?: boolean | undefined;
+                    archived?: boolean | undefined;
                     removed?: boolean | undefined;
                     reason?: string | undefined;
                     approved?: boolean | undefined;
@@ -1829,6 +1846,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             } | undefined;
             postScore?: number | undefined;
             replyScore?: number | undefined;
+            postCount?: number | undefined;
+            replyCount?: number | undefined;
             firstCommentTimestamp?: number | undefined;
             challenges?: number[] | undefined;
             role?: string[] | undefined;
@@ -2022,6 +2041,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
                     locked?: boolean | undefined;
+                    archived?: boolean | undefined;
                     removed?: boolean | undefined;
                     reason?: string | undefined;
                     approved?: boolean | undefined;
@@ -2190,6 +2210,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 } | undefined;
                 postScore?: number | undefined;
                 replyScore?: number | undefined;
+                postCount?: number | undefined;
+                replyCount?: number | undefined;
                 firstCommentTimestamp?: number | undefined;
                 challenges?: number[] | undefined;
                 role?: string[] | undefined;
@@ -2239,6 +2261,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             } | undefined;
             postScore?: number | undefined;
             replyScore?: number | undefined;
+            postCount?: number | undefined;
+            replyCount?: number | undefined;
             firstCommentTimestamp?: number | undefined;
             challenges?: number[] | undefined;
             role?: string[] | undefined;
@@ -2491,6 +2515,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     nsfw?: boolean | undefined;
                     pinned?: boolean | undefined;
                     locked?: boolean | undefined;
+                    archived?: boolean | undefined;
                     removed?: boolean | undefined;
                     reason?: string | undefined;
                     approved?: boolean | undefined;

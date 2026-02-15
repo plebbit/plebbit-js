@@ -26,6 +26,8 @@ declare const Plebbit: {
                 }, import("zod/v4/core").$strict>>;
                 postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
+                postCount: import("zod").ZodOptional<import("zod").ZodNumber>;
+                replyCount: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber>>;
                 role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<{
@@ -76,6 +78,8 @@ declare const Plebbit: {
                     }, import("zod/v4/core").$strict>>;
                     postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
+                    postCount: import("zod").ZodOptional<import("zod").ZodNumber>;
+                    replyCount: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber>>;
                     role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<{
@@ -142,6 +146,8 @@ export declare const challenges: Record<string, import("zod/v4/core").$InferInne
             }, import("zod/v4/core").$strict>>;
             postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
             replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
+            postCount: import("zod").ZodOptional<import("zod").ZodNumber>;
+            replyCount: import("zod").ZodOptional<import("zod").ZodNumber>;
             firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
             challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber>>;
             role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<{
@@ -192,6 +198,8 @@ export declare const challenges: Record<string, import("zod/v4/core").$InferInne
                 }, import("zod/v4/core").$strict>>;
                 postScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
+                postCount: import("zod").ZodOptional<import("zod").ZodNumber>;
+                replyCount: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber>>;
                 role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<{

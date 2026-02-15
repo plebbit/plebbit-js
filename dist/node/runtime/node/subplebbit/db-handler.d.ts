@@ -61,6 +61,8 @@ export declare class DbHandler {
                 } | undefined;
                 postScore?: number | undefined;
                 replyScore?: number | undefined;
+                postCount?: number | undefined;
+                replyCount?: number | undefined;
                 firstCommentTimestamp?: number | undefined;
                 challenges?: number[] | undefined;
                 role?: string[] | undefined;
@@ -158,7 +160,7 @@ export declare class DbHandler {
         purgedTableRows: PurgedCommentTableRows[];
     }[] | undefined;
     private _queryLatestModeratorReason;
-    queryCommentFlagsSetByMod(cid: string): Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">;
+    queryCommentFlagsSetByMod(cid: string): Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "archived" | "removed" | "nsfw">;
     queryAuthorEditDeleted(cid: string): Pick<CommentEditsTableRow, "deleted"> | undefined;
     private _queryModCommentFlairs;
     private _queryLastChildCidAndLastReplyTimestamp;
@@ -177,6 +179,10 @@ export declare class DbHandler {
         authorSignerAddresses: string[];
         authorDomain?: string;
     }): Pick<SubplebbitAuthor, "banExpiresAt" | "flairs">;
+    queryAuthorPublicationCounts(authorSignerAddress: string): {
+        postCount: number;
+        replyCount: number;
+    };
     querySubplebbitAuthor(authorSignerAddress: string, authorDomain?: string): SubplebbitAuthor | undefined;
     /** Shared helper: query karma for a set of addresses, with optional separate addresses for mod edits */
     private _querySubplebbitAuthorByAddresses;

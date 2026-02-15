@@ -138,6 +138,7 @@ export declare const PageIpfsSchema: z.ZodObject<{
             nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
+            archived: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
             approved: z.ZodOptional<z.ZodBoolean>;
@@ -354,6 +355,7 @@ export declare const PostsPagesIpfsSchema: z.ZodObject<{
                 nsfw: z.ZodOptional<z.ZodBoolean>;
                 pinned: z.ZodOptional<z.ZodBoolean>;
                 locked: z.ZodOptional<z.ZodBoolean>;
+                archived: z.ZodOptional<z.ZodBoolean>;
                 removed: z.ZodOptional<z.ZodBoolean>;
                 reason: z.ZodOptional<z.ZodString>;
                 approved: z.ZodOptional<z.ZodBoolean>;
@@ -560,6 +562,7 @@ export declare const RepliesPagesIpfsSchema: z.ZodObject<{
                 nsfw: z.ZodOptional<z.ZodBoolean>;
                 pinned: z.ZodOptional<z.ZodBoolean>;
                 locked: z.ZodOptional<z.ZodBoolean>;
+                archived: z.ZodOptional<z.ZodBoolean>;
                 removed: z.ZodOptional<z.ZodBoolean>;
                 reason: z.ZodOptional<z.ZodString>;
                 approved: z.ZodOptional<z.ZodBoolean>;

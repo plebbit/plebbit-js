@@ -36,9 +36,16 @@ declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     private _getIpFromConnectionRequest;
     private _onSettingsChange;
     private _startedSubplebbits;
-    constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions);
+    private _autoStartOnBoot;
+    private _rpcStateDb;
+    constructor({ port, server, plebbit, authKey, startStartedSubplebbitsOnStartup }: PlebbitWsServerClassOptions);
     getStartedSubplebbit(address: string): Promise<LocalSubplebbit>;
     private _emitError;
+    private _getRpcStateDb;
+    private _updateSubplebbitState;
+    private _removeSubplebbitState;
+    _autoStartPreviousSubplebbits(): Promise<void>;
+    private _internalStartSubplebbit;
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     private _registerPublishing;

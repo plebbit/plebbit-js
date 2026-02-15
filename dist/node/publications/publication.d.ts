@@ -83,6 +83,8 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
                 } | undefined;
                 postScore?: number | undefined;
                 replyScore?: number | undefined;
+                postCount?: number | undefined;
+                replyCount?: number | undefined;
                 firstCommentTimestamp?: number | undefined;
                 challenges?: number[] | undefined;
                 role?: string[] | undefined;
@@ -276,6 +278,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
                         nsfw?: boolean | undefined;
                         pinned?: boolean | undefined;
                         locked?: boolean | undefined;
+                        archived?: boolean | undefined;
                         removed?: boolean | undefined;
                         reason?: string | undefined;
                         approved?: boolean | undefined;

@@ -52,6 +52,7 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         userAgent?: string | undefined;
     }>>;
     authKey: z.ZodOptional<z.ZodString>;
+    startStartedSubplebbitsOnStartup: z.ZodOptional<z.ZodBoolean>;
     port: z.ZodOptional<z.ZodNumber>;
     server: z.ZodOptional<z.ZodCustom<HTTPServer<typeof import("http").IncomingMessage, typeof import("http").ServerResponse> | HTTPSServer<typeof import("http").IncomingMessage, typeof import("http").ServerResponse>, HTTPServer<typeof import("http").IncomingMessage, typeof import("http").ServerResponse> | HTTPSServer<typeof import("http").IncomingMessage, typeof import("http").ServerResponse>>>;
 }, z.core.$loose>;

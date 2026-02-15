@@ -44,6 +44,7 @@ export declare class Comment extends Publication implements Partial<CommentUpdat
     nsfw?: CommentIpfsType["nsfw"];
     pinned?: CommentUpdateType["pinned"];
     locked?: CommentUpdateType["locked"];
+    archived?: CommentUpdateType["archived"];
     removed?: CommentUpdateType["removed"];
     reason?: CommentUpdateType["reason"];
     lastChildCid?: CommentUpdateType["lastChildCid"];

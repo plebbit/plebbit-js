@@ -569,6 +569,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
         this.updateCid = file.path;
         this._pendingEditProps = this._pendingEditProps.filter((editProps) => !editIdsToIncludeInNextUpdate.includes(editProps.editId));
+        // Re-apply remaining pending edits to in-memory state.
+        // initSubplebbitIpfsPropsNoMerge above overwrites all SubplebbitIpfs properties from the
+        // published IPNS record. If edit() was called during the long IPNS publish await,
+        // those edits are still in _pendingEditProps but their in-memory values were overwritten.
+        if (this._pendingEditProps.length > 0) {
+            const remainingEditProps = Object.assign({}, //@ts-expect-error
+            ...this._pendingEditProps.map((editProps) => remeda.pick(editProps, remeda.keys.strict(SubplebbitIpfsSchema.shape))));
+            Object.assign(this, remainingEditProps);
+        }
         this._subplebbitUpdateTrigger = false;
         this._firstUpdateAfterStart = false;
         try {
@@ -1229,6 +1238,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
             if (postFlags.locked && !request.commentModeration)
                 return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
+            if (postFlags.archived && !request.commentModeration)
+                return messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED;
             if (parent.timestamp > publication.timestamp)
                 return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
             // if user publishes vote/reply/commentEdit under pending comment, it should fail
@@ -1262,22 +1273,33 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (this.features?.noImages && commentPublication.link && isLinkOfImage(commentPublication.link))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE;
             // noVideos - block ALL comments with video links (including animated images like GIF/APNG)
-            if (this.features?.noVideos && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
+            if (this.features?.noVideos &&
+                commentPublication.link &&
+                (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO;
             // noSpoilers - block ALL comments with spoiler=true
             if (this.features?.noSpoilers && commentPublication.spoiler === true)
                 return messages.ERR_COMMENT_HAS_SPOILER_ENABLED;
             // noImageReplies - block only replies with image links
-            if (this.features?.noImageReplies && commentPublication.parentCid && commentPublication.link && isLinkOfImage(commentPublication.link))
+            if (this.features?.noImageReplies &&
+                commentPublication.parentCid &&
+                commentPublication.link &&
+                isLinkOfImage(commentPublication.link))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE;
             // noVideoReplies - block only replies with video links (including animated images like GIF/APNG)
-            if (this.features?.noVideoReplies && commentPublication.parentCid && commentPublication.link && (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
+            if (this.features?.noVideoReplies &&
+                commentPublication.parentCid &&
+                commentPublication.link &&
+                (isLinkOfVideo(commentPublication.link) || isLinkOfAnimatedImage(commentPublication.link)))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO;
             // noAudio - block ALL comments with audio links
             if (this.features?.noAudio && commentPublication.link && isLinkOfAudio(commentPublication.link))
                 return messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO;
             // noAudioReplies - block only replies with audio links
-            if (this.features?.noAudioReplies && commentPublication.parentCid && commentPublication.link && isLinkOfAudio(commentPublication.link))
+            if (this.features?.noAudioReplies &&
+                commentPublication.parentCid &&
+                commentPublication.link &&
+                isLinkOfAudio(commentPublication.link))
                 return messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO;
             // noSpoilerReplies - block only replies with spoiler=true
             if (this.features?.noSpoilerReplies && commentPublication.parentCid && commentPublication.spoiler === true)
@@ -1287,6 +1309,42 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const parent = this._dbHandler.queryComment(commentPublication.parentCid);
                 if (parent && parent.depth > 0) {
                     return messages.ERR_NESTED_REPLIES_NOT_ALLOWED;
+                }
+            }
+            // Post flairs validation (comment.flairs)
+            if (commentPublication.flairs && commentPublication.flairs.length > 0) {
+                if (!this.features?.postFlairs) {
+                    return messages.ERR_POST_FLAIRS_NOT_ALLOWED;
+                }
+                const allowedPostFlairs = this.flairs?.["post"] || [];
+                for (const flair of commentPublication.flairs) {
+                    if (!this._isFlairInAllowedList(flair, allowedPostFlairs)) {
+                        return messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS;
+                    }
+                }
+            }
+            // requirePostFlairs - only for posts (depth=0)
+            if (this.features?.requirePostFlairs && !commentPublication.parentCid) {
+                if (!commentPublication.flairs || commentPublication.flairs.length === 0) {
+                    return messages.ERR_POST_FLAIRS_REQUIRED;
+                }
+            }
+            // Author flairs validation (comment.author.flairs)
+            if (commentPublication.author?.flairs && commentPublication.author.flairs.length > 0 && !this.features?.pseudonymityMode) {
+                if (!this.features?.authorFlairs) {
+                    return messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED;
+                }
+                const allowedAuthorFlairs = this.flairs?.["author"] || [];
+                for (const flair of commentPublication.author.flairs) {
+                    if (!this._isFlairInAllowedList(flair, allowedAuthorFlairs)) {
+                        return messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS;
+                    }
+                }
+            }
+            // requireAuthorFlairs - for all comments (posts and replies)
+            if (this.features?.requireAuthorFlairs && !this.features?.pseudonymityMode) {
+                if (!commentPublication.author?.flairs || commentPublication.author.flairs.length === 0) {
+                    return messages.ERR_AUTHOR_FLAIRS_REQUIRED;
                 }
             }
             if (commentPublication.parentCid && !commentPublication.postCid)
@@ -1359,6 +1417,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_COMMENT_MODERATION_NO_COMMENT_TO_EDIT;
             if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
+            if (isAuthorMod && commentModerationPublication.commentModeration.archived && commentToBeEdited.depth !== 0)
+                return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY;
             const commentModInDb = this._dbHandler.hasCommentModerationWithSignatureEncoded(commentModerationPublication.signature.signature);
             if (commentModInDb)
                 return messages.ERR_DUPLICATE_COMMENT_MODERATION;
@@ -1425,6 +1485,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             // noSpoilerReplies - block only reply edits that set spoiler=true
             if (this.features?.noSpoilerReplies && commentToBeEdited.depth > 0 && commentEditPublication.spoiler === true)
                 return messages.ERR_REPLY_HAS_SPOILER_ENABLED;
+            // Post flairs validation for comment edits
+            if (commentEditPublication.flairs && commentEditPublication.flairs.length > 0) {
+                if (!this.features?.postFlairs) {
+                    return messages.ERR_POST_FLAIRS_NOT_ALLOWED;
+                }
+                const allowedPostFlairs = this.flairs?.["post"] || [];
+                for (const flair of commentEditPublication.flairs) {
+                    if (!this._isFlairInAllowedList(flair, allowedPostFlairs)) {
+                        return messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS;
+                    }
+                }
+            }
         }
         return undefined;
     }
@@ -1542,6 +1614,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._challengeAnswerPromises.delete(challengeRequestIdString);
         this._challengeAnswerResolveReject.delete(challengeRequestIdString);
         delete this._challengeExchangesFromLocalPublishers[challengeRequestIdString];
+    }
+    _isFlairInAllowedList(flair, allowedFlairs) {
+        return allowedFlairs.some((allowed) => remeda.isDeepEqual(allowed, flair));
     }
     async _parseChallengeAnswerOrRespondWithFailure(challengeAnswer, decryptedRawString) {
         let parsedJson;

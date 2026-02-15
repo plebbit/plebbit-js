@@ -4,6 +4,7 @@ import QuickLRU from "quick-lru";
 import { testScore, testFirstCommentTimestamp, testRole, testPublicationType } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
+import { getPlebbitAddressFromPublicKeySync } from "../../../../../signer/util.js";
 const shouldExcludePublication = (subplebbitChallenge, request, subplebbit) => {
     if (!subplebbitChallenge) {
         throw Error(`shouldExcludePublication invalid subplebbitChallenge argument '${subplebbitChallenge}'`);
@@ -19,11 +20,15 @@ const shouldExcludePublication = (subplebbitChallenge, request, subplebbit) => {
     if (!Array.isArray(subplebbitChallenge.exclude)) {
         throw Error(`shouldExcludePublication invalid subplebbitChallenge argument '${subplebbitChallenge}' subplebbitChallenge.exclude not an array`);
     }
+    // lazy-loaded author publication counts (only when postCount/replyCount exclude is set)
+    let authorPublicationCounts;
     // if match any of the exclude array, should exclude
     for (const exclude of subplebbitChallenge.exclude) {
         // if doesn't have any author excludes, shouldn't exclude
         if (typeof exclude.postScore !== "number" &&
             typeof exclude.replyScore !== "number" &&
+            typeof exclude.postCount !== "number" &&
+            typeof exclude.replyCount !== "number" &&
             typeof exclude.firstCommentTimestamp !== "number" &&
             !exclude.address?.length &&
             exclude.publicationType === undefined &&
@@ -54,6 +59,18 @@ const shouldExcludePublication = (subplebbitChallenge, request, subplebbit) => {
         }
         if (Array.isArray(exclude.role) && !testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
             shouldExclude = false;
+        }
+        if (typeof exclude.postCount === "number" || typeof exclude.replyCount === "number") {
+            if (!authorPublicationCounts && subplebbit?._dbHandler) {
+                const signerAddress = getPlebbitAddressFromPublicKeySync(publication.signature.publicKey);
+                authorPublicationCounts = subplebbit._dbHandler.queryAuthorPublicationCounts(signerAddress);
+            }
+            if (!testScore(exclude.postCount, authorPublicationCounts?.postCount)) {
+                shouldExclude = false;
+            }
+            if (!testScore(exclude.replyCount, authorPublicationCounts?.replyCount)) {
+                shouldExclude = false;
+            }
         }
         // if one of the exclude item is successful, should exclude author
         if (shouldExclude) {

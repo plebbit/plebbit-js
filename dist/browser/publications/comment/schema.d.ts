@@ -657,6 +657,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     nsfw: z.ZodOptional<z.ZodBoolean>;
     pinned: z.ZodOptional<z.ZodBoolean>;
     locked: z.ZodOptional<z.ZodBoolean>;
+    archived: z.ZodOptional<z.ZodBoolean>;
     removed: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
     approved: z.ZodOptional<z.ZodBoolean>;
@@ -774,7 +775,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
         }>, z.ZodString]>, z.ZodString>>;
     }, z.core.$strip>>;
 }, z.core.$strict>;
-export declare const CommentUpdateSignedPropertyNames: ("number" | "flairs" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "updatedAt" | "upvoteCount" | "downvoteCount" | "replyCount" | "childCount" | "postNumber" | "edit" | "pinned" | "locked" | "removed" | "approved" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
+export declare const CommentUpdateSignedPropertyNames: ("number" | "flairs" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "updatedAt" | "upvoteCount" | "downvoteCount" | "replyCount" | "childCount" | "postNumber" | "edit" | "pinned" | "locked" | "archived" | "removed" | "approved" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
 export declare const CommentUpdateForDisapprovedPendingComment: z.ZodObject<{
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -810,10 +811,11 @@ export declare const CommentUpdateForDisapprovedPendingComment: z.ZodObject<{
     cid: z.ZodString;
     updatedAt: z.ZodNumber;
     locked: z.ZodOptional<z.ZodBoolean>;
+    archived: z.ZodOptional<z.ZodBoolean>;
     removed: z.ZodOptional<z.ZodBoolean>;
     approved: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strict>;
-export declare const CommentUpdateForDisapprovedPendingCommentSignedPropertyNames: ("flairs" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "updatedAt" | "locked" | "removed" | "approved")[];
+export declare const CommentUpdateForDisapprovedPendingCommentSignedPropertyNames: ("flairs" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "updatedAt" | "locked" | "archived" | "removed" | "approved")[];
 export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<{
     number: z.ZodOptional<z.ZodNumber>;
     signature: z.ZodObject<{
@@ -1034,6 +1036,7 @@ export declare const CommentUpdateTableRowSchema: z.ZodObject<{
     nsfw: z.ZodOptional<z.ZodBoolean>;
     pinned: z.ZodOptional<z.ZodBoolean>;
     locked: z.ZodOptional<z.ZodBoolean>;
+    archived: z.ZodOptional<z.ZodBoolean>;
     removed: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
     approved: z.ZodOptional<z.ZodBoolean>;
@@ -1208,6 +1211,7 @@ export declare const CommentUpdateTableRowSchema: z.ZodObject<{
                     nsfw: z.ZodOptional<z.ZodBoolean>;
                     pinned: z.ZodOptional<z.ZodBoolean>;
                     locked: z.ZodOptional<z.ZodBoolean>;
+                    archived: z.ZodOptional<z.ZodBoolean>;
                     removed: z.ZodOptional<z.ZodBoolean>;
                     reason: z.ZodOptional<z.ZodString>;
                     approved: z.ZodOptional<z.ZodBoolean>;
