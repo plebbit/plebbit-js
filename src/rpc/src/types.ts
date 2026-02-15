@@ -34,7 +34,3 @@ export interface RpcSubplebbitState {
     wasStarted: boolean;
     wasExplicitlyStopped: boolean;
 }
-
-export interface RpcServerState {
-    subplebbitStates: Record<string, RpcSubplebbitState>;
-}

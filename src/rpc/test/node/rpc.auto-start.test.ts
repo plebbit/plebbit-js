@@ -3,7 +3,7 @@ import PlebbitWsServer from "../../../../dist/node/rpc/src/index.js";
 import { describeSkipIfRpc, mockPlebbit } from "../../../../dist/node/test/test-util.js";
 import tempy from "tempy";
 import path from "path";
-import { promises as fs } from "fs";
+import Database from "better-sqlite3";
 
 import Plebbit from "../../../../dist/node/index.js";
 import type { Plebbit as PlebbitType } from "../../../../dist/node/plebbit/plebbit.js";
@@ -424,12 +424,11 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             await clientPlebbit1.destroy();
             await rpcServer1.destroy();
 
-            // Manually add the deleted sub address back to the state file to simulate stale state
-            const stateFilePath = path.join(dataPath, "subplebbits", "rpc-state.json");
-            const stateContent = await fs.readFile(stateFilePath, "utf-8");
-            const state = JSON.parse(stateContent);
-            state.subplebbitStates[subAddress] = { wasStarted: true, wasExplicitlyStopped: false };
-            await fs.writeFile(stateFilePath, JSON.stringify(state, null, 2));
+            // Manually add the deleted sub address back to the SQLite DB to simulate stale state
+            const dbPath = path.join(dataPath, "rpc-state.db");
+            const db = new Database(dbPath);
+            db.prepare("INSERT OR REPLACE INTO subplebbit_states (address, wasStarted, wasExplicitlyStopped) VALUES (?, 1, 0)").run(subAddress);
+            db.close();
 
             // Create second RPC server
             const options2: CreatePlebbitWsServerOptions = {
@@ -452,21 +451,17 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             expect(subAddress in privateAccess._startedSubplebbits).to.be.false;
 
             // Verify the stale entry was removed from state
-            const updatedStateContent = await fs.readFile(stateFilePath, "utf-8");
-            const updatedState = JSON.parse(updatedStateContent);
-            expect(subAddress in updatedState.subplebbitStates).to.be.false;
+            const dbAfter = new Database(dbPath);
+            const row = dbAfter.prepare("SELECT * FROM subplebbit_states WHERE address = ?").get(subAddress);
+            expect(row).to.be.undefined;
+            dbAfter.close();
 
             await rpcServer2.destroy();
         });
 
-        it("should handle corrupted state file gracefully", async () => {
+        it("should handle first run with no state DB gracefully", async () => {
             const dataPath = tempy.directory();
             const rpcServerPort = 19157;
-
-            // Create the subplebbits directory and write a corrupted state file
-            const subplebbitDir = path.join(dataPath, "subplebbits");
-            await fs.mkdir(subplebbitDir, { recursive: true });
-            await fs.writeFile(path.join(subplebbitDir, "rpc-state.json"), "{ invalid json");
 
             const options: CreatePlebbitWsServerOptions = {
                 port: rpcServerPort,
@@ -493,7 +488,7 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             await rpcServer.destroy();
         });
 
-        it("should handle first run with no state file", async () => {
+        it("should handle first run with no state DB and no dataPath directory", async () => {
             const dataPath = tempy.directory();
             const rpcServerPort = 19158;
 
@@ -522,7 +517,7 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             await rpcServer.destroy();
         });
 
-        it("should update state file when subplebbit address changes via edit", async () => {
+        it("should update state DB when subplebbit address changes via edit", async () => {
             // Note: This test would need domain resolution support to fully work
             // For now, we just verify the state tracking mechanism
             const dataPath = tempy.directory();
@@ -546,15 +541,81 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             const oldAddress = sub.address;
             await sub.start();
 
-            // Verify state file has the old address
-            const stateFilePath = path.join(dataPath, "subplebbits", "rpc-state.json");
-            const stateContent = await fs.readFile(stateFilePath, "utf-8");
-            const state = JSON.parse(stateContent);
-            expect(state.subplebbitStates[oldAddress]).to.exist;
-            expect(state.subplebbitStates[oldAddress].wasStarted).to.be.true;
+            // Verify state DB has the old address
+            const dbPath = path.join(dataPath, "rpc-state.db");
+            const db = new Database(dbPath);
+            const row = db.prepare("SELECT * FROM subplebbit_states WHERE address = ?").get(oldAddress) as { wasStarted: number } | undefined;
+            expect(row).to.exist;
+            expect(row!.wasStarted).to.equal(1);
+            db.close();
 
             await sub.stop();
             await sub.delete();
+            await clientPlebbit.destroy();
+            await rpcServer.destroy();
+        });
+
+        it("should handle rapid concurrent state updates without errors", async () => {
+            const dataPath = tempy.directory();
+            const rpcServerPort = 19160;
+
+            const options: CreatePlebbitWsServerOptions = {
+                port: rpcServerPort,
+                plebbitOptions: {
+                    kuboRpcClientsOptions: basePlebbit.kuboRpcClientsOptions as CreatePlebbitWsServerOptions["plebbitOptions"]["kuboRpcClientsOptions"],
+                    httpRoutersOptions: basePlebbit.httpRoutersOptions,
+                    dataPath
+                },
+                startStartedSubplebbitsOnStartup: false
+            };
+
+            const rpcServer = await PlebbitWsServer.PlebbitWsServer(options);
+            const rpcUrl = `ws://localhost:${rpcServerPort}`;
+
+            // Track errors emitted by the RPC server
+            const errors: Error[] = [];
+            rpcServer.on("error", (e) => errors.push(e));
+
+            // Create multiple subplebbits
+            const subCount = 5;
+            const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
+
+            const subs: RpcLocalSubplebbit[] = [];
+            for (let i = 0; i < subCount; i++) {
+                const sub = await clientPlebbit.createSubplebbit({}) as RpcLocalSubplebbit;
+                subs.push(sub);
+            }
+
+            // Start all subplebbits concurrently — each start writes to the state DB
+            await Promise.all(subs.map(sub => sub.start()));
+
+            // Verify state DB has all entries
+            const dbPath = path.join(dataPath, "rpc-state.db");
+            const db = new Database(dbPath);
+            const rows = db.prepare("SELECT * FROM subplebbit_states WHERE wasStarted = 1").all() as { address: string }[];
+            expect(rows.length).to.equal(subCount);
+
+            for (const sub of subs) {
+                const row = db.prepare("SELECT * FROM subplebbit_states WHERE address = ?").get(sub.address);
+                expect(row).to.exist;
+            }
+
+            // Stop all concurrently — each stop writes to the state DB
+            await Promise.all(subs.map(sub => sub.stop()));
+
+            // Verify all are marked as explicitly stopped
+            const stoppedRows = db.prepare("SELECT * FROM subplebbit_states WHERE wasExplicitlyStopped = 1").all() as { address: string }[];
+            expect(stoppedRows.length).to.equal(subCount);
+
+            db.close();
+
+            // No errors should have been emitted from state file operations
+            expect(errors.length).to.equal(0);
+
+            // Clean up
+            for (const sub of subs) {
+                await sub.delete();
+            }
             await clientPlebbit.destroy();
             await rpcServer.destroy();
         });
