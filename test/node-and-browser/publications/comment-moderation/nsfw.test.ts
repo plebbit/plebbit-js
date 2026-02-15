@@ -18,7 +18,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent(`Mods marking an author comment as nsfw - ${config.name}`, async () => {
+    describe(`Mods marking an author comment as nsfw - ${config.name}`, async () => {
         let plebbit: Plebbit, randomPost: Comment;
 
         beforeAll(async () => {
@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it.sequential(`Mod can mark an author comment as nsfw`, async () => {
+        it(`Mod can mark an author comment as nsfw`, async () => {
             const modnsfwEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: randomPost.subplebbitAddress,
                 commentCid: randomPost.cid,
@@ -41,7 +41,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(modnsfwEdit, true);
         });
 
-        it.sequential(`A new CommentUpdate is published with nsfw=true`, async () => {
+        it(`A new CommentUpdate is published with nsfw=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: async () => randomPost.nsfw === true });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod marking an author comment as nsfw");
             expect(randomPost.raw.commentUpdate.nsfw).to.be.true;
@@ -57,7 +57,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(commentInPage.nsfw).to.be.true;
         });
 
-        it.sequential(`Mod can mark unnsfw author comment `, async () => {
+        it(`Mod can mark unnsfw author comment `, async () => {
             const unnsfwEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: randomPost.subplebbitAddress,
                 commentCid: randomPost.cid,
@@ -67,7 +67,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unnsfwEdit, true);
         });
 
-        it.sequential(`A new CommentUpdate is published with nsfw=false`, async () => {
+        it(`A new CommentUpdate is published with nsfw=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: async () => randomPost.nsfw === false });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod unnsfwing an author comment");
             expect(randomPost.raw.commentUpdate.nsfw).to.be.false;

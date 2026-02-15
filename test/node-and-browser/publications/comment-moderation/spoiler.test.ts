@@ -17,7 +17,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent(`Mods marking an author comment as spoiler - ${config.name}`, async () => {
+    describe(`Mods marking an author comment as spoiler - ${config.name}`, async () => {
         let plebbit: Plebbit, randomPost: Comment;
 
         beforeAll(async () => {
@@ -30,7 +30,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it.sequential(`Mod can mark an author comment as spoiler`, async () => {
+        it(`Mod can mark an author comment as spoiler`, async () => {
             const modSpoilerEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: randomPost.subplebbitAddress,
                 commentCid: randomPost.cid,
@@ -40,7 +40,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(modSpoilerEdit, true);
         });
 
-        it.sequential(`A new CommentUpdate is published with spoiler=true`, async () => {
+        it(`A new CommentUpdate is published with spoiler=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: async () => randomPost.spoiler === true });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod marking an author comment as spoiler");
             expect(randomPost.raw.commentUpdate.spoiler).to.be.true;
@@ -56,7 +56,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(commentInPage.spoiler).to.be.true;
         });
 
-        it.sequential(`Mod can mark unspoiler author comment `, async () => {
+        it(`Mod can mark unspoiler author comment `, async () => {
             const unspoilerEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: randomPost.subplebbitAddress,
                 commentCid: randomPost.cid,
@@ -66,7 +66,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unspoilerEdit, true);
         });
 
-        it.sequential(`A new CommentUpdate is published with spoiler=false`, async () => {
+        it(`A new CommentUpdate is published with spoiler=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: randomPost, predicate: async () => randomPost.spoiler === false });
             expect(randomPost.raw.commentUpdate.reason).to.equal("Mod unspoilering an author comment");
             expect(randomPost.raw.commentUpdate.spoiler).to.be.false;

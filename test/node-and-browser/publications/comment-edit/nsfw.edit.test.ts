@@ -21,7 +21,7 @@ const roles = [
 ];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe.concurrent(`Authors can mark their own comment as nsfw - ${config.name}`, async () => {
+    describe(`Authors can mark their own comment as nsfw - ${config.name}`, async () => {
         let plebbit: Plebbit, authorPost: Comment;
         beforeAll(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -43,7 +43,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(nsfwEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
         });
 
-        it.sequential(`Author can mark their own comment as nsfw with CommentEdit`, async () => {
+        it(`Author can mark their own comment as nsfw with CommentEdit`, async () => {
             expect([false, undefined]).to.include(authorPost.nsfw);
 
             const nsfwEdit = await plebbit.createCommentEdit({
@@ -55,7 +55,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult(nsfwEdit, true);
         });
-        it.sequential(`A new CommentUpdate is published with nsfw=true`, async () => {
+        it(`A new CommentUpdate is published with nsfw=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.nsfw === true });
             expect(authorPost.edit.nsfw).to.be.true;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
@@ -106,7 +106,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(commentUpdateValidity).to.deep.equal({ valid: true });
         });
 
-        it.sequential(`Author can unnsfw their own comment`, async () => {
+        it(`Author can unnsfw their own comment`, async () => {
             const unnsfwEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: authorPost.subplebbitAddress,
                 commentCid: authorPost.cid,
@@ -116,7 +116,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult(unnsfwEdit, true);
         });
-        it.sequential(`A new CommentUpdate is published with nsfw=false`, async () => {
+        it(`A new CommentUpdate is published with nsfw=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.nsfw === false });
             expect(authorPost.edit.nsfw).to.be.false;
             expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
@@ -138,7 +138,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
     });
 
-    describe.concurrent(`Mods marking their own comment as nsfw - ${config.name}`, async () => {
+    describe(`Mods marking their own comment as nsfw - ${config.name}`, async () => {
         let plebbit: Plebbit, modPost: Comment;
 
         beforeAll(async () => {
@@ -151,7 +151,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it.sequential(`Mod can mark their own comment as nsfw`, async () => {
+        it(`Mod can mark their own comment as nsfw`, async () => {
             const nsfwEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: modPost.subplebbitAddress,
                 commentCid: modPost.cid,
@@ -162,7 +162,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(nsfwEdit, true);
         });
 
-        it.sequential(`A new CommentUpdate is published with nsfw=true`, async () => {
+        it(`A new CommentUpdate is published with nsfw=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: async () => modPost.nsfw === true });
             expect(modPost.edit.nsfw).to.be.true;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;
@@ -182,7 +182,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(commentInPage.nsfw).to.be.true;
         });
 
-        it.sequential(`Mod can unnsfw their own comment`, async () => {
+        it(`Mod can unnsfw their own comment`, async () => {
             const unnsfwEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: modPost.subplebbitAddress,
                 commentCid: modPost.cid,
@@ -193,7 +193,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult(unnsfwEdit, true);
         });
 
-        it.sequential(`A new CommentUpdate is published with nsfw=false`, async () => {
+        it(`A new CommentUpdate is published with nsfw=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: async () => modPost.nsfw === false });
             expect(modPost.edit.nsfw).to.be.false;
             expect(modPost.raw.commentUpdate.reason).to.be.undefined;
