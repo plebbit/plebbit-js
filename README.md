@@ -196,13 +196,13 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan. Maximum depth is 1
   safeForWork?: boolean // informational flag indicating this subplebbit is safe for work
   pseudonymityMode?: 'per-post' | 'per-reply' | 'per-author'
-  // not implemented
-  noPolls?: boolean
-  noCrossposts?: boolean
   authorFlairs?: boolean // authors can choose their own author flairs (otherwise only mods can)
   requireAuthorFlairs?: boolean // force authors to choose an author flair before posting
   postFlairs?: boolean // authors can choose their own post flairs (otherwise only mods can)
   requirePostFlairs?: boolean // force authors to choose a post flair before posting
+  // not implemented
+  noPolls?: boolean
+  noCrossposts?: boolean
   markdownImageReplies?: boolean
   markdownVideoReplies?: boolean
 }
