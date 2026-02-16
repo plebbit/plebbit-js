@@ -14,6 +14,12 @@ This document provides a comprehensive checklist for renaming the plebbit-js cod
 
 ---
 
+## Pre-Phase: Guide Refresh
+
+- [ ] Re-review the current codebase and update this guide before starting Phase 1, since this document was written a while ago and likely misses newer changes.
+
+---
+
 ## Phase 1: Package Configuration & Project Files
 
 ### 1.1 Package Identity
@@ -878,6 +884,32 @@ The following related changes are documented in the main phases above:
 | **Option 5: Migration script** | Create a script that republishes existing content with new `communityAddress` field, signed by a migration author |  preserves content (as copies) | Requires migration infrastructure, new signatures mean different author, different timestamps, could be complicated |
 
 **Decision:** [x] **Option 3: Support both** - Accept both `subplebbitAddress` and `communityAddress` field names. See "Backwards-Compatible Implementation" section above for details.
+
+---
+
+### Q2: DNS TXT record format alternative (NOT FINALIZED)
+
+Current approach uses two TXT record keys:
+- `subplebbit-address` (to be renamed to `pkc-community-address`)
+- `plebbit-author-address` (to be renamed to `pkc-author-address`)
+
+**Brainstormed alternative:** use a single Bitsocial TXT record key (name TBD), with two possible value formats:
+- Minimal format: `key`
+- Structured format: `community=12D...; author=12D...`
+
+**Why this might be better:**
+- Resolve one TXT record instead of two
+- Get both community and author-related routing data from one lookup
+- Reduce resolver/network overhead and simplify client flow
+
+**Open design questions (not finalized):**
+- Exact TXT record key name to standardize on (`bitsocial` vs `pkc` naming)
+- Whether `key` means only community key or a generic pointer
+- Delimiter/encoding rules for parsing (`;`, spaces, escaping, ordering)
+- Backward compatibility strategy with existing two-record deployments
+- Cache key and migration behavior in clients
+
+**Status:** [ ] Draft idea only, no decision yet
 
 ---
 
