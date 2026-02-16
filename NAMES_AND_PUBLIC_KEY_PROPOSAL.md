@@ -4,9 +4,9 @@
 
 Currently, a subplebbit has a single `address` field that can be either a raw IPNS key (`12D3KooW...`) or a single domain name (`memes.eth`). This creates several problems:
 
-### 1. Publications point to mutable domain names instead of cryptographic identity
+### 1. Publications need both identity and cryptographic linkage
 
-Publications currently carry `subplebbitAddress` — a potentially mutable domain name. This is semantically wrong: a publication belongs to a cryptographic identity, not a mutable alias. If a sub owner changes their address from `memes.eth` to `memes.sol`, old publications point to a name that may no longer resolve to this community.
+Publications currently carry `subplebbitAddress` only. In this proposal, effective community identity is `name || publicKey` (the `address` value), but clients also need cryptographic linkage for verification/loading flows. If a named community changes from `memes.eth` to `memes.sol`, it creates a new identity string, and old publications remain under the old identity.
 
 Additionally, loading a subplebbit by its IPNS public key currently fails if the record's `address` is a domain name, because validation does a strict string comparison. This blocks the ability to skip blockchain resolution and load directly by public key.
 
@@ -14,7 +14,7 @@ Additionally, loading a subplebbit by its IPNS public key currently fails if the
 
 Once domain resolution moves out of plebbit-js into pkc-js clients (see [#68](https://github.com/plebbit/plebbit-js/issues/68)), the idea of a single `address` field that works across all clients is no longer true. A client that only ships with `.sol` resolvers cannot resolve a `memes.eth` address.
 
-This is an acceptable trade-off for protocol neutrality — pkc-js should not mandate which resolvers clients must implement. The `publicKey` provides a universal identifier that works regardless of resolver choices.
+This is an acceptable trade-off for protocol neutrality — pkc-js should not mandate which resolvers clients must implement. The `publicKey` provides a universal fallback key that works regardless of resolver choices.
 
 ## Protocol neutrality
 
@@ -22,7 +22,8 @@ A key design goal is that **pkc-js remains a neutral protocol layer**. Different
 
 A client that only supports `.ton` is not "forking pkc-js" — it's a legitimate pkc-js client serving a different naming ecosystem. The protocol supports this via:
 
--   `publicKey` as the canonical identity (works everywhere)
+-   `address` (`name || publicKey`) as effective identity
+-   `publicKey` as universal cryptographic/fallback key (works everywhere)
 -   `name` as a human-readable convenience (works if you have a matching resolver)
 -   `nameResolved` flag to indicate whether the name has been verified against the publicKey
 
@@ -53,16 +54,13 @@ name?: string   // e.g., "memes.eth"
 -   **Untrusted until verified** — `name` in SubplebbitIpfs is a claim by the sub owner, not proof of ownership. The sub owner's signature only proves they _claim_ this name, not that it actually resolves to their public key. Name verification happens automatically via async resolution when both `publicKey` and `name` are provided. Until verified (`nameResolved = false`), the name should be treated as an unverified display hint.
 -   **`nameResolved` is runtime-only** — it is not part of SubplebbitIpfs and is not signed on the wire. It exists only on the subplebbit instance.
 
-**`publicKey` is a field in `SubplebbitIpfs`:**
+**`publicKey` on the instance is the cryptographic key:**
 
-`subplebbit.publicKey` is the IPNS key string (`12D3KooW...`) — the permanent cryptographic identity of the community. This is the **canonical identifier** — `address` is always `name || publicKey` (the name if set, otherwise the publicKey), but `publicKey` is the true identity.
+`subplebbit.publicKey` is the IPNS key string (`12D3KooW...`) and should always be available on the instance (derived from `signature.publicKey` when needed). Effective identity is `address = name || publicKey`. If `name` exists, that name is the identity string used by publications.
 
-**`publicKey` IS a signed field in SubplebbitIpfs** — it is part of the signed wire format. While it can be derived from `signature.publicKey` (Ed25519 public key → PeerId → base58 string), including it explicitly in the record provides:
+TODO: finalize whether `publicKey` should also be part of signed SubplebbitIpfs wire format, or remain instance-only derived data.
 
--   **Explicit identity** — The publicKey is immediately visible without cryptographic derivation
--   **Validation checkpoint** — If `record.publicKey` doesn't match the derivation from `signature.publicKey`, the record is rejected as malformed/malicious
-
-**Validation rule:** When parsing a SubplebbitIpfs record, if `publicKey` is present, it MUST match the value derived from `signature.publicKey`. If there's a mismatch, reject the entire record.
+TODO: if explicit `record.publicKey` is adopted, validation must enforce `record.publicKey === derived(signature.publicKey)` and reject mismatches.
 
 **Serialization requirement:** `address`, `name`, and `publicKey` must all be **enumerable properties** on the subplebbit class instance. This means they must appear in `JSON.stringify(subplebbit)` output and be accessible via object destructuring (`const { address, name, publicKey } = subplebbit`). Implementation-wise, these properties should be plain instance properties (not getters on the prototype) so that they are own enumerable properties of the object.
 
@@ -70,7 +68,9 @@ name?: string   // e.g., "memes.eth"
 
 **Relationship between `address` and `name`:**
 
-`address` stays in SubplebbitIpfs and is always `name || publicKey`. When `name` is set, `address` equals `name`. When `name` is not set, `address` equals `publicKey`. Validation: `address` must be either `publicKey` or `name` (if set).
+TODO: finalize whether `address` remains in `SubplebbitIpfs` or is instance-only/computed. Current draft behavior (if kept on wire): `address = name || subplebbit.publicKey`. Validation would require `address` to be either `publicKey` or `name` (if set).
+
+If a community has a name, that name is its identity string. Changing the name creates a new identity string, so old comments/publications remain associated with the previous name-based identity.
 
 **Editing name/address (backward compatibility):**
 
@@ -89,7 +89,7 @@ Sub owners can set the domain name via either:
 
 ### 2. Add `publication.subplebbitPublicKey` field
 
-Publications (comments, votes, edits, moderations) currently carry only `subplebbitAddress` — a potentially mutable domain name. This is semantically incomplete: a publication belongs to a cryptographic identity, not just a mutable alias.
+Publications (comments, votes, edits, moderations) currently carry only `subplebbitAddress`. This is semantically incomplete for clients that also need cryptographic linkage and resolver-independent loading.
 
 Add `subplebbitPublicKey` as a new field alongside `subplebbitAddress`:
 
@@ -98,15 +98,18 @@ Add `subplebbitPublicKey` as a new field alongside `subplebbitAddress`:
 
 Both fields are present in publications.
 
-TODO: unresolved publication/author identity decisions:
+TODO: unresolved identity decisions:
 
 -   `communityName`
 -   `communityPublicKey`
 -   `communityAddress`
+-   Whether `address` should remain in `SubplebbitIpfs` or be instance-only/computed
+-   Whether `subplebbit.publicKey` should be an explicit signed field in `SubplebbitIpfs` or derived on instance from `signature.publicKey`
+-   If explicit `record.publicKey` is adopted, enforce strict match with `derived(signature.publicKey)` and decide whether to add `ERR_SUBPLEBBIT_RECORD_PUBLICKEY_MISMATCH`
 -   Whether `author.publicKey` should be part of protocol/wire files or computed on instance from signature
 -   Whether to keep `author.address` with value `author.name || author.publicKey`
 -   Address stability in `{publicKey}`-only flow when record later includes `name` (start with `address = publicKey`; decide whether `address` can switch to `name`)
--   Subplebbit indexing key strategy for `_updatingSubplebbits` and `_startedSubplebbits`: implementation should move indexing to `publicKey` when possible, but finalize whether canonical indexing should be `publicKey`, `address`, or a dual/composite key
+-   Subplebbit indexing key strategy for `_updatingSubplebbits` and `_startedSubplebbits`: finalize whether indexing should be by `address` (identity), by `publicKey` (cryptographic key), or dual/composite
 -   If `publication.subplebbitPublicKey` and `publication.subplebbitName` are added, add backward-compat tests proving old posts/replies that do not include these fields still load correctly
 
 ### 3. Add `author.name`, `author.publicKey`, and `author.nameResolved`
@@ -272,13 +275,13 @@ The `address` property is stable (does not change during verification). The `nam
 
 ### Schema changes (`src/subplebbit/schema.ts`)
 
--   **Keep** `address` in `SubplebbitIpfsSchema`
 -   Add `name: z.string().min(1).optional()` to `SubplebbitIpfsSchema`
--   Add `publicKey: z.string().optional()` to `SubplebbitIpfsSchema`
 -   Do **not** add `nameResolved` to `SubplebbitIpfsSchema` (instance-only/runtime field)
 -   Add `name: true` to `SubplebbitEditOptionsSchema` (editable by sub owner)
--   Add validation: `address` must be `publicKey` or `name` (if set)
--   Add validation: if `publicKey` is present, it must match derivation from `signature.publicKey`
+-   TODO: finalize whether `address` exists in `SubplebbitIpfs` schema or is instance-derived only
+-   If `address` stays in wire schema: validate `address` is `publicKey` or `name` (if set)
+-   TODO: finalize whether `publicKey` exists in `SubplebbitIpfs` schema or is instance-derived only
+-   If explicit `record.publicKey` is adopted: add `publicKey: z.string().optional()` and validate it matches `derived(signature.publicKey)`
 
 ### Publication schema changes (`src/schema/schema.ts`)
 
@@ -315,7 +318,7 @@ The `address` property is stable (does not change during verification). The `nam
 
 ### Backward compatibility
 
--   **SubplebbitIpfs**: Non-breaking for old clients. `address` stays, new `name`/`publicKey` fields are ignored by old clients using `.loose()` parsing.
+-   **SubplebbitIpfs**: if `address` stays in wire schema, old clients remain non-breaking and new `name` is ignored by old clients using `.loose()` parsing. If `address` is removed from wire schema, backward-compat/migration behavior must be defined.
 -   **Publications**: Non-breaking. Old clients continue to use `subplebbitAddress`. New clients also have `subplebbitPublicKey`.
 
 ## Edge cases and error handling
@@ -338,8 +341,7 @@ This section documents all edge cases for `createSubplebbit`, name resolution, a
 
 | Scenario                                                                                            | Action                                                                                                                            |
 | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `record.publicKey` matches `derived(signature.publicKey)`                                           | Accept record                                                                                                                     |
-| `record.publicKey` doesn't match `derived(signature.publicKey)`                                     | **Reject record** — malformed or malicious                                                                                        |
+| If explicit `record.publicKey` is adopted                                                            | Require `record.publicKey === derived(signature.publicKey)`; otherwise reject record                                               |
 | Loaded by IPNS key, record has domain `address`                                                     | Accept if signature's derived publicKey matches the IPNS key we requested                                                         |
 | Update arrives with different publicKey and caller explicitly provided `publicKey`                  | **Critical error**: emit `error` event, reject update, stop updating                                                              |
 | Update arrives with different publicKey and caller did not explicitly provide `publicKey`           | Clear data, switch to new IPNS                                                                                                    |
@@ -358,7 +360,6 @@ This section documents all edge cases for `createSubplebbit`, name resolution, a
 | Error Code                                 | When                                                           |
 | ------------------------------------------ | -------------------------------------------------------------- |
 | `ERR_CONFLICTING_ADDRESS_AND_PUBLICKEY`    | Both `address` and `publicKey` provided as different IPNS keys |
-| `ERR_SUBPLEBBIT_RECORD_PUBLICKEY_MISMATCH` | `record.publicKey` doesn't match derivation from signature     |
 | `ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER`    | Domain address contains uppercase letters                      |
 | `ERR_NAME_RESOLUTION_FAILED`               | Blockchain RPC resolution failed (network error, timeout)      |
 | `ERR_NO_RESOLVER_FOR_NAME`                 | No resolver registered that supports the provided name          |
