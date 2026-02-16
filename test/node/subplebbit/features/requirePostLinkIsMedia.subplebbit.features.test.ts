@@ -2,6 +2,7 @@ import {
     mockPlebbit,
     createSubWithNoChallenge,
     generateMockPost,
+    overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue
@@ -32,14 +33,24 @@ describe.concurrent(`subplebbit.features.requirePostLinkIsMedia`, async () => {
 
     it.sequential(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
-        await subplebbit.edit({ features: { ...subplebbit.features, requirePostLinkIsMedia: true } });
+        await subplebbit.edit({ features: { ...subplebbit.features, requirePostLink: true, requirePostLinkIsMedia: true } });
 
         expect(subplebbit.features?.requirePostLinkIsMedia).to.be.true;
+        expect(subplebbit.features?.requirePostLink).to.be.true;
         const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
         await remoteSub.update();
         await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.requirePostLinkIsMedia === true });
         expect(remoteSub.features?.requirePostLinkIsMedia).to.be.true;
+        expect(remoteSub.features?.requirePostLink).to.be.true;
         await remoteSub.stop();
+    });
+
+    it(`Can't publish a post with invalid link`, async () => {
+        const invalidUrl = "test.com"; // invalid because it has no protocol
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
+        await overrideCommentInstancePropsAndSign(post, { link: invalidUrl } as Parameters<typeof overrideCommentInstancePropsAndSign>[1]);
+        expect(post.link).to.equal(invalidUrl);
+        await publishWithExpectedResult(post, false, messages.ERR_POST_LINK_IS_NOT_OF_MEDIA);
     });
 
     it(`Can't publish a post with link that isn't of a media`, async () => {

@@ -1694,10 +1694,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (
                 this.features?.requirePostLink &&
                 !commentPublication.parentCid &&
-                (!commentPublication.link || !isLinkValid(commentPublication.link))
+                (!commentPublication.link || (!this.features?.requirePostLinkIsMedia && !isLinkValid(commentPublication.link)))
             )
                 return messages.ERR_COMMENT_HAS_INVALID_LINK_FIELD;
-            if (this.features?.requirePostLinkIsMedia && commentPublication.link && !isLinkOfMedia(commentPublication.link))
+            if (
+                this.features?.requirePostLinkIsMedia &&
+                commentPublication.link &&
+                (!isLinkValid(commentPublication.link) || !isLinkOfMedia(commentPublication.link))
+            )
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
 
             if (this.features?.noMarkdownImages && commentPublication.content && contentContainsMarkdownImages(commentPublication.content))
