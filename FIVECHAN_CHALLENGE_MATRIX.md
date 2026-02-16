@@ -71,8 +71,8 @@ This document proposes a `settings.challenges` profile for 5chan-style boards:
 
           // Trusted bypass requires activity + account age + under rate limit.
           // Lower activity thresholds than post captcha since replies are lower impact.
-          { "postCount": 5, "firstCommentTimestamp": 604800, "rateLimit": 12, "rateLimitChallengeSuccess": true },
-          { "replyCount": 10, "firstCommentTimestamp": 604800, "rateLimit": 12, "rateLimitChallengeSuccess": true }
+          { "postCount": 5, "firstCommentTimestamp": 604800, "rateLimit": 6, "rateLimitChallengeSuccess": true },
+          { "replyCount": 10, "firstCommentTimestamp": 604800, "rateLimit": 6, "rateLimitChallengeSuccess": true }
         ]
       }
     ]
@@ -109,7 +109,7 @@ It uses different controls for each path so moderation load stays bounded while 
   - Pending approval ensures moderators can catch spam that slips past the captcha.
 - Mechanism:
   - Applies only to replies.
-  - Trusted users bypass only if they meet activity + age thresholds (lower than posts) AND are under the rate limit (12 replies/hour).
+  - Trusted users bypass only if they meet activity + age thresholds (lower than posts) AND are under the rate limit (6 replies/hour).
   - If a trusted user exceeds the rate limit, they fall back to captcha + pending approval.
   - Untrusted users always solve captcha; successful reply is marked pending approval.
 
@@ -120,8 +120,8 @@ It uses different controls for each path so moderation load stays bounded while 
   - `postCount >= 10` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 3/hr`
   - `replyCount >= 20` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 3/hr`
 - Reply captcha bypass (lower activity thresholds — replies are lower impact):
-  - `postCount >= 5` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 12/hr`
-  - `replyCount >= 10` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 12/hr`
+  - `postCount >= 5` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 6/hr`
+  - `replyCount >= 10` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 6/hr`
 - Why require activity AND age AND rate limit:
   - Standalone activity counts are easy to game (farm approvals quickly on a new account).
   - Standalone age is easy to game (create account, wait, then spam).
@@ -179,12 +179,12 @@ It uses different controls for each path so moderation load stays bounded while 
 | Mods (`moderator/admin/owner`) | Reply | No | No | Role excludes both challenge gates. |
 | Trusted (`postCount >= 10` + `age >= 7 days`), under 3 posts/hr | Post | No | No | Captcha bypassed by activity+age+rate limit. |
 | Trusted (`postCount >= 10` + `age >= 7 days`), over 3 posts/hr | Post | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; trust bypass stops matching, falls back to captcha+pending. |
-| Trusted (`postCount >= 5` + `age >= 7 days`), under 12 replies/hr | Reply | No | No | Captcha bypassed by activity+age+rate limit (lower thresholds for replies). |
-| Trusted (`postCount >= 5` + `age >= 7 days`), over 12 replies/hr | Reply | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; trust bypass stops matching, falls back to captcha+pending. |
+| Trusted (`postCount >= 5` + `age >= 7 days`), under 6 replies/hr | Reply | No | No | Captcha bypassed by activity+age+rate limit (lower thresholds for replies). |
+| Trusted (`postCount >= 5` + `age >= 7 days`), over 6 replies/hr | Reply | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; trust bypass stops matching, falls back to captcha+pending. |
 | Trusted (`replyCount >= 20` + `age >= 7 days`), under 3 posts/hr | Post | No | No | Captcha bypassed by activity+age+rate limit. |
 | Trusted (`replyCount >= 20` + `age >= 7 days`), over 3 posts/hr | Post | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; falls back to captcha+pending. |
-| Trusted (`replyCount >= 10` + `age >= 7 days`), under 12 replies/hr | Reply | No | No | Captcha bypassed by activity+age+rate limit (lower thresholds for replies). |
-| Trusted (`replyCount >= 10` + `age >= 7 days`), over 12 replies/hr | Reply | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; falls back to captcha+pending. |
+| Trusted (`replyCount >= 10` + `age >= 7 days`), under 6 replies/hr | Reply | No | No | Captcha bypassed by activity+age+rate limit (lower thresholds for replies). |
+| Trusted (`replyCount >= 10` + `age >= 7 days`), over 6 replies/hr | Reply | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; falls back to captcha+pending. |
 | New user (no trust rule matched) | Post | Yes (`captcha-canvas-v3`) | Yes | Must pass post captcha; successful post goes to pending approval. |
 | New user (no trust rule matched) | Reply | Yes (`captcha-canvas-v3`) | Yes | Must pass reply captcha; successful reply goes to pending approval. |
 
