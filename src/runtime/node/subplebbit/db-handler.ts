@@ -2135,6 +2135,7 @@ export class DbHandler {
     }
 
     queryAuthorPublicationCounts(authorSignerAddress: string): { postCount: number; replyCount: number } {
+        const pendingClause = this._pendingApprovalClause(TABLES.COMMENTS);
         const result = this._db
             .prepare(
                 `
@@ -2142,7 +2143,7 @@ export class DbHandler {
                 COALESCE(SUM(CASE WHEN depth = 0 THEN 1 ELSE 0 END), 0) as postCount,
                 COALESCE(SUM(CASE WHEN depth > 0 THEN 1 ELSE 0 END), 0) as replyCount
             FROM ${TABLES.COMMENTS}
-            WHERE authorSignerAddress = ?
+            WHERE authorSignerAddress = ? AND ${pendingClause}
         `
             )
             .get(authorSignerAddress) as { postCount: number; replyCount: number };
