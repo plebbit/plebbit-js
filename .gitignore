@@ -123,3 +123,6 @@ karma-electron-preload.js
 .plebbit-rpc*
 .vitest*/
 benchmarking_libp2p/
+
+# Auto-generated version file
+src/generated-version.ts

@@ -13,9 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master' }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
           node-version: 20
@@ -24,7 +26,7 @@ jobs:
       # build dist folder
       - run: npm ci
       - run: npm run build
-      
+
 
       # NOTE: doesn't work if `git add dist --force` is removed
       - run: git add dist --force
@@ -36,3 +38,11 @@ jobs:
           commit_message: CI build
           file_pattern: dist
           add_options: '--force'
+
+      # create github release with tags and changelog
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - run: npm run release -- --ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

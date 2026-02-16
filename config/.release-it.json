@@ -1,0 +1,36 @@
+{
+  "git": {
+    "commitMessage": "chore(release): ${version} [skip ci]",
+    "tagName": "v${version}"
+  },
+  "npm": {
+    "publish": false
+  },
+  "github": {
+    "release": true,
+    "releaseName": "v${version}"
+  },
+  "hooks": {
+    "before:git:release": "git add docs/CHANGELOG.md package.json"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits",
+        "types": [
+          { "type": "feat", "section": "Features" },
+          { "type": "fix", "section": "Bug Fixes" },
+          { "type": "perf", "section": "Performance" },
+          { "type": "revert", "section": "Reverts" },
+          { "type": "build", "section": "Build" }
+        ]
+      },
+      "infile": "docs/CHANGELOG.md",
+      "header": "# Changelog"
+    }
+  },
+  "version": {
+    "isPreRelease": false,
+    "preMajor": true
+  }
+}
