@@ -7,8 +7,8 @@
 | Mods | Yes (role match) | No | No |
 | Trusted, under rate limit | Yes (activity+age+rate match) | No | No |
 | Trusted, over rate limit | No (rate limit breaks the match) | Yes | Yes |
-| New user, under 5 failures/hr | Yes (failure rate under limit) | Yes | Yes |
-| New user, 5+ failures/hr | No (failure rate exceeded) | Hard reject | N/A |
+| Any author, under 5 failures/hr | Yes (failure rate under limit) | Depends on trust | Depends on trust |
+| Any author, 5+ failures/hr | No (failure rate exceeded) | Hard reject | N/A |
 
 This document proposes a `settings.challenges` profile for 5chan-style boards:
 
