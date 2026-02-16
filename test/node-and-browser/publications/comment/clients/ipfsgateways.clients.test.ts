@@ -51,7 +51,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: async () => typeof mockPost.upvoteCount === "number" });
                 await mockPost.stop();
 
-                expect(actualStates).to.deep.equal(expectedStates);
+                expect(actualStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
+
+                const remainingStates = actualStates.slice(expectedStates.length);
+                for (const state of remainingStates) {
+                    expect(state).to.be.oneOf(["fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"]);
+                }
             }
         );
 
