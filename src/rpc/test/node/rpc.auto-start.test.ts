@@ -425,7 +425,7 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             await rpcServer1.destroy();
 
             // Manually add the deleted sub address back to the SQLite DB to simulate stale state
-            const dbPath = path.join(dataPath, "rpc-state.db");
+            const dbPath = path.join(dataPath, "rpc-server", "rpc-state.db");
             const db = new Database(dbPath);
             db.prepare("INSERT OR REPLACE INTO subplebbit_states (address, wasStarted, wasExplicitlyStopped) VALUES (?, 1, 0)").run(subAddress);
             db.close();
@@ -542,7 +542,7 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             await sub.start();
 
             // Verify state DB has the old address
-            const dbPath = path.join(dataPath, "rpc-state.db");
+            const dbPath = path.join(dataPath, "rpc-server", "rpc-state.db");
             const db = new Database(dbPath);
             const row = db.prepare("SELECT * FROM subplebbit_states WHERE address = ?").get(oldAddress) as { wasStarted: number } | undefined;
             expect(row).to.exist;
@@ -590,7 +590,7 @@ describeSkipIfRpc(`RPC Server Auto-Start Subplebbits`, async () => {
             await Promise.all(subs.map(sub => sub.start()));
 
             // Verify state DB has all entries
-            const dbPath = path.join(dataPath, "rpc-state.db");
+            const dbPath = path.join(dataPath, "rpc-server", "rpc-state.db");
             const db = new Database(dbPath);
             const rows = db.prepare("SELECT * FROM subplebbit_states WHERE wasStarted = 1").all() as { address: string }[];
             expect(rows.length).to.equal(subCount);
