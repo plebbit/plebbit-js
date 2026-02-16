@@ -1,5 +1,14 @@
 # 5chan Anti-Spam Challenge Matrix (Proposed)
 
+## Quick Reference
+
+| User | Excluded? | Captcha? | Pending? |
+|---|---|---|---|
+| Mods | Yes (role match) | No | No |
+| Trusted, under rate limit | Yes (activity+age+rate match) | No | No |
+| Trusted, over rate limit | No (rate limit breaks the match) | Yes | Yes |
+| New user | No (no exclude matches) | Yes | Yes |
+
 This document proposes a `settings.challenges` profile for 5chan-style boards:
 
 - Split `post` and `reply` challenge behavior.
@@ -31,7 +40,7 @@ This document proposes a `settings.challenges` profile for 5chan-style boards:
           // Only for posts.
           { "publicationType": { "reply": true } },
 
-          // Staff bypass (no rate limit).
+          // Mod bypass (no rate limit).
           { "role": ["moderator", "admin", "owner"] },
 
           // Trusted bypass requires sustained activity + account age + under rate limit.
@@ -57,7 +66,7 @@ This document proposes a `settings.challenges` profile for 5chan-style boards:
           // Only for replies.
           { "publicationType": { "post": true } },
 
-          // Staff bypass (no rate limit).
+          // Mod bypass (no rate limit).
           { "role": ["moderator", "admin", "owner"] },
 
           // Trusted bypass requires activity + account age + under rate limit.
@@ -106,7 +115,7 @@ It uses different controls for each path so moderation load stays bounded while 
 
 ### Why these trust rules
 
-- `role` bypass: staff should never be blocked by anti-spam controls.
+- `role` bypass: mods should never be blocked by anti-spam controls.
 - Post captcha bypass (stricter — thread slots are scarce):
   - `postCount >= 10` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 3/hr`
   - `replyCount >= 20` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 3/hr`
@@ -166,8 +175,8 @@ It uses different controls for each path so moderation load stays bounded while 
 
 | User Type | Publication Type | Challenge Prompt? | Pending Approval? | Why |
 |---|---|---:|---:|---|
-| Staff (`moderator/admin/owner`) | Post | No | No | Role excludes both challenge gates. |
-| Staff (`moderator/admin/owner`) | Reply | No | No | Role excludes both challenge gates. |
+| Mods (`moderator/admin/owner`) | Post | No | No | Role excludes both challenge gates. |
+| Mods (`moderator/admin/owner`) | Reply | No | No | Role excludes both challenge gates. |
 | Trusted (`postCount >= 10` + `age >= 7 days`), under 3 posts/hr | Post | No | No | Captcha bypassed by activity+age+rate limit. |
 | Trusted (`postCount >= 10` + `age >= 7 days`), over 3 posts/hr | Post | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; trust bypass stops matching, falls back to captcha+pending. |
 | Trusted (`postCount >= 5` + `age >= 7 days`), under 12 replies/hr | Reply | No | No | Captcha bypassed by activity+age+rate limit (lower thresholds for replies). |
