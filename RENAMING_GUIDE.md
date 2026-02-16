@@ -1046,6 +1046,10 @@ import { ChallengeFile, ChallengeFileFactory, Challenge, ChallengeResult } from 
 - [ ] Update plebbit-cli to install and register name resolvers
 - [ ] Update desktop apps to install and register name resolvers
 
+**Release & Distribution:**
+- [ ] After rebrand, start publishing `@pkc/pkc-js` to the npm registry
+- [ ] Add GitHub CI job(s) to automate npm publishing for `@pkc/pkc-js`
+
 ### 17.4 External Repos to Create
 
 | Repository | Purpose | Dependencies |
