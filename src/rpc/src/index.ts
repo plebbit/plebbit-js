@@ -235,8 +235,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const dataPath = this.plebbit.dataPath;
         if (!dataPath) return undefined;
 
-        mkdirSync(dataPath, { recursive: true });
-        const dbPath = path.join(dataPath, "rpc-state.db");
+        const rpcServerDir = path.join(dataPath, "rpc-server");
+        mkdirSync(rpcServerDir, { recursive: true });
+        const dbPath = path.join(rpcServerDir, "rpc-state.db");
         this._rpcStateDb = new Database(dbPath);
         this._rpcStateDb.pragma("journal_mode = WAL");
         this._rpcStateDb.exec(`
