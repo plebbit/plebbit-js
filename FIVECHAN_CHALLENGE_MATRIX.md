@@ -7,6 +7,7 @@
 | Mods | Yes (role match) | No | No |
 | Trusted, under rate limit | Yes (activity+age+rate match) | No | No |
 | Trusted, over rate limit | No (rate limit breaks the match) | Yes | Yes |
+| Non-mod author, CommentEdit publication | No (CommentEdit block applies) | Hard reject | N/A |
 | Any author, under 5 failures/hr | Yes (failure rate under limit) | Depends on trust | Depends on trust |
 | Any author, 5+ failures/hr | No (failure rate exceeded) | Hard reject | N/A |
 
@@ -16,6 +17,7 @@ This document proposes a `settings.challenges` profile for 5chan-style boards:
 - Require captcha + pending approval for untrusted users on both posts and replies.
 - Trusted users bypass captcha only when under the rate limit AND meeting activity + age thresholds.
 - When trusted users exceed the rate limit, they fall back to captcha + pending approval instead of a hard reject.
+- Reject non-mod `CommentEdit` publications with a dedicated gate.
 - Block authors who fail captcha too many times (5+ failures/hr) with a hard reject and progressive cooldown.
 - Do not modify `_defaultSubplebbitChallenges`; apply this via `subplebbit.edit`.
 
@@ -43,6 +45,31 @@ This document proposes a `settings.challenges` profile for 5chan-style boards:
           // Once failures hit 5/hr, this exclude stops matching and the fail
           // challenge applies, hard-rejecting the author.
           { "rateLimit": 5, "rateLimitChallengeSuccess": false }
+        ]
+      },
+      {
+        // CommentEdit policy gate.
+        // Reject non-mod comment edits.
+        "name": "fail",
+        "description": "Disables CommentEdit publications on this board.",
+        "options": {
+          "error": "Comment edits are disabled on this board."
+        },
+        "exclude": [
+          // Mod bypass.
+          { "role": ["moderator", "admin", "owner"] },
+
+          // Exclude all non-commentEdit publication types.
+          // publicationType matching is OR, so this challenge applies only to commentEdit.
+          {
+            "publicationType": {
+              "post": true,
+              "reply": true,
+              "vote": true,
+              "commentModeration": true,
+              "subplebbitEdit": true
+            }
+          }
         ]
       },
       {
@@ -105,11 +132,12 @@ This document proposes a `settings.challenges` profile for 5chan-style boards:
 
 ## Why This Design
 
-The profile is designed around three abuse patterns on 5chan-style boards:
+The profile is designed around four abuse paths on 5chan-style boards:
 
 1. Captcha brute-forcing (automated solving).
 2. Thread creation spam.
 3. In-thread reply flood.
+4. Comment rewrites via `CommentEdit`.
 
 It uses different controls for each path so moderation load stays bounded while normal replying stays usable.
 
@@ -123,7 +151,17 @@ It uses different controls for each path so moderation load stays bounded while 
   - The hard reject itself counts as a failure (`addToRateLimiter` records `challengeSuccess: false`), so the author accumulates failures faster than tokens regenerate — a progressive cooldown.
   - Mods are always excluded via role bypass.
 
-### Challenge 1 (`captcha-canvas-v3`, post-only, `pendingApproval: true`) protects scarce thread slots
+### Challenge 1 (`fail`, commentEdit-only) blocks non-mod comment edits
+
+- Goal: allow moderator edits while preventing non-mod comment rewrites.
+- Mechanism:
+  - Uses `fail`, which always returns `success: false` when not excluded.
+  - Excludes `moderator`, `admin`, and `owner` roles.
+  - Excludes `post`, `reply`, `vote`, `commentModeration`, and `subplebbitEdit` publication types.
+  - `publicationType` matching is OR, so non-commentEdit publications are skipped.
+  - Non-mod `commentEdit` matches none of those excludes, so it is hard-rejected.
+
+### Challenge 2 (`captcha-canvas-v3`, post-only, `pendingApproval: true`) protects scarce thread slots
 
 - Goal: new/untrusted users should not consume thread capacity cheaply. Trusted users who exceed the rate limit also get captcha + pending instead of a hard reject.
 - Why strict on posts:
@@ -135,7 +173,7 @@ It uses different controls for each path so moderation load stays bounded while 
   - If a trusted user exceeds the rate limit, the exclude rule stops matching and they must solve captcha + go to pending approval.
   - Untrusted users always must solve captcha and successful post is marked pending approval.
 
-### Challenge 2 (`captcha-canvas-v3`, reply-only, `pendingApproval: true`) also gates untrusted replies
+### Challenge 3 (`captcha-canvas-v3`, reply-only, `pendingApproval: true`) also gates untrusted replies
 
 - Goal: require friction for untrusted repliers and route their replies through moderator review. Same rate-limit fallback as posts.
 - Why pending on replies:
@@ -149,7 +187,7 @@ It uses different controls for each path so moderation load stays bounded while 
 
 ### Why these trust rules
 
-- `role` bypass: mods should never be blocked by anti-spam controls.
+- `role` bypass: mods should never be blocked by anti-spam controls, including the comment-edit policy gate.
 - Post captcha bypass (stricter — thread slots are scarce):
   - `postCount >= 10` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 3/hr`
   - `replyCount >= 20` **plus** `firstCommentTimestamp >= 7 days` **plus** `rateLimit <= 3/hr`
@@ -170,6 +208,7 @@ It uses different controls for each path so moderation load stays bounded while 
 - `exclude` semantics:
   - One exclude object is AND logic.
   - Exclude array is OR logic.
+  - `publicationType` fields inside one exclude object are OR logic.
 - `pendingApproval` only applies to comment publications and only when challenge verification succeeds with at least one non-excluded pending challenge.
 - `postCount/replyCount` trust checks count only non-pending comments.
 - Rate limiter state is memory-resident (process restart resets buckets).
@@ -183,6 +222,9 @@ It uses different controls for each path so moderation load stays bounded while 
   - `src/runtime/node/subplebbit/challenges/exclude/exclude.ts:40`
   - `src/runtime/node/subplebbit/challenges/exclude/exclude.ts:57`
   - `src/runtime/node/subplebbit/challenges/exclude/exclude.ts:95`
+- `publicationType` matching logic:
+  - `src/runtime/node/subplebbit/challenges/exclude/utils.ts:37`
+  - `src/runtime/node/subplebbit/challenges/exclude/utils.ts:53`
 - `postCount/replyCount` pulls from DB counts:
   - `src/runtime/node/subplebbit/challenges/exclude/exclude.ts:81`
   - `src/runtime/node/subplebbit/challenges/exclude/exclude.ts:84`
@@ -213,9 +255,11 @@ It uses different controls for each path so moderation load stays bounded while 
 
 | User Type | Publication Type | Challenge Prompt? | Pending Approval? | Why |
 |---|---|---:|---:|---|
-| Mods (`moderator/admin/owner`) | Post | No | No | Role excludes all challenge gates. |
-| Mods (`moderator/admin/owner`) | Reply | No | No | Role excludes all challenge gates. |
+| Mods (`moderator/admin/owner`) | Post | No | No | Role excludes brute-force + captcha gates for comments. |
+| Mods (`moderator/admin/owner`) | Reply | No | No | Role excludes brute-force + captcha gates for comments. |
+| Mods (`moderator/admin/owner`) | CommentEdit | No | No | Role excludes the dedicated comment-edit fail gate. |
 | Any author, 5+ captcha failures/hr | Any | Hard reject (no captcha) | N/A | Brute-force gate (Challenge 0) blocks after 5 failures/hr with progressive cooldown. |
+| Non-mod author | CommentEdit | Hard reject (no captcha) | N/A | Dedicated comment-edit fail gate (Challenge 1) always fails for non-mod commentEdit. |
 | Trusted (`postCount >= 10` + `age >= 7 days`), under 3 posts/hr | Post | No | No | Captcha bypassed by activity+age+rate limit. |
 | Trusted (`postCount >= 10` + `age >= 7 days`), over 3 posts/hr | Post | Yes (`captcha-canvas-v3`) | Yes | Rate limit exceeded; trust bypass stops matching, falls back to captcha+pending. |
 | Trusted (`postCount >= 10` + `age >= 7 days`), under 6 replies/hr | Reply | No | No | Captcha bypassed by activity+age+rate limit. |
@@ -232,6 +276,7 @@ It uses different controls for each path so moderation load stays bounded while 
 - This complements, not replaces, board lifecycle controls (thread capacity `150` and bump limit `300`) from your archiver flow.
 - `postCount`/`replyCount` trust checks use approved comments only (pending comments are excluded from those counts).
 - Trust decays naturally: archived posts are purged from the database, reducing `postCount`/`replyCount` over time.
+- Non-mod `CommentEdit` publications are hard-rejected by design in this profile.
 - Votes are not accepted on 5chan boards, so no vote-specific challenge rules are needed.
 - Tune `rateLimit` and trust thresholds by board type:
   - Fast boards: lower reply rate limit, higher trust thresholds.
