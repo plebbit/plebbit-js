@@ -21,13 +21,13 @@ import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publicatio
 describe.concurrent(`subplebbit.settings.challenges`, async () => {
     let plebbit: PlebbitType;
     let remotePlebbit: PlebbitType;
-    const defaultMatches = JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth)$" }]);
+    const defaultMatches = JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth|bso)$" }]);
     const defaultSettingsChallenges: SubplebbitChallengeSetting[] = [
         {
             name: "publication-match",
             options: {
                 matches: defaultMatches,
-                error: "Posting in this community requires a username (author address) that ends with .eth or .sol. Go to the settings to set your username."
+                error: "Posting in this community requires a username (author address) that ends with .bso, .sol, or .eth. Go to the settings to set your username."
             },
             exclude: [
                 { role: ["moderator", "admin", "owner"] },
