@@ -73,6 +73,8 @@ export const SubplebbitFeaturesSchema = z.looseObject({
     noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
     requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
     requirePostLinkIsMedia: z.boolean().optional(), // post.link must be of media (audio, video, image)
+    requireReplyLink: z.boolean().optional(), // reply.link must be defined and a valid https url
+    requireReplyLinkIsMedia: z.boolean().optional(), // reply.link must be of media (audio, video, image)
     pseudonymityMode: z.enum(["per-post", "per-reply", "per-author"]).optional() // Controls author address anonymization: per-post (new address each post), per-reply (new address each reply), per-author (consistent address)
 });
 
