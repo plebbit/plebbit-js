@@ -17,7 +17,7 @@ import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-lo
 import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
 
-describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia`, async () => {
+describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia (with requireReplyLink=true)`, async () => {
     let plebbit: Plebbit;
     let remotePlebbit: Plebbit;
     let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
@@ -83,5 +83,60 @@ describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia`, async () => {
     it(`Can still publish a post without a link`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
         await publishWithExpectedResult(post, true);
+    });
+});
+
+describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia (without requireReplyLink)`, async () => {
+    let plebbit: Plebbit;
+    let remotePlebbit: Plebbit;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let publishedPost: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+
+        // Publish a post first (before enabling the feature)
+        publishedPost = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    afterAll(async () => {
+        await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it.sequential(`Feature is updated correctly in props`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        await subplebbit.edit({ features: { ...subplebbit.features, requireReplyLinkIsMedia: true } });
+
+        expect(subplebbit.features?.requireReplyLinkIsMedia).to.be.true;
+        expect(subplebbit.features?.requireReplyLink).to.be.undefined;
+    });
+
+    it(`Can publish a reply without a link`, async () => {
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            content: "Just text reply"
+        });
+        await publishWithExpectedResult(reply, true);
+    });
+
+    it(`Can't publish a reply with non-media link`, async () => {
+        const urlOfNotMedia = "https://google.com";
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: urlOfNotMedia
+        });
+        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA);
+    });
+
+    it(`Can publish a reply with valid media link`, async () => {
+        const validUrl = "https://img1.wsimg.com/isteam/ip/eb02f20b-e787-4a02-b188-d0fcbc250ba1/blob-6af1ead.png";
+        const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
+            link: validUrl
+        });
+        await publishWithExpectedResult(reply, true);
     });
 });
