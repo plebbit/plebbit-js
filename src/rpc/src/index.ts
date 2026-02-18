@@ -724,7 +724,11 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
     private _serializeSettingsFromPlebbit(plebbit: Plebbit): PlebbitWsServerSettingsSerialized {
         const plebbitOptions = plebbit.parsedPlebbitOptions;
-        const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
+        const allChallengeFactories = {
+            ...PlebbitJs.Plebbit.challenges, // built-ins first
+            ...(plebbit.settings?.challenges || {}) // user-defined override
+        };
+        const challenges = remeda.mapValues(allChallengeFactories, (challengeFactory) =>
             remeda.omit(challengeFactory({ challengeSettings: {} }), ["getChallenge"])
         );
 

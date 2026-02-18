@@ -540,7 +540,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this.settings = { ...this.settings, purgeDisapprovedCommentsOlderThan: 1.21e6 }; // two weeks
         }
 
-        this.challenges = await Promise.all(this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings));
+        this.challenges = await Promise.all(this.settings.challenges!.map((cs) => getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._plebbit)));
 
         if (this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) throw Error("Internal state exists already");
 
@@ -2937,7 +2937,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         newChallengeSettings: NonNullable<NonNullable<SubplebbitEditOptions["settings"]>["challenges"]>
     ): Promise<NonNullable<Pick<InternalSubplebbitRecordAfterFirstUpdateType, "challenges" | "_usingDefaultChallenge">>> {
         return {
-            challenges: await Promise.all(newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)),
+            challenges: await Promise.all(newChallengeSettings.map((cs) => getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._plebbit))),
             _usingDefaultChallenge: remeda.isDeepEqual(newChallengeSettings, this._defaultSubplebbitChallenges)
         };
     }
@@ -3118,7 +3118,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
             await this._listenToIncomingRequests();
-            this.challenges = await Promise.all(this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)); // make sure subplebbit.challenges is using latest props from settings.challenges
+            this.challenges = await Promise.all(this.settings.challenges!.map((cs) => getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._plebbit))); // make sure subplebbit.challenges is using latest props from settings.challenges
         } catch (e) {
             await this.stop(); // Make sure to reset the sub state
             //@ts-expect-error

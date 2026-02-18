@@ -31,6 +31,7 @@ interface MockSubplebbit {
 interface MockPlebbit {
     getComment: (cid: string | { cid: string }) => Comment;
     createComment: (cid: string | { cid: string }) => Comment;
+    settings?: { challenges?: Record<string, any> };
 }
 
 interface MockChallengeResult {
@@ -111,7 +112,8 @@ const createPlebbit = (): MockPlebbit => {
     const getCidFromArg = (arg: string | { cid: string }): string => (typeof arg === "string" ? arg : arg?.cid);
     return {
         getComment: (cid) => new Comment(getCidFromArg(cid)),
-        createComment: (cid) => new Comment(getCidFromArg(cid))
+        createComment: (cid) => new Comment(getCidFromArg(cid)),
+        settings: {}
     };
 };
 

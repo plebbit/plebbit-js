@@ -47,6 +47,19 @@ type ChallengeVerificationFailure = {
     challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]>;
 };
 
+// Use structural typing for the plebbit param to avoid circular import issues
+type PlebbitWithSettingsChallenges = {
+    settings?: { challenges?: Record<string, ChallengeFileFactoryInput> };
+};
+
+const resolveChallengeFactoryByName = (
+    name: string,
+    plebbit?: PlebbitWithSettingsChallenges
+): ChallengeFileFactoryInput | undefined => {
+    // User-defined shadows built-ins
+    return plebbit?.settings?.challenges?.[name] ?? plebbitJsChallenges[name];
+};
+
 const plebbitJsChallenges: Record<string, ChallengeFileFactoryInput> = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
@@ -117,7 +130,7 @@ const getPendingChallengesOrChallengeVerification = async (
         const challengeIndex = Number(i);
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
 
-        if (!subplebbitChallengeSettings.path && !plebbitJsChallenges[subplebbitChallengeSettings.name!])
+        if (!subplebbitChallengeSettings.path && !resolveChallengeFactoryByName(subplebbitChallengeSettings.name!, subplebbit._plebbit))
             throw Error("You have to provide either path or a stored plebbit-js challenge");
         // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
         let ChallengeFileFactory: ChallengeFileFactory;
@@ -126,7 +139,7 @@ const getPendingChallengesOrChallengeVerification = async (
             ChallengeFileFactory = ChallengeFileFactorySchema.parse(
                 subplebbitChallengeSettings.path
                     ? (await import(pathToFileURL(subplebbitChallengeSettings.path).href)).default
-                    : plebbitJsChallenges[subplebbitChallengeSettings.name!]
+                    : resolveChallengeFactoryByName(subplebbitChallengeSettings.name!, subplebbit._plebbit)
             );
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
         } catch (e) {
@@ -173,7 +186,7 @@ const getPendingChallengesOrChallengeVerification = async (
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
 
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings, subplebbit._plebbit);
 
         // exclude author from challenge based on the subplebbit minimum karma settings
         if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage, subplebbit)) {
@@ -353,7 +366,8 @@ const getChallengeVerification = async (
 
 // get the data to be published publicly to subplebbit.challenges
 const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSetting
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
+    plebbit?: PlebbitWithSettingsChallenges
 ): Promise<SubplebbitChallenge> => {
     subplebbitChallengeSettings = SubplebbitChallengeSettingSchema.parse(subplebbitChallengeSettings);
 
@@ -376,9 +390,9 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (
             throw e;
         }
     }
-    // else, the challenge is included with plebbit-js
+    // else, the challenge is included with plebbit-js or user-defined
     else if (subplebbitChallengeSettings.name) {
-        const ChallengeFileFactory = ChallengeFileFactorySchema.parse(plebbitJsChallenges[subplebbitChallengeSettings.name]);
+        const ChallengeFileFactory = ChallengeFileFactorySchema.parse(resolveChallengeFactoryByName(subplebbitChallengeSettings.name, plebbit));
         challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory({ challengeSettings: subplebbitChallengeSettings }));
     }
     if (!challengeFile) throw Error("Failed to load challenge file");

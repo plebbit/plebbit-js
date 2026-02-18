@@ -44,8 +44,9 @@ export class PlebbitWithRpcClient extends Plebbit {
         }
         // TODO merge different plebbitRpcClient.subplebbits
 
-        // TODO should set up plebbit.settings
-        // TODO should set up settingschange
+        this._plebbitRpcClient.on("settingschange", (newSettings) => {
+            this.emit("settingschange", newSettings.plebbitOptions);
+        });
     }
 
     override async fetchCid(cid: CidRpcParam) {

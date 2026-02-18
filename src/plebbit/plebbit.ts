@@ -53,6 +53,7 @@ import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { InflightFetchManager } from "../util/inflight-fetch-manager.js";
 import type {
+    ChallengeFileFactoryInput,
     CreateInstanceOfLocalOrRemoteSubplebbitOptions,
     CreateNewLocalSubplebbitParsedOptions,
     CreateRemoteSubplebbitOptions,
@@ -167,6 +168,10 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     };
     subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
 
+    settings: {
+        challenges?: Record<string, ChallengeFileFactoryInput>;
+    };
+
     // private props
 
     _plebbitRpcClient?: PlebbitRpcClient; // default rpc client for now. For now we will default to clients.plebbitRpcClients[0]
@@ -240,6 +245,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         this.validatePages = this.parsedPlebbitOptions.validatePages;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
         this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
+        this.settings = {
+            challenges: this.parsedPlebbitOptions.challenges
+        };
         this._domainResolver = new DomainResolver(this);
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;

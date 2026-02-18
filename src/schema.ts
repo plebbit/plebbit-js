@@ -5,6 +5,7 @@ import version from "./version.js";
 import type { libp2pDefaults } from "helia";
 import { createHelia } from "helia";
 import type { KuboRpcClientCreateOption } from "./util.js";
+import type { ChallengeFileFactoryInput } from "./subplebbit/types.js";
 
 // This file will have misc schemas, as well as Plebbit class schema
 
@@ -86,7 +87,8 @@ export const PlebbitUserOptionBaseSchema = z.object({
     // Options for tests only. Should not be used in production
     publishInterval: z.number().positive(), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
     updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
-    noData: z.boolean() // if true, dataPath is ignored, all database and cache data is saved in memory
+    noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
+    challenges: z.record(z.string(), z.custom<ChallengeFileFactoryInput>()).optional() // instance-level challenge registry, shadows built-in challenges by name
 });
 
 const defaultPubsubKuboRpcClientsOptions = [
