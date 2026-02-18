@@ -214,6 +214,124 @@ describe(`Vote with authors as domains`, async () => {
     });
 });
 
+describeSkipIfRpc(`BSO domain resolution`, async () => {
+    it(`.bso subplebbit-address resolves correctly (substitutes to .eth for ENS query)`, async () => {
+        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
+        const plebbit = await mockPlebbitV2({
+            plebbitOptions: { chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } },
+            remotePlebbit: true,
+            mockResolve: false
+        });
+
+        const expectedIpns = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
+
+        mockViemClient({
+            plebbit,
+            chainTicker: "eth",
+            url: testEthRpc,
+            mockedViem: {
+                getEnsText: ({ name, key }: { name: string; key: string }) => {
+                    // The resolver should receive .eth, not .bso
+                    expect(name).to.equal("plebbit.eth");
+                    expect(key).to.equal("subplebbit-address");
+                    return expectedIpns;
+                }
+            }
+        });
+
+        const resolved = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.bso");
+        expect(resolved).to.equal(expectedIpns);
+        await plebbit.destroy();
+    });
+
+    it(`.bso plebbit-author-address resolves correctly`, async () => {
+        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
+        const plebbit = await mockPlebbitV2({
+            plebbitOptions: { chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } },
+            remotePlebbit: true,
+            mockResolve: false
+        });
+
+        const expectedAuthorAddress = "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
+
+        mockViemClient({
+            plebbit,
+            chainTicker: "eth",
+            url: testEthRpc,
+            mockedViem: {
+                getEnsText: ({ name, key }: { name: string; key: string }) => {
+                    expect(name).to.equal("testauthor.eth");
+                    expect(key).to.equal("plebbit-author-address");
+                    return expectedAuthorAddress;
+                }
+            }
+        });
+
+        const resolved = await plebbit.resolveAuthorAddress({ address: "testauthor.bso" });
+        expect(resolved).to.equal(expectedAuthorAddress);
+        await plebbit.destroy();
+    });
+
+    it(`Cache key uses original .bso address (independent from .eth cache)`, async () => {
+        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
+        const plebbit = await mockPlebbitV2({
+            plebbitOptions: { chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } },
+            remotePlebbit: true,
+            stubStorage: false,
+            mockResolve: false
+        });
+
+        const bsoIpns = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
+        const ethIpns = "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
+
+        // Cache .bso and .eth with different values
+        await mockCacheOfTextRecord({ plebbit, domain: "plebbit.bso", textRecord: "subplebbit-address", value: bsoIpns });
+        await mockCacheOfTextRecord({ plebbit, domain: "plebbit.eth", textRecord: "subplebbit-address", value: ethIpns });
+
+        // Resolving .bso should return .bso's cached value, not .eth's
+        const resolvedBso = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.bso");
+        expect(resolvedBso).to.equal(bsoIpns);
+
+        const resolvedEth = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.eth");
+        expect(resolvedEth).to.equal(ethIpns);
+
+        await plebbit.destroy();
+    });
+});
+
+describe("Comments with Authors as .bso domains", async () => {
+    let plebbit: Plebbit;
+    beforeAll(async () => {
+        plebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true });
+    });
+
+    afterAll(async () => {
+        await plebbit.destroy();
+    });
+
+    it(`Sub accepts posts with author.address as .bso domain that resolves to comment signer`, async () => {
+        // Mock the cache so plebbit.bso resolves to signers[6] address (same as plebbit.eth mock)
+        await mockCacheOfTextRecord({
+            plebbit,
+            domain: "plebbit.bso",
+            textRecord: "plebbit-author-address",
+            value: signers[6].address
+        });
+
+        const mockPost = await plebbit.createComment({
+            author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.bso" },
+            signer: signers[6],
+            content: `Mock post - ${Date.now()}`,
+            title: "Mock post title .bso",
+            subplebbitAddress: signers[0].address
+        });
+
+        expect(mockPost.author.address).to.equal("plebbit.bso");
+        await publishWithExpectedResult(mockPost, true);
+        expect(mockPost.author.address).to.equal("plebbit.bso");
+    });
+});
+
 // This code won't run in rpc clients
 describeSkipIfRpc(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {

@@ -671,19 +671,21 @@ export class BaseClientsManager {
         txtRecord: "subplebbit-address" | "plebbit-author-address"
     ): Promise<string | null> {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const chain: ChainTicker | undefined = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
+        const chain: ChainTicker | undefined =
+            address.endsWith(".eth") || address.endsWith(".bso") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address (${address}). Are you sure plebbit-js support this chain?`);
         const chainId = this._plebbit.chainProviders[chain]?.chainId;
+        const ensAddress = address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {
             if (cachedTextRecord.stale)
-                this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId)
+                this._resolveTextRecordConcurrently({ address, ensAddress, txtRecordName: txtRecord, chain, chainId })
                     .then((newTextRecordValue) =>
                         log.trace(`Updated the stale text-record (${txtRecord}) value of address (${address}) to ${newTextRecordValue}`)
                     )
                     .catch((err) => log.error(`Failed to update the stale text record (${txtRecord}) of address (${address})`, err));
             return cachedTextRecord.valueOfTextRecord;
-        } else return this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId);
+        } else return this._resolveTextRecordConcurrently({ address, ensAddress, txtRecordName: txtRecord, chain, chainId });
     }
 
     preResolveTextRecord(
@@ -712,19 +714,29 @@ export class BaseClientsManager {
         staleCache?: CachedTextRecordResolve
     ) {}
 
-    private async _resolveTextRecordSingleChainProvider(
-        address: string,
-        txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: ChainTicker,
-        chainproviderUrl: string,
-        chainId: number | undefined,
-        staleCache?: CachedTextRecordResolve,
-        signal?: AbortSignal
-    ): Promise<string | null | { error: PlebbitError | Error }> {
+    private async _resolveTextRecordSingleChainProvider({
+        address,
+        ensAddress,
+        txtRecordName,
+        chain,
+        chainproviderUrl,
+        chainId,
+        staleCache,
+        signal
+    }: {
+        address: string;
+        ensAddress: string;
+        txtRecordName: "subplebbit-address" | "plebbit-author-address";
+        chain: ChainTicker;
+        chainproviderUrl: string;
+        chainId: number | undefined;
+        staleCache?: CachedTextRecordResolve;
+        signal?: AbortSignal;
+    }): Promise<string | null | { error: PlebbitError | Error }> {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
         try {
-            const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl, chainId);
+            const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(ensAddress, txtRecordName, chain, chainproviderUrl, chainId);
 
             const abortPromise = new Promise<never>((_, reject) => {
                 if (signal!.aborted) {
@@ -761,12 +773,19 @@ export class BaseClientsManager {
         }
     }
 
-    private async _resolveTextRecordConcurrently(
-        address: string,
-        txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: ChainTicker,
-        chainId?: number
-    ): Promise<string | null> {
+    private async _resolveTextRecordConcurrently({
+        address,
+        ensAddress,
+        txtRecordName,
+        chain,
+        chainId
+    }: {
+        address: string;
+        ensAddress: string;
+        txtRecordName: "subplebbit-address" | "plebbit-author-address";
+        chain: ChainTicker;
+        chainId?: number;
+    }): Promise<string | null> {
         const log = Logger("plebbit-js:plebbit:client-manager:_resolveTextRecordConcurrently");
         const timeouts = [0, 0, 100, 1000];
 
@@ -802,15 +821,16 @@ export class BaseClientsManager {
             try {
                 const providerPromises = providersSorted.map((providerUrl) =>
                     queueLimit(() =>
-                        this._resolveTextRecordSingleChainProvider(
+                        this._resolveTextRecordSingleChainProvider({
                             address,
+                            ensAddress,
                             txtRecordName,
                             chain,
-                            providerUrl,
+                            chainproviderUrl: providerUrl,
                             chainId,
-                            cachedTextRecord,
-                            abortController.signal
-                        )
+                            staleCache: cachedTextRecord,
+                            signal: abortController.signal
+                        })
                     )
                 );
 

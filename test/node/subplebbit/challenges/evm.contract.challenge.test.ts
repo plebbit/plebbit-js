@@ -425,4 +425,16 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
 
         await publishWithExpectedResult(post, true);
     });
+
+    it(`if user have pleb in their author.address .bso ENS wallet challenge should pass`, async () => {
+        const post = await generateMockPost(sub.address, plebbit, false, {
+            signer: signers[6],
+            author: { address: "plebbit.bso" }
+        });
+
+        viemEthFake["getEnsAddress"] = () => viemAccount.address;
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have more than 100 pleb
+
+        await publishWithExpectedResult(post, true);
+    });
 });

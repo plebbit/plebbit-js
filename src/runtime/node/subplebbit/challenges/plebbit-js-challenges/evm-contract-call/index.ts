@@ -151,14 +151,16 @@ const verifyAuthorWalletAddress = async (props: {
 };
 
 const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
-    if (!props.publication.author.address.endsWith(".eth")) return "Author address is not an ENS domain";
+    const authorAddress = props.publication.author.address;
+    if (!authorAddress.endsWith(".eth") && !authorAddress.endsWith(".bso")) return "Author address is not an ENS domain";
+    const ensAddress = authorAddress.endsWith(".bso") ? authorAddress.slice(0, -4) + ".eth" : authorAddress;
     const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
         "eth",
         _getChainProviderWithSafety(props.plebbit, "eth").urls[0]
     );
 
     const ownerOfAddress = await viemClient.getEnsAddress({
-        name: normalize(props.publication.author.address)
+        name: normalize(ensAddress)
     });
 
     if (!ownerOfAddress) throw Error("Failed to get owner of ENS address of author.address");
