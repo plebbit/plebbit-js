@@ -23,6 +23,10 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     const TWO_HOURS_LATE_GATEWAY_PORT = 25007;
     const CONDITIONAL_304_GATEWAY_PORT = 25008;
     const NOT_FOUND_GATEWAY_PORT = 25009;
+    const NEWER_GATEWAY_PORT = 25010;
+    const SAME_CID_GATEWAY_PORT = 25011;
+    const INVALID_JSON_GATEWAY_PORT = 25012;
+    const DELAYED_NEWER_GATEWAY_PORT = 25013;
 
     // Gateway URLs
     const stallingGateway = `http://localhost:${STALLING_GATEWAY_PORT}`;
@@ -35,6 +39,10 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     const twoHoursLateGateway = `http://localhost:${TWO_HOURS_LATE_GATEWAY_PORT}`;
     const conditional304Gateway = `http://localhost:${CONDITIONAL_304_GATEWAY_PORT}`;
     const notFoundGateway = `http://localhost:${NOT_FOUND_GATEWAY_PORT}`;
+    const newerGateway = `http://localhost:${NEWER_GATEWAY_PORT}`;
+    const sameCidGateway = `http://localhost:${SAME_CID_GATEWAY_PORT}`;
+    const invalidJsonGateway = `http://localhost:${INVALID_JSON_GATEWAY_PORT}`;
+    const delayedNewerGateway = `http://localhost:${DELAYED_NEWER_GATEWAY_PORT}`;
 
     let servers: Server[] = [];
     let testSigner: SignerWithPublicKeyAddress;
@@ -42,6 +50,8 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     let expectedBase36: string;
     let conditional304RecordJson: string;
     let conditional304RecordCid: string;
+    let newerRecordJson: string;
+    let newerRecordCid: string;
 
     // Create an HTTP server helper
     const createServer = (port: number, handler: (req: IncomingMessage, res: ServerResponse) => void): Promise<Server> => {
@@ -100,8 +110,13 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
         testSigner = await plebbit.createSigner();
         subAddress = testSigner.address;
         expectedBase36 = convertBase58IpnsNameToBase36Cid(subAddress);
-        conditional304RecordJson = JSON.stringify(await signRecord(generateFreshRecord()));
+        const baseRecord = generateFreshRecord();
+        baseRecord.updatedAt = Math.round(Date.now() / 1000) - 120;
+        conditional304RecordJson = JSON.stringify(await signRecord(baseRecord));
         conditional304RecordCid = await calculateIpfsHash(conditional304RecordJson);
+        const newerRecord = { ...baseRecord, updatedAt: baseRecord.updatedAt + 60 };
+        newerRecordJson = JSON.stringify(await signRecord(newerRecord));
+        newerRecordCid = await calculateIpfsHash(newerRecordJson);
         await plebbit.destroy();
 
         // Stalling gateway - waits 11s before responding
@@ -247,6 +262,58 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
             res.statusCode = 404;
             res.end("Not found");
         });
+
+        // Newer gateway - always returns a newer valid record
+        await createServer(NEWER_GATEWAY_PORT, (req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            if (!isRequestForTestSub(req)) {
+                res.statusCode = 404;
+                res.end("Not found");
+                return;
+            }
+            res.setHeader("x-ipfs-roots", newerRecordCid);
+            res.setHeader("etag", `"${newerRecordCid}"`);
+            res.end(newerRecordJson);
+        });
+
+        // Same CID gateway - always returns the same record as conditional304 gateway
+        await createServer(SAME_CID_GATEWAY_PORT, (req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            if (!isRequestForTestSub(req)) {
+                res.statusCode = 404;
+                res.end("Not found");
+                return;
+            }
+            res.setHeader("x-ipfs-roots", conditional304RecordCid);
+            res.setHeader("etag", `"${conditional304RecordCid}"`);
+            res.end(conditional304RecordJson);
+        });
+
+        // Invalid JSON gateway - returns 200 with malformed JSON body
+        await createServer(INVALID_JSON_GATEWAY_PORT, (req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            if (!isRequestForTestSub(req)) {
+                res.statusCode = 404;
+                res.end("Not found");
+                return;
+            }
+            res.setHeader("etag", '"QmInvalidJsonEtag"');
+            res.end("{invalid-json");
+        });
+
+        // Delayed newer gateway - returns a newer record after a delay
+        await createServer(DELAYED_NEWER_GATEWAY_PORT, async (req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            if (!isRequestForTestSub(req)) {
+                res.statusCode = 404;
+                res.end("Not found");
+                return;
+            }
+            await new Promise<void>((resolve) => setTimeout(resolve, 700));
+            res.setHeader("x-ipfs-roots", newerRecordCid);
+            res.setHeader("etag", `"${newerRecordCid}"`);
+            res.end(newerRecordJson);
+        });
     });
 
     afterAll(async () => {
@@ -386,6 +453,74 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
 
             const updateRes = await sub._clientsManager.fetchNewUpdateForSubplebbit(subAddress);
             expect(updateRes).to.equal(undefined);
+        } finally {
+            await customPlebbit.destroy();
+        }
+    });
+
+    it(`updates when one gateway returns 304 and another returns 200 with newer record`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, newerGateway] } });
+        try {
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.updateCid).to.equal(conditional304RecordCid);
+
+            const updateRes = await sub._clientsManager.fetchNewUpdateForSubplebbit(subAddress);
+            expect(updateRes).to.not.equal(undefined);
+            expect(updateRes!.cid).to.equal(newerRecordCid);
+        } finally {
+            await customPlebbit.destroy();
+        }
+    });
+
+    it(`returns undefined when one gateway returns 304 and another returns same already-loaded cid as 200`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, sameCidGateway] } });
+        try {
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.updateCid).to.equal(conditional304RecordCid);
+
+            const updateRes = await sub._clientsManager.fetchNewUpdateForSubplebbit(subAddress);
+            expect(updateRes).to.equal(undefined);
+        } finally {
+            await customPlebbit.destroy();
+        }
+    });
+
+    it(`returns undefined when one gateway returns 304 and another times out`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, stallingGateway] } });
+        customPlebbit._timeouts["subplebbit-ipns"] = 400;
+        try {
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.updateCid).to.equal(conditional304RecordCid);
+
+            const updateRes = await sub._clientsManager.fetchNewUpdateForSubplebbit(subAddress);
+            expect(updateRes).to.equal(undefined);
+        } finally {
+            await customPlebbit.destroy();
+        }
+    });
+
+    it(`returns undefined when one gateway returns 304 and another returns invalid json`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, invalidJsonGateway] } });
+        try {
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.updateCid).to.equal(conditional304RecordCid);
+
+            const updateRes = await sub._clientsManager.fetchNewUpdateForSubplebbit(subAddress);
+            expect(updateRes).to.equal(undefined);
+        } finally {
+            await customPlebbit.destroy();
+        }
+    });
+
+    it(`updates when a fast 304 arrives before a delayed 200 newer record`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, delayedNewerGateway] } });
+        try {
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.updateCid).to.equal(conditional304RecordCid);
+
+            const updateRes = await sub._clientsManager.fetchNewUpdateForSubplebbit(subAddress);
+            expect(updateRes).to.not.equal(undefined);
+            expect(updateRes!.cid).to.equal(newerRecordCid);
         } finally {
             await customPlebbit.destroy();
         }
