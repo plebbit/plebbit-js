@@ -1,10 +1,11 @@
 import { beforeAll, afterAll, beforeEach, afterEach, it } from "vitest";
-import { describeSkipIfRpc, generateMockPost, mockPlebbit } from "../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, generateMockPost, mockPlebbit, publishWithExpectedResult } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 
 import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";
 import type { LocalSubplebbit } from "../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
+import type Publication from "../../../dist/node/publications/publication.js";
 import type { SignerWithPublicKeyAddress } from "../../../dist/node/signer/index.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../../dist/node/pubsub-messages/types.js";
 import type { CommentPubsubMessagePublication, CommentsTableRowInsert } from "../../../dist/node/publications/comment/types.js";
@@ -235,22 +236,6 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         s._challengeExchangesFromLocalPublishers = {};
     };
 
-    const checkPublicationValidity = async (
-        sub: LocalSubplebbit,
-        request: MockChallengeRequest,
-        publication: PublicationType
-    ): Promise<messages | undefined> => {
-        // Using Object to access private method
-        const s = sub as object as {
-            _checkPublicationValidity(
-                request: MockChallengeRequest,
-                publication: PublicationType,
-                subplebbitAuthor: undefined
-            ): Promise<messages | undefined>;
-        };
-        return s._checkPublicationValidity(request, publication, undefined);
-    };
-
     const publishChallengeVerification = async (
         sub: LocalSubplebbit,
         challengeResult: { challengeSuccess: boolean; challengeErrors: undefined },
@@ -266,6 +251,36 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
             ): Promise<void>;
         };
         return s._publishChallengeVerification(challengeResult, request, pendingApproval);
+    };
+
+    const publishViaMockedSubAndAssert = async ({
+        publication,
+        request,
+        expectedChallengeSuccess,
+        expectedReason
+    }: {
+        publication: Publication;
+        request: MockChallengeRequest;
+        expectedChallengeSuccess: boolean;
+        expectedReason?: string;
+    }) => {
+        const publicationMutable = publication as unknown as Publication & { publish: () => Promise<void> };
+        const originalPublish = publicationMutable.publish.bind(publicationMutable);
+
+        publicationMutable.publish = async () => {
+            const challengeVerificationPromise = new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+                subplebbit.once("challengeverification", resolve)
+            );
+            await publishChallengeVerification(subplebbit, { challengeSuccess: true, challengeErrors: undefined }, request, false);
+            const verification = await challengeVerificationPromise;
+            (publication as any).emit("challengeverification", verification);
+        };
+
+        try {
+            await publishWithExpectedResult(publication as any, expectedChallengeSuccess, expectedReason);
+        } finally {
+            publicationMutable.publish = originalPublish;
+        }
     };
 
     const expectNoDuplicateSignatures = (): void => {
@@ -364,14 +379,15 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
     };
 
     it("rejects duplicate comment publications", async () => {
-        const { publication: commentPub } = await createCommentPublication();
+        const { publication: commentPub, instance: commentInstance } = await createCommentPublication();
         const { challengeVerifications, dispose } = captureChallengeVerifications();
 
         const request = makeCommentRequest(commentPub, 1);
-        const validity = await checkPublicationValidity(subplebbit, request, request.comment!);
-        expect(validity).to.be.undefined;
-
-        await publishChallengeVerification(subplebbit, { challengeSuccess: true, challengeErrors: undefined }, request, false);
+        await publishViaMockedSubAndAssert({
+            publication: commentInstance,
+            request,
+            expectedChallengeSuccess: true
+        });
         expect(challengeVerifications.length).to.equal(1);
         expect(challengeVerifications[0].challengeSuccess).to.be.true;
         expect(dbMock.comments.length).to.equal(1, "Expected the successful publication to be stored in the comments table mock");
@@ -380,11 +396,14 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
             "Stored comment signature should match the publication signature"
         );
 
+        const duplicateCommentInstance = await plebbit.createComment(clone(commentPub));
         const duplicateRequest = makeCommentRequest(clone(commentPub), 2);
-        const duplicateReason = await checkPublicationValidity(subplebbit, duplicateRequest, duplicateRequest.comment!);
-        expect(duplicateReason).to.equal(messages.ERR_DUPLICATE_COMMENT);
-
-        await publishChallengeVerification(subplebbit, { challengeSuccess: true, challengeErrors: undefined }, duplicateRequest, false);
+        await publishViaMockedSubAndAssert({
+            publication: duplicateCommentInstance,
+            request: duplicateRequest,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_DUPLICATE_COMMENT
+        });
 
         expect(challengeVerifications.length).to.equal(2);
         const duplicateEvent = challengeVerifications[1];
@@ -414,22 +433,22 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         const { challengeVerifications, dispose } = captureChallengeVerifications();
 
         const editRequest = makeCommentEditRequest(editPublication, 11);
-        const validity = await checkPublicationValidity(subplebbit, editRequest, editRequest.commentEdit!);
-        expect(validity).to.be.undefined;
-        await publishChallengeVerification(subplebbit, { challengeSuccess: true, challengeErrors: undefined }, editRequest, false);
+        await publishViaMockedSubAndAssert({
+            publication: editInstance,
+            request: editRequest,
+            expectedChallengeSuccess: true
+        });
         expect(challengeVerifications.length).to.equal(1);
         expect(challengeVerifications[0].challengeSuccess).to.be.true;
 
+        const duplicateEditInstance = await plebbit.createCommentEdit(clone(editPublication));
         const duplicateEditRequest = makeCommentEditRequest(clone(editPublication), 12);
-        const duplicateReason = await checkPublicationValidity(subplebbit, duplicateEditRequest, duplicateEditRequest.commentEdit!);
-        expect(duplicateReason).to.equal(messages.ERR_DUPLICATE_COMMENT_EDIT);
-
-        await publishChallengeVerification(
-            subplebbit,
-            { challengeSuccess: true, challengeErrors: undefined },
-            duplicateEditRequest,
-            false
-        );
+        await publishViaMockedSubAndAssert({
+            publication: duplicateEditInstance,
+            request: duplicateEditRequest,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_DUPLICATE_COMMENT_EDIT
+        });
 
         expect(challengeVerifications.length).to.equal(2);
         const duplicateEvent = challengeVerifications[1];
@@ -458,23 +477,22 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         const { challengeVerifications, dispose } = captureChallengeVerifications();
 
         const modRequest = makeCommentModerationRequest(moderationPublication, 21);
-        const validity = await checkPublicationValidity(subplebbit, modRequest, modRequest.commentModeration!);
-        expect(validity).to.be.undefined;
-
-        await publishChallengeVerification(subplebbit, { challengeSuccess: true, challengeErrors: undefined }, modRequest, false);
+        await publishViaMockedSubAndAssert({
+            publication: moderationInstance,
+            request: modRequest,
+            expectedChallengeSuccess: true
+        });
         expect(challengeVerifications.length).to.equal(1);
         expect(challengeVerifications[0].challengeSuccess).to.be.true;
 
+        const duplicateModerationInstance = await plebbit.createCommentModeration(clone(moderationPublication));
         const duplicateModRequest = makeCommentModerationRequest(clone(moderationPublication), 22);
-        const duplicateReason = await checkPublicationValidity(subplebbit, duplicateModRequest, duplicateModRequest.commentModeration!);
-        expect(duplicateReason).to.equal(messages.ERR_DUPLICATE_COMMENT_MODERATION);
-
-        await publishChallengeVerification(
-            subplebbit,
-            { challengeSuccess: true, challengeErrors: undefined },
-            duplicateModRequest,
-            false
-        );
+        await publishViaMockedSubAndAssert({
+            publication: duplicateModerationInstance,
+            request: duplicateModRequest,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_DUPLICATE_COMMENT_MODERATION
+        });
 
         expect(challengeVerifications.length).to.equal(2);
         const duplicateEvent = challengeVerifications[1];
@@ -502,19 +520,21 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         const { challengeVerifications, dispose } = captureChallengeVerifications();
 
         const voteRequest = makeVoteRequest(votePublication, 31);
-        const validity = await checkPublicationValidity(subplebbit, voteRequest, voteRequest.vote!);
-        expect(validity).to.be.undefined;
-        await publishChallengeVerification(subplebbit, { challengeSuccess: true, challengeErrors: undefined }, voteRequest, false);
+        await publishViaMockedSubAndAssert({
+            publication: voteInstance,
+            request: voteRequest,
+            expectedChallengeSuccess: true
+        });
         expect(challengeVerifications.length).to.equal(1);
         expect(challengeVerifications[0].challengeSuccess).to.be.true;
 
+        const duplicateVoteInstance = await plebbit.createVote(clone(votePublication));
         const duplicateVoteRequest = makeVoteRequest(clone(votePublication), 32);
-        await publishChallengeVerification(
-            subplebbit,
-            { challengeSuccess: true, challengeErrors: undefined },
-            duplicateVoteRequest,
-            false
-        );
+        await publishViaMockedSubAndAssert({
+            publication: duplicateVoteInstance,
+            request: duplicateVoteRequest,
+            expectedChallengeSuccess: true
+        });
         expect(challengeVerifications.length).to.equal(2);
         const duplicateEvent = challengeVerifications[1];
         expect(duplicateEvent.challengeSuccess).to.be.true;
@@ -536,22 +556,21 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         const { challengeVerifications, dispose } = captureChallengeVerifications();
 
         const editRequest = makeSubplebbitEditRequest(editPublication, 41);
-        const validity = await checkPublicationValidity(subplebbit, editRequest, editRequest.subplebbitEdit!);
-        expect(validity).to.be.undefined;
-        await publishChallengeVerification(subplebbit, { challengeSuccess: true, challengeErrors: undefined }, editRequest, false);
+        await publishViaMockedSubAndAssert({
+            publication: editInstance,
+            request: editRequest,
+            expectedChallengeSuccess: true
+        });
         expect(challengeVerifications.length).to.equal(1);
         expect(challengeVerifications[0].challengeSuccess).to.be.true;
 
+        const duplicateSubplebbitEditInstance = await plebbit.createSubplebbitEdit(clone(editPublication));
         const duplicateEditRequest = makeSubplebbitEditRequest(clone(editPublication), 42);
-        const duplicateReason = await checkPublicationValidity(subplebbit, duplicateEditRequest, duplicateEditRequest.subplebbitEdit!);
-        expect(duplicateReason).to.be.undefined; // currently no duplicate guard for subplebbit edits
-
-        await publishChallengeVerification(
-            subplebbit,
-            { challengeSuccess: true, challengeErrors: undefined },
-            duplicateEditRequest,
-            false
-        );
+        await publishViaMockedSubAndAssert({
+            publication: duplicateSubplebbitEditInstance,
+            request: duplicateEditRequest,
+            expectedChallengeSuccess: true
+        });
         expect(challengeVerifications.length).to.equal(2);
         const duplicateEvent = challengeVerifications[1];
         expect(duplicateEvent.challengeSuccess).to.be.true;
@@ -561,10 +580,11 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
     async function createCommentPublication(): Promise<{
         signer: SignerWithPublicKeyAddress;
         publication: CommentPubsubMessagePublication;
+        instance: Publication;
     }> {
         const signer = await plebbit.createSigner();
         const commentInstance = await generateMockPost(subplebbit.address, plebbit, false, { signer });
         const publication = commentInstance.toJSONPubsubMessagePublication();
-        return { signer, publication };
+        return { signer, publication, instance: commentInstance as unknown as Publication };
     }
 });
