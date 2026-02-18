@@ -591,13 +591,13 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         } catch {
             cleanUp();
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
-            const allGatewaysAborted = Object.keys(gatewayFetches)
+            const hasGatewayConfirmingCurrentRecord = Object.keys(gatewayFetches)
                 .map((gatewayUrl) => gatewayFetches[gatewayUrl].error!)
-                .every(
+                .some(
                     (err) =>
                         err.details?.status === 304 || err.code === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD"
                 );
-            if (allGatewaysAborted) return undefined; // all gateways returned old update cids we already consumed
+            if (hasGatewayConfirmingCurrentRecord) return undefined; // any gateway confirmed we already have the latest consumed record
 
             const combinedError = new FailedToFetchSubplebbitFromGatewaysError({
                 ipnsName,

@@ -21,6 +21,8 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     const THIRTY_MIN_LATE_GATEWAY_PORT = 25005;
     const HOUR_LATE_GATEWAY_PORT = 25006;
     const TWO_HOURS_LATE_GATEWAY_PORT = 25007;
+    const CONDITIONAL_304_GATEWAY_PORT = 25008;
+    const NOT_FOUND_GATEWAY_PORT = 25009;
 
     // Gateway URLs
     const stallingGateway = `http://localhost:${STALLING_GATEWAY_PORT}`;
@@ -31,11 +33,15 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     const thirtyMinuteLateGateway = `http://localhost:${THIRTY_MIN_LATE_GATEWAY_PORT}`;
     const hourLateGateway = `http://localhost:${HOUR_LATE_GATEWAY_PORT}`;
     const twoHoursLateGateway = `http://localhost:${TWO_HOURS_LATE_GATEWAY_PORT}`;
+    const conditional304Gateway = `http://localhost:${CONDITIONAL_304_GATEWAY_PORT}`;
+    const notFoundGateway = `http://localhost:${NOT_FOUND_GATEWAY_PORT}`;
 
     let servers: Server[] = [];
     let testSigner: SignerWithPublicKeyAddress;
     let subAddress: string;
     let expectedBase36: string;
+    let conditional304RecordJson: string;
+    let conditional304RecordCid: string;
 
     // Create an HTTP server helper
     const createServer = (port: number, handler: (req: IncomingMessage, res: ServerResponse) => void): Promise<Server> => {
@@ -94,6 +100,8 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
         testSigner = await plebbit.createSigner();
         subAddress = testSigner.address;
         expectedBase36 = convertBase58IpnsNameToBase36Cid(subAddress);
+        conditional304RecordJson = JSON.stringify(await signRecord(generateFreshRecord()));
+        conditional304RecordCid = await calculateIpfsHash(conditional304RecordJson);
         await plebbit.destroy();
 
         // Stalling gateway - waits 11s before responding
@@ -208,6 +216,36 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
             res.setHeader("x-ipfs-roots", oldRecordCid);
             res.setHeader("etag", oldRecordCid);
             res.end(oldRecordJson);
+        });
+
+        // Conditional gateway - serves the same record, then returns 304 if If-None-Match includes that cid
+        await createServer(CONDITIONAL_304_GATEWAY_PORT, (req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            if (!isRequestForTestSub(req)) {
+                res.statusCode = 404;
+                res.end("Not found");
+                return;
+            }
+
+            const ifNoneMatchHeader = req.headers["if-none-match"];
+            const ifNoneMatch = Array.isArray(ifNoneMatchHeader) ? ifNoneMatchHeader.join(",") : ifNoneMatchHeader || "";
+            if (ifNoneMatch.includes(conditional304RecordCid)) {
+                res.statusCode = 304;
+                res.setHeader("etag", `"${conditional304RecordCid}"`);
+                res.end();
+                return;
+            }
+
+            res.setHeader("x-ipfs-roots", conditional304RecordCid);
+            res.setHeader("etag", `"${conditional304RecordCid}"`);
+            res.end(conditional304RecordJson);
+        });
+
+        // Not found gateway - always returns 404
+        await createServer(NOT_FOUND_GATEWAY_PORT, (_req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.statusCode = 404;
+            res.end("Not found");
         });
     });
 
@@ -335,6 +373,19 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
             const diff = now - gatewaySub.updatedAt!;
             const buffer = 10;
             expect(diff).to.be.lessThan(buffer);
+        } finally {
+            await customPlebbit.destroy();
+        }
+    });
+
+    it(`returns undefined when one gateway returns 304 and another fails`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, notFoundGateway] } });
+        try {
+            const sub = await customPlebbit.getSubplebbit({ address: subAddress });
+            expect(sub.updateCid).to.equal(conditional304RecordCid);
+
+            const updateRes = await sub._clientsManager.fetchNewUpdateForSubplebbit(subAddress);
+            expect(updateRes).to.equal(undefined);
         } finally {
             await customPlebbit.destroy();
         }
