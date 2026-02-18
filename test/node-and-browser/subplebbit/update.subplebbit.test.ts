@@ -94,14 +94,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
-            const subplebbit = await plebbit.getSubplebbit({ address: "plebbit.eth" }); // 'plebbit.eth' is part of test-server.js
-            expect(subplebbit.address).to.equal("plebbit.eth");
+            const subplebbit = await plebbit.getSubplebbit({ address: "plebbit.bso" }); // 'plebbit.eth' is part of test-server.js
+            expect(subplebbit.address).to.equal("plebbit.bso");
             const oldUpdatedAt = remeda.clone(subplebbit.updatedAt);
             await subplebbit.update();
             await publishRandomPost(subplebbit.address, plebbit); // Invoke an update
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => oldUpdatedAt !== subplebbit.updatedAt });
             expect(oldUpdatedAt).to.not.equal(subplebbit.updatedAt);
-            expect(subplebbit.address).to.equal("plebbit.eth");
+            expect(subplebbit.address).to.equal("plebbit.bso");
             await subplebbit.stop();
         });
 
@@ -211,7 +211,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`subplebbit.update emits error and keeps retrying if address is ENS and ENS address has no subplebbit-address text record`, async () => {
-            const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.eth" });
+            const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.bso" });
             // Should emit an error and keep on retrying in the next update loop
             let errorCount = 0;
             const errorPromise = new Promise<void>((resolve) => {
@@ -230,7 +230,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`subplebbit.stop() stops subplebbit updates`, async () => {
             const remotePlebbit = await config.plebbitInstancePromise();
-            const subplebbit = await remotePlebbit.createSubplebbit({ address: "plebbit.eth" }); // 'plebbit.eth' is part of test-server.js
+            const subplebbit = await remotePlebbit.createSubplebbit({ address: "plebbit.bso" }); // 'plebbit.eth' is part of test-server.js
             await subplebbit.update();
             await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
             await subplebbit.stop();

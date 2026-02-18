@@ -391,7 +391,7 @@ export class DbHandler {
                 insertedAt INTEGER NOT NULL,
                 extraProps TEXT NULLABLE, -- JSON
                 targetAuthorSignerAddress TEXT NULLABLE, -- the signer address of the comment author being moderated (for bans/flairs)
-                targetAuthorDomain TEXT NULLABLE -- the domain address (e.g., spammer.eth) of the comment author being moderated
+                targetAuthorDomain TEXT NULLABLE -- the domain address (e.g., spammer.bso) of the comment author being moderated
             )
         `);
     }

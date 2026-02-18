@@ -18,7 +18,7 @@ Note: IPFS files are immutable, fetched by their CID, which is a hash of their c
 ### Schema:
 
 ```js
-Address: string // a plebbit author, subplebbit or multisub "address" can be a crypto domain like memes.eth, an IPNS name, an ethereum address, etc. How to resolve ENS names https://github.com/plebbit/plebbit-js/blob/master/docs/ens.md
+Address: string // a plebbit author, subplebbit or multisub "address" can be a crypto domain like memes.bso, an IPNS name, an ethereum address, etc. How to resolve ENS names https://github.com/plebbit/plebbit-js/blob/master/docs/ens.md
 Publication {
   author: Author
   subplebbitAddress: string // all publications are directed to a subplebbit owner
@@ -283,8 +283,8 @@ MultisubSubplebbit { // this metadata is set by the owner of the Multisub, not t
 PlebbitDefaults { // fetched once when app first load, a dictionary of default settings
   multisubAddresses: {[multisubName: string]: Address}
   // plebbit has 3 default multisubs
-  multisubAddresses.all: Address // the default subplebbits to show at url plebbit.eth/p/all
-  multisubAddresses.crypto: Address // the subplebbits to show at url plebbit.eth/p/crypto
+  multisubAddresses.all: Address // the default subplebbits to show at url plebbit.bso/p/all
+  multisubAddresses.crypto: Address // the subplebbits to show at url plebbit.bso/p/crypto
   multisubAddresses.search: Address // list of thousands of semi-curated subplebbits to "search" for in the client (only search the Multisub metadata, don't load each subplebbit)
 }
 ```
@@ -548,7 +548,7 @@ plebbit.on('error', console.log)
 
 ### `plebbit.getMultisub(multisubAddress)`
 
-> Get a multisub by its `Address`. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.eth/#/m/john.eth'` would display a feed of the multisub subplebbits curated by `'john.eth'` (multisub `Address` `'john.eth'`).
+> Get a multisub by its `Address`. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.bso/#/m/john.bso'` would display a feed of the multisub subplebbits curated by `'john.bso'` (multisub `Address` `'john.bso'`).
 
 #### Parameters
 
@@ -565,7 +565,7 @@ plebbit.on('error', console.log)
 #### Example
 
 ```js
-const multisubAddress = '12D3KooW...' // or 'john.eth'
+const multisubAddress = '12D3KooW...' // or 'john.bso'
 const multisub = await plebbit.getSubplebbit({address: multisubAddress})
 const multisubSubplebbitAddresses = multisub.map(subplebbit => subplebbit.address)
 console.log(multisubSubplebbitAddresses)
@@ -646,7 +646,7 @@ Prints:
 
 ### `plebbit.createMultisub(createMultisubOptions)`
 
-> Create a multisub instance. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.eth/#/m/john.eth'` would display a feed of the multisub subplebbits curated by `'john.eth'` (multisub `Address` `'john.eth'`).
+> Create a multisub instance. A multisub is a list of subplebbits curated by the creator of the multisub. E.g. `'plebbit.bso/#/m/john.bso'` would display a feed of the multisub subplebbits curated by `'john.bso'` (multisub `Address` `'john.bso'`).
 
 #### Parameters
 
@@ -680,14 +680,14 @@ const multisub = await plebbit.createMultisub(multisubOptions)
 
 // edit the multisub info in the database (only in Node and if multisub.signer is defined)
 await multisub.edit({
-  address: 'funny-subs.eth',
+  address: 'funny-subs.bso',
   title: 'Funny subplebbits',
   description: 'The funniest subplebbits',
 })
 
 // add a list of subplebbits to the multisub in the database (only in Node and if multisub.signer is defined)
-const multisubSubplebbit1 = {address: 'funny.eth', title: 'Funny things', tags: ['funny']}
-const multisubSubplebbit2 = {address: 'even-more-funny.eth'}
+const multisubSubplebbit1 = {address: 'funny.bso', title: 'Funny things', tags: ['funny']}
+const multisubSubplebbit2 = {address: 'even-more-funny.bso'}
 await multisub.edit({subplebbits: [multisubSubplebbit1, multisubSubplebbit2]})
 
 // start publishing updates to your multisub (only in Node and if multisub.signer is defined)
@@ -813,7 +813,7 @@ An object which may have the following keys:
 #### Example
 
 ```js
-const createSubplebbitEditOptions = {address: 'news.eth', title: 'New title'}
+const createSubplebbitEditOptions = {address: 'news.bso', title: 'New title'}
 const subplebbitEdit = await plebbit.createSubplebbitEdit(createSubplebbitEditOptions)
 subplebbitEdit.on('challenge', async (challengeMessage, _subplebbitEdit) => {
   const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)

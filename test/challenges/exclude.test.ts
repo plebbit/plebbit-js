@@ -359,8 +359,8 @@ describe("shouldExcludePublication", () => {
         const subplebbitChallenge = {
             exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
         };
-        // high-karma.eth is a mod
-        const modAuthor = { address: "high-karma.eth", displayName: "Mod User" };
+        // high-karma.bso is a mod
+        const modAuthor = { address: "high-karma.bso", displayName: "Mod User" };
 
         const commentEditOfMod = remeda.clone(validCommentEditFixture);
         commentEditOfMod.author = modAuthor;
@@ -375,10 +375,10 @@ describe("shouldExcludePublication", () => {
         const voteOfMod = remeda.clone(validVoteFixture);
         voteOfMod.author = modAuthor;
 
-        // Mock subplebbit with roles - high-karma.eth is a moderator
+        // Mock subplebbit with roles - high-karma.bso is a moderator
         const subplebbit = {
             roles: {
-                "high-karma.eth": { role: "moderator" }
+                "high-karma.bso": { role: "moderator" }
             }
         };
 
@@ -394,14 +394,14 @@ describe("shouldExcludePublication", () => {
         };
 
         // Author without any roles
-        const regularAuthor = { address: "regular-user.eth" };
+        const regularAuthor = { address: "regular-user.bso" };
         const postByRegularUser = {
             content: "test post",
             author: regularAuthor
         };
 
         // Author with moderator role
-        const modAuthor = { address: "high-karma.eth" };
+        const modAuthor = { address: "high-karma.bso" };
         const postByMod = {
             content: "test post",
             author: modAuthor
@@ -410,7 +410,7 @@ describe("shouldExcludePublication", () => {
         // Mock subplebbit with roles
         const subplebbit = {
             roles: {
-                "high-karma.eth": { role: "moderator" }
+                "high-karma.bso": { role: "moderator" }
             }
         };
 
@@ -1052,7 +1052,7 @@ describe("shouldExcludeChallengeCommentCids", () => {
             exclude: [
                 {
                     subplebbit: {
-                        addresses: ["friendly-sub.eth"],
+                        addresses: ["friendly-sub.bso"],
                         firstCommentTimestamp: 60 * 60 * 24 * 100, // 100 days
                         maxCommentCids: 2
                     }
@@ -1060,16 +1060,16 @@ describe("shouldExcludeChallengeCommentCids", () => {
             ]
         };
 
-        const commentCidsOld = getChallengeRequestMessage(["Qm...friendly-sub.eth,high,old", "Qm...friendly-sub.eth,high,old"]);
-        const commentCidsNew = getChallengeRequestMessage(["Qm...friendly-sub.eth,high,new", "Qm...friendly-sub.eth,high,new"]);
-        const commentCidsNoAuthorSubplebbit = getChallengeRequestMessage(["Qm...friendly-sub.eth", "Qm...friendly-sub.eth"]);
+        const commentCidsOld = getChallengeRequestMessage(["Qm...friendly-sub.bso,high,old", "Qm...friendly-sub.bso,high,old"]);
+        const commentCidsNew = getChallengeRequestMessage(["Qm...friendly-sub.bso,high,new", "Qm...friendly-sub.bso,high,new"]);
+        const commentCidsNoAuthorSubplebbit = getChallengeRequestMessage(["Qm...friendly-sub.bso", "Qm...friendly-sub.bso"]);
         const commentCidsEmpty = getChallengeRequestMessage([]);
         const commentCidsUndefined = getChallengeRequestMessage(undefined);
-        const commentCidsWrongSubplebbitAddress = getChallengeRequestMessage(["Qm...wrong.eth,high,old", "Qm...wrong.eth,high,old"]);
+        const commentCidsWrongSubplebbitAddress = getChallengeRequestMessage(["Qm...wrong.bso,high,old", "Qm...wrong.bso,high,old"]);
         const commentCidsMoreThanMax = getChallengeRequestMessage([
-            "Qm...friendly-sub.eth,high,new",
-            "Qm...friendly-sub.eth,high,new",
-            "Qm...friendly-sub.eth,high,old"
+            "Qm...friendly-sub.bso,high,new",
+            "Qm...friendly-sub.bso,high,new",
+            "Qm...friendly-sub.bso,high,old"
         ]);
 
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsOld, plebbit)).to.equal(true);
@@ -1086,7 +1086,7 @@ describe("shouldExcludeChallengeCommentCids", () => {
             exclude: [
                 {
                     subplebbit: {
-                        addresses: ["friendly-sub.eth"],
+                        addresses: ["friendly-sub.bso"],
                         postScore: 100,
                         firstCommentTimestamp: 60 * 60 * 24 * 100, // 100 days
                         maxCommentCids: 2
@@ -1094,17 +1094,17 @@ describe("shouldExcludeChallengeCommentCids", () => {
                 }
             ]
         };
-        const commentCidsHighKarma = getChallengeRequestMessage(["Qm...friendly-sub.eth,high", "Qm...friendly-sub.eth,high"]);
-        const commentCidsHighKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.eth,high,old", "Qm...friendly-sub.eth,high"]);
-        const commentCidsHighKarmaNew = getChallengeRequestMessage(["Qm...friendly-sub.eth,high,new", "Qm...friendly-sub.eth,high"]);
-        const commentCidsLowKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.eth,low,old", "Qm...friendly-sub.eth,low,old"]);
-        const commentCidsNoAuthorSubplebbit = getChallengeRequestMessage(["Qm...friendly-sub.eth", "Qm...friendly-sub.eth"]);
+        const commentCidsHighKarma = getChallengeRequestMessage(["Qm...friendly-sub.bso,high", "Qm...friendly-sub.bso,high"]);
+        const commentCidsHighKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.bso,high,old", "Qm...friendly-sub.bso,high"]);
+        const commentCidsHighKarmaNew = getChallengeRequestMessage(["Qm...friendly-sub.bso,high,new", "Qm...friendly-sub.bso,high"]);
+        const commentCidsLowKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.bso,low,old", "Qm...friendly-sub.bso,low,old"]);
+        const commentCidsNoAuthorSubplebbit = getChallengeRequestMessage(["Qm...friendly-sub.bso", "Qm...friendly-sub.bso"]);
         const commentCidsEmpty = getChallengeRequestMessage([]);
-        const commentCidsWrongSubplebbitAddress = getChallengeRequestMessage(["Qm...wrong.eth,high", "Qm...wrong.eth,high"]);
+        const commentCidsWrongSubplebbitAddress = getChallengeRequestMessage(["Qm...wrong.bso,high", "Qm...wrong.bso,high"]);
         const commentCidsMoreThanMax = getChallengeRequestMessage([
-            "Qm...friendly-sub.eth,low",
-            "Qm...friendly-sub.eth,low",
-            "Qm...friendly-sub.eth,high"
+            "Qm...friendly-sub.bso,low",
+            "Qm...friendly-sub.bso,low",
+            "Qm...friendly-sub.bso,high"
         ]);
 
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsHighKarma, plebbit)).to.equal(false);
@@ -1122,14 +1122,14 @@ describe("shouldExcludeChallengeCommentCids", () => {
             exclude: [
                 {
                     subplebbit: {
-                        addresses: ["friendly-sub.eth"],
+                        addresses: ["friendly-sub.bso"],
                         firstCommentTimestamp: 60 * 60 * 24 * 100, // 100 days
                         maxCommentCids: 2
                     }
                 },
                 {
                     subplebbit: {
-                        addresses: ["friendly-sub.eth"],
+                        addresses: ["friendly-sub.bso"],
                         replyScore: 100,
                         postScore: 100,
                         maxCommentCids: 2
@@ -1137,18 +1137,18 @@ describe("shouldExcludeChallengeCommentCids", () => {
                 }
             ]
         };
-        const commentCidsHighKarma = getChallengeRequestMessage(["Qm...friendly-sub.eth,high", "Qm...friendly-sub.eth,high"]);
-        const commentCidsHighKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.eth,high,old", "Qm...friendly-sub.eth,high"]);
-        const commentCidsHighKarmaNew = getChallengeRequestMessage(["Qm...friendly-sub.eth,high,new", "Qm...friendly-sub.eth,high"]);
-        const commentCidsLowKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.eth,low,old", "Qm...friendly-sub.eth,low,old"]);
-        const commentCidsLowKarmaNew = getChallengeRequestMessage(["Qm...friendly-sub.eth,low,new", "Qm...friendly-sub.eth,low,new"]);
-        const commentCidsNoAuthorSubplebbit = getChallengeRequestMessage(["Qm...friendly-sub.eth", "Qm...friendly-sub.eth"]);
+        const commentCidsHighKarma = getChallengeRequestMessage(["Qm...friendly-sub.bso,high", "Qm...friendly-sub.bso,high"]);
+        const commentCidsHighKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.bso,high,old", "Qm...friendly-sub.bso,high"]);
+        const commentCidsHighKarmaNew = getChallengeRequestMessage(["Qm...friendly-sub.bso,high,new", "Qm...friendly-sub.bso,high"]);
+        const commentCidsLowKarmaOld = getChallengeRequestMessage(["Qm...friendly-sub.bso,low,old", "Qm...friendly-sub.bso,low,old"]);
+        const commentCidsLowKarmaNew = getChallengeRequestMessage(["Qm...friendly-sub.bso,low,new", "Qm...friendly-sub.bso,low,new"]);
+        const commentCidsNoAuthorSubplebbit = getChallengeRequestMessage(["Qm...friendly-sub.bso", "Qm...friendly-sub.bso"]);
         const commentCidsEmpty = getChallengeRequestMessage([]);
-        const commentCidsWrongSubplebbitAddress = getChallengeRequestMessage(["Qm...wrong.eth,high", "Qm...wrong.eth,high"]);
+        const commentCidsWrongSubplebbitAddress = getChallengeRequestMessage(["Qm...wrong.bso,high", "Qm...wrong.bso,high"]);
         const commentCidsMoreThanMax = getChallengeRequestMessage([
-            "Qm...friendly-sub.eth,low",
-            "Qm...friendly-sub.eth,low",
-            "Qm...friendly-sub.eth,high"
+            "Qm...friendly-sub.bso,low",
+            "Qm...friendly-sub.bso,low",
+            "Qm...friendly-sub.bso,high"
         ]);
 
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsHighKarma, plebbit)).to.equal(true);

@@ -199,7 +199,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             name: "publication-match",
             options: {
                 matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth|bso)$" }]),
-                error: "Posting in this community requires a username (author address) that ends with .eth, .sol, or .bso. Go to the settings to set your username."
+                error: "Posting in this community requires a username (author address) that ends with .bso, .sol, or .eth. Go to the settings to set your username."
             },
             exclude: [
                 { role: ["moderator", "admin", "owner"] },

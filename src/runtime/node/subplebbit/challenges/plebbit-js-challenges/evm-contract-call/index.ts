@@ -152,7 +152,7 @@ const verifyAuthorWalletAddress = async (props: {
 
 const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
     const authorAddress = props.publication.author.address;
-    if (!authorAddress.endsWith(".eth") && !authorAddress.endsWith(".bso")) return "Author address is not an ENS domain";
+    if (!authorAddress.endsWith(".bso") && !authorAddress.endsWith(".eth")) return "Author address is not a .bso/.eth domain";
     const ensAddress = authorAddress.endsWith(".bso") ? authorAddress.slice(0, -4) + ".eth" : authorAddress;
     const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
         "eth",

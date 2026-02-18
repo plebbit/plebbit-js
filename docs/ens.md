@@ -40,24 +40,24 @@ const resolveEnsTxtRecord = async (ensName, txtRecordName) => {
 }
 
 const resolveAuthorAddress = async (authorAddress) => {
-  if (authorAddress.endsWith('.eth')) {
+  if (authorAddress.endsWith('.bso') || authorAddress.endsWith('.eth')) {
     return resolveEnsTxtRecord(authorAddress, 'plebbit-author-address')
   }
   return authorAddress
 }
 
 const resolveSubplebbitAddress = async (subplebbitAddress) => {
-  if (subplebbitAddress.endsWith('.eth')) {
+  if (subplebbitAddress.endsWith('.bso') || subplebbitAddress.endsWith('.eth')) {
     return resolveEnsTxtRecord(subplebbitAddress, 'subplebbit-address')
   }
   return subplebbitAddress
 }
 
 ;(async () => {
-  // resolve ens name (replace 'plebbit.eth' with 'john.eth' or whatever the address is)
+  // resolve ens name (replace 'plebbit.bso' with 'john.bso' or whatever the address is)
   // this needs to be called when verifying the comment.signature, but not the nft.signature
-  const authorAddressPublicKeyHash = await resolveAuthorAddress('plebbit.eth')
-  const subplebbitAddressPublicKeyHash = await resolveSubplebbitAddress('plebbit.eth')
+  const authorAddressPublicKeyHash = await resolveAuthorAddress('plebbit.bso')
+  const subplebbitAddressPublicKeyHash = await resolveSubplebbitAddress('plebbit.bso')
   console.log({authorAddressPublicKeyHash, subplebbitAddressPublicKeyHash})
 })()
 ```

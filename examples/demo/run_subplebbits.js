@@ -32,7 +32,7 @@ const subplebbitsProps = [
         signer: await plebbit.createSigner(subplebbitsPrivateKeys[4])
     },
     {
-        title: "Pleb whales (plebwhales.eth)",
+        title: "Pleb whales (plebwhales.bso)",
         description: "For those destined to make it. Minimum 1B PLEB in wallet to post",
         signer: await plebbit.createSigner(subplebbitsPrivateKeys[5])
     }
@@ -41,7 +41,7 @@ const subplebbitsProps = [
 async function runSubplebbit(props) {
     const subplebbit = await plebbit.createSubplebbit(props);
     await subplebbit.start();
-    await subplebbit.edit({ roles: { ...subplebbit.roles, "estebanabaroa.eth": { role: "admin" } } });
+    await subplebbit.edit({ roles: { ...subplebbit.roles, "estebanabaroa.bso": { role: "admin" } } });
     subplebbit.once("update", () => console.log(`Subplebbit ${props.title} (${subplebbit.address}) is running now`));
 }
 

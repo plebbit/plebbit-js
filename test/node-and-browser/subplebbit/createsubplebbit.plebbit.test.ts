@@ -165,7 +165,7 @@ describe.concurrent(`plebbit.createSubplebbit - (remote) - errors`, async () => 
 
     it(`plebbit.createSubplebbit({address}) throws if address if ENS and has a capital letter`, async () => {
         try {
-            await plebbit.createSubplebbit({ address: "testSub.eth" });
+            await plebbit.createSubplebbit({ address: "testSub.bso" });
             expect.fail("Should have thrown");
         } catch (e) {
             expect((e as { code: string }).code).to.equal("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER");

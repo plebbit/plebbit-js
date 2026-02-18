@@ -294,7 +294,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             });
 
             const rpcSub = (await clientPlebbit.createSubplebbit({})) as RpcLocalSubplebbit;
-            const mismatchedDomain = "my-sub.eth";
+            const mismatchedDomain = "my-sub.bso";
 
             await rpcSub.edit({ address: mismatchedDomain });
             await new Promise((resolve) => setTimeout(resolve, 7000));

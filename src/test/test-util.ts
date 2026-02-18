@@ -266,8 +266,8 @@ async function _startEnsSubplebbit(signers: SignerType[], plebbit: Plebbit): Pro
         }
     });
     await subplebbit.start();
-    await subplebbit.edit({ address: "plebbit.eth" });
-    assert.equal(subplebbit.address, "plebbit.eth");
+    await subplebbit.edit({ address: "plebbit.bso" });
+    assert.equal(subplebbit.address, "plebbit.bso");
     return subplebbit;
 }
 

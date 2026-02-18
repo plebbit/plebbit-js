@@ -50,7 +50,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
     });
 
     describe("Banning an author who uses a domain address", () => {
-        const testDomain = "testbanneduser.eth";
+        const testDomain = "testbanneduser.bso";
         let domainAuthorSigner: SignerType;
         let commentWithDomain: Comment;
         let authorBanExpiresAt: number;
@@ -180,7 +180,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
         it.sequential("author banned by public key can still be blocked if they later acquire a domain", async () => {
             // The author was banned by public key (no domain stored)
             // Now they get a domain pointing to their public key
-            const newDomain = "newlybanned.eth";
+            const newDomain = "newlybanned.bso";
             await mockCacheOfTextRecord({
                 plebbit,
                 domain: newDomain,
@@ -202,7 +202,7 @@ describeSkipIfRpc("Domain bans with pseudonymity mode", () => {
     let plebbit: Plebbit;
     let subplebbit: LocalSubplebbit;
     let moderatorSigner: SignerType;
-    const testDomain = "pseudonymuser.eth";
+    const testDomain = "pseudonymuser.bso";
     let domainAuthorSigner: SignerType;
 
     beforeAll(async () => {

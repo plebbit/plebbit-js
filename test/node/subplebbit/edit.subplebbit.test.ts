@@ -37,7 +37,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         remotePlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true, remotePlebbit: true });
 
         subplebbit = await createSubWithNoChallenge({}, plebbit);
-        ethAddress = `test-edit-${uuidV4()}.eth`;
+        ethAddress = `test-edit-${uuidV4()}.bso`;
 
         await mockCacheOfTextRecord({
             plebbit,
@@ -55,7 +55,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         const resolvedSubAddress = await remotePlebbit._clientsManager.resolveSubplebbitAddressIfNeeded(ethAddress);
         expect(resolvedSubAddress).to.equal(subplebbit.signer.address);
 
-        await plebbit.resolveAuthorAddress({ address: "esteban.eth" });
+        await plebbit.resolveAuthorAddress({ address: "esteban.bso" });
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
         await publishRandomPost(subplebbit.address, plebbit);
@@ -209,9 +209,9 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
 
     (
         [
-            { address: `address-eth-${uuidV4()}-1.eth` },
+            { address: `address-bso-${uuidV4()}-1.bso` },
             { rules: ["rule 1", "rule 2"] },
-            { address: `address-eth-${uuidV4()}-2.eth`, rules: ["rule 1", "rule 2"] }
+            { address: `address-bso-${uuidV4()}-2.bso`, rules: ["rule 1", "rule 2"] }
         ] as SubplebbitEditOptions[]
     ).map((editArgs) =>
         it(`Calling startedSubplebbit.stop() after edit while updating another subplebbit should not reset the edit (${Object.keys(editArgs)})`, async () => {
@@ -261,9 +261,9 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
 
     (
         [
-            { address: `address-eth-${uuidV4()}-1.eth` },
+            { address: `address-bso-${uuidV4()}-1.bso` },
             { rules: ["rule 1", "rule 2"] },
-            { address: `address-eth-${uuidV4()}-2.eth`, rules: ["rule 1", "rule 2"] }
+            { address: `address-bso-${uuidV4()}-2.bso`, rules: ["rule 1", "rule 2"] }
         ] as SubplebbitEditOptions[]
     ).map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
@@ -395,7 +395,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
     it(`Can edit a local sub address, then start it`, async () => {
         const customPlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
         const signer = await customPlebbit.createSigner();
-        const domain = `edit-before-start-${uuidV4()}.eth`;
+        const domain = `edit-before-start-${uuidV4()}.bso`;
 
         await mockCacheOfTextRecord({ plebbit: customPlebbit, domain, textRecord: "subplebbit-address", value: signer.address });
 
@@ -478,21 +478,21 @@ describe(`Edit misc`, async () => {
         const customPlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
         const newSub = (await customPlebbit.createSubplebbit()) as LocalSubplebbit | RpcLocalSubplebbit;
         if (!customPlebbit._plebbitRpcClient) {
-            const resolvedSubAddress = await customPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded("no-sub-address.eth");
+            const resolvedSubAddress = await customPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded("no-sub-address.bso");
             expect(resolvedSubAddress).to.equal(null);
         }
 
         // Has no subplebbit-address text record
-        await newSub.edit({ address: "no-sub-address.eth" });
+        await newSub.edit({ address: "no-sub-address.bso" });
 
-        expect(newSub.address).to.equal("no-sub-address.eth");
+        expect(newSub.address).to.equal("no-sub-address.bso");
         await newSub.delete();
         await customPlebbit.destroy();
     });
 
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not match subplebbit.signer.address`, async () => {
         const customPlebbit = await mockPlebbit();
-        const subAddress = "different-signer.eth";
+        const subAddress = "different-signer.bso";
         if (customPlebbit.subplebbits.includes(subAddress)) {
             const sub = (await customPlebbit.createSubplebbit({ address: subAddress })) as LocalSubplebbit | RpcLocalSubplebbit;
             await sub.delete();
@@ -510,7 +510,7 @@ describe(`Edit misc`, async () => {
     it(`subplebbit.edit({address}) fails if the new address is already taken by another subplebbit`, async () => {
         const customPlebbit = await mockPlebbit();
         const newSub = (await customPlebbit.createSubplebbit()) as LocalSubplebbit | RpcLocalSubplebbit;
-        const ethAddress = `subplebbit-address-${uuidV4()}.eth`;
+        const ethAddress = `subplebbit-address-${uuidV4()}.bso`;
         await newSub.edit({ address: ethAddress });
 
         const anotherSub = (await customPlebbit.createSubplebbit()) as LocalSubplebbit | RpcLocalSubplebbit;
@@ -544,8 +544,8 @@ describe(`Editing subplebbit.roles`, async () => {
     });
 
     it(`Setting sub.roles[author-address] to undefined removes the role`, async () => {
-        const authorAddress = "hello.eth";
-        const secondAuthorAddress = "hello2.eth";
+        const authorAddress = "hello.bso";
+        const secondAuthorAddress = "hello2.bso";
         await sub.edit({ roles: { [authorAddress]: { role: "admin" }, [secondAuthorAddress]: { role: "moderator" } } });
 
         expect(sub.roles![authorAddress].role).to.equal("admin");
@@ -578,22 +578,22 @@ describe(`Editing subplebbit.roles`, async () => {
         expect(remoteSub.roles).to.be.undefined;
     });
 
-    it.skip(`Setting sub.roles.[author-address.eth].role to null doesn't corrupt the signature`, async () => {
+    it.skip(`Setting sub.roles.[author-address.bso].role to null doesn't corrupt the signature`, async () => {
         // This test is not needed anymore because zod will catch it
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await resolveWhenConditionIsTrue({ toUpdate: newSub, predicate: async () => Boolean(newSub.updatedAt) }); // wait until it publishes an ipns record
         await remotePlebbit.getSubplebbit({ address: newSub.address }); // no problem with signature
 
-        const newRoles: Record<string, { role: string | null }> = { "author-address.eth": { role: null }, "author-address2.eth": { role: "admin" } };
+        const newRoles: Record<string, { role: string | null }> = { "author-address.bso": { role: null }, "author-address2.bso": { role: "admin" } };
         await newSub.edit({ roles: newRoles as { [key: string]: { role: string } } });
-        expect(newSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
+        expect(newSub.roles).to.deep.equal({ "author-address2.bso": { role: "admin" } });
 
         await new Promise((resolve) => newSub.once("update", resolve));
-        expect(newSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
+        expect(newSub.roles).to.deep.equal({ "author-address2.bso": { role: "admin" } });
 
         const remoteSub = (await remotePlebbit.getSubplebbit({ address: newSub.address })) as RemoteSubplebbit;
-        expect(remoteSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
+        expect(remoteSub.roles).to.deep.equal({ "author-address2.bso": { role: "admin" } });
 
         await newSub.delete();
     });
@@ -620,7 +620,7 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
     [
         { title: `Test subplebbit RPC title edit ${Date.now()}` },
         { description: `Test subplebbit RPC description edit ${Date.now()}` },
-        { address: `rpc-edit-test.eth` }
+        { address: `rpc-edit-test.bso` }
     ].map((editArgs) =>
         it(`subplebbit.edit(${JSON.stringify(editArgs)})`, async () => {
             const [keyToEdit, newValue] = Object.entries(editArgs)[0] as [keyof typeof editArgs, string];

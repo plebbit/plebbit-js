@@ -28,7 +28,7 @@ PKC.nameResolvers: { [name: string]: NameResolverInstance }
 // Instance interface (registered directly, no cloning needed)
 export interface NameResolverInstance {
   name: string;
-  tlds: string[];           // e.g., ['.eth']
+  tlds: string[];           // e.g., ['.bso', '.eth']
   // chainProviders passed as arg to resolve(), not stored on instance
   resolve: (args: {
     domain: string;
@@ -61,7 +61,7 @@ PKC.nameResolvers['sns'] = snsResolver;
 // Example ensResolver structure:
 // {
 //   name: 'ens',
-//   tlds: ['.eth'],
+//   tlds: ['.bso', '.eth'],
 //   resolve: async ({ domain, txtRecordName, chainProviders, plebbit }) => {
 //     // chainProviders.eth.urls contains the RPC URLs to use
 //     // chainProviders.eth.chainId contains the chain ID
@@ -109,8 +109,8 @@ const plebbit = await PKC({
 ### Resolution Flow (at resolve time)
 
 ```javascript
-// When resolving a domain like "mysite.eth":
-// 1. Find config where TLD matches (find resolver for '.eth')
+// When resolving a domain like "mysite.bso":
+// 1. Find config where TLD matches (find resolver for '.bso')
 const config = plebbit.nameResolvers.find(c => {
   const resolver = PKC.nameResolvers[c.name];
   return resolver?.tlds.some(tld => domain.endsWith(tld));
@@ -215,7 +215,7 @@ const plebbit = await PKC({
 ### No Resolvers (Challenge-Only)
 ```javascript
 const plebbit = await PKC({
-    // No nameResolvers - can't resolve .eth/.sol addresses
+    // No nameResolvers - can't resolve .bso/.eth/.sol addresses
 });
 
 // Challenges still work using their hardcoded fallback URLs

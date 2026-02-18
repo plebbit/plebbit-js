@@ -80,7 +80,7 @@ describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
 
     it(`createSubplebbit({roles, settings})`, async () => {
         const newEditProps: CreateNewLocalSubplebbitUserOptions = {
-            roles: { ["hello.eth"]: { role: "admin" } },
+            roles: { ["hello.bso"]: { role: "admin" } },
             settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] }
         };
         const sub = (await plebbit.createSubplebbit(newEditProps)) as LocalSubplebbit | RpcLocalSubplebbit;
@@ -228,7 +228,7 @@ describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
 
     it(`Fail to create a sub with ENS address has a capital letter`, async () => {
         try {
-            await plebbit.createSubplebbit({ address: "testEth.eth" });
+            await plebbit.createSubplebbit({ address: "testBso.bso" });
             expect.fail("Should have thrown");
         } catch (e) {
             expect((e as { code: string }).code).to.equal("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER");

@@ -48,7 +48,7 @@ describe("publication-match challenge", () => {
     const createChallengeRequestMessage = (overrides: ChallengeRequestOverrides = {}): Record<string, unknown> => {
         const defaultPublication = {
             author: {
-                address: "author.eth"
+                address: "author.bso"
             },
             content: "content",
             timestamp: 1234567890,
@@ -71,8 +71,8 @@ describe("publication-match challenge", () => {
         options: SubplebbitChallengeOptions = {}
     ): { _plebbit: { getComment: () => void }; settings: { challenges: Array<{ name: string; options: SubplebbitChallengeOptions }> } } => {
         const defaultOptions: SubplebbitChallengeOptions = {
-            matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.eth$" }]),
-            error: "Publication author.address must end with .eth",
+            matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.bso$" }]),
+            error: "Publication author.address must end with .bso",
             matchAll: "true"
         };
 
@@ -103,7 +103,7 @@ describe("publication-match challenge", () => {
             name: "publication-match",
             options: {
                 matches: JSON.stringify([
-                    { propertyName: "author.address", regexp: "\\.eth$" },
+                    { propertyName: "author.address", regexp: "\\.bso$" },
                     { propertyName: "content", regexp: "badword" }
                 ]),
                 error: "Custom error message",
@@ -120,13 +120,13 @@ describe("publication-match challenge", () => {
         const subplebbitChallengeSettings = {
             name: "publication-match",
             options: {
-                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.eth$" }]),
-                description: "Authors must have .eth addresses"
+                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.bso$" }]),
+                description: "Authors must have .bso addresses"
             }
         };
         const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
         expect(subplebbitChallenge.type).to.equal("text/plain");
-        expect(subplebbitChallenge.description).to.equal("Authors must have .eth addresses");
+        expect(subplebbitChallenge.description).to.equal("Authors must have .bso addresses");
     });
 
     // Test default description when no custom description provided
@@ -134,7 +134,7 @@ describe("publication-match challenge", () => {
         const subplebbitChallengeSettings = {
             name: "publication-match",
             options: {
-                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.eth$" }])
+                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.bso$" }])
             }
         };
         const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
@@ -143,7 +143,7 @@ describe("publication-match challenge", () => {
     });
 
     // Test with matching author address (.eth)
-    it("publication-match challenge with matching author address .eth", async () => {
+    it("publication-match challenge with matching author address .bso", async () => {
         const subplebbit = createSubplebbit();
         const challengeRequestMessage = createChallengeRequestMessage();
 
@@ -182,7 +182,7 @@ describe("publication-match challenge", () => {
     it("publication-match challenge with multiple conditions (matchAll = true)", async () => {
         const subplebbit = createSubplebbit({
             matches: JSON.stringify([
-                { propertyName: "author.address", regexp: "\\.eth$" },
+                { propertyName: "author.address", regexp: "\\.bso$" },
                 { propertyName: "content", regexp: "content" }
             ]),
             error: "Publication does not match all required patterns"

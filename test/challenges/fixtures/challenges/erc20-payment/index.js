@@ -72,7 +72,7 @@ const verifyAuthorAddress = async (publication, chainTicker) => {
     const authorAddress = publication.author.wallets?.[chainTicker]?.address;
     const wallet = publication.author.wallets?.[chainTicker];
     const nftAvatar = publication.author?.avatar;
-    if (authorAddress.endsWith(".eth")) {
+    if (authorAddress.endsWith(".eth") || authorAddress.endsWith(".bso")) {
         // resolve plebbit-author-address and check if it matches publication.signature.publicKey
         // return true
     }

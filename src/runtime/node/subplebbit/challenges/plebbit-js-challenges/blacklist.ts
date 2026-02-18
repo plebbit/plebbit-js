@@ -13,7 +13,7 @@ const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
         label: "Addresses",
         default: "",
         description: "Comma separated list of author addresses to be blacklisted.",
-        placeholder: `address1.eth,address2.eth,address3.eth`
+        placeholder: `address1.bso,address2.bso,address3.bso`
     },
     {
         option: "urls",

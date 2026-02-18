@@ -216,7 +216,7 @@ Subscribe to a subplebbit update to receive notifications when the subplebbit is
   "method": "subplebbitUpdateSubscribe",
   "params": [
     {
-      "address": "memes.eth"
+      "address": "memes.bso"
     }
   ]
 }
@@ -289,7 +289,7 @@ Publish a comment and subscribe to receive notifications of the challenge pubsub
     "comment": {
       "title": "Hello",
       "content": "World",
-      "author": {"address": "john.eth"},
+      "author": {"address": "john.bso"},
       "signature": {
         "signature": "...",
         "publicKey": "...",
@@ -345,7 +345,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
       "comment": {
         "title": "Hello",
         "content": "World",
-        "author": {"address": "john.eth"},
+        "author": {"address": "john.bso"},
         "signature": {
           "signature": "...",
           "publicKey": "...",
@@ -406,8 +406,8 @@ The notification format is the same as seen in the plebbit-js [Plebbit Events](h
   "method": "subplebbitsNotification",
   "params": {
     "result": [
-      "memes.eth", 
-      "news.eth"
+      "memes.bso",
+      "news.bso"
     ],
     "event": "subplebbitschange",
     "subscription": 23784

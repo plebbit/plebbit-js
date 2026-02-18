@@ -42,10 +42,10 @@ interface MockChallengeResult {
 
 // define mock Author instances
 const highKarmaAuthor: MockAuthor = {
-    address: "high-karma.eth",
+    address: "high-karma.bso",
     wallets: { eth: { address: "0x...", signature: "0x..." } }
 };
-const lowKarmaAuthor: MockAuthor = { address: "low-karma.eth" };
+const lowKarmaAuthor: MockAuthor = { address: "low-karma.bso" };
 const authors: MockAuthor[] = [highKarmaAuthor, lowKarmaAuthor];
 
 // mock comment class
@@ -202,7 +202,7 @@ const excludeAddressChallengeSubplebbit: MockSubplebbit = {
                     error: `You're not whitelisted.`
                 },
                 // challenge should never be triggered if the author address is excluded
-                exclude: [{ address: ["high-karma.eth"] }]
+                exclude: [{ address: ["high-karma.bso"] }]
             }
         ]
     }
@@ -214,7 +214,7 @@ const whitelistChallengeSubplebbit: MockSubplebbit = {
             {
                 name: "whitelist",
                 options: {
-                    addresses: "high-karma.eth"
+                    addresses: "high-karma.bso"
                 }
             }
         ]
@@ -227,7 +227,7 @@ const blacklistChallengeSubplebbit: MockSubplebbit = {
             {
                 name: "blacklist",
                 options: {
-                    addresses: "low-karma.eth,some-author.eth"
+                    addresses: "low-karma.bso,some-author.bso"
                 }
             }
         ]
@@ -298,7 +298,7 @@ const excludeFriendlySubKarmaChallengeSubplebbit: MockSubplebbit = {
                     // exclude author with karma in those subs using publication.challengeCommentCids
                     {
                         subplebbit: {
-                            addresses: ["friendly-sub.eth", "friendly-sub2.eth"],
+                            addresses: ["friendly-sub.bso", "friendly-sub2.bso"],
                             postScore: 100,
                             replyScore: 100,
                             maxCommentCids: 3
@@ -324,11 +324,11 @@ const twoOutOf4SuccessChallengeSubplebbit: MockSubplebbit = {
             },
             {
                 name: "blacklist",
-                options: { addresses: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.bso,some-author.bso" }
             },
             {
                 name: "blacklist",
-                options: { addresses: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.bso,some-author.bso" }
             }
         ]
     }
@@ -340,11 +340,11 @@ const twoOutOf4SuccessInverseChallengeSubplebbit: MockSubplebbit = {
         challenges: [
             {
                 name: "blacklist",
-                options: { addresses: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.bso,some-author.bso" }
             },
             {
                 name: "blacklist",
-                options: { addresses: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.bso,some-author.bso" }
             },
             {
                 name: "fail",
@@ -398,7 +398,7 @@ const rateLimitChallengeSuccessChallengeSubplebbit: MockSubplebbit = {
 const excludeModsChallengeSubplebbit: MockSubplebbit = {
     title: "exclude mods challenge subplebbit",
     roles: {
-        "high-karma.eth": {
+        "high-karma.bso": {
             role: "moderator"
         }
     },
@@ -431,7 +431,7 @@ const questionOrWhitelistChallengeSubplebbit: MockSubplebbit = {
             },
             {
                 name: "whitelist",
-                options: { addresses: "high-karma.eth" },
+                options: { addresses: "high-karma.bso" },
                 // excluding the whitelist challenge if subplebbit.challenges[0] (the question)
                 // passes creates a question OR whitelist condition
                 exclude: [{ challenges: [0] }]
@@ -459,7 +459,7 @@ subplebbitAuthors[lowKarmaAuthor.address][excludeAccountAgeChallengeSubplebbit.t
 
 // define mock friendly sub comment cids
 const challengeCommentCids: Record<string, string[]> = {};
-challengeCommentCids[highKarmaAuthor.address] = ["Qm...friendly-sub.eth,high,old", "Qm...friendly-sub.eth,high,old"];
+challengeCommentCids[highKarmaAuthor.address] = ["Qm...friendly-sub.bso,high,old", "Qm...friendly-sub.bso,high,old"];
 
 const challengeAnswers: Record<string, Record<string, string[]>> = {};
 challengeAnswers[highKarmaAuthor.address] = {};
@@ -489,22 +489,22 @@ const subplebbits: MockSubplebbit[] = [
 
 const results: Record<string, Record<string, MockChallengeResult>> = {};
 results[textMathChallengeSubplebbit.title] = {
-    "high-karma.eth": {
+    "high-karma.bso": {
         pendingChallenges: [{ challenge: "660 - 256", type: "text/plain" }]
     },
-    "low-karma.eth": {
+    "low-karma.bso": {
         pendingChallenges: [{ challenge: "69 * 63", type: "text/plain" }]
     }
 };
 // comment out because don't know how to make the captcha node code work in the browser
 // results[captchaAndMathChallengeSubplebbit.title] = {
-//   'high-karma.eth': {
+//   'high-karma.bso': {
 //     pendingChallenges: [
 //       { challenge: '...', type: 'image' },
 //       { challenge: '94 + 25', type: 'text/plain' }
 //     ]
 //   },
-//   'low-karma.eth': {
+//   'low-karma.bso': {
 //     pendingChallenges: [
 //       { challenge: '...', type: 'image' },
 //       { challenge: '99 - 90', type: 'text/plain' }
@@ -512,68 +512,68 @@ results[textMathChallengeSubplebbit.title] = {
 //   }
 // }
 results[excludeHighKarmaChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         pendingChallenges: [{ challenge: "82 * 45", type: "text/plain" }]
     }
 };
 results[excludeAccountAgeChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not allowed to publish." }
     }
 };
 results[excludeAddressChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not whitelisted." }
     }
 };
 results[whitelistChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not whitelisted." }
     }
 };
 results[blacklistChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're blacklisted." }
     }
 };
 // comment out because don't know how to require external challenge in the browser tests
 // results[erc20PaymentChallengeSubplebbit.title] = {
-//   'high-karma.eth': { challengeSuccess: true },
-//   'low-karma.eth': {
+//   'high-karma.bso': { challengeSuccess: true },
+//   'low-karma.bso': {
 //     challengeSuccess: false,
 //     challengeErrors: {"0": "Author doesn't have wallet (eth) set." }
 //   }
 // }
 results[evmContractCallChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "Author doesn't have a wallet set." }
     }
 };
 results[passwordChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": { challengeSuccess: false, challengeErrors: { 0: "Wrong answer." } }
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": { challengeSuccess: false, challengeErrors: { 0: "Wrong answer." } }
 };
 results[excludeFriendlySubKarmaChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not allowed to publish." }
     }
 };
 results[twoOutOf4SuccessChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: {
             0: "You're not allowed to publish.",
@@ -584,8 +584,8 @@ results[twoOutOf4SuccessChallengeSubplebbit.title] = {
     }
 };
 results[twoOutOf4SuccessInverseChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: {
             0: "You're blacklisted.",
@@ -596,35 +596,35 @@ results[twoOutOf4SuccessInverseChallengeSubplebbit.title] = {
     }
 };
 results[rateLimitChallengeSubplebbit.title] = {
-    "high-karma.eth": {
+    "high-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h." }
     },
-    "low-karma.eth": {
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h." }
     }
 };
 results[rateLimitChallengeSuccessChallengeSubplebbit.title] = {
-    "high-karma.eth": {
+    "high-karma.bso": {
         challengeSuccess: true
     },
-    "low-karma.eth": {
+    "low-karma.bso": {
         challengeSuccess: true
     }
 };
 results[excludeModsChallengeSubplebbit.title] = {
-    "high-karma.eth": {
+    "high-karma.bso": {
         challengeSuccess: true
     },
-    "low-karma.eth": {
+    "low-karma.bso": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not a mod." }
     }
 };
 results[questionOrWhitelistChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
+    "high-karma.bso": { challengeSuccess: true },
+    "low-karma.bso": {
         pendingChallenges: [{ challenge: "What is the password?", type: "text/plain" }]
     }
 };

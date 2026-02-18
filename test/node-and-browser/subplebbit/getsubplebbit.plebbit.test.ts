@@ -13,7 +13,7 @@ import { describe, it, beforeAll, afterAll } from "vitest";
 
 import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";
 import type { PlebbitError } from "../../../dist/node/plebbit-error.js";
-const ensSubplebbitAddress = "plebbit.eth";
+const ensSubplebbitAddress = "plebbit.bso";
 const subplebbitSigner = signers[0];
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
@@ -107,7 +107,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`plebbit.getSubplebbit fails to fetch a sub with ENS address if it has capital letter`, async () => {
             try {
-                await plebbit.getSubplebbit({ address: "testSub.eth" });
+                await plebbit.getSubplebbit({ address: "testSub.bso" });
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect((e as { code: string }).code).to.equal("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER");

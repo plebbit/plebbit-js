@@ -672,7 +672,7 @@ export class BaseClientsManager {
     ): Promise<string | null> {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
         const chain: ChainTicker | undefined =
-            address.endsWith(".eth") || address.endsWith(".bso") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
+            address.endsWith(".bso") || address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address (${address}). Are you sure plebbit-js support this chain?`);
         const chainId = this._plebbit.chainProviders[chain]?.chainId;
         const ensAddress = address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;

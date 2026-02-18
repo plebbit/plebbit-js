@@ -376,7 +376,7 @@ describe.concurrent(`subplebbit.clients (Local)`, async () => {
             await new Promise((resolve) => mockSub.once("update", resolve));
 
             const challengeVerificationPromise = new Promise((resolve) => mockSub.once("challengeverification", resolve));
-            await publishRandomPost(mockSub.address, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
+            await publishRandomPost(mockSub.address, plebbit, { author: { address: "plebbit.bso" }, signer: signers[6] });
 
             await challengeVerificationPromise;
 

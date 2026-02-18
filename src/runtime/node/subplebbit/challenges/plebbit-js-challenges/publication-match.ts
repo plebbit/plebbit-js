@@ -11,7 +11,7 @@ import * as remeda from "remeda";
 // Define the match object structure
 interface Match {
     propertyName: string; // dot notation path to the property to match. For example, "author.address"
-    regexp: string; // regex pattern to match against the property value. For example, "\\.eth$"
+    regexp: string; // regex pattern to match against the property value. For example, "\\.bso$"
 }
 
 const defaultDescription = "Match publication properties against regex patterns.";
@@ -22,7 +22,7 @@ const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
         label: "Matches",
         default: "[]",
         description: "JSON array of property name and regex pattern pairs to match against the publication.",
-        placeholder: `[{"propertyName":"author.address","regexp":"\\.eth$"},{"propertyName":"content","regexp":"badword1|badword2|badword3"}]`
+        placeholder: `[{"propertyName":"author.address","regexp":"\\.bso$"},{"propertyName":"content","regexp":"badword1|badword2|badword3"}]`
     },
     {
         option: "error",
@@ -43,7 +43,7 @@ const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
         label: "Description",
         default: defaultDescription,
         description: "Custom description for the challenge that explains what patterns are being matched.",
-        placeholder: "Authors must have .eth addresses"
+        placeholder: "Authors must have .bso addresses"
     }
 ];
 

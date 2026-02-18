@@ -106,9 +106,9 @@ describe("Comments with Authors as domains", async () => {
     });
 
     it(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
-        // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
+        // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.bso
         const mockPost = await plebbit.createComment({
-            author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
+            author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.bso" },
             signer: signers[6],
             content: `Mock post - ${Date.now()}`,
             title: "Mock post title",
@@ -117,21 +117,21 @@ describe("Comments with Authors as domains", async () => {
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress({ address: mockPost.author.address });
         expect(resolvedAuthorAddress).to.equal(signers[6].address);
 
-        expect(mockPost.author.address).to.equal("plebbit.eth");
+        expect(mockPost.author.address).to.equal("plebbit.bso");
 
         await publishWithExpectedResult(mockPost, true);
 
-        expect(mockPost.author.address).to.equal("plebbit.eth");
+        expect(mockPost.author.address).to.equal("plebbit.bso");
         // ipnsKeyName is an internal property that may not be in the type definition
         expect((mockPost as Comment & { ipnsKeyName?: string }).ipnsKeyName).to.be.undefined;
         mockComments.push(mockPost);
     });
 
     itSkipIfRpc(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
-        // There are two mocks of resovleAuthorAddressIfNeeded, one return null on testgibbreish.eth (server side) and this one returns signers[6]
+        // There are two mocks of resovleAuthorAddressIfNeeded, one return null on testgibbreish.bso (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
 
-        const authorAddress = "testgibbreish.eth";
+        const authorAddress = "testgibbreish.bso";
         const tempPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true });
 
         await mockCacheOfTextRecord({
@@ -152,7 +152,7 @@ describe("Comments with Authors as domains", async () => {
         expect(mockPost.author.address).to.equal(authorAddress);
 
         await publishWithExpectedResult(mockPost, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
-        expect(mockPost.author.address).to.equal("testgibbreish.eth");
+        expect(mockPost.author.address).to.equal("testgibbreish.bso");
         await tempPlebbit.destroy();
     });
 
@@ -165,7 +165,7 @@ describe("Comments with Authors as domains", async () => {
             // verifyComment in comment.update should overwrite author.address to derived address
             await comment.update();
             mockUpdatingCommentResolvingAuthor(comment, async (authorAddress: string) =>
-                authorAddress === "plebbit.eth" ? signers[7].address : originalResolvingFunction(authorAddress)
+                authorAddress === "plebbit.bso" ? signers[7].address : originalResolvingFunction(authorAddress)
             );
             await resolveWhenConditionIsTrue({ toUpdate: comment, predicate: async () => Boolean(comment.author?.address) });
             await comment.stop();
@@ -191,7 +191,7 @@ describe(`Vote with authors as domains`, async () => {
 
     itSkipIfRpc(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
         const tempPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true });
-        const authorAddress = "testgibbreish.eth";
+        const authorAddress = "testgibbreish.bso";
         await mockCacheOfTextRecord({
             plebbit: tempPlebbit,
             domain: authorAddress,
@@ -206,10 +206,10 @@ describe(`Vote with authors as domains`, async () => {
             vote: -1,
             subplebbitAddress: subplebbit.address
         });
-        expect(vote.author.address).to.equal("testgibbreish.eth");
+        expect(vote.author.address).to.equal("testgibbreish.bso");
 
         await publishWithExpectedResult(vote, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
-        expect(vote.author.address).to.equal("testgibbreish.eth");
+        expect(vote.author.address).to.equal("testgibbreish.bso");
         await tempPlebbit.destroy();
     });
 });
@@ -344,7 +344,7 @@ describeSkipIfRpc(`Resolving resiliency`, async () => {
 
         let resolveHit = 0;
 
-        const address = "madeupname" + Math.round(Date.now()) + ".eth";
+        const address = "madeupname" + Math.round(Date.now()) + ".bso";
 
         const subplebbitTextRecordOfAddress = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // made up ipns
 
