@@ -390,12 +390,7 @@ export async function startSubplebbits(props: {
     await mainSub.edit({
         features: { postFlairs: true },
         flairs: {
-            post: [
-                { text: "Author Flair" },
-                { text: "Discussion" },
-                { text: "Updated" },
-                { text: "Important", backgroundColor: "#ff0000" }
-            ]
+            post: [{ text: "Author Flair" }, { text: "Discussion" }, { text: "Updated" }, { text: "Important", backgroundColor: "#ff0000" }]
         }
     });
 
@@ -639,7 +634,11 @@ export async function mockPlebbitNoDataPathWithOnlyKuboClientNoAdd(opts?: MockPl
 
 export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await mockPlebbitV2({
-        plebbitOptions,
+        plebbitOptions: {
+            kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+            ...plebbitOptions,
+            plebbitRpcClientsOptions: undefined
+        },
         mockResolve: true,
         forceMockPubsub: true,
         remotePlebbit: false,
@@ -936,7 +935,10 @@ export async function createSubWithNoChallenge(
     return sub;
 }
 
-export async function generatePostToAnswerMathQuestion(props: Partial<CreateCommentOptions> & Pick<CreateCommentOptions, "subplebbitAddress">, plebbit: Plebbit) {
+export async function generatePostToAnswerMathQuestion(
+    props: Partial<CreateCommentOptions> & Pick<CreateCommentOptions, "subplebbitAddress">,
+    plebbit: Plebbit
+) {
     const mockPost = await generateMockPost(props.subplebbitAddress, plebbit, false, props);
     mockPost.removeAllListeners("challenge");
     mockPost.once("challenge", (challengeMessage) => {
@@ -1471,10 +1473,12 @@ export async function createNewIpns() {
 
         // Verify the IPNS record is resolvable before returning
         // This ensures Kubo's cache is properly synced for RPC tests
-        const resolvedCid = await last(ipfsClient._client.name.resolve(signer.address, {
-            nocache: false,  // Allow cache to be used
-            timeout: 5000    // 5 second timeout for verification
-        }));
+        const resolvedCid = await last(
+            ipfsClient._client.name.resolve(signer.address, {
+                nocache: false, // Allow cache to be used
+                timeout: 5000 // 5 second timeout for verification
+            })
+        );
 
         if (!resolvedCid) {
             throw new Error(`Failed to verify IPNS resolution for ${signer.address}`);
