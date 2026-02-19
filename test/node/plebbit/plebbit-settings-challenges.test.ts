@@ -3,7 +3,9 @@ import {
     publishWithExpectedResult,
     generateMockPost,
     resolveWhenConditionIsTrue,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    itSkipIfRpc,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    describeIfRpc
 } from "../../../dist/node/test/test-util.js";
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";
@@ -118,7 +120,7 @@ describe("plebbit.settings.challenges", async () => {
         await newPlebbit.destroy();
     });
 
-    it(`subplebbit can use a custom challenge from plebbit.settings.challenges`, async () => {
+    itSkipIfRpc(`subplebbit can use a custom challenge from plebbit.settings.challenges`, async () => {
         const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit;
         const challenges: SubplebbitChallengeSetting[] = [{ name: "sky-color" }];
         await subplebbit.edit({ settings: { challenges } });
@@ -144,7 +146,7 @@ describe("plebbit.settings.challenges", async () => {
         await subplebbit.delete();
     });
 
-    it(`custom challenge correctly verifies pre-answered challenge`, async () => {
+    itSkipIfRpc(`custom challenge correctly verifies pre-answered challenge`, async () => {
         const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit;
         await subplebbit.edit({ settings: { challenges: [{ name: "sky-color" }] } });
         await subplebbit.start();
@@ -171,7 +173,7 @@ describe("plebbit.settings.challenges", async () => {
         await subplebbit.delete();
     });
 
-    it(`user-defined challenge shadows a built-in challenge with the same name`, async () => {
+    itSkipIfRpc(`user-defined challenge shadows a built-in challenge with the same name`, async () => {
         const plebbitWithOverride = await mockPlebbit();
         plebbitWithOverride.settings.challenges = {
             question: overriddenQuestionChallenge
@@ -210,5 +212,20 @@ describe("plebbit.settings.challenges", async () => {
 
         await subplebbit.delete();
         await plebbitWithOverride.destroy();
+    });
+});
+
+describeIfRpc("plebbit.settings.challenges RPC error handling", async () => {
+    it("RPC client throws when setting a challenge name that doesn't exist on the server", async () => {
+        const plebbit = await mockPlebbit();
+        const subplebbit = await plebbit.createSubplebbit({});
+        try {
+            await subplebbit.edit({ settings: { challenges: [{ name: "nonexistent-challenge" }] } });
+            expect.fail("Should have thrown");
+        } catch (e: any) {
+            expect(e.code).to.equal("ERR_RPC_CLIENT_CHALLENGE_NAME_NOT_AVAILABLE_ON_SERVER");
+        }
+        await subplebbit.delete();
+        await plebbit.destroy();
     });
 });

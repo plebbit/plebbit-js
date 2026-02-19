@@ -350,5 +350,6 @@ export enum messages {
     ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB = "RPC client is attempting to stop a remote sub",
     ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB = "RPC client is attempting to edit remote sub",
     ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB = "RPC client is attempting to delete remote sub",
-    ERR_GENERIC_RPC_CLIENT_CALL_ERROR = "RPC client received an unknown error when executing call over websocket"
+    ERR_GENERIC_RPC_CLIENT_CALL_ERROR = "RPC client received an unknown error when executing call over websocket",
+    ERR_RPC_CLIENT_CHALLENGE_NAME_NOT_AVAILABLE_ON_SERVER = "The challenge name is not available on the RPC server. Available challenges are listed in details.availableChallenges"
 }
