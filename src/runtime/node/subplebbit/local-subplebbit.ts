@@ -1197,6 +1197,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const mode = this.features?.pseudonymityMode;
         if (!mode) return { publication: originalComment };
 
+        // Mods (owner, admin, moderator) are never pseudonymized
+        const isAuthorMod = await this._isPublicationAuthorPartOfRoles(originalComment, ["owner", "admin", "moderator"]);
+        if (isAuthorMod) return { publication: originalComment };
+
         const originalAuthorSignerPublicKey = originalComment.signature.publicKey;
         const postCid = originalComment.postCid;
         const aliasPrivateKey = await this._resolveAliasPrivateKeyForCommentPublication({

@@ -134,7 +134,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
 
         it.sequential("Spec: author.address domains resolve and are anonymized consistently", async () => {
             const domainAuthorSigner = await context.publisherPlebbit.createSigner(signers[6]);
-            const domainAddress = "plebbit.eth";
+            const domainAddress = "plebbit.bso";
 
             const resolvedAddress = await context.publisherPlebbit.resolveAuthorAddress({ address: domainAddress });
             expect(resolvedAddress).to.equal(domainAuthorSigner.address);
@@ -1283,6 +1283,98 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-author"', () => {
                     });
                 });
             });
+        });
+    });
+
+    describe.sequential("mod exclusion from pseudonymization", () => {
+        let modContext: PerAuthorContext;
+        let modSigner: SignerWithPublicKeyAddress;
+        let regularSigner: SignerWithPublicKeyAddress;
+
+        beforeAll(async () => {
+            modContext = await createPerAuthorSubplebbit();
+            modSigner = await modContext.publisherPlebbit.createSigner();
+            regularSigner = await modContext.publisherPlebbit.createSigner();
+
+            // Assign mod role
+            await modContext.subplebbit.edit({ roles: { [modSigner.address]: { role: "moderator" } } });
+            await resolveWhenConditionIsTrue({
+                toUpdate: modContext.subplebbit,
+                predicate: async () => modContext.subplebbit.roles?.[modSigner.address]?.role === "moderator"
+            });
+        });
+
+        afterAll(async () => {
+            await modContext.cleanup();
+        });
+
+        it("Spec: mod comment is NOT pseudonymized in per-author mode", async () => {
+            const modPost = await publishRandomPost(modContext.subplebbit.address, modContext.publisherPlebbit, { signer: modSigner });
+            await waitForStoredCommentUpdateWithAssertions(modContext.subplebbit as LocalSubplebbit, modPost);
+
+            const stored = (modContext.subplebbit as LocalSubplebbit)._dbHandler.queryComment(modPost.cid) as StoredComment;
+            expect(stored?.author?.address).to.equal(modSigner.address);
+            expect(stored?.signature?.publicKey).to.equal(modSigner.publicKey);
+            expect(stored?.pseudonymityMode).to.be.undefined;
+
+            const aliasRow = (modContext.subplebbit as LocalSubplebbit)._dbHandler.queryPseudonymityAliasByCommentCid(modPost.cid);
+            expect(aliasRow).to.be.undefined;
+
+            const aliasForAuthor = (modContext.subplebbit as LocalSubplebbit)._dbHandler.queryPseudonymityAliasForAuthor(modSigner.publicKey);
+            expect(aliasForAuthor).to.be.undefined;
+
+            await modPost.stop();
+        });
+
+        it("Spec: non-mod is still pseudonymized alongside mod in per-author mode", async () => {
+            const modPost = await publishRandomPost(modContext.subplebbit.address, modContext.publisherPlebbit, { signer: modSigner });
+            await waitForStoredCommentUpdateWithAssertions(modContext.subplebbit as LocalSubplebbit, modPost);
+
+            const regularPost = await publishRandomPost(modContext.subplebbit.address, modContext.publisherPlebbit, { signer: regularSigner });
+            await waitForStoredCommentUpdateWithAssertions(modContext.subplebbit as LocalSubplebbit, regularPost);
+
+            // Mod should use real address
+            const storedMod = (modContext.subplebbit as LocalSubplebbit)._dbHandler.queryComment(modPost.cid) as StoredComment;
+            expect(storedMod?.author?.address).to.equal(modSigner.address);
+            expect(storedMod?.signature?.publicKey).to.equal(modSigner.publicKey);
+
+            // Regular user should be pseudonymized
+            const storedRegular = (modContext.subplebbit as LocalSubplebbit)._dbHandler.queryComment(regularPost.cid) as StoredComment;
+            expect(storedRegular?.author?.address).to.not.equal(regularSigner.address);
+            expect(storedRegular?.signature?.publicKey).to.not.equal(regularSigner.publicKey);
+
+            const aliasRow = (modContext.subplebbit as LocalSubplebbit)._dbHandler.queryPseudonymityAliasForAuthor(regularSigner.publicKey) as AliasRow;
+            expect(aliasRow).to.exist;
+            expect(aliasRow.mode).to.equal("per-author");
+
+            await modPost.stop();
+            await regularPost.stop();
+        });
+
+        it("Spec: mod comment edit uses real key in per-author mode", async () => {
+            const modPost = await publishRandomPost(modContext.subplebbit.address, modContext.publisherPlebbit, { signer: modSigner });
+            await waitForStoredCommentUpdateWithAssertions(modContext.subplebbit as LocalSubplebbit, modPost);
+
+            const editedContent = "Mod edited content - " + Date.now();
+            const edit = await modContext.publisherPlebbit.createCommentEdit({
+                subplebbitAddress: modPost.subplebbitAddress,
+                commentCid: modPost.cid,
+                content: editedContent,
+                signer: modSigner
+            });
+            await publishWithExpectedResult(edit, true);
+
+            await resolveWhenConditionIsTrue({
+                toUpdate: modContext.subplebbit,
+                predicate: async () =>
+                    ((modContext.subplebbit as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: modPost.cid }) as StoredCommentUpdate)?.edit?.content === editedContent
+            });
+
+            const storedUpdate = (modContext.subplebbit as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: modPost.cid }) as StoredCommentUpdate;
+            expect(storedUpdate?.edit?.content).to.equal(editedContent);
+            expect(storedUpdate?.edit?.signature?.publicKey).to.equal(modSigner.publicKey);
+
+            await modPost.stop();
         });
     });
 
