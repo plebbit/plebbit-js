@@ -79,7 +79,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`The new Comment with spoiler=true has valid signature`, async () => {
             const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
             await recreatedPost.update();
-            await resolveWhenConditionIsTrue({ toUpdate: recreatedPost, predicate: async () => typeof recreatedPost.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: recreatedPost,
+                predicate: async () => typeof recreatedPost.updatedAt === "number"
+            });
 
             await recreatedPost.stop();
             expect(recreatedPost.spoiler).to.be.true;
@@ -208,7 +211,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(modPost.spoiler).to.be.false;
         });
 
-        it(`spoiler=false appears pages of subplebbit`, async () => {
+        it.sequential(`spoiler=false appears pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit({ address: modPost.subplebbitAddress });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.false;

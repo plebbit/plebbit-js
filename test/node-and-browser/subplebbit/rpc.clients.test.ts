@@ -32,7 +32,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             const record: Record<string, unknown> = JSON.parse(JSON.stringify(actualSub.raw.subplebbitIpfs));
             record.address = newIpns.signer.address;
             delete record["posts"];
-            record.signature = await signSubplebbit({ subplebbit: record as Parameters<typeof signSubplebbit>[0]["subplebbit"], signer: newIpns.signer });
+            record.signature = await signSubplebbit({
+                subplebbit: record as Parameters<typeof signSubplebbit>[0]["subplebbit"],
+                signer: newIpns.signer
+            });
 
             await newIpns.publishToIpns(JSON.stringify(record));
 
@@ -55,7 +58,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
         });
 
         it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with ENS address`, async () => {
-            const sub = await plebbit.createSubplebbit({ address: "plebbit.eth" });
+            const sub = await plebbit.createSubplebbit({ address: "plebbit.bso" });
             const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
             const recordedStates: string[] = [];
             const expectedStates = ["resolving-subplebbit-address", "fetching-ipns", "fetching-ipfs", "stopped"];

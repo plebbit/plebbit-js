@@ -141,7 +141,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         expect(pErr.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
-                            expect((pErr.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+                            expect((pErr.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal(
+                                "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID"
+                            );
                     } else {
                         expect(pErr.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
                     }
@@ -168,7 +170,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         expect(pErr.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
-                            expect((pErr.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+                            expect((pErr.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal(
+                                "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA"
+                            );
                     } else {
                         expect(pErr.code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
                     }
@@ -240,7 +244,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 updatedHasBeenCalled = true;
             });
 
-            (subplebbit as unknown as Record<string, Function>).updateOnce = (subplebbit as unknown as Record<string, Function>)._setUpdatingState = async () => {
+            (subplebbit as unknown as Record<string, Function>).updateOnce = (
+                subplebbit as unknown as Record<string, Function>
+            )._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
             };
             await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval * 2));

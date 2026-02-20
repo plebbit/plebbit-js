@@ -19,14 +19,7 @@ import type { Plebbit } from "../../../../dist/node/plebbit/plebbit.js";
 import type { Comment } from "../../../../dist/node/publications/comment/comment.js";
 import type { RemoteSubplebbit } from "../../../../dist/node/subplebbit/remote-subplebbit.js";
 
-// Helper type for page comments
-type PageCommentWithPinned = {
-    cid: string;
-    pinned?: boolean;
-    reason?: string;
-};
-
-const subplebbitAddress = "plebbit.eth";
+const subplebbitAddress = "plebbit.bso";
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -202,13 +195,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 for (const comments of [pinnedComments, restOfComments]) {
                     for (let i = 0; i < comments.length - 1; i++) {
                         const [commentA, commentB] = comments.slice(i, i + 2);
-                        const scoreFunc = POSTS_SORT_TYPES[sortName].score as (args: { comment: unknown; commentUpdate: unknown }) => number;
+                        const scoreFunc = POSTS_SORT_TYPES[sortName].score;
 
                         if (sortName !== "active") {
                             // Temporary. Active does not have a sorting function as of now
                             const [scoreA, scoreB] = [
-                                scoreFunc({ comment: commentA, commentUpdate: commentA }),
-                                scoreFunc({ comment: commentB, commentUpdate: commentB })
+                                scoreFunc({ comment: commentA.raw.comment, commentUpdate: commentA.raw.commentUpdate }),
+                                scoreFunc({ comment: commentB.raw.comment, commentUpdate: commentB.raw.commentUpdate })
                             ];
                             expect(scoreA).to.be.greaterThanOrEqual(scoreB);
                         }
@@ -235,7 +228,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(secondPostToPin.raw.commentUpdate.reason).to.equal("To unpin the second post");
         });
 
-        it(`pinned=true appears in pages of subplebbit`, async () => {
+        it.sequential(`pinned=true appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit({ address: secondPostToPin.subplebbitAddress });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
             expect(commentInPage.pinned).to.be.false;
@@ -272,13 +265,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 for (let i = 1; i < pageComments.length - 1; i++) {
                     const [commentA, commentB] = [pageComments[i], pageComments[i + 1]];
-                    const scoreFunc = POSTS_SORT_TYPES[sortName].score as (args: { comment: unknown; commentUpdate: unknown }) => number;
+                    const scoreFunc = POSTS_SORT_TYPES[sortName].score;
 
                     if (sortName !== "active") {
                         // Temporary. Active does not have a sorting function as of now
                         const [scoreA, scoreB] = [
-                            scoreFunc({ comment: commentA, commentUpdate: commentA }),
-                            scoreFunc({ comment: commentB, commentUpdate: commentB })
+                            scoreFunc({ comment: commentA.raw.comment, commentUpdate: commentA.raw.commentUpdate }),
+                            scoreFunc({ comment: commentB.raw.comment, commentUpdate: commentB.raw.commentUpdate })
                         ];
                         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
                     }
@@ -349,7 +342,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(postsPagesNames.length).to.be.greaterThan(0);
 
             for (const pageSortName of postsPagesNames) {
-                const allCommentsUnderPageSortName = await loadAllPagesBySortName(pageSortName, postToRecreate.replies) as PageCommentWithPinned[];
+                const allCommentsUnderPageSortName = (await loadAllPagesBySortName(
+                    pageSortName,
+                    postToRecreate.replies
+                )) as CommentWithinRepliesPostsPageJson[];
                 const replyInPage = allCommentsUnderPageSortName.find((comment) => comment.cid === replyToPin.cid);
                 expect(replyInPage).to.exist;
                 expect(replyInPage!.pinned).to.be.true;

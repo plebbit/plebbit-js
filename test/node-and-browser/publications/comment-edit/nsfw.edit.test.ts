@@ -79,7 +79,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`The new Comment with nsfw=true has valid signature`, async () => {
             const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
             await recreatedPost.update();
-            await resolveWhenConditionIsTrue({ toUpdate: recreatedPost, predicate: async () => typeof recreatedPost.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: recreatedPost,
+                predicate: async () => typeof recreatedPost.updatedAt === "number"
+            });
 
             await recreatedPost.stop();
             expect(recreatedPost.nsfw).to.be.true;
@@ -207,7 +210,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(modPost.nsfw).to.be.false;
         });
 
-        it(`nsfw=false appears in pages of subplebbit`, async () => {
+        it.sequential(`nsfw=false appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit({ address: modPost.subplebbitAddress });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.false;
