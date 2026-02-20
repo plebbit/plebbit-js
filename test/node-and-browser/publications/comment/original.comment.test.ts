@@ -29,7 +29,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(post.original.signature).to.include.all.keys("type", "signature", "publicKey", "signedPropertyNames");
         });
 
-        it(`comment.original from plebbit.getComment({cid: ) should be undefined`, async () => {
+        it.sequential(`comment.original from plebbit.getComment({cid: ) should be undefined`, async () => {
             const cid = (await plebbit.getSubplebbit({ address: signers[0].address })).posts.pages.hot.comments[0].cid;
             const comment = await plebbit.getComment({ cid: cid });
 
