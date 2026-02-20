@@ -16,6 +16,9 @@ interface PlebbitWsServerPrivateAccess {
     _onSettingsChange: Record<string, Record<string, unknown>>;
     _trackSubplebbitListener: (subplebbit: LocalSubplebbit, event: string, listener: () => void) => void;
     _trackedSubplebbitListeners: Map<LocalSubplebbit, Map<string, Set<() => void>>>;
+    _serializeSettingsFromPlebbit: (plebbit: PlebbitWsServerType["plebbit"]) => {
+        challenges: Record<string, { type?: string; challenge?: string; description?: string }>;
+    };
 }
 
 const STARTED_EVENT_NAMES = [
@@ -86,6 +89,17 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
         } finally {
             rpcServerWithPrivate._trackSubplebbitListener = originalTrack;
         }
+    });
+
+    it("preserves built-in challenge metadata when setPlebbitJs injects a plain function", async function () {
+        rpcServer = await createPlebbitWsServer({ port: getTestPort() });
+        mockRpcServerForTests(rpcServer);
+
+        const rpcServerWithPrivate = rpcServer as unknown as PlebbitWsServerPrivateAccess;
+        const settings = rpcServerWithPrivate._serializeSettingsFromPlebbit(rpcServer.plebbit);
+
+        expect(settings.challenges.question).to.be.an("object");
+        expect(settings.challenges.question.type).to.be.a("string");
     });
 
     it("tracks listeners on startSubplebbit and removes them on stopSubplebbit", async function () {
