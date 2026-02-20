@@ -37,7 +37,7 @@ const roles = [
 // I suspect libp2p config is not emitting error
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     [0, 1, 2, 15, 30].map((commentDepth) => {
-        describe.concurrent(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
+        describe.sequential(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
             let plebbit: Plebbit, commentToPurge: Comment, replyOfCommentToPurge: Comment, replyUnderReplyOfCommentToPurge: Comment;
             let replyCountOfParentOfPurgedComment: number; // undefined if commentDepth is 0
             let remotePlebbitIpfs: Plebbit;
@@ -83,10 +83,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 // make sure both postToPurge and postReply exists on the IPFS node
 
                 for (const cid of [commentToPurge.cid, replyOfCommentToPurge.cid, replyUnderReplyOfCommentToPurge.cid]) {
-                    const res =
-                        await remotePlebbitIpfs.clients.kuboRpcClients[
-                            Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
-                        ]._client.block.stat(CID.parse(cid));
+                    const res = await remotePlebbitIpfs.clients.kuboRpcClients[
+                        Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
+                    ]._client.block.stat(CID.parse(cid));
                     expect(res.size).to.be.a("number");
                 }
 
@@ -269,7 +268,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                             subplebbit.updateCid
                         );
                 }, 20000);
-                await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => subplebbit.lastPostCid !== commentToPurge.cid });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: subplebbit,
+                    predicate: async () => subplebbit.lastPostCid !== commentToPurge.cid
+                });
                 expect(subplebbit.lastPostCid).to.not.equal(commentToPurge.cid);
                 await subplebbit.stop();
                 clearInterval(intervalId);
