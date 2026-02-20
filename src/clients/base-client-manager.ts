@@ -652,7 +652,9 @@ export class BaseClientsManager {
     // Resolver methods here
 
     _getKeyOfCachedDomainTextRecord(domainAddress: string, txtRecord: string) {
-        return `${domainAddress}_${txtRecord}`;
+        // Normalize .bso to .eth so both aliases share the same cache entry
+        const normalizedAddress = domainAddress.endsWith(".bso") ? domainAddress.slice(0, -4) + ".eth" : domainAddress;
+        return `${normalizedAddress}_${txtRecord}`;
     }
 
     private async _getCachedTextRecord(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
