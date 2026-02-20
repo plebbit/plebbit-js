@@ -11,7 +11,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
-import { isStringDomain, removeNullUndefinedEmptyObjectsValuesRecursively, throwWithErrorCode, timestamp } from "../util.js";
+import { areEquivalentSubplebbitAddresses, isStringDomain, removeNullUndefinedEmptyObjectsValuesRecursively, throwWithErrorCode, timestamp } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 
 import type {
@@ -634,7 +634,7 @@ export async function verifyCommentIpfs(opts: {
     );
     if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.get(cacheKey)) return { valid: true };
 
-    if (opts.subplebbitAddressFromInstance && opts.comment.subplebbitAddress !== opts.subplebbitAddressFromInstance)
+    if (opts.subplebbitAddressFromInstance && !areEquivalentSubplebbitAddresses(opts.comment.subplebbitAddress, opts.subplebbitAddressFromInstance))
         return { valid: false, reason: messages.ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH };
 
     const keysCasted = <(keyof CommentPubsubMessagePublication)[]>opts.comment.signature.signedPropertyNames;
@@ -958,7 +958,7 @@ export async function verifyPageComment({
     // another sceneario is with a flat page, where we don't have the parent comment cid or prop, but we do have its postCid
     // another sceneario is when we're veriifying a nested page and we have the parent comment cid and all its props
     // another sceneario is when we're verifying a mod queue page that has comments with different depths with different parentCids and not necessarily a shared postCid
-    if (pageComment.comment.subplebbitAddress !== subplebbit.address)
+    if (!areEquivalentSubplebbitAddresses(pageComment.comment.subplebbitAddress, subplebbit.address))
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
 
     if (pageComment.comment.depth === 0 && pageComment.comment.postCid)

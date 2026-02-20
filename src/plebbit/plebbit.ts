@@ -23,6 +23,7 @@ import type {
 import { Comment } from "../publications/comment/comment.js";
 import {
     waitForUpdateInSubInstanceWithErrorAndTimeout,
+    areEquivalentSubplebbitAddresses,
     doesDomainAddressHaveCapitalLetter,
     hideClassPrivateProps,
     removeUndefinedValuesRecursively,
@@ -702,8 +703,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         if ("address" in parsedOptions && !("signer" in parsedOptions)) {
             // sub is already created, need to check if it's local or remote
             const localSubs = await nodeListSubplebbits(this);
-            const isSubLocal = localSubs.includes(parsedOptions.address);
-            if (isSubLocal) return this._createLocalSub({ address: parsedOptions.address });
+            // Check for exact match or .eth/.bso alias match
+            const localSubAddress = localSubs.find((localAddr) => areEquivalentSubplebbitAddresses(localAddr, parsedOptions.address));
+            if (localSubAddress) return this._createLocalSub({ address: localSubAddress });
             else {
                 const parsedRemoteOptions = parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
                 return this._createRemoteSubplebbitInstance(parsedRemoteOptions);

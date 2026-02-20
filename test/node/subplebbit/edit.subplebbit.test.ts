@@ -280,15 +280,13 @@ describeSkipIfRpc(`subplebbit.edit .eth -> .bso transition`, async () => {
         expect(fs.existsSync(path.join(subplebbitsDir, `${bsoAddress}.start.lock`))).to.be.true;
     });
 
-    it(`posts are reset locally and remotely after .eth -> .bso edit`, async () => {
-        expect(subplebbit.posts.pages).to.deep.equal({});
-        expect(subplebbit.posts.pageCids).to.deep.equal({});
-
-        const loadedSubplebbit = (await remotePlebbit.getSubplebbit({ address: bsoAddress })) as RemoteSubplebbit;
-        expect(loadedSubplebbit.address).to.equal(bsoAddress);
-        expect(loadedSubplebbit.posts.pages).to.deep.equal({});
-        expect(loadedSubplebbit.posts.pageCids).to.deep.equal({});
-        await loadedSubplebbit.stop();
+    it(`posts are preserved locally after .eth -> .bso edit (alias transition)`, async () => {
+        // .eth and .bso are equivalent aliases, so posts published under .eth should still be visible under .bso
+        await resolveWhenConditionIsTrue({
+            toUpdate: subplebbit,
+            predicate: async () => Object.keys(subplebbit.posts.pages).length > 0
+        });
+        expect(subplebbit.posts.pages).to.not.deep.equal({});
     });
 
     it(`started sub keeps accepting publications on the new .bso address`, async () => {
@@ -761,4 +759,134 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
             await remotePlebbitInstance.destroy();
         })
     );
+});
+
+describeSkipIfRpc(`.eth <-> .bso alias address transitions`, async () => {
+    let plebbit: PlebbitType;
+    let remotePlebbit: PlebbitType;
+    let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
+    let ethNameAddress: string;
+    let bsoNameAddress: string;
+    let postPublishedOnEth: Comment;
+
+    beforeAll(async () => {
+        plebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
+        remotePlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true, remotePlebbit: true });
+
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        const domainBase = `test-alias-${uuidV4()}`;
+        ethNameAddress = `${domainBase}.eth`;
+        bsoNameAddress = `${domainBase}.bso`;
+
+        // Mock both .eth and .bso domains to resolve to the same signer address
+        for (const domain of [ethNameAddress, bsoNameAddress]) {
+            await mockCacheOfTextRecord({
+                plebbit,
+                domain,
+                textRecord: "subplebbit-address",
+                value: subplebbit.signer.address
+            });
+            await mockCacheOfTextRecord({
+                plebbit: remotePlebbit,
+                domain,
+                textRecord: "subplebbit-address",
+                value: subplebbit.signer.address
+            });
+        }
+
+        // First, edit to .eth domain
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
+        await subplebbit.edit({ address: ethNameAddress });
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        expect(subplebbit.address).to.equal(ethNameAddress);
+
+        // Publish a post under the .eth address
+        postPublishedOnEth = await publishRandomPost(ethNameAddress, plebbit);
+        await resolveWhenConditionIsTrue({
+            toUpdate: subplebbit,
+            predicate: async () =>
+                Boolean(subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postPublishedOnEth.cid))
+        });
+        expect(subplebbit.posts.pages.hot!.comments.length).to.be.greaterThan(0);
+    });
+
+    afterAll(async () => {
+        await subplebbit.stop();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
+    it(`Posts are preserved after editing address from .eth to .bso`, async () => {
+        // Edit from .eth to .bso (equivalent alias)
+        await subplebbit.edit({ address: bsoNameAddress });
+        expect(subplebbit.address).to.equal(bsoNameAddress);
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+
+        // Wait for pages to be regenerated with the post still included
+        await resolveWhenConditionIsTrue({
+            toUpdate: subplebbit,
+            predicate: async () =>
+                Boolean(subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postPublishedOnEth.cid))
+        });
+        expect(subplebbit.posts.pages.hot!.comments.length).to.be.greaterThan(0);
+    });
+
+    it(`Remote loading of .bso sub also has the post published under .eth`, async () => {
+        const loadedSub = (await remotePlebbit.getSubplebbit({ address: bsoNameAddress })) as RemoteSubplebbit;
+        expect(loadedSub.address).to.equal(bsoNameAddress);
+        expect(loadedSub.posts.pages.hot!.comments.length).to.be.greaterThan(0);
+    });
+
+    it(`Can load a local subplebbit by .eth alias when address is .bso`, async () => {
+        // The sub's current address is bsoNameAddress, but loading with ethNameAddress should still find the local sub
+        const loadedSub = await plebbit.createSubplebbit({ address: ethNameAddress });
+        expect(loadedSub.address).to.equal(bsoNameAddress);
+        expect((loadedSub as LocalSubplebbit).signer).to.not.be.undefined;
+    });
+
+    it(`Can load a local subplebbit by .bso alias when address is .eth`, async () => {
+        // Create a separate non-started sub with .eth address and load it with .bso
+        const customPlebbit = await mockPlebbit();
+        const sub = (await customPlebbit.createSubplebbit()) as LocalSubplebbit | RpcLocalSubplebbit;
+        const domain = `load-alias-${uuidV4()}`;
+        await sub.edit({ address: `${domain}.eth` });
+        expect(sub.address).to.equal(`${domain}.eth`);
+
+        // Load with .bso — should find the local sub
+        const loadedSub = await customPlebbit.createSubplebbit({ address: `${domain}.bso` });
+        expect(loadedSub.address).to.equal(`${domain}.eth`);
+        expect((loadedSub as LocalSubplebbit).signer).to.not.be.undefined;
+        await customPlebbit.destroy();
+    });
+
+    it(`subplebbit.edit({address}) fails if the .eth/.bso equivalent is already taken by another subplebbit`, async () => {
+        const customPlebbit = await mockPlebbit();
+        const sub1 = (await customPlebbit.createSubplebbit()) as LocalSubplebbit | RpcLocalSubplebbit;
+        const domain = `address-equiv-${uuidV4()}`;
+        await sub1.edit({ address: `${domain}.eth` });
+
+        const sub2 = (await customPlebbit.createSubplebbit()) as LocalSubplebbit | RpcLocalSubplebbit;
+        try {
+            // Trying to claim the .bso alias of a domain already taken by another sub
+            await sub2.edit({ address: `${domain}.bso` });
+            expect.fail("Should fail");
+        } catch (e) {
+            expect((e as { code: string }).code).to.equal("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS");
+        }
+        await customPlebbit.destroy();
+    });
+
+    it(`Same sub can transition between .eth and .bso aliases`, async () => {
+        const customPlebbit = await mockPlebbit();
+        const sub = (await customPlebbit.createSubplebbit()) as LocalSubplebbit | RpcLocalSubplebbit;
+        const domain = `self-alias-${uuidV4()}`;
+        await sub.edit({ address: `${domain}.eth` });
+        expect(sub.address).to.equal(`${domain}.eth`);
+
+        // Should NOT throw — it's the same sub changing its own alias
+        await sub.edit({ address: `${domain}.bso` });
+        expect(sub.address).to.equal(`${domain}.bso`);
+        await customPlebbit.destroy();
+    });
 });

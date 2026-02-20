@@ -9,7 +9,7 @@ import * as remeda from "remeda";
 import type { SubplebbitIpfsType, SubplebbitJson } from "./types.js";
 import Logger from "@plebbit/plebbit-logger";
 
-import { hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKey, timestamp } from "../util.js";
+import { areEquivalentSubplebbitAddresses, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKey, timestamp } from "../util.js";
 import pLimit from "p-limit";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
@@ -152,16 +152,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     }
 
     private _areEquivalentSubplebbitAddresses(addressA: string, addressB: string): boolean {
-        if (addressA === addressB) return true;
-        const lowerAddressA = addressA.toLowerCase();
-        const lowerAddressB = addressB.toLowerCase();
-        const isEthAliasDomain = (address: string) => address.endsWith(".eth") || address.endsWith(".bso");
-        if (!isEthAliasDomain(lowerAddressA) || !isEthAliasDomain(lowerAddressB)) return false;
-
-        const normalizeEthAliasDomain = (address: string) =>
-            address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;
-
-        return normalizeEthAliasDomain(lowerAddressA) === normalizeEthAliasDomain(lowerAddressB);
+        return areEquivalentSubplebbitAddresses(addressA, addressB);
     }
 
     // functions for updatingSubInstance

@@ -1,6 +1,6 @@
 import { Plebbit } from "../plebbit/plebbit.js";
 import assert from "assert";
-import { calculateIpfsCidV0, delay, hideClassPrivateProps, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
+import { calculateIpfsCidV0, delay, hideClassPrivateProps, isEthAliasDomain, isIpns, isStringDomain, normalizeEthAliasDomain, throwWithErrorCode, timestamp } from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import {
@@ -653,7 +653,7 @@ export class BaseClientsManager {
 
     _getKeyOfCachedDomainTextRecord(domainAddress: string, txtRecord: string) {
         // Normalize .bso to .eth so both aliases share the same cache entry
-        const normalizedAddress = domainAddress.endsWith(".bso") ? domainAddress.slice(0, -4) + ".eth" : domainAddress;
+        const normalizedAddress = normalizeEthAliasDomain(domainAddress);
         return `${normalizedAddress}_${txtRecord}`;
     }
 
@@ -674,10 +674,10 @@ export class BaseClientsManager {
     ): Promise<string | null> {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
         const chain: ChainTicker | undefined =
-            address.endsWith(".bso") || address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
+            isEthAliasDomain(address) ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address (${address}). Are you sure plebbit-js support this chain?`);
         const chainId = this._plebbit.chainProviders[chain]?.chainId;
-        const ensAddress = address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;
+        const ensAddress = normalizeEthAliasDomain(address);
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {
             if (cachedTextRecord.stale)

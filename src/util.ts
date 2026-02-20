@@ -363,6 +363,30 @@ export function isStringDomain(x: string | undefined) {
     return typeof x === "string" && x.includes(".");
 }
 
+export function isEthAliasDomain(address: string): boolean {
+    const lower = address.toLowerCase();
+    return lower.endsWith(".eth") || lower.endsWith(".bso");
+}
+
+export function normalizeEthAliasDomain(address: string): string {
+    return address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;
+}
+
+export function areEquivalentSubplebbitAddresses(addressA: string, addressB: string): boolean {
+    if (addressA === addressB) return true;
+    const lowerA = addressA.toLowerCase();
+    const lowerB = addressB.toLowerCase();
+    if (!isEthAliasDomain(lowerA) || !isEthAliasDomain(lowerB)) return false;
+    return normalizeEthAliasDomain(lowerA) === normalizeEthAliasDomain(lowerB);
+}
+
+export function getEquivalentSubplebbitAddresses(address: string): string[] {
+    const lower = address.toLowerCase();
+    if (lower.endsWith(".bso")) return [address, address.slice(0, -4) + ".eth"];
+    if (lower.endsWith(".eth")) return [address, address.slice(0, -4) + ".bso"];
+    return [address];
+}
+
 export function isIpns(x: string) {
     // This function will test if a string is of IPNS address (12D)
     try {

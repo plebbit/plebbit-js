@@ -11,7 +11,7 @@ import type {
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import type { Plebbit } from "../../../../../../plebbit/plebbit.js";
-import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
+import { derivePublicationFromChallengeRequest, isEthAliasDomain, isStringDomain, normalizeEthAliasDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
@@ -152,8 +152,8 @@ const verifyAuthorWalletAddress = async (props: {
 
 const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
     const authorAddress = props.publication.author.address;
-    if (!authorAddress.endsWith(".bso") && !authorAddress.endsWith(".eth")) return "Author address is not a .bso/.eth domain";
-    const ensAddress = authorAddress.endsWith(".bso") ? authorAddress.slice(0, -4) + ".eth" : authorAddress;
+    if (!isEthAliasDomain(authorAddress)) return "Author address is not a .bso/.eth domain";
+    const ensAddress = normalizeEthAliasDomain(authorAddress);
     const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
         "eth",
         _getChainProviderWithSafety(props.plebbit, "eth").urls[0]

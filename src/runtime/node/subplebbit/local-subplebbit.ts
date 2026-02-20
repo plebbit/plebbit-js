@@ -49,7 +49,8 @@ import {
     contentContainsMarkdownImages,
     contentContainsMarkdownVideos,
     isLinkOfAudio,
-    contentContainsMarkdownAudio
+    contentContainsMarkdownAudio,
+    areEquivalentSubplebbitAddresses
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -1632,7 +1633,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     ): Promise<messages | undefined> {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest:checkPublicationValidity");
 
-        if (publication.subplebbitAddress !== this.address) return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
+        if (!areEquivalentSubplebbitAddresses(publication.subplebbitAddress, this.address))
+            return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
 
         if (publication.timestamp <= timestamp() - 5 * 60 || publication.timestamp >= timestamp() + 5 * 60)
             return messages.ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE;
@@ -2949,7 +2951,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     async _validateNewAddressBeforeEditing(newAddress: string, log: Logger) {
         if (doesDomainAddressHaveCapitalLetter(newAddress))
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
-        if (this._plebbit.subplebbits.includes(newAddress))
+        // Check if any existing sub (other than this one) already has an equivalent address
+        // This handles both exact matches and .eth/.bso alias equivalence
+        const existingEquivalent = this._plebbit.subplebbits.find(
+            (existing) =>
+                areEquivalentSubplebbitAddresses(existing, newAddress) && !areEquivalentSubplebbitAddresses(existing, this.address)
+        );
+        if (existingEquivalent)
             throw new PlebbitError("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS", {
                 currentSubplebbitAddress: this.address,
                 newSubplebbitAddress: newAddress,

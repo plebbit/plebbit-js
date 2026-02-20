@@ -1,4 +1,4 @@
-import { hideClassPrivateProps, isStringDomain, removeNullUndefinedValues, throwWithErrorCode, timestamp } from "../../../util.js";
+import { getEquivalentSubplebbitAddresses, hideClassPrivateProps, isStringDomain, removeNullUndefinedValues, throwWithErrorCode, timestamp } from "../../../util.js";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
@@ -1125,6 +1125,29 @@ export class DbHandler {
         return `(${alias}.pendingApproval IS NULL OR ${alias}.pendingApproval != 1)`;
     }
 
+    private _subplebbitAddressClause(alias: string): { clause: string; params: string[] } {
+        const addresses = getEquivalentSubplebbitAddresses(this._subplebbit.address);
+        if (addresses.length === 1) return { clause: `${alias}.subplebbitAddress = ?`, params: addresses };
+        const placeholders = addresses.map(() => "?").join(", ");
+        return { clause: `${alias}.subplebbitAddress IN (${placeholders})`, params: addresses };
+    }
+
+    private _subplebbitAddressClauseNamed(alias: string, paramPrefix: string): { clause: string; params: Record<string, string> } {
+        const addresses = getEquivalentSubplebbitAddresses(this._subplebbit.address);
+        if (addresses.length === 1) {
+            const paramName = `${paramPrefix}SubAddr`;
+            return { clause: `${alias}.subplebbitAddress = :${paramName}`, params: { [paramName]: addresses[0] } };
+        }
+        const params: Record<string, string> = {};
+        const placeholders: string[] = [];
+        addresses.forEach((addr, i) => {
+            const paramName = `${paramPrefix}SubAddr${i}`;
+            params[paramName] = addr;
+            placeholders.push(`:${paramName}`);
+        });
+        return { clause: `${alias}.subplebbitAddress IN (${placeholders.join(", ")})`, params };
+    }
+
     private _buildPageQueryParts(options: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">): {
         whereClauses: string[];
         params: any[];
@@ -1136,8 +1159,9 @@ export class DbHandler {
         const params: any[] = [options.parentCid];
 
         if (options.excludeCommentsWithDifferentSubAddress) {
-            whereClauses.push(`${commentsTable}.subplebbitAddress = ?`);
-            params.push(this._subplebbit.address);
+            const { clause, params: addrParams } = this._subplebbitAddressClause(commentsTable);
+            whereClauses.push(clause);
+            params.push(...addrParams);
         }
         if (options.excludeCommentPendingApproval) whereClauses.push(this._pendingApprovalClause(commentsTable));
         if (options.excludeRemovedComments) whereClauses.push(this._removedClause(commentUpdatesTable));
@@ -1148,6 +1172,7 @@ export class DbHandler {
     }
 
     queryMaximumTimestampUnderComment(comment: Pick<CommentsTableRow, "cid">): number | undefined {
+        const { clause: addrClause, params: addrParams } = this._subplebbitAddressClause("c");
         const query = `
             WITH RECURSIVE descendants AS (
                 SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
@@ -1160,13 +1185,13 @@ export class DbHandler {
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                 LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
                 JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
-                WHERE c.subplebbitAddress = ? AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                WHERE ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
                   AND COALESCE(cu.approved, 1) != 0
                   AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             )
             SELECT MAX(timestamp) AS max_timestamp FROM descendants
         `;
-        const result = this._db.prepare(query).get(comment.cid, this._subplebbit.address) as { max_timestamp: number | null };
+        const result = this._db.prepare(query).get(comment.cid, ...addrParams) as { max_timestamp: number | null };
 
         if (result.max_timestamp === null) return undefined;
         return result.max_timestamp;
@@ -1219,10 +1244,12 @@ export class DbHandler {
         const deletedLookupAlias = "d";
 
         if (options.excludeCommentsWithDifferentSubAddress) {
-            baseFilterClauses.push(`${commentsAlias}.subplebbitAddress = ?`);
-            params.push(this._subplebbit.address);
-            recursiveFilterClauses.push(`${commentsAlias}.subplebbitAddress = ?`);
-            params.push(this._subplebbit.address);
+            const { clause: baseClause, params: baseAddrParams } = this._subplebbitAddressClause(commentsAlias);
+            baseFilterClauses.push(baseClause);
+            params.push(...baseAddrParams);
+            const { clause: recClause, params: recAddrParams } = this._subplebbitAddressClause(commentsAlias);
+            recursiveFilterClauses.push(recClause);
+            params.push(...recAddrParams);
         }
         if (options.excludeCommentPendingApproval) {
             const clause = this._pendingApprovalClause(commentsAlias);
@@ -1459,7 +1486,8 @@ export class DbHandler {
     querySubplebbitStats(): SubplebbitStats {
         // if you change this query, make sure to run stats.subplebbit.test.js
         const now = timestamp(); // All timestamps are in seconds
-        const subplebbitAddress = this._subplebbit.address;
+        const { clause: commentAddrClause, params: commentAddrParams } = this._subplebbitAddressClauseNamed("comments", "statsComments");
+        const { clause: votesAddrClause, params: votesAddrParams } = this._subplebbitAddressClauseNamed("comments_for_votes", "statsVotes");
         const removedCommentsClause = this._removedClause("cu_comments");
         const deletedCommentsClause = this._deletedFromUpdatesClause("cu_comments");
         const removedVotesClause = this._removedClause("cu_votes");
@@ -1467,7 +1495,7 @@ export class DbHandler {
         const pendingCommentsClause = this._pendingApprovalClause("comments");
 
         const queryString = `
-            SELECT 
+            SELECT
                 -- Active user counts from combined activity
                 COALESCE(COUNT(DISTINCT CASE WHEN hour_active > 0 THEN authorSignerAddress END), 0) as hourActiveUserCount,
                 COALESCE(COUNT(DISTINCT CASE WHEN day_active > 0 THEN authorSignerAddress END), 0) as dayActiveUserCount,
@@ -1475,7 +1503,7 @@ export class DbHandler {
                 COALESCE(COUNT(DISTINCT CASE WHEN month_active > 0 THEN authorSignerAddress END), 0) as monthActiveUserCount,
                 COALESCE(COUNT(DISTINCT CASE WHEN year_active > 0 THEN authorSignerAddress END), 0) as yearActiveUserCount,
                 COALESCE(COUNT(DISTINCT authorSignerAddress), 0) as allActiveUserCount,
-                
+
                 -- Post counts from comments only
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) as hourPostCount,
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) as dayPostCount,
@@ -1483,7 +1511,7 @@ export class DbHandler {
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END), 0) as monthPostCount,
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) as yearPostCount,
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 THEN 1 ELSE 0 END), 0) as allPostCount,
-                
+
                 -- Reply counts from comments only
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) as hourReplyCount,
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) as dayReplyCount,
@@ -1492,8 +1520,8 @@ export class DbHandler {
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) as yearReplyCount,
                 COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 THEN 1 ELSE 0 END), 0) as allReplyCount
             FROM (
-                SELECT 
-                    comments.authorSignerAddress, 
+                SELECT
+                    comments.authorSignerAddress,
                     comments.timestamp,
                     comments.depth,
                     1 as is_comment,
@@ -1504,13 +1532,13 @@ export class DbHandler {
                     CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
                 FROM ${TABLES.COMMENTS} AS comments
                 LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_comments ON cu_comments.cid = comments.cid
-                WHERE comments.subplebbitAddress = :subplebbitAddress
+                WHERE ${commentAddrClause}
                   AND ${removedCommentsClause}
                   AND ${deletedCommentsClause}
                   AND ${pendingCommentsClause}
                 UNION ALL
-                SELECT 
-                    votes.authorSignerAddress, 
+                SELECT
+                    votes.authorSignerAddress,
                     votes.timestamp,
                     NULL as depth,
                     0 as is_comment,
@@ -1522,13 +1550,13 @@ export class DbHandler {
                 FROM ${TABLES.VOTES} AS votes
                 INNER JOIN ${TABLES.COMMENTS} AS comments_for_votes ON comments_for_votes.cid = votes.commentCid
                 LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_votes ON cu_votes.cid = comments_for_votes.cid
-                WHERE comments_for_votes.subplebbitAddress = :subplebbitAddress
+                WHERE ${votesAddrClause}
                   AND ${removedVotesClause}
                   AND ${deletedVotesClause}
             )
         `;
 
-        return this._db.prepare(queryString).get({ subplebbitAddress }) as SubplebbitStats;
+        return this._db.prepare(queryString).get({ ...commentAddrParams, ...votesAddrParams }) as SubplebbitStats;
     }
 
     queryCommentsUnderComment(parentCid: string | null): CommentsTableRow[] {
@@ -1538,28 +1566,29 @@ export class DbHandler {
 
     queryFirstCommentWithDepth(commentDepth: number): CommentsTableRow | undefined {
         if (!Number.isInteger(commentDepth) || commentDepth < 0) throw new Error("commentDepth must be a non-negative integer");
+        const { clause: addrClause, params: addrParams } = this._subplebbitAddressClauseNamed("c", "firstComment");
         const exactDepthRow = this._db
             .prepare(
                 `SELECT c.* FROM ${TABLES.COMMENTS} c
                  LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
-                 WHERE c.subplebbitAddress = @subplebbitAddress
+                 WHERE ${addrClause}
                    AND c.depth = @commentDepth
                  ORDER BY COALESCE(cu.replyCount, 0) DESC
                  LIMIT 1`
             )
-            .get({ subplebbitAddress: this._subplebbit.address, commentDepth }) as CommentsTableRow | undefined;
+            .get({ ...addrParams, commentDepth }) as CommentsTableRow | undefined;
         if (exactDepthRow) return this._parseCommentsTableRow(exactDepthRow);
 
         const lowerDepthRow = this._db
             .prepare(
                 `SELECT c.* FROM ${TABLES.COMMENTS} c
                  LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
-                 WHERE c.subplebbitAddress = @subplebbitAddress
+                 WHERE ${addrClause}
                    AND c.depth < @commentDepth
                  ORDER BY c.depth DESC, COALESCE(cu.replyCount, 0) DESC
                  LIMIT 1`
             )
-            .get({ subplebbitAddress: this._subplebbit.address, commentDepth }) as CommentsTableRow | undefined;
+            .get({ ...addrParams, commentDepth }) as CommentsTableRow | undefined;
         if (!lowerDepthRow) return undefined;
         return this._parseCommentsTableRow(lowerDepthRow);
     }
@@ -1638,8 +1667,9 @@ export class DbHandler {
     }
 
     private _queryCommentCounts(cid: string): Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount" | "childCount"> {
+        const { clause: addrClause, params: addrParams } = this._subplebbitAddressClauseNamed("c", "cc");
         const query = `
-        SELECT 
+        SELECT
             (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = :cid AND vote = 1) AS upvoteCount,
             (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = :cid AND vote = -1) AS downvoteCount,
             (
@@ -1647,23 +1677,23 @@ export class DbHandler {
                     SELECT c.cid FROM ${TABLES.COMMENTS} c
                     INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                     LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                    WHERE c.parentCid = :cid AND c.subplebbitAddress = :subplebbitAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                    WHERE c.parentCid = :cid AND ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
                     UNION ALL
                     SELECT c.cid FROM ${TABLES.COMMENTS} c
                     INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                     LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
                     JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
-                    WHERE c.subplebbitAddress = :subplebbitAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                    WHERE ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
                 ) SELECT COUNT(*) FROM descendants
             ) AS replyCount,
             (
                 SELECT COUNT(*) FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                 LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                WHERE c.parentCid = :cid AND c.subplebbitAddress = :subplebbitAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                WHERE c.parentCid = :cid AND ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
             ) AS childCount
         `;
-        return this._db.prepare(query).get({ cid, subplebbitAddress: this._subplebbit.address }) as Pick<
+        return this._db.prepare(query).get({ cid, ...addrParams }) as Pick<
             CommentUpdateType,
             "replyCount" | "upvoteCount" | "downvoteCount" | "childCount"
         >;
@@ -2587,8 +2617,12 @@ export class DbHandler {
     queryPostsWithActiveScore(
         pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">
     ): (PageIpfs["comments"][0] & { activeScore: number })[] {
+        const { clause: rootAddrClause, params: rootAddrParams } = this._subplebbitAddressClauseNamed("p", "asRoot");
+        const { clause: descAddrClause, params: descAddrParams } = this._subplebbitAddressClauseNamed("c", "asDesc");
+        const { clause: postsAddrClause, params: postsAddrParams } = this._subplebbitAddressClauseNamed("c", "asPosts");
+
         const activeScoreRootConditions = ["p.depth = 0"];
-        if (pageOptions.excludeCommentsWithDifferentSubAddress) activeScoreRootConditions.push("p.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentsWithDifferentSubAddress) activeScoreRootConditions.push(rootAddrClause);
         if (pageOptions.excludeCommentPendingApproval) activeScoreRootConditions.push(this._pendingApprovalClause("p"));
         if (pageOptions.excludeRemovedComments) activeScoreRootConditions.push(this._removedClause("cu_root"));
         if (pageOptions.excludeDeletedComments) activeScoreRootConditions.push(this._deletedFromUpdatesClause("cu_root"));
@@ -2596,7 +2630,7 @@ export class DbHandler {
         const activeScoreRootWhere = `WHERE ${activeScoreRootConditions.join(" AND ")}`;
 
         const activeScoreDescendantConditions: string[] = [];
-        if (pageOptions.excludeCommentsWithDifferentSubAddress) activeScoreDescendantConditions.push("c.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentsWithDifferentSubAddress) activeScoreDescendantConditions.push(descAddrClause);
         if (pageOptions.excludeCommentPendingApproval) activeScoreDescendantConditions.push(this._pendingApprovalClause("c"));
         if (pageOptions.excludeRemovedComments) activeScoreDescendantConditions.push(this._removedClause("cu"));
         if (pageOptions.excludeDeletedComments) activeScoreDescendantConditions.push(this._deletedFromLookupClause("deleted_lookup"));
@@ -2632,13 +2666,13 @@ export class DbHandler {
             FROM ${TABLES.COMMENTS} c INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
             INNER JOIN (${activeScoresCte}) AS asc_scores ON c.cid = asc_scores.post_cid
         `;
-        const params: Record<string, any> = { subAddress: this._subplebbit.address };
+        const params: Record<string, any> = { ...rootAddrParams, ...descAddrParams };
 
         const postsWhereClauses = ["c.depth = 0"];
 
         if (pageOptions.excludeCommentsWithDifferentSubAddress) {
-            postsWhereClauses.push("c.subplebbitAddress = :pageSubAddress");
-            params.pageSubAddress = this._subplebbit.address;
+            postsWhereClauses.push(postsAddrClause);
+            Object.assign(params, postsAddrParams);
         }
         if (pageOptions.excludeRemovedComments) postsWhereClauses.push(this._removedClause("cu"));
         if (pageOptions.excludeDeletedComments) postsWhereClauses.push(this._deletedFromUpdatesClause("cu"));
