@@ -29,7 +29,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
         const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false }, remotePlebbit: true }); // no storage so it wouldn't be cached
 
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {
-            author: { address: "plebbit.eth" },
+            author: { address: "plebbit.bso" },
             signer: signers[6]
         });
 
@@ -108,7 +108,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
             remotePlebbit: true,
             mockResolve: true
         });
-        const sub = await remotePlebbit.createSubplebbit({ address: "plebbit.eth" });
+        const sub = await remotePlebbit.createSubplebbit({ address: "plebbit.bso" });
 
         const expectedStates = ["resolving-subplebbit-address", "stopped"];
 
@@ -134,7 +134,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
             remotePlebbit: true,
             mockResolve: true
         }); // using different plebbit to it wouldn't be cached
-        const sub = await plebbit.createSubplebbit({ address: "plebbit.eth" });
+        const sub = await plebbit.createSubplebbit({ address: "plebbit.bso" });
 
         await mockCacheOfTextRecord({
             plebbit: sub._plebbit,

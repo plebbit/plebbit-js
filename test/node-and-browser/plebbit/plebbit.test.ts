@@ -21,7 +21,7 @@ describe("Plebbit options", async () => {
     beforeAll(async () => {
         const plebbit = await Plebbit({ httpRoutersOptions: [] });
         defaultIpfsGatewayUrls = plebbit.ipfsGatewayUrls;
-        await plebbit.destroy();
+        plebbit.destroy().catch((err) => console.error("failed to destroy plebbit", err));
     });
     it("Plebbit() uses correct default plebbit options", async () => {
         const defaultPlebbit = await Plebbit({ httpRoutersOptions: [] });
@@ -29,7 +29,8 @@ describe("Plebbit options", async () => {
         expect(Object.keys(defaultPlebbit.clients.pubsubKuboRpcClients).sort()).to.deep.equal(
             ["https://pubsubprovider.xyz/api/v0", "https://plebpubsub.xyz/api/v0"].sort()
         );
-        expect((defaultPlebbit.pubsubKuboRpcClientsOptions[0] as { headers?: { authorization?: string } })?.headers?.authorization).to.be.undefined;
+        expect((defaultPlebbit.pubsubKuboRpcClientsOptions[0] as { headers?: { authorization?: string } })?.headers?.authorization).to.be
+            .undefined;
 
         // no dataPath in browser
         if (typeof window === "undefined") {
@@ -288,8 +289,6 @@ describe(`plebbit.destroy`, async () => {
         await plebbit.destroy(); // should not throw
         expect(sub.state).to.equal("stopped");
     });
-
-
 });
 
 describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {

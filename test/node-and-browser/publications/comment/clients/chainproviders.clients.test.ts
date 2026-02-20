@@ -43,7 +43,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
     });
 
     it(`Correct order of chainProviders state when updating a comment whose sub is a domain - uncached`, async () => {
-        const mockPost = await publishRandomPost("plebbit.eth", plebbit);
+        const mockPost = await publishRandomPost("plebbit.bso", plebbit);
 
         await mockPost.stop();
 
@@ -78,7 +78,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
     });
 
     it(`Correct order of chainProviders state when updating a comment whose sub is a domain - cached`, async () => {
-        const mockPost = await publishRandomPost("plebbit.eth", plebbit);
+        const mockPost = await publishRandomPost("plebbit.bso", plebbit);
 
         await mockPost.stop();
 
@@ -187,7 +187,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
     it(`correct order of chainProviders state when publishing a comment to a sub with a domain address - uncached`, async () => {
         const plebbit: Plebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true, mockResolve: true }); // need to use different plebbit so it won't use the memory cache of subplebbit for publishing
-        const mockPost = await generateMockPost("plebbit.eth", plebbit);
+        const mockPost = await generateMockPost("plebbit.bso", plebbit);
         await mockCacheOfTextRecord({
             plebbit: mockPost._plebbit,
             domain: "plebbit.eth",
@@ -209,7 +209,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
     });
 
     it(`correct order of chainProviders state when publishing a comment to a sub with a domain address - cached`, async () => {
-        const mockPost = await generateMockPost("plebbit.eth", plebbit);
+        const mockPost = await generateMockPost("plebbit.bso", plebbit);
         await mockCacheOfTextRecord({
             plebbit: mockPost._plebbit,
             domain: "plebbit.eth",
@@ -231,7 +231,10 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
     it(`Correct order of chainProviders state when comment has a reply with author.address as domain - uncached`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit);
-        const reply = await publishRandomReply(mockPost as CommentIpfsWithCidDefined, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
+        const reply = await publishRandomReply(mockPost as CommentIpfsWithCidDefined, plebbit, {
+            author: { address: "plebbit.eth" },
+            signer: signers[6]
+        });
         await waitTillReplyInParentPages(reply as CommentWithRequiredFields, plebbit); // make sure until reply is in mockPost.replies
 
         const differentPlebbit: Plebbit = await mockPlebbitV2({
@@ -259,7 +262,10 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
     it(`Correct order of chainProviders state when comment has a reply with author.address as domain - cached`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit);
-        const reply = await publishRandomReply(mockPost as CommentIpfsWithCidDefined, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
+        const reply = await publishRandomReply(mockPost as CommentIpfsWithCidDefined, plebbit, {
+            author: { address: "plebbit.eth" },
+            signer: signers[6]
+        });
         await waitTillReplyInParentPages(reply as CommentWithRequiredFields, plebbit); // make sure until reply is in mockPost.replies
 
         const differentPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true, mockResolve: true });
