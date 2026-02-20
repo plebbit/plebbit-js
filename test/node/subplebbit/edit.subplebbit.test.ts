@@ -25,6 +25,7 @@ import type { RpcLocalSubplebbit } from "../../../dist/node/subplebbit/rpc-local
 import type { Comment } from "../../../dist/node/publications/comment/comment.js";
 import type { RemoteSubplebbit } from "../../../dist/node/subplebbit/remote-subplebbit.js";
 import type { SubplebbitEditOptions } from "../../../dist/node/subplebbit/types.js";
+import type { CommentIpfsWithCidDefined } from "../../../dist/node/publications/comment/types.js";
 
 describeSkipIfRpc(`subplebbit.edit`, async () => {
     let plebbit: PlebbitType;
@@ -227,7 +228,7 @@ describeSkipIfRpc(`subplebbit.edit .eth -> .bso transition`, async () => {
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
 
         const publishedPost = await publishRandomPost(subplebbit.address, plebbit); // ensure posts are non-empty before edits
-        await waitTillPostInSubplebbitPages(publishedPost, plebbit);
+        await waitTillPostInSubplebbitPages(publishedPost as CommentIpfsWithCidDefined, plebbit);
     });
 
     afterAll(async () => {
