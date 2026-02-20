@@ -274,7 +274,7 @@ describeSkipIfRpc(`BSO domain resolution`, async () => {
         await plebbit.destroy();
     });
 
-    it(`Cache key uses original .bso address (independent from .eth cache)`, async () => {
+    it(`.bso and .eth aliases share the same cache key`, async () => {
         const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
         const plebbit = await mockPlebbitV2({
             plebbitOptions: { chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } },
@@ -286,16 +286,22 @@ describeSkipIfRpc(`BSO domain resolution`, async () => {
         const bsoIpns = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
         const ethIpns = "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
 
-        // Cache .bso and .eth with different values
+        // .bso/.eth are aliases, so both should read and write the same cache entry
         await mockCacheOfTextRecord({ plebbit, domain: "plebbit.bso", textRecord: "subplebbit-address", value: bsoIpns });
+
+        const resolvedBsoAfterBsoWrite = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.bso");
+        expect(resolvedBsoAfterBsoWrite).to.equal(bsoIpns);
+
+        const resolvedEthAfterBsoWrite = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.eth");
+        expect(resolvedEthAfterBsoWrite).to.equal(bsoIpns);
+
         await mockCacheOfTextRecord({ plebbit, domain: "plebbit.eth", textRecord: "subplebbit-address", value: ethIpns });
 
-        // Resolving .bso should return .bso's cached value, not .eth's
-        const resolvedBso = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.bso");
-        expect(resolvedBso).to.equal(bsoIpns);
+        const resolvedBsoAfterEthWrite = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.bso");
+        expect(resolvedBsoAfterEthWrite).to.equal(ethIpns);
 
-        const resolvedEth = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.eth");
-        expect(resolvedEth).to.equal(ethIpns);
+        const resolvedEthAfterEthWrite = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded("plebbit.eth");
+        expect(resolvedEthAfterEthWrite).to.equal(ethIpns);
 
         await plebbit.destroy();
     });

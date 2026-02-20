@@ -151,6 +151,19 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         return this._subplebbit.address;
     }
 
+    private _areEquivalentSubplebbitAddresses(addressA: string, addressB: string): boolean {
+        if (addressA === addressB) return true;
+        const lowerAddressA = addressA.toLowerCase();
+        const lowerAddressB = addressB.toLowerCase();
+        const isEthAliasDomain = (address: string) => address.endsWith(".eth") || address.endsWith(".bso");
+        if (!isEthAliasDomain(lowerAddressA) || !isEthAliasDomain(lowerAddressB)) return false;
+
+        const normalizeEthAliasDomain = (address: string) =>
+            address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;
+
+        return normalizeEthAliasDomain(lowerAddressA) === normalizeEthAliasDomain(lowerAddressB);
+    }
+
     // functions for updatingSubInstance
 
     private async _retryLoadingSubplebbitAddress(
@@ -621,7 +634,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         cidOfSubIpns: string
     ): Promise<PlebbitError | undefined> {
         const subInstanceAddress = this._getSubplebbitAddressFromInstance();
-        if (subJson.address !== subInstanceAddress) {
+        if (!this._areEquivalentSubplebbitAddresses(subJson.address, subInstanceAddress)) {
             // Did the gateway supply us with a different subplebbit's ipns
 
             const error = new PlebbitError("ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED", {
