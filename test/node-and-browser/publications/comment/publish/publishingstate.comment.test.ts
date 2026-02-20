@@ -89,7 +89,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             expect(recordedStates).to.deep.equal(expectedStates);
         });
 
-        it(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
+        it(`publishing states is in correct order upon publishing a comment to plebbit.bso with IPFS client (uncached)`, async () => {
             const expectedStates = [
                 "resolving-subplebbit-address",
                 "fetching-subplebbit-ipns",
@@ -99,7 +99,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 "succeeded"
             ];
             const recordedStates: string[] = [];
-            const mockPost = await generateMockPost("plebbit.eth", plebbit);
+            const mockPost = await generateMockPost("plebbit.bso", plebbit);
             mockPost._getSubplebbitCache = () => undefined;
 
             mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
