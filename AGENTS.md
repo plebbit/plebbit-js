@@ -2,7 +2,8 @@
 -   Make sure to run npm run build if you're modifying files inside src/, and make sure it passes with no errors
 -   each http router keep provider announcement for only 24 hours
 -   If you're gonna edit schema make sure to check for docs relevant to the local zod version by checking package.json
--   Run every automated test suite through `node test/run-test-config.js --plebbit-config ${plebbit-config} ${testPath}` so our Vitest setup enforces bail/allowOnly/timeouts automatically. you need to supply test path to run-test-config.js. You also need to choose plebbit-config. If the test is inside test/node then choose "local-kubo-rpc". For tests inside test/node-and-browser, choose "remote-kubo-rpc". Only use "local-kubo-rpc" when the test creates a new LocalSubplebbit instance.
+-   Run every automated test suite through `node test/run-test-config.js --plebbit-config ${plebbit-config} ${testPath}` so our Vitest setup enforces bail/allowOnly/timeouts automatically. you need to supply test path to run-test-config.js. You also need to choose plebbit-config. If the test is inside test/node then choose "local-kubo-rpc,remote-plebbit-rpc". For tests inside test/node-and-browser, choose "remote-kubo-rpc,remote-plebbit-rpc".
+- If RPC tests are failing, consider the rpc server may be outdated and carrying old dist/. 
 -   When running RPC tests (e.g. remove.test.js), set `USE_RPC=1` in the environment
 -   You should never use removeAllListeners because it removes error listener initialized in constructor which may cause process to crash
 -   If you need to troubleshoot or debug anything related to a local subplebbit, you can run sqlite queries against its database at `${plebbitDataPath}/subplebbits/${subplebbitAddress}`
@@ -20,5 +21,5 @@
 -   When I report a bug or test failure, you need to try to understand the root cause instead of trying to fix it with timeouts
 -   When you modify a test file you need to make sure it passes test build process of tsc with test/tsconfig.json
 -   When adding a new JSON column to the database, add a test in `test/node/subplebbit/parsing.db.subplebbit.test.ts` for parsing it, and if it's on a comment, add an integration test for `dbHandler.queryComment` returning the proper JSON value (not a string)
-- Do not commit /dist to git
+-   Do not commit /dist to git
 -   In tests, prefer `createSubplebbit()` + `update()` over `getSubplebbit()`, since `getSubplebbit` does a one-shot fetch that fails randomly in CI
