@@ -124,7 +124,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const errors: PlebbitError[] = [];
 
             subplebbit.on("updatingstatechange", (newState: string) => recordedUpdatingStates.push(newState));
-            subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+            subplebbit.on("error", (err: PlebbitError | Error) => {
+                errors.push(err as PlebbitError);
+            });
 
             // First update should succeed with the initial valid record
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
@@ -184,7 +186,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`the order of state-event-statechange is correct when we get a new update from the subplebbit`, async () => {
-            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+            // this test used to be flaky on rpc I assume because rpc server kept updating the sub with another client, it was tricky to fix
+            // easy fix for now is to put an addresso of a less used subplebbit
+            const subplebbit = await plebbit.createSubplebbit({ address: signers[1].address }); // this sub should get less updates
 
             const recordedStates: string[] = [];
             subplebbit.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
@@ -222,7 +226,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const subplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
             subplebbit.on("updatingstatechange", (newState: string) => recordedUpdatingStates.push(newState));
-            subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+            subplebbit.on("error", (err: PlebbitError | Error) => {
+                errors.push(err as PlebbitError);
+            });
 
             // First update should succeed with the initial valid record
             await subplebbit.update();
@@ -321,7 +327,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const errors: PlebbitError[] = [];
 
             subplebbit.on("updatingstatechange", (newState: string) => recordedUpdatingStates.push(newState));
-            subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+            subplebbit.on("error", (err: PlebbitError | Error) => {
+                errors.push(err as PlebbitError);
+            });
 
             // First update should succeed with the initial valid record
             const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
@@ -354,7 +362,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-            expect((errors[0].details.gatewayToError["http://localhost:18080"] as PlebbitError).code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+            expect((errors[0].details.gatewayToError["http://localhost:18080"] as PlebbitError).code).to.equal(
+                "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID"
+            );
         });
     });
 });
