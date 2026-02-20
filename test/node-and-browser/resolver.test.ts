@@ -41,7 +41,9 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         await plebbit.destroy();
     });
     it.skip(`Can resolve correctly with custom chain provider`, async () => {
-        const plebbit = await mockRemotePlebbit({ plebbitOptions: { chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } } }); // Should have viem defined
+        const plebbit = await mockRemotePlebbit({
+            plebbitOptions: { chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }
+        }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress({ address: "estebanabaroa.eth" });
@@ -309,7 +311,7 @@ describe("Comments with Authors as .bso domains", async () => {
         await plebbit.destroy();
     });
 
-    it(`Sub accepts posts with author.address as .bso domain that resolves to comment signer`, async () => {
+    itSkipIfRpc(`Sub accepts posts with author.address as .bso domain that resolves to comment signer`, async () => {
         // Mock the cache so plebbit.bso resolves to signers[6] address (same as plebbit.eth mock)
         await mockCacheOfTextRecord({
             plebbit,
