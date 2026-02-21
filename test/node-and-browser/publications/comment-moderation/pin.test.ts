@@ -132,7 +132,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(postToPin.raw.commentUpdate.reason).to.equal("To pin a post");
         });
 
-        it(`pinned=true appears in pages of subplebbit`, async () => {
+        it.sequential(`pinned=true appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit({ address: postToPin.subplebbitAddress });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
             expect(commentInPage.pinned).to.be.true;
