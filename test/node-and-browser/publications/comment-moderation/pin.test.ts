@@ -133,9 +133,18 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it.sequential(`pinned=true appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: postToPin.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: postToPin.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => {
+                    const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
+                    return commentInPage?.pinned === true;
+                }
+            });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
             expect(commentInPage.pinned).to.be.true;
+            await sub.stop();
         });
         it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
