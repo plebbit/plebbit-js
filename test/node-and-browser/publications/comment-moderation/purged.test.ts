@@ -37,7 +37,7 @@ const roles = [
 // I suspect libp2p config is not emitting error
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     [0, 1, 2, 15, 30].map((commentDepth) => {
-        describe.sequential(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
+        describe.concurrent(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
             let plebbit: Plebbit, commentToPurge: Comment, replyOfCommentToPurge: Comment, replyUnderReplyOfCommentToPurge: Comment;
             let replyCountOfParentOfPurgedComment: number; // undefined if commentDepth is 0
             let remotePlebbitIpfs: Plebbit;
