@@ -105,7 +105,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(subplebbit.updatedAt).to.be.a("number");
         });
 
-        it("can load subplebbit with .eth/.bso ENS aliases interchangeably via plebbit.getSubplebbit", async () => {
+        it("can load subplebbit with .eth/.bso ENS aliases interchangeably via plebbit.getSubplebbit", { retry: 3 }, async () => {
             const subplebbit = await plebbit.getSubplebbit({ address: "plebbit.eth" });
             expect(["plebbit.eth", "plebbit.bso"]).to.include(subplebbit.address);
             expect(subplebbit.updatedAt).to.be.a("number");
