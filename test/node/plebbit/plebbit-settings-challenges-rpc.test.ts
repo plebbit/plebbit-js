@@ -131,11 +131,14 @@ describe("plebbit.settings.challenges over RPC", () => {
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
         // Wait for initial settingschange if settings haven't arrived yet
-        if (!rpcClient.settings) {
-            await new Promise((resolve) => rpcClient.once("settingschange", resolve));
-        }
+        await resolveWhenConditionIsTrue({
+            toUpdate: rpcClient,
+            predicate: async () => Boolean(rpcClient.settings?.challenges),
+            eventName: "settingschange"
+        });
 
         const settings = rpcClient.settings!;
+        expect(settings).to.be.ok;
 
         // Verify the custom "sky-color" challenge is in the serialized settings
         expect(settings.challenges).to.be.an("object");
@@ -158,9 +161,11 @@ describe("plebbit.settings.challenges over RPC", () => {
 
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
-        if (!rpcClient.settings) {
-            await new Promise((resolve) => rpcClient.once("settingschange", resolve));
-        }
+        await resolveWhenConditionIsTrue({
+            toUpdate: rpcClient,
+            predicate: async () => Boolean(rpcClient.settings?.challenges),
+            eventName: "settingschange"
+        });
 
         const challenges = rpcClient.settings!.challenges;
 
@@ -191,9 +196,11 @@ describe("plebbit.settings.challenges over RPC", () => {
 
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
-        if (!rpcClient.settings) {
-            await new Promise((resolve) => rpcClient.once("settingschange", resolve));
-        }
+        await resolveWhenConditionIsTrue({
+            toUpdate: rpcClient,
+            predicate: async () => Boolean(rpcClient.settings?.challenges),
+            eventName: "settingschange"
+        });
 
         const challenges = rpcClient.settings!.challenges;
 
@@ -243,9 +250,11 @@ describe("plebbit.settings.challenges over RPC", () => {
 
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
-        if (!rpcClient.settings) {
-            await new Promise((resolve) => rpcClient.once("settingschange", resolve));
-        }
+        await resolveWhenConditionIsTrue({
+            toUpdate: clientPlebbit,
+            predicate: async () => Boolean(rpcClient.settings?.challenges),
+            eventName: "settingschange"
+        });
 
         const challenges = rpcClient.settings!.challenges;
 
