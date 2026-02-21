@@ -208,7 +208,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     async updateOnce() {
         const log = Logger("plebbit-js:remote-subplebbit:update");
 
-        this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
+        this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2, maxTimeout: 30000 });
         const subLoadingRes = await this._retryLoadingSubplebbitAddress(this._subplebbit.address); // will return undefined if no new sub CID is found
         this._ipnsLoadingOperation.stop();
 
