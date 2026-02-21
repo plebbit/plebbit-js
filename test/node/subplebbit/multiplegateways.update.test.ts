@@ -185,7 +185,7 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
             res.end();
         });
 
-        // Thirty minute late gateway - responds immediately with 30-min old record
+        // Thirty minute late gateway - responds with 30-min old record after brief delay
         await createServer(THIRTY_MIN_LATE_GATEWAY_PORT, async (req, res) => {
             res.setHeader("Access-Control-Allow-Origin", "*");
             if (!isRequestForTestSub(req)) {
@@ -193,6 +193,7 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
                 res.end("Not found");
                 return;
             }
+            await new Promise<void>((resolve) => setTimeout(resolve, 500)); // ensure normalGateway responds first
             const oldRecord = await generateRecordWithAge(30 * 60);
             const oldRecordJson = JSON.stringify(oldRecord);
             const oldRecordCid = await calculateIpfsHash(oldRecordJson);
