@@ -176,6 +176,7 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Expose-Headers"] = ["*"];
+    ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Methods"] = ["*"];
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
     ipfsConfig["Addresses"]["Swarm"] = [`/ip4/0.0.0.0/tcp/${nodeArgs.swarmPort}/ws`];
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
