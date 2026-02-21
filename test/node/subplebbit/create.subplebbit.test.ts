@@ -215,7 +215,9 @@ describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
             mockResolve: true
         });
 
-        const recreatedSub = (await differentPlebbit.createSubplebbit({ address: firstSub.address })) as LocalSubplebbit | RpcLocalSubplebbit;
+        const recreatedSub = (await differentPlebbit.createSubplebbit({ address: firstSub.address })) as
+            | LocalSubplebbit
+            | RpcLocalSubplebbit;
         expect(recreatedSub.startedState).to.equal("stopped");
         expect(recreatedSub.address).to.equal(firstSub.address);
         expect(recreatedSub.signer!.address).to.equal(firstSub.signer!.address);
@@ -235,9 +237,11 @@ describe.concurrent(`plebbit.createSubplebbit (local)`, async () => {
         }
     });
 
-    it(`plebbit.createSubplebbit({address: undefined}) should throw a proper error`, async () => {
+    it(`plebbit.createSubplebbit({address: undefined}) should throw a proper error if plebbit has no data path`, async () => {
+        const plebbitWithNoDataPath = await mockPlebbitV2({ plebbitOptions: { dataPath: undefined } });
+        expect(plebbitWithNoDataPath.dataPath).to.be.undefined;
         try {
-            await plebbit.createSubplebbit({ address: undefined });
+            await plebbitWithNoDataPath.createSubplebbit({ address: undefined });
             expect.fail("Should have thrown");
         } catch (e) {
             expect((e as { code: string }).code).to.be.oneOf([
