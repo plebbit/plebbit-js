@@ -46,7 +46,7 @@ const removeAllPins = async (allComments: CommentWithinRepliesPostsPageJson[], p
 };
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
-    describe(`Pinning posts - ${config.name}`, async () => {
+    describe.sequential(`Pinning posts - ${config.name}`, async () => {
         let plebbit: Plebbit, postToPin: Comment, secondPostToPin: Comment, sub: RemoteSubplebbit;
 
         const populateSub = async (subplebbit: RemoteSubplebbit) => {
