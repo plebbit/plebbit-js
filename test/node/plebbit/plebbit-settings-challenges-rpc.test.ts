@@ -100,9 +100,16 @@ describe("plebbit.settings.challenges over RPC", () => {
             "sky-color": customSkyChallenge
         };
 
-        // Spin up the RPC server
-        rpcServer = await PlebbitWsServer.PlebbitWsServer({ port: RPC_PORT, authKey: RPC_AUTH_KEY });
-        // Use type assertion — private members are accessed the same way as in test-server.js
+        // Spin up the RPC server — pass plebbitOptions to avoid creating a heavyweight default Plebbit
+        rpcServer = await PlebbitWsServer.PlebbitWsServer({
+            port: RPC_PORT,
+            authKey: RPC_AUTH_KEY,
+            plebbitOptions: {
+                kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+                dataPath: serverPlebbit.dataPath
+            }
+        });
+        // Replace the factory-created plebbit with our mock that has custom challenges
         const server = rpcServer as any;
         server._initPlebbit(serverPlebbit);
         server._createPlebbitInstanceFromSetSettings = async (newOptions: any) => {
