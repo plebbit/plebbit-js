@@ -80,7 +80,6 @@ const offlineNodeArgs = {
     gatewayPort: 18080,
     daemonArgs: " --enable-namesys-pubsub",
     swarmPort: 24001,
-    routingType: "none",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 const pubsubNodeArgs = {
@@ -106,7 +105,6 @@ const anotherOfflineNodeArgs = {
     apiPort: 15004,
     gatewayPort: 18083,
     swarmPort: 24004,
-    routingType: "none",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
@@ -179,11 +177,8 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Expose-Headers"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Methods"] = ["*"];
-    ipfsConfig["Ipns"]["MaxCacheTTL"] = "3s";
+    ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
     ipfsConfig["Addresses"]["Swarm"] = [`/ip4/0.0.0.0/tcp/${nodeArgs.swarmPort}/ws`];
-    if (nodeArgs.routingType) {
-        ipfsConfig["Routing"]["Type"] = nodeArgs.routingType;
-    }
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
 
     const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
