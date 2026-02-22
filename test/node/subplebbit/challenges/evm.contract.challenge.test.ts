@@ -12,11 +12,9 @@ import signers from "../../../fixtures/signers.js";
 import Sinon from "sinon";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { PrivateKeyAccount } from "viem/accounts";
-import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
 import { v4 as uuidV4 } from "uuid";
 
-import { createPublicClient, http } from "viem";
-import type { PublicClient } from "viem";
+import { verifyMessage } from "viem";
 import type { Plebbit as PlebbitType } from "../../../../dist/node/plebbit/plebbit.js";
 import type { LocalSubplebbit } from "../../../../dist/node/runtime/node/subplebbit/local-subplebbit.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../../../dist/node/pubsub-messages/types.js";
@@ -46,7 +44,6 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
     let plebbit: PlebbitType;
     let sub: LocalSubplebbit;
 
-    let actualViemClient: PublicClient;
     let viemAccount: PrivateKeyAccount;
     const viemEthFake: Record<string, Function> = {};
     const viemMaticFake: Record<string, Function> = {};
@@ -61,11 +58,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
             remotePlebbit: false,
             mockResolve: false
         });
-        actualViemClient = createPublicClient({
-            chain: chains.mainnet,
-            transport: http()
-        }) as PublicClient;
-        viemMaticFake["verifyMessage"] = viemEthFake["verifyMessage"] = actualViemClient.verifyMessage;
+        viemMaticFake["verifyMessage"] = viemEthFake["verifyMessage"] = verifyMessage;
 
         mockViemClient({ plebbit, chainTicker: "eth", mockedViem: viemEthFake, url: ethRpcUrl });
         mockViemClient({ plebbit, chainTicker: "matic", mockedViem: viemMaticFake, url: maticRpcUrl });
@@ -114,7 +107,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         expect(postWithAuthorAddress.signer!.privateKey).to.equal(authorSigner.privateKey);
         expect(postWithAuthorAddress.author.wallets!.eth.address).to.equal(viemAccount.address);
 
-        const isSignatureValid = await actualViemClient.verifyMessage({
+        const isSignatureValid = await verifyMessage({
             address: postWithAuthorAddress.author.wallets!.eth.address as `0x${string}`,
             message: stringifiedMessageToSign,
             signature: postWithAuthorAddress.author.wallets!.eth.signature.signature as `0x${string}`
