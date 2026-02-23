@@ -66,7 +66,7 @@ interface TestLocalSubplebbit {
     _addAllCidsUnderPurgedCommentToBeRemoved(purgedCommentAndCommentUpdate: TestPurgedCommentTableRows): void;
     _unpinStaleCids(): Promise<void>;
     _rmUnneededMfsPaths(): Promise<string[]>;
-    updateSubplebbitIpnsIfNeeded(newPosts: string[]): Promise<void>;
+    updateSubplebbitIpnsIfNeeded(args: { commentUpdateRowsToPublishToIpfs: unknown[]; signal?: AbortSignal }): Promise<void>;
     _addOldPageCidsToCidsToUnpin(pages: SubplebbitIpfsType["posts"]): Promise<void>;
     delete(): Promise<void>;
 }
@@ -281,7 +281,7 @@ describe("local subplebbit garbage collection", () => {
 
         const removeBlocksSpy = vi.spyOn(util, "removeBlocksFromKuboNode");
 
-        await subplebbit.updateSubplebbitIpnsIfNeeded([]);
+        await subplebbit.updateSubplebbitIpnsIfNeeded({ commentUpdateRowsToPublishToIpfs: [] });
 
         expect(removeBlocksSpy.mock.calls.length).to.equal(1);
         expect(subplebbit._blocksToRm).to.deep.equal([]);
