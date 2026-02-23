@@ -128,6 +128,7 @@ describe("plebbit.settings.challenges over RPC", () => {
             authKey: RPC_AUTH_KEY,
             plebbitOptions: {
                 kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+                httpRoutersOptions: [],
                 dataPath: serverPlebbit.dataPath
             }
         });
