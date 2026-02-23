@@ -252,6 +252,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     _dbHandler!: DbHandler;
     private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
+    private _publishLoopAbortController?: AbortController;
     private _updateLoopPromise?: Promise<void> = undefined;
     private _updateLoopAbortController?: AbortController;
     private _firstUpdateAfterStart: boolean = true;
@@ -651,7 +652,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
+    private async updateSubplebbitIpnsIfNeeded({ commentUpdateRowsToPublishToIpfs, signal }: { commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]; signal?: AbortSignal }) {
         const log = Logger("plebbit-js:local-subplebbit:start:updateSubplebbitIpnsIfNeeded");
 
         this._calculateLatestUpdateTrigger();
@@ -679,7 +680,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 content: deterministicStringify(stats),
                 addOptions: { pin: true },
                 provideOptions: { recursive: true },
-                provideInBackground: true
+                provideInBackground: true,
+                signal
             })
         ).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
@@ -750,13 +752,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
+        signal?.throwIfAborted();
         const file = await retryKuboIpfsAddAndProvide({
             ipfsClient: kuboRpcClient._client,
             log,
             content: deterministicStringify(newSubplebbitRecord), // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
             addOptions: { pin: true },
             provideOptions: { recursive: true },
-            provideInBackground: false
+            provideInBackground: false,
+            signal
         });
         if (file.size > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
             throw new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
@@ -776,11 +780,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ? cborg.decode(new Uint8Array(Object.values(lastPublishedIpnsRecordData)))
             : undefined;
         const ipnsSequence: BigInt | undefined = decodedIpnsRecord ? BigInt(decodedIpnsRecord.sequence) + 1n : undefined;
+        signal?.throwIfAborted();
         const publishRes = await kuboRpcClient._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
             resolve: true,
-            ttl
+            ttl,
+            signal
             // enable below line after kubo fixes their problems with fetching IPNS records from local blockstore
             // ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
@@ -2739,7 +2745,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private async _providePubsubTopicRoutingCidsIfNeeded(force = false) {
+    private async _providePubsubTopicRoutingCidsIfNeeded(force = false, signal?: AbortSignal) {
         const log = Logger("plebbit-js:local-subplebbit:_providePubsubTopicRoutingCidsIfNeeded");
         const reprovideIntervalMs = 6 * 60 * 60 * 1000;
         const now = Date.now();
@@ -2753,12 +2759,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient()._client;
         for (const topic of topics) {
             try {
+                signal?.throwIfAborted();
                 await retryKuboBlockPutPinAndProvidePubsubTopic({
                     ipfsClient: kuboRpcClient,
                     log,
-                    pubsubTopic: topic
+                    pubsubTopic: topic,
+                    signal
                 });
             } catch (error) {
+                if (signal?.aborted) throw error;
                 log.error("Failed to reprovide pubsub topic routing block", { topic, error });
             }
         }
@@ -2810,22 +2819,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private async syncIpnsWithDb() {
+    private async syncIpnsWithDb(signal?: AbortSignal) {
         const log = Logger("plebbit-js:local-subplebbit:sync");
 
         const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         try {
             await this._listenToIncomingRequests();
-            await this._providePubsubTopicRoutingCidsIfNeeded();
+            signal?.throwIfAborted();
+            await this._providePubsubTopicRoutingCidsIfNeeded(false, signal);
+            signal?.throwIfAborted();
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
             await this._purgeDisapprovedCommentsOlderThan();
+            signal?.throwIfAborted();
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             this._requireSubplebbitUpdateIfModQueueChanged();
-            await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
+            await this.updateSubplebbitIpnsIfNeeded({ commentUpdateRowsToPublishToIpfs: commentUpdateRows, signal });
             await this._cleanUpIpfsRepoRarely();
         } catch (e) {
+            if (signal?.aborted) throw e; // Don't log or set failed state when aborting due to stop()
             //@ts-expect-error
             e.details = { ...e.details, subplebbitAddress: this.address };
             const errorTyped = <Error>e;
@@ -2879,6 +2892,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:_publishLoop");
         // we need to continue the loop if there's at least one pending edit
 
+        const signal = this._publishLoopAbortController!.signal;
+
         const shouldStopPublishLoop = () => {
             return this.state !== "started" || (this._stopHasBeenCalled && this._pendingEditProps.length === 0);
         };
@@ -2889,7 +2904,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 const checkInterval = setInterval(() => {
                     const syncIntervalMsPassedSinceDoneWithLoop = Date.now() - doneWithLoopTime >= syncIntervalMs;
                     this._calculateLatestUpdateTrigger(); // will update this._subplebbitUpdateTrigger
-                    if (this._subplebbitUpdateTrigger || shouldStopPublishLoop() || syncIntervalMsPassedSinceDoneWithLoop) {
+                    if (
+                        this._subplebbitUpdateTrigger ||
+                        shouldStopPublishLoop() ||
+                        syncIntervalMsPassedSinceDoneWithLoop ||
+                        signal.aborted
+                    ) {
                         clearInterval(checkInterval);
                         resolve(1);
                     }
@@ -2899,10 +2919,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         while (!shouldStopPublishLoop()) {
             try {
-                await this.syncIpnsWithDb();
+                await this.syncIpnsWithDb(signal);
             } catch (e) {
+                if (signal.aborted) {
+                    log("Publish loop sync aborted for subplebbit", this.address);
+                    break;
+                }
                 this.emit("error", e as Error);
             } finally {
+                if (signal.aborted) break;
                 await waitUntilNextSync();
             }
         }
@@ -3138,6 +3163,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw e;
         }
 
+        this._publishLoopAbortController = new AbortController();
         this._publishLoopPromise = this._publishLoop(this._plebbit.publishInterval).catch((err) => {
             log.error(err);
             this.emit("error", err);
@@ -3369,6 +3395,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             } catch (e) {
                 log.error("Failed to unsubscribe from challenge exchange pubsub when stopping subplebbit", e);
+            }
+            if (this._publishLoopAbortController) {
+                this._publishLoopAbortController.abort();
+                this._publishLoopAbortController = undefined;
             }
             if (this._publishLoopPromise) {
                 try {
