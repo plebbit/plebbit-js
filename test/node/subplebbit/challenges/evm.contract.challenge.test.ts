@@ -118,7 +118,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         // viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have 0 pleb
 
-        await publishWithExpectedResult(postWithAuthorAddress, true);
+        await publishWithExpectedResult({ publication: postWithAuthorAddress, expectedChallengeSuccess: true });
     });
 
     it(`A wallet with over 0 PLEB fails the challenge`, async () => {
@@ -180,7 +180,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have more than 100 pleb
 
-        await publishWithExpectedResult(postWithAuthorAddress, true);
+        await publishWithExpectedResult({ publication: postWithAuthorAddress, expectedChallengeSuccess: true });
     });
     it(`An author with NFT wallet with less than 100 PLEB should fail the challenge`, async () => {
         const authorSigner = await plebbit.createSigner();
@@ -279,7 +279,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
         viemEthFake["call"] = fakeCall; // mock nft wallet to have more than 100 pleb
 
-        await publishWithExpectedResult(postWithAuthorAddress, true);
+        await publishWithExpectedResult({ publication: postWithAuthorAddress, expectedChallengeSuccess: true });
     });
     it(`An author with both wallet and NFT having less than 1000 PLEB fails`, async () => {
         const authorSigner = await plebbit.createSigner();
@@ -416,7 +416,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemEthFake["getEnsAddress"] = () => viemAccount.address;
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have more than 100 pleb
 
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`if user have pleb in their author.address .bso ENS wallet challenge should pass`, async () => {
@@ -428,6 +428,6 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemEthFake["getEnsAddress"] = () => viemAccount.address;
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have more than 100 pleb
 
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 });

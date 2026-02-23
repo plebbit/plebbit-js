@@ -52,7 +52,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 // Verify quotedCids is set on the Comment instance
                 expect(reply.quotedCids).to.deep.equal(quotedCids);
                 expect(reply.toJSONPubsubMessagePublication().quotedCids).to.deep.equal(quotedCids);
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 // Verify quotedCids exists in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
                 // Fetch the comment from IPFS and verify quotedCids
@@ -68,7 +68,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 });
                 expect(reply.quotedCids).to.deep.equal(quotedCids);
                 expect(reply.toJSONPubsubMessagePublication().quotedCids).to.deep.equal(quotedCids);
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 // Verify quotedCids exists in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
                 // Fetch the comment from IPFS and verify quotedCids
@@ -83,7 +83,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     quotedCids
                 });
                 expect(reply.quotedCids).to.deep.equal(quotedCids);
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 // Verify quotedCids exists in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
                 // Fetch the comment from IPFS and verify quotedCids
@@ -97,7 +97,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 });
                 expect(reply.quotedCids).to.be.undefined;
                 expect(reply.toJSONPubsubMessagePublication().quotedCids).to.be.undefined;
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 // Verify quotedCids is undefined in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.be.undefined;
                 // Fetch the comment from IPFS and verify quotedCids is undefined
@@ -111,7 +111,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     quotedCids: []
                 });
                 expect(reply.quotedCids).to.deep.equal([]);
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 // Empty array should be stored as empty array in CommentIpfs
                 expect(reply.raw.comment?.quotedCids).to.deep.equal([]);
                 // Fetch the comment from IPFS and verify quotedCids is empty array
@@ -126,7 +126,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1]
                 });
                 await setExtraPropOnCommentAndSign(newPost, { quotedCids: [post.cid!] }, true);
-                await publishWithExpectedResult(newPost, false, messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS);
+                await publishWithExpectedResult({ publication: newPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS });
             });
 
             it("Reply with non-existent quotedCid is rejected", async () => {
@@ -134,7 +134,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [nonExistentCid]
                 });
-                await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CID_DOES_NOT_EXIST);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_DOES_NOT_EXIST });
             });
 
             it("Reply quoting comment from different post is rejected", async () => {
@@ -143,7 +143,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [post2.cid!]
                 });
-                await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CID_NOT_UNDER_POST);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_NOT_UNDER_POST });
             });
 
             it("Reply with duplicate quotedCids is accepted", async () => {
@@ -151,7 +151,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [post.cid!, post.cid!]
                 });
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
             });
 
             it("Reply with one valid and one non-existent quotedCid is rejected", async () => {
@@ -159,7 +159,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [post.cid!, nonExistentCid]
                 });
-                await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CID_DOES_NOT_EXIST);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_DOES_NOT_EXIST });
             });
 
             it("Reply with one valid and one from different post is rejected", async () => {
@@ -168,7 +168,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [post.cid!, post2.cid!]
                 });
-                await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CID_NOT_UNDER_POST);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_NOT_UNDER_POST });
             });
         });
 
@@ -184,7 +184,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     quotedCids
                 });
                 expect(reply.quotedCids).to.deep.equal(quotedCids);
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
 
                 const fetchedComment = JSON.parse(await plebbit.fetchCid({ cid: reply.cid! }));
@@ -200,7 +200,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[7],
                     quotedCids: [deepReply1.cid!]
                 });
-                await publishWithExpectedResult(deepReply2, true);
+                await publishWithExpectedResult({ publication: deepReply2, expectedChallengeSuccess: true });
                 expect(deepReply2.raw.comment?.quotedCids).to.deep.equal([deepReply1.cid!]);
 
                 // reply3 quotes both reply1 and reply2
@@ -209,7 +209,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[8],
                     quotedCids
                 });
-                await publishWithExpectedResult(deepReply3, true);
+                await publishWithExpectedResult({ publication: deepReply3, expectedChallengeSuccess: true });
                 expect(deepReply3.raw.comment?.quotedCids).to.deep.equal(quotedCids);
 
                 const fetchedComment = JSON.parse(await plebbit.fetchCid({ cid: deepReply3.cid! }));
@@ -230,7 +230,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     quotedCids
                 });
                 expect(reply.quotedCids).to.deep.equal(quotedCids);
-                await publishWithExpectedResult(reply, true);
+                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
 
                 const fetchedComment = JSON.parse(await plebbit.fetchCid({ cid: reply.cid! }));
@@ -263,7 +263,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { removed: true, reason: "For quotedCids test" },
                 signer: signers[3] // mod signer
             });
-            await publishWithExpectedResult(removeModeration, true);
+            await publishWithExpectedResult({ publication: removeModeration, expectedChallengeSuccess: true });
 
             // Delete the second reply (author action)
             const deleteEdit = await plebbit.createCommentEdit({
@@ -273,7 +273,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: replyToDelete.signer,
                 reason: "For quotedCids test"
             });
-            await publishWithExpectedResult(deleteEdit, true);
+            await publishWithExpectedResult({ publication: deleteEdit, expectedChallengeSuccess: true });
 
             // Wait for updates to be applied
             await replyToRemove.update();
@@ -302,7 +302,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 quotedCids
             });
             expect(reply.quotedCids).to.deep.equal(quotedCids);
-            await publishWithExpectedResult(reply, true);
+            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
             expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
         });
 
@@ -314,7 +314,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 quotedCids
             });
             expect(reply.quotedCids).to.deep.equal(quotedCids);
-            await publishWithExpectedResult(reply, true);
+            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
             expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
         });
 
@@ -327,7 +327,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 quotedCids
             });
             expect(reply.quotedCids).to.deep.equal(quotedCids);
-            await publishWithExpectedResult(reply, true);
+            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
             expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
         });
     });

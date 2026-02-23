@@ -32,15 +32,15 @@ const removeAllPins = async (allComments: CommentWithinRepliesPostsPageJson[], p
         allComments
             .filter((comment: CommentWithinRepliesPostsPageJson) => comment.pinned)
             .map(async (comment: CommentWithinRepliesPostsPageJson) =>
-                publishWithExpectedResult(
-                    await plebbit.createCommentModeration({
+                publishWithExpectedResult({
+                    publication: await plebbit.createCommentModeration({
                         subplebbitAddress: comment.subplebbitAddress,
                         commentCid: comment.cid,
                         commentModeration: { pinned: false },
                         signer: roles[2].signer
                     }),
-                    true
-                )
+                    expectedChallengeSuccess: true
+                })
             )
     );
 };
@@ -102,7 +102,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To pin a post", pinned: true },
                 signer: postToPin.signer
             });
-            await publishWithExpectedResult(pinEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
+            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
         });
         it(`Regular author can't pin another author comment`, async () => {
             const pinEdit = await plebbit.createCommentModeration({
@@ -111,7 +111,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To pin a post", pinned: true },
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult(pinEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
+            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
         });
 
         it(`Mod can pin a post`, async () => {
@@ -121,7 +121,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To pin a post", pinned: true },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(pinEdit, true);
+            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: true });
         });
         it(`A new CommentUpdate is published with pinned=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: postToPin, predicate: async () => postToPin.pinned === true });
@@ -178,7 +178,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To pin the second post", pinned: true },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(pinEdit, true);
+            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: true });
         });
         it(`Pinned posts are sorted according to the page sort they're in`, async () => {
             // We're gonna test whether posts.new has pinned posts on top
@@ -226,7 +226,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To unpin the second post", pinned: false },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(pinEdit, true);
+            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: true });
         });
         it(`A new CommentUpdate is published with pinned=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: secondPostToPin, predicate: async () => secondPostToPin.pinned === false });
@@ -325,7 +325,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To pin the reply", pinned: true },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(pinEdit, true);
+            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: true });
         });
 
         it(`A pinned reply is on the top of every page in parentComment.replies`, async () => {

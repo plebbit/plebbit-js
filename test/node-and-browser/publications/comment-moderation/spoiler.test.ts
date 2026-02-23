@@ -37,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { spoiler: true, reason: "Mod marking an author comment as spoiler" },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(modSpoilerEdit, true);
+            await publishWithExpectedResult({ publication: modSpoilerEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
@@ -63,7 +63,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { spoiler: false, reason: "Mod unspoilering an author comment" },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(unspoilerEdit, true);
+            await publishWithExpectedResult({ publication: unspoilerEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with spoiler=false`, async () => {

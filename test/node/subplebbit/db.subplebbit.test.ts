@@ -128,7 +128,7 @@ describeSkipIfRpc.sequential(`DB importing`, async () => {
             await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
         });
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
         await subplebbit.delete();
         await tempPlebbit.destroy();
@@ -180,7 +180,7 @@ describeSkipIfRpc.sequential(`DB importing`, async () => {
         //     await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
         // });
 
-        // await publishWithExpectedResult(mockPost, true);
+        // await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
         // await subplebbit.delete();
         // await tempPlebbit.destroy();

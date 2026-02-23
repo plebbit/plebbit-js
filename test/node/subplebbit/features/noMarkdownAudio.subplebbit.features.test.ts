@@ -54,13 +54,13 @@ describe.concurrent(`subplebbit.features.noMarkdownAudio`, async () => {
     it(`Can't publish a post with markdown audio syntax (.mp3)`, async () => {
         const contentWithMarkdownAudio = "Here is audio: ![song](https://example.com/song.mp3)";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithMarkdownAudio });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO });
     });
 
     it(`Can't publish a post with HTML audio tag`, async () => {
         const contentWithHtmlAudio = 'Here is audio: <audio src="https://example.com/song.mp3"></audio>';
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithHtmlAudio });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO });
     });
 
     it(`Can't publish a reply with markdown audio`, async () => {
@@ -68,19 +68,19 @@ describe.concurrent(`subplebbit.features.noMarkdownAudio`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             content: contentWithMarkdownAudio
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO });
     });
 
     it(`Can publish a post with plain text content`, async () => {
         const plainContent = "This is just plain text without any audio";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: plainContent });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a post with markdown image (not audio)`, async () => {
         const contentWithImage = "Here is an image: ![img](https://example.com/photo.jpg)";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithImage });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a post with direct link field to audio URL (not markdown content)`, async () => {
@@ -88,7 +88,7 @@ describe.concurrent(`subplebbit.features.noMarkdownAudio`, async () => {
             link: "https://example.com/song.mp3",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't edit a comment to add markdown audio`, async () => {
@@ -99,7 +99,7 @@ describe.concurrent(`subplebbit.features.noMarkdownAudio`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO);
+        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_AUDIO });
     });
 
     it(`Can edit a comment with plain text content`, async () => {
@@ -110,6 +110,6 @@ describe.concurrent(`subplebbit.features.noMarkdownAudio`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(commentEdit, true);
+        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
     });
 });

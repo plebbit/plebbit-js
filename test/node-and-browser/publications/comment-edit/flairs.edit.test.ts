@@ -37,7 +37,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 flairs: [{ text: "Hacked" }],
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult(flairsEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+            await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
         });
 
         it(`Author can't set flairs not in the allowed list`, async () => {
@@ -47,7 +47,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 flairs: [{ text: "NotAllowed" }],
                 signer: authorPost.signer
             });
-            await publishWithExpectedResult(flairsEdit, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+            await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
         });
 
         it.sequential(`Author can set flairs on their own comment`, async () => {
@@ -60,7 +60,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 reason: "Author adding flairs"
             });
-            await publishWithExpectedResult(flairsEdit, true);
+            await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: true });
         });
 
         it.sequential(`A new CommentUpdate is published with flairs`, async () => {
@@ -89,7 +89,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 reason: "Author updating flairs"
             });
-            await publishWithExpectedResult(flairsEdit, true);
+            await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: true });
         });
 
         it.sequential(`A new CommentUpdate is published with updated flairs`, async () => {

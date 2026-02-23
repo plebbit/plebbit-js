@@ -46,7 +46,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it("can post after answering correctly", async function () {
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
         });
         it("Throws an error when user fails to solve mathcli captcha", async function () {
             const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
@@ -58,7 +58,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             mockPost.once("challengeverification", (msg) => {
                 challengeverification = msg as { challengeErrors: Record<number, string>; challengeSuccess: boolean };
             });
-            await publishWithExpectedResult(mockPost, false);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: false });
             expect(challengeverification!.challengeErrors).to.deep.equal({ 0: "Wrong answer." });
             expect(challengeverification!.challengeSuccess).to.be.false;
         });

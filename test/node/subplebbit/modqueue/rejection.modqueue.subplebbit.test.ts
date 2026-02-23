@@ -112,7 +112,7 @@ for (const commentMod of commentModProps) {
                         commentCid: commentToBeRejected.cid!
                     });
 
-                    await publishWithExpectedResult(commentModeration, true);
+                    await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
                 });
 
                 it.sequential(`Rejecting a pending comment will purge it from modQueue`, async () => {
@@ -541,7 +541,7 @@ for (const commentMod of commentModProps) {
                           ? messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
                           : messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT;
                     const vote = await generateMockVote(commentToBeRejected as CommentIpfsWithCidDefined, 1, plebbit, modSigner); // need to publish under mod otherwise we're gonna get captcha challenge
-                    await publishWithExpectedResult(vote, false, expectedMessage);
+                    await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: expectedMessage });
                 });
 
                 it(`Can't publish a reply under a rejected comment`, async () => {
@@ -551,7 +551,7 @@ for (const commentMod of commentModProps) {
                           ? messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
                           : messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT;
                     const reply = await generateMockComment(commentToBeRejected as CommentIpfsWithCidDefined, plebbit, false);
-                    await publishWithExpectedResult(reply, false, expectedMessage);
+                    await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: expectedMessage });
                 });
 
                 it(`Can't publish an edit under a rejected comment`, async () => {
@@ -567,7 +567,7 @@ for (const commentMod of commentModProps) {
                         content: "text to edit on pending comment",
                         signer: commentToBeRejected.signer
                     });
-                    await publishWithExpectedResult(edit, false, expectedMessage);
+                    await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: expectedMessage });
                 });
 
                 itSkipIfRpc(`A rejected comment is not pinned to IPFS node`, async () => {
@@ -603,7 +603,7 @@ for (const commentMod of commentModProps) {
                         commentCid: commentToBeRejected.cid!
                     });
 
-                    await publishWithExpectedResult(commentModerationDisapproval, false, expectedMessage);
+                    await publishWithExpectedResult({ publication: commentModerationDisapproval, expectedChallengeSuccess: false, expectedReason: expectedMessage });
                 });
 
                 itSkipIfRpc.sequential(`A rejected comment is not pinned to IPFS node after restarting the sub`, async () => {

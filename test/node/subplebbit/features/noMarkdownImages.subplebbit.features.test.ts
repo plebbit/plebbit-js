@@ -54,13 +54,13 @@ describe.concurrent(`subplebbit.features.noMarkdownImages`, async () => {
     it(`Can't publish a post with markdown image syntax`, async () => {
         const contentWithMarkdownImage = "Here is some text with an image: ![alt text](https://example.com/image.png)";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithMarkdownImage });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE });
     });
 
     it(`Can't publish a post with HTML img tag`, async () => {
         const contentWithHtmlImg = 'Here is some text with an image: <img src="https://example.com/image.png" />';
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithHtmlImg });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE });
     });
 
     it(`Can't publish a reply with markdown image`, async () => {
@@ -68,19 +68,19 @@ describe.concurrent(`subplebbit.features.noMarkdownImages`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             content: contentWithMarkdownImage
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE });
     });
 
     it(`Can publish a post with plain text content`, async () => {
         const plainContent = "This is just plain text without any images";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: plainContent });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a post with regular markdown link (not image)`, async () => {
         const contentWithLink = "Check out this [link](https://example.com)";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithLink });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a post with direct link field (not markdown content)`, async () => {
@@ -88,7 +88,7 @@ describe.concurrent(`subplebbit.features.noMarkdownImages`, async () => {
             link: "https://example.com/image.png",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't edit a comment to add markdown image`, async () => {
@@ -99,7 +99,7 @@ describe.concurrent(`subplebbit.features.noMarkdownImages`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE);
+        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE });
     });
 
     it(`Can edit a comment with plain text content`, async () => {
@@ -110,6 +110,6 @@ describe.concurrent(`subplebbit.features.noMarkdownImages`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(commentEdit, true);
+        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
     });
 });

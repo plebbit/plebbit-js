@@ -277,7 +277,7 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         };
 
         try {
-            await publishWithExpectedResult(publication as any, expectedChallengeSuccess, expectedReason);
+            await publishWithExpectedResult({ publication: publication as any, expectedChallengeSuccess: expectedChallengeSuccess, expectedReason: expectedReason });
         } finally {
             publicationMutable.publish = originalPublish;
         }

@@ -88,7 +88,7 @@ describe(`Pending approval modqueue functionality`, async () => {
                 (resolve) => vote.once("challengeverification", resolve)
             );
 
-            await publishWithExpectedResult(vote, false);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false });
 
             const challengeVerification = await challengeVerificationPromise;
             expect(challengeVerification.challengeSuccess).to.equal(false);
@@ -110,7 +110,7 @@ describe(`Pending approval modqueue functionality`, async () => {
                 (resolve) => edit.once("challengeverification", resolve)
             );
 
-            await publishWithExpectedResult(edit, false);
+            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false });
 
             const challengeVerification = await challengeVerificationPromise;
             expect(challengeVerification.challengeSuccess).to.equal(false);

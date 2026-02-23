@@ -148,7 +148,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     signer: authorSigner,
                     challengeRequest: { challengeAnswers: ["pending"] }
                 });
-                await publishWithExpectedResult(pendingComment, true);
+                await publishWithExpectedResult({ publication: pendingComment, expectedChallengeSuccess: true });
 
                 const rejection = await plebbit.createCommentModeration({
                     subplebbitAddress: subplebbit.address,
@@ -156,7 +156,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     signer: moderatorSigner,
                     commentModeration: { approved: false, reason: `reject-${i}` }
                 });
-                await publishWithExpectedResult(rejection, true);
+                await publishWithExpectedResult({ publication: rejection, expectedChallengeSuccess: true });
 
                 const edit = await client.createCommentEdit({
                     subplebbitAddress: subplebbit.address,
@@ -166,7 +166,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     signer: authorSigner
                 });
 
-                await publishWithExpectedResult(edit, false, expectedReason);
+                await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: expectedReason });
             })();
         });
 
@@ -196,7 +196,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     signer: authorSigner,
                     challengeRequest: { challengeAnswers: ["pending"] }
                 });
-                await publishWithExpectedResult(pendingComment, true);
+                await publishWithExpectedResult({ publication: pendingComment, expectedChallengeSuccess: true });
 
                 const rejection = await plebbit.createCommentModeration({
                     subplebbitAddress: subplebbit.address,
@@ -204,7 +204,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     signer: moderatorSigner,
                     commentModeration: { approved: false, reason: `drop-reject-${i}` }
                 });
-                await publishWithExpectedResult(rejection, true);
+                await publishWithExpectedResult({ publication: rejection, expectedChallengeSuccess: true });
 
                 const edit = await client.createCommentEdit({
                     subplebbitAddress: subplebbit.address,
@@ -214,7 +214,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     signer: authorSigner
                 });
 
-                return publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
+                return publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT });
             })();
         });
 
@@ -249,7 +249,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                 signer: moderatorSigner,
                 commentModeration: { approved: false, reason: `toggle-reject-${index}` }
             });
-            await publishWithExpectedResult(rejection, true);
+            await publishWithExpectedResult({ publication: rejection, expectedChallengeSuccess: true });
 
             const edit = await client.createCommentEdit({
                 subplebbitAddress: subplebbit.address,
@@ -258,7 +258,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                 content: "toggle edit content",
                 signer: authorSigner
             });
-            await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
+            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT });
         };
 
         await Promise.all([Promise.all(Array.from({ length: publishAttempts }).map((_, i) => runPublishFlow(i)))]);

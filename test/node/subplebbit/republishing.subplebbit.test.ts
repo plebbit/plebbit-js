@@ -47,7 +47,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         const extraProps = { extraProp: "1234" };
         await setExtraPropOnCommentAndSign(postWithExtraProps, extraProps, true);
 
-        await publishWithExpectedResult(postWithExtraProps, true);
+        await publishWithExpectedResult({ publication: postWithExtraProps, expectedChallengeSuccess: true });
         const replyOfPostWithExtraProps = await publishRandomReply(postWithExtraProps as CommentIpfsWithCidDefined, plebbit);
 
         await subBeforeMigration.stop();

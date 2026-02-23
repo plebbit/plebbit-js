@@ -156,7 +156,7 @@ describe("plebbit.settings.challenges", async () => {
         const correctPost = await generateMockPost(subplebbit.address, plebbit, false, {
             challengeRequest: { challengeAnswers: ["blue"] }
         });
-        await publishWithExpectedResult(correctPost, true);
+        await publishWithExpectedResult({ publication: correctPost, expectedChallengeSuccess: true });
 
         // Publish with wrong pre-answer
         const challengeVerificationPromise = new Promise<ChallengeVerificationMessageType>((resolve) =>
@@ -165,7 +165,7 @@ describe("plebbit.settings.challenges", async () => {
         const wrongPost = await generateMockPost(subplebbit.address, plebbit, false, {
             challengeRequest: { challengeAnswers: ["red"] }
         });
-        await publishWithExpectedResult(wrongPost, false);
+        await publishWithExpectedResult({ publication: wrongPost, expectedChallengeSuccess: false });
         const verification = await challengeVerificationPromise;
         expect(verification.challengeSuccess).to.equal(false);
         expect(verification.challengeErrors?.["0"]).to.equal("Wrong color.");
@@ -196,7 +196,7 @@ describe("plebbit.settings.challenges", async () => {
         const correctPost = await generateMockPost(subplebbit.address, plebbitWithOverride, false, {
             challengeRequest: { challengeAnswers: ["42"] }
         });
-        await publishWithExpectedResult(correctPost, true);
+        await publishWithExpectedResult({ publication: correctPost, expectedChallengeSuccess: true });
 
         // Verify wrong answer fails
         const verificationPromise = new Promise<ChallengeVerificationMessageType>((resolve) =>
@@ -205,7 +205,7 @@ describe("plebbit.settings.challenges", async () => {
         const wrongPost = await generateMockPost(subplebbit.address, plebbitWithOverride, false, {
             challengeRequest: { challengeAnswers: ["wrong"] }
         });
-        await publishWithExpectedResult(wrongPost, false);
+        await publishWithExpectedResult({ publication: wrongPost, expectedChallengeSuccess: false });
         const verification = await verificationPromise;
         expect(verification.challengeSuccess).to.equal(false);
         expect(verification.challengeErrors?.["0"]).to.equal("Not the answer to life.");

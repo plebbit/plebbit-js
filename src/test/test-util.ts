@@ -695,7 +695,7 @@ export async function publishRandomReply(
         content: `Content ${uuidv4()}`,
         ...commentProps
     });
-    await publishWithExpectedResult(reply, true);
+    await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     return reply;
 }
 
@@ -705,7 +705,7 @@ export async function publishRandomPost(subplebbitAddress: string, plebbit: Pleb
         title: `Random post Title ${uuidv4()}`,
         ...postProps
     });
-    await publishWithExpectedResult(post, true);
+    await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     return post;
 }
 
@@ -723,11 +723,19 @@ export async function publishVote(
         signer: voteProps?.signer || (await plebbit.createSigner()),
         ...voteProps
     });
-    await publishWithExpectedResult(voteObj, true);
+    await publishWithExpectedResult({ publication: voteObj, expectedChallengeSuccess: true });
     return voteObj;
 }
 
-export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
+async function _publishWithExpectedResultOnce({
+    publication,
+    expectedChallengeSuccess,
+    expectedReason
+}: {
+    publication: Publication;
+    expectedChallengeSuccess: boolean;
+    expectedReason?: string;
+}) {
     const emittedErrors: Error[] = [];
     const timeoutMs = 60000;
     const summarizePublication = () =>
@@ -787,6 +795,36 @@ export async function publishWithExpectedResult(publication: Publication, expect
         throw error;
     } finally {
         cleanupChallengeVerificationListener?.();
+    }
+}
+
+const retriableSubLoadingCodes = new Set([
+    "ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P",
+    "ERR_GET_SUBPLEBBIT_TIMED_OUT",
+    "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"
+]);
+
+export async function publishWithExpectedResult({
+    publication,
+    expectedChallengeSuccess,
+    expectedReason
+}: {
+    publication: Publication;
+    expectedChallengeSuccess: boolean;
+    expectedReason?: string;
+}) {
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            await _publishWithExpectedResultOnce({ publication, expectedChallengeSuccess, expectedReason });
+            return;
+        } catch (error) {
+            const isRetriable = error instanceof PlebbitError && retriableSubLoadingCodes.has(error.code);
+            if (!isRetriable || attempt === maxAttempts) throw error;
+            console.log(
+                `publishWithExpectedResult: retrying (attempt ${attempt + 1}/${maxAttempts}) after retriable error: ${(error as PlebbitError).code}`
+            );
+        }
     }
 }
 
@@ -2079,7 +2117,7 @@ export async function publishCommentToModQueue({
         pendingComment.once("challengeverification", resolve)
     ) as Promise<DecryptedChallengeVerificationMessageType>;
 
-    await publishWithExpectedResult(pendingComment, true); // a pending approval is technically challengeSucess = true
+    await publishWithExpectedResult({ publication: pendingComment, expectedChallengeSuccess: true }); // a pending approval is technically challengeSucess = true
 
     if (!pendingComment.pendingApproval) throw Error("The comment did not go to pending approval");
 
@@ -2128,7 +2166,7 @@ export async function publishToModQueueWithDepth({
 
         const challengeVerificationPromise = new Promise((resolve) => pendingReply.once("challengeverification", resolve));
 
-        await publishWithExpectedResult(pendingReply, true); // a pending approval is technically challengeSucess = true
+        await publishWithExpectedResult({ publication: pendingReply, expectedChallengeSuccess: true }); // a pending approval is technically challengeSucess = true
 
         if (!pendingReply.pendingApproval) throw Error("The reply did not go to pending approval");
         return { comment: pendingReply, challengeVerification: await challengeVerificationPromise };

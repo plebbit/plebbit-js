@@ -468,7 +468,7 @@ describe(`Publish loop resiliency`, async () => {
             subplebbitAddress: subplebbit.address
         });
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
         await waitTillPostInSubplebbitPages(mockPost as CommentIpfsWithCidDefined, remotePlebbit);
 
@@ -534,7 +534,7 @@ describe(`Publish loop resiliency`, async () => {
         const localSub = subplebbit as LocalSubplebbit;
         localSub._plebbit.resolveAuthorAddresses = false; // So the post gets accepted
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
         localSub._plebbit.resolveAuthorAddresses = true;
 
         expect(mockPost.author.address).to.equal("plebbit.bso");

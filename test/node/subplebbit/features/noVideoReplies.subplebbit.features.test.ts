@@ -56,34 +56,34 @@ describe.concurrent(`subplebbit.features.noVideoReplies`, async () => {
             link: "https://example.com/video.mp4",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a reply with video link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/movie.webm"
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO });
     });
 
     it(`Can publish a reply without video link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             content: "Just text reply"
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a reply with GIF link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/animation.gif"
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO });
     });
 
     it(`Can publish a reply with image link (noVideoReplies doesn't block images)`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/image.png"
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 });

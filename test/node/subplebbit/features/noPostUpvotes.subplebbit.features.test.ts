@@ -44,13 +44,13 @@ describe.concurrent(`subplebbit.features.noPostUpvotes`, async () => {
     it(`Not allowed to publish upvotes to posts if subplebbit.features.noPostUpvotes=true`, async () => {
         const upvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, 1, remotePlebbit); // should be rejected
 
-        await publishWithExpectedResult(upvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_POST_UPVOTES);
+        await publishWithExpectedResult({ publication: upvote, expectedChallengeSuccess: false, expectedReason: messages.ERR_NOT_ALLOWED_TO_PUBLISH_POST_UPVOTES });
     });
 
     it(`Allowed to publish downvotes to posts if subplebbit.features.noPostUpvotes=true`, async () => {
         const downvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, -1, remotePlebbit); // should be accepted
 
-        await publishWithExpectedResult(downvote, true);
+        await publishWithExpectedResult({ publication: downvote, expectedChallengeSuccess: true });
     });
 
     it(`Allowed to publish upvotes and downvotes to replies if subplebbit.noPostUpvotes=true`, async () => {
@@ -59,6 +59,6 @@ describe.concurrent(`subplebbit.features.noPostUpvotes`, async () => {
         const upvote = await generateMockVote(reply as CommentIpfsWithCidDefined, 1, remotePlebbit);
         const downvote = await generateMockVote(reply as CommentIpfsWithCidDefined, -1, remotePlebbit);
 
-        await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
+        await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true })));
     });
 });

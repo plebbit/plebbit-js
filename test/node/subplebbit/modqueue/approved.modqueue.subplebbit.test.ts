@@ -81,7 +81,7 @@ for (const pendingCommentDepth of depthsToTest) {
                 commentCid: approvedComment.cid!
             });
 
-            await publishWithExpectedResult(commentModeration, true);
+            await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
         });
 
         it.sequential(`pending comment after approval will receive updates now`, async () => {
@@ -239,11 +239,9 @@ for (const pendingCommentDepth of depthsToTest) {
                 commentCid: approvedComment.cid!
             });
 
-            await publishWithExpectedResult(
-                commentModeration,
-                false,
-                messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
-            );
+            await publishWithExpectedResult({ publication: 
+                commentModeration, expectedChallengeSuccess: false, expectedReason: messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
+             });
         });
     });
 }

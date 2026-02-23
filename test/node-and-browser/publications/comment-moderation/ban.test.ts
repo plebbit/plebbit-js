@@ -47,14 +47,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: roles[2].signer
             });
             expect(banCommentMod.commentModeration.author.banExpiresAt).to.equal(authorBanExpiresAt);
-            await publishWithExpectedResult(banCommentMod, true);
+            await publishWithExpectedResult({ publication: banCommentMod, expectedChallengeSuccess: true });
         });
 
         it(`Banned author can't publish`, async () => {
             const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, false, {
                 signer: commentToBeBanned.signer
             });
-            await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
+            await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
         });
 
         it.sequential(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
@@ -81,7 +81,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { author: { banExpiresAt: authorBanExpiresAt + 1000 } },
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult(banCommentEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
+            await publishWithExpectedResult({ publication: banCommentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
         });
 
         it.sequential(`Banned author can publish after authorBanExpiresAt ends`, async () => {
@@ -90,7 +90,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, false, {
                 signer: commentToBeBanned.signer
             });
-            await publishWithExpectedResult(newCommentByBannedAuthor, true);
+            await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: true });
         });
     });
 });

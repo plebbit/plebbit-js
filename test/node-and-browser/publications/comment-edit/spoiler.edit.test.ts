@@ -40,7 +40,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 spoiler: true,
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult(spoilerEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+            await publishWithExpectedResult({ publication: spoilerEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
         });
 
         it(`Author can mark their own comment as spoiler`, async () => {
@@ -53,7 +53,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 reason: "Author marking their own comment as spoiler"
             });
-            await publishWithExpectedResult(spoilerEdit, true);
+            await publishWithExpectedResult({ publication: spoilerEdit, expectedChallengeSuccess: true });
         });
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.spoiler === true });
@@ -117,7 +117,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 reason: "An author unspoilering their own comment"
             });
-            await publishWithExpectedResult(unspoilerEdit, true);
+            await publishWithExpectedResult({ publication: unspoilerEdit, expectedChallengeSuccess: true });
         });
         it(`A new CommentUpdate is published with spoiler=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.spoiler === false });
@@ -163,7 +163,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: roles[2].signer,
                 reason: "Mod marking their own comment as spoiler"
             });
-            await publishWithExpectedResult(spoilerEdit, true);
+            await publishWithExpectedResult({ publication: spoilerEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
@@ -194,7 +194,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: roles[2].signer,
                 reason: "Mod unspoilering their own comment"
             });
-            await publishWithExpectedResult(unspoilerEdit, true);
+            await publishWithExpectedResult({ publication: unspoilerEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with spoiler=false`, async () => {

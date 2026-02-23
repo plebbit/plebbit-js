@@ -56,27 +56,27 @@ describe.concurrent(`subplebbit.features.noAudioReplies`, async () => {
             link: "https://example.com/song.mp3",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a reply with audio link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/track.flac"
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO });
     });
 
     it(`Can publish a reply without audio link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             content: "Just text reply"
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a reply with image link (noAudioReplies doesn't block images)`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/image.png"
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 });

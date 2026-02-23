@@ -39,7 +39,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
 
         it("can post after answering correctly", async function () {
             publishedPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliNoMockedPubsubSubplebbitAddress }, plebbit);
-            await publishWithExpectedResult(publishedPost, true);
+            await publishWithExpectedResult({ publication: publishedPost, expectedChallengeSuccess: true });
         });
 
         it(`Can fetch Comment IPFS`, async () => {

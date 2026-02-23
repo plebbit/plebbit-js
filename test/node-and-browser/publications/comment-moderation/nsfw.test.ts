@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { nsfw: true, reason: "Mod marking an author comment as nsfw" },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(modnsfwEdit, true);
+            await publishWithExpectedResult({ publication: modnsfwEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with nsfw=true`, async () => {
@@ -64,7 +64,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { nsfw: false, reason: "Mod unnsfwing an author comment" },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(unnsfwEdit, true);
+            await publishWithExpectedResult({ publication: unnsfwEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with nsfw=false`, async () => {

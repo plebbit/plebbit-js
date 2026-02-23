@@ -47,7 +47,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.createVote(JSON.parse(JSON.stringify(vote))); // attempt to create just to see if createVote will throw due to extra prop
             const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) => vote.once("challengerequest", resolve as (req: unknown) => void));
 
-            await publishWithExpectedResult(vote, false, messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES });
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.vote.extraProp).to.equal("1234");
         });
@@ -58,7 +58,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) => vote.once("challengerequest", resolve as (req: unknown) => void));
 
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.vote.extraProp).to.equal("1234");
         });
@@ -69,7 +69,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) => vote.once("challengerequest", resolve as (req: unknown) => void));
 
-            await publishWithExpectedResult(vote, false, messages.ERR_VOTE_HAS_RESERVED_FIELD);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_VOTE_HAS_RESERVED_FIELD });
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.vote.insertedAt).to.equal("1234");
         });
@@ -85,7 +85,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) => vote.once("challengerequest", resolve as (req: unknown) => void));
 
-                await publishWithExpectedResult(vote, false, messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD);
+                await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD });
                 const challengeRequest = await challengeRequestPromise;
                 expect(challengeRequest.vote.author.subplebbit).to.equal("random");
             });
@@ -97,7 +97,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await plebbit.createVote(JSON.parse(JSON.stringify(vote))); // attempt to create just to see if createVote will throw due to extra prop
                 const challengeRequestPromise = new Promise<ChallengeRequestWithVote>((resolve) => vote.once("challengerequest", resolve as (req: unknown) => void));
 
-                await publishWithExpectedResult(vote, true);
+                await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
                 const challengeRequest = await challengeRequestPromise;
                 expect(challengeRequest.vote.author.extraProp).to.equal(extraProps.extraProp);
             });

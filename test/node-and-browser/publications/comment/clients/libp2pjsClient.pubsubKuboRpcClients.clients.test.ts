@@ -68,7 +68,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const subplebbit = await plebbit.getSubplebbit({ address: signers[0].address });
             mockPost._getSubplebbitCache = () => subplebbit.raw.subplebbitIpfs; // so libp2pjs client state won't include fetching subplebbit states
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
@@ -106,7 +106,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             for (const pubsubUrl of Object.keys(expectedStates))
                 (mockPost.clients as unknown as ClientsRecord)[clientFieldName][pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
@@ -164,7 +164,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                         actualStates[pubsubUrl].push(newState)
                     );
 
-                await publishWithExpectedResult(mockPost, true);
+                await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
                 expect(actualStates).to.deep.equal(expectedStates);
             });
@@ -198,7 +198,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                         actualStates[pubsubUrl].push(newState)
                     );
 
-                await publishWithExpectedResult(mockPost, true);
+                await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
                 expect(actualStates).to.deep.equal(expectedStates);
             });
@@ -243,7 +243,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                         actualStates[pubsubUrl].push(newState)
                     );
 
-                await publishWithExpectedResult(mockPost, true);
+                await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
                 expect(actualStates).to.deep.equal(expectedStates);
             });

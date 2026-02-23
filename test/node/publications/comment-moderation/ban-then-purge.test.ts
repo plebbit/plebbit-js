@@ -66,14 +66,14 @@ describe("Ban then purge", () => {
             },
             signer: moderatorSigner
         });
-        await publishWithExpectedResult(banMod, true);
+        await publishWithExpectedResult({ publication: banMod, expectedChallengeSuccess: true });
     });
 
     it.sequential(`Banned author can't publish`, async () => {
         const newCommentByBannedAuthor = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: authorSigner
         });
-        await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
+        await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
     });
 
     it.sequential(`Mod purges the banned comment`, async () => {
@@ -83,7 +83,7 @@ describe("Ban then purge", () => {
             commentModeration: { reason: "Purge after ban test " + Date.now(), purged: true },
             signer: moderatorSigner
         });
-        await publishWithExpectedResult(purgeEdit, true);
+        await publishWithExpectedResult({ publication: purgeEdit, expectedChallengeSuccess: true });
     });
 
     it.sequential(`Author ban persists after purging the comment`, async () => {
@@ -93,7 +93,7 @@ describe("Ban then purge", () => {
         const newCommentByBannedAuthor = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: authorSigner
         });
-        await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
+        await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
     });
 });
 
@@ -153,14 +153,14 @@ describeSkipIfRpc("Ban then purge with per-post pseudonymity mode", () => {
             },
             signer: moderatorSigner
         });
-        await publishWithExpectedResult(banMod, true);
+        await publishWithExpectedResult({ publication: banMod, expectedChallengeSuccess: true });
     });
 
     it.sequential(`Banned author can't publish (using original signer)`, async () => {
         const newCommentByBannedAuthor = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: authorSigner
         });
-        await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
+        await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
     });
 
     it.sequential(`Mod purges the banned anonymized comment`, async () => {
@@ -170,7 +170,7 @@ describeSkipIfRpc("Ban then purge with per-post pseudonymity mode", () => {
             commentModeration: { reason: "Purge pseudonymous after ban test " + Date.now(), purged: true },
             signer: moderatorSigner
         });
-        await publishWithExpectedResult(purgeEdit, true);
+        await publishWithExpectedResult({ publication: purgeEdit, expectedChallengeSuccess: true });
     });
 
     it.sequential(`Author ban persists after purging the anonymized comment`, async () => {
@@ -179,7 +179,7 @@ describeSkipIfRpc("Ban then purge with per-post pseudonymity mode", () => {
         const newCommentByBannedAuthor = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: authorSigner
         });
-        await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
+        await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
     });
 });
 
@@ -240,14 +240,14 @@ describeSkipIfRpc("Ban then purge with per-author pseudonymity mode", () => {
             },
             signer: moderatorSigner
         });
-        await publishWithExpectedResult(banMod, true);
+        await publishWithExpectedResult({ publication: banMod, expectedChallengeSuccess: true });
     });
 
     it.sequential(`Banned author can't publish (using original signer)`, async () => {
         const newCommentByBannedAuthor = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: authorSigner
         });
-        await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
+        await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
     });
 
     it.sequential(`Mod purges the banned per-author anonymized comment`, async () => {
@@ -257,13 +257,13 @@ describeSkipIfRpc("Ban then purge with per-author pseudonymity mode", () => {
             commentModeration: { reason: "Purge per-author after ban test " + Date.now(), purged: true },
             signer: moderatorSigner
         });
-        await publishWithExpectedResult(purgeEdit, true);
+        await publishWithExpectedResult({ publication: purgeEdit, expectedChallengeSuccess: true });
     });
 
     it.sequential(`Author ban persists after purging the per-author anonymized comment`, async () => {
         const newCommentByBannedAuthor = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: authorSigner
         });
-        await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
+        await publishWithExpectedResult({ publication: newCommentByBannedAuthor, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
     });
 });

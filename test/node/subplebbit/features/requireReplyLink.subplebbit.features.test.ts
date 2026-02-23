@@ -58,14 +58,14 @@ describe(`subplebbit.features.requireReplyLink`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false);
         await overrideCommentInstancePropsAndSign(reply, { link: invalidUrl } as Parameters<typeof overrideCommentInstancePropsAndSign>[1]);
         expect(reply.link).to.equal(invalidUrl);
-        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_INVALID_LINK_FIELD);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_INVALID_LINK_FIELD });
     });
 
     it(`Can't publish a reply without a link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             content: "Just text reply"
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_INVALID_LINK_FIELD);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_INVALID_LINK_FIELD });
     });
 
     it(`Can publish a reply with valid link`, async () => {
@@ -73,11 +73,11 @@ describe(`subplebbit.features.requireReplyLink`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: validUrl
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 
     it(`Can still publish a post without a link`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 });

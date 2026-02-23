@@ -76,7 +76,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitEditFromStringifiedSubplebbitEdit.once("challengerequest", resolve as (req: unknown) => void)
             );
 
-            await publishWithExpectedResult(subplebbitEditFromStringifiedSubplebbitEdit, true);
+            await publishWithExpectedResult({ publication: subplebbitEditFromStringifiedSubplebbitEdit, expectedChallengeSuccess: true });
             const challengerequest = await challengeRequestPromise;
             expect(challengerequest.subplebbitEdit).to.deep.equal(subplebbitEdit.toJSONPubsubMessagePublication());
 
@@ -107,11 +107,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer
             });
-            await publishWithExpectedResult(
-                subplebbitEdit,
-                false,
-                messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN
-            );
+            await publishWithExpectedResult({ publication: 
+                subplebbitEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN
+             });
         });
 
         it(`A random author publishing a SubplebbitEdit should fail`, async () => {
@@ -121,11 +119,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer
             });
-            await publishWithExpectedResult(
-                subplebbitEdit,
-                false,
-                messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN
-            );
+            await publishWithExpectedResult({ publication: 
+                subplebbitEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN
+             });
         });
     });
 
@@ -151,7 +147,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer: adminSigner
             });
-            await publishWithExpectedResult(subplebbitEdit, false, messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS);
+            await publishWithExpectedResult({ publication: subplebbitEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS });
         });
 
         it(`Admin should not be able to publish SubplebbitEdit with edit.address`, async () => {
@@ -162,7 +158,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer: adminSigner
             });
-            await publishWithExpectedResult(subplebbitEdit, false, messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS);
+            await publishWithExpectedResult({ publication: subplebbitEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS });
         });
 
         it(`Admin should not be able to modify settings`, async () => {
@@ -173,7 +169,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer: adminSigner
             });
-            await publishWithExpectedResult(subplebbitEdit, false, messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS);
+            await publishWithExpectedResult({ publication: subplebbitEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS });
         });
 
         it(`Admin should be able to modify subplebbit props via SubplebbitEdit`, async () => {
@@ -184,7 +180,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer: adminSigner
             });
-            await publishWithExpectedResult(subplebbitEdit, true);
+            await publishWithExpectedResult({ publication: subplebbitEdit, expectedChallengeSuccess: true });
         });
 
         it(`Subplebbit should publish an update after the admin edits one of its props`, async () => {
@@ -220,7 +216,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer: ownerSigner
             });
-            await publishWithExpectedResult(subplebbitEdit, true);
+            await publishWithExpectedResult({ publication: subplebbitEdit, expectedChallengeSuccess: true });
         });
         it(`Sub owner should be able to modify roles`, async () => {
             const ownerSigner = await plebbit.createSigner(roles[0].signer);
@@ -231,7 +227,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer: ownerSigner
             });
-            await publishWithExpectedResult(subplebbitEdit, true);
+            await publishWithExpectedResult({ publication: subplebbitEdit, expectedChallengeSuccess: true });
         });
 
         it(`Owner should not be able to modify settings`, async () => {
@@ -242,7 +238,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress,
                 signer: modSigner
             });
-            await publishWithExpectedResult(subplebbitEdit, false, messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS);
+            await publishWithExpectedResult({ publication: subplebbitEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS });
         });
 
         it(`Subplebbit should publish an update after the owner edits one of its props`, async () => {

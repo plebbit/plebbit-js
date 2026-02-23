@@ -466,7 +466,7 @@ describe.concurrent(`subplebbit.clients (Local)`, async () => {
                 await mockPost.publishChallengeAnswers(["2"]);
             });
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
             await new Promise((resolve) => sub.once("update", resolve));
             await new Promise((resolve) => sub.once("startedstatechange", resolve)); // wait for the last stopped state to be emitted
             expect(recordedStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);

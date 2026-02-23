@@ -93,7 +93,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
             mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
@@ -108,7 +108,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const gatewayUrl = Object.keys(mockPost.clients.ipfsGateways)[0];
             mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(actualStates).to.deep.equal(expectedStates);
         });

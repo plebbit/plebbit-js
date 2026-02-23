@@ -59,11 +59,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await setExtraPropOnCommentModerationAndSign(commentModeration, { extraProp: "1234" }, false);
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => commentModeration.once("challengerequest", resolve as (req: unknown) => void));
-            await publishWithExpectedResult(
-                commentModeration,
-                false,
-                messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-            );
+            await publishWithExpectedResult({ publication: 
+                commentModeration, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
+             });
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.commentModeration.extraProp).to.equal("1234");
         });
@@ -79,7 +77,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => commentModeration.once("challengerequest", resolve as (req: unknown) => void));
 
-            await publishWithExpectedResult(commentModeration, true);
+            await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
 
             await new Promise<void>((resolve) => commentToMod.once("update", () => resolve()));
             expect(commentToMod.removed).to.be.true; // should process only removed since it's the known field to the sub
@@ -105,7 +103,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => commentModeration.once("challengerequest", resolve as (req: unknown) => void));
 
-            await publishWithExpectedResult(commentModeration, true);
+            await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.commentModeration.commentModeration?.extraProp).to.equal("1234");
             expect(challengeRequest.commentModeration.commentModeration?.locked).to.be.true;
@@ -128,7 +126,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await setExtraPropOnCommentModerationAndSign(commentModeration, { insertedAt: "1234" }, true);
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => commentModeration.once("challengerequest", resolve as (req: unknown) => void));
-            await publishWithExpectedResult(commentModeration, false, messages.ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD);
+            await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD });
             const challengerequest = await challengeRequestPromise;
             expect(challengerequest.commentModeration.insertedAt).to.equal("1234");
         });
@@ -150,7 +148,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentModeration))); // Just to test if create will throw because of extra prop
 
                     const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => commentModeration.once("challengerequest", resolve as (req: unknown) => void));
-                    await publishWithExpectedResult(commentModeration, true);
+                    await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
                     const challengeRequest = await challengeRequestPromise;
                     expect(challengeRequest.commentModeration.author?.extraProp).to.equal(extraProps.extraProp);
                 });
@@ -175,7 +173,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                     const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => commentModeration.once("challengerequest", resolve as (req: unknown) => void));
 
-                    await publishWithExpectedResult(commentModeration, true);
+                    await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
                     const challengeRequest = await challengeRequestPromise;
                     expect(challengeRequest.commentModeration.author?.extraProp).to.equal(extraProps.extraProp);
 

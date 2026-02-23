@@ -56,14 +56,14 @@ describe.concurrent(`subplebbit.features.noVideos`, async () => {
             link: "https://example.com/video.mp4",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO });
     });
 
     it(`Can't publish a reply with video link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/movie.webm"
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO });
     });
 
     it(`Can publish a post with image link (noVideos doesn't block images)`, async () => {
@@ -71,7 +71,7 @@ describe.concurrent(`subplebbit.features.noVideos`, async () => {
             link: "https://example.com/image.png",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a post with GIF link`, async () => {
@@ -79,7 +79,7 @@ describe.concurrent(`subplebbit.features.noVideos`, async () => {
             link: "https://example.com/animation.gif",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO });
     });
 
     it(`Can't publish a post with APNG link`, async () => {
@@ -87,13 +87,13 @@ describe.concurrent(`subplebbit.features.noVideos`, async () => {
             link: "https://example.com/animation.apng",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_VIDEO });
     });
 
     it(`Can publish a post with plain content (no link)`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             content: "Just plain text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 });

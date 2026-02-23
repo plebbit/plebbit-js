@@ -74,7 +74,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
                 author: { address: testDomain },
                 signer: domainAuthorSigner
             });
-            await publishWithExpectedResult(commentWithDomain, true);
+            await publishWithExpectedResult({ publication: commentWithDomain, expectedChallengeSuccess: true });
 
             // Verify comment has domain address
             expect(commentWithDomain.author.address).to.equal(testDomain);
@@ -90,7 +90,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
                 },
                 signer: moderatorSigner
             });
-            await publishWithExpectedResult(banMod, true);
+            await publishWithExpectedResult({ publication: banMod, expectedChallengeSuccess: true });
 
             // Verify targetAuthorDomain is stored in the database
             const moderation = subplebbit._dbHandler._db
@@ -110,7 +110,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
             const newComment = await generateMockPost(subplebbit.address, plebbit, false, {
                 signer: domainAuthorSigner
             });
-            await publishWithExpectedResult(newComment, false, messages.ERR_AUTHOR_IS_BANNED);
+            await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
         });
 
         it.sequential("banned author can't publish with same domain but different signer", async () => {
@@ -130,7 +130,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
                 author: { address: testDomain },
                 signer: newSigner
             });
-            await publishWithExpectedResult(newComment, false, messages.ERR_AUTHOR_IS_BANNED);
+            await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
         });
     });
 
@@ -145,7 +145,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
             commentWithDerivedAddress = await generateMockPost(subplebbit.address, plebbit, false, {
                 signer: regularAuthorSigner
             });
-            await publishWithExpectedResult(commentWithDerivedAddress, true);
+            await publishWithExpectedResult({ publication: commentWithDerivedAddress, expectedChallengeSuccess: true });
 
             // Verify comment has derived address (not a domain)
             expect(commentWithDerivedAddress.author.address).to.equal(regularAuthorSigner.address);
@@ -162,7 +162,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
                 },
                 signer: moderatorSigner
             });
-            await publishWithExpectedResult(banMod, true);
+            await publishWithExpectedResult({ publication: banMod, expectedChallengeSuccess: true });
 
             // Verify targetAuthorDomain is NULL in the database
             const moderation = subplebbit._dbHandler._db
@@ -193,7 +193,7 @@ describeSkipIfRpc("Domain-based author bans", () => {
                 author: { address: newDomain },
                 signer: regularAuthorSigner
             });
-            await publishWithExpectedResult(newComment, false, messages.ERR_AUTHOR_IS_BANNED);
+            await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
         });
     });
 });
@@ -247,7 +247,7 @@ describeSkipIfRpc("Domain bans with pseudonymity mode", () => {
             author: { address: testDomain },
             signer: domainAuthorSigner
         });
-        await publishWithExpectedResult(commentWithDomain, true);
+        await publishWithExpectedResult({ publication: commentWithDomain, expectedChallengeSuccess: true });
 
         // Verify the pseudonymity alias stores the original author's domain
         const aliasRow = subplebbit._dbHandler.queryPseudonymityAliasByCommentCid(commentWithDomain.cid);
@@ -262,7 +262,7 @@ describeSkipIfRpc("Domain bans with pseudonymity mode", () => {
             author: { address: testDomain },
             signer: domainAuthorSigner
         });
-        await publishWithExpectedResult(commentToBan, true);
+        await publishWithExpectedResult({ publication: commentToBan, expectedChallengeSuccess: true });
 
         // Verify comment was published with alias (pseudonymity mode)
         const aliasRow = subplebbit._dbHandler.queryPseudonymityAliasByCommentCid(commentToBan.cid);
@@ -279,7 +279,7 @@ describeSkipIfRpc("Domain bans with pseudonymity mode", () => {
             },
             signer: moderatorSigner
         });
-        await publishWithExpectedResult(banMod, true);
+        await publishWithExpectedResult({ publication: banMod, expectedChallengeSuccess: true });
 
         // Verify the moderation stores the original author's domain (not the alias)
         const moderation = subplebbit._dbHandler._db
@@ -297,7 +297,7 @@ describeSkipIfRpc("Domain bans with pseudonymity mode", () => {
         const newComment = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: domainAuthorSigner
         });
-        await publishWithExpectedResult(newComment, false, messages.ERR_AUTHOR_IS_BANNED);
+        await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
     });
 });
 

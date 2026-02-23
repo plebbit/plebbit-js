@@ -61,7 +61,7 @@ describeSkipIfRpc("quotedCids with pending approval comments", async () => {
             throw Error("Should not receive challenge with challengeRequest props");
         });
 
-        await publishWithExpectedResult(pendingReplyComment, true); // pending approval is technically challengeSuccess = true
+        await publishWithExpectedResult({ publication: pendingReplyComment, expectedChallengeSuccess: true }); // pending approval is technically challengeSuccess = true
 
         if (!pendingReplyComment.pendingApproval) throw Error("The reply did not go to pending approval");
         pendingReply = pendingReplyComment;
@@ -82,7 +82,7 @@ describeSkipIfRpc("quotedCids with pending approval comments", async () => {
             quotedCids: [pendingReply.cid!]
         });
 
-        await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL });
     });
 
     it("Reply quoting approved comment and pending comment is rejected", async () => {
@@ -92,7 +92,7 @@ describeSkipIfRpc("quotedCids with pending approval comments", async () => {
             quotedCids: [approvedReply.cid!, pendingReply.cid!]
         });
 
-        await publishWithExpectedResult(reply, false, messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL });
     });
 
     it("Reply quoting only approved comments succeeds", async () => {
@@ -103,7 +103,7 @@ describeSkipIfRpc("quotedCids with pending approval comments", async () => {
             quotedCids
         });
 
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
         expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
     });
 });

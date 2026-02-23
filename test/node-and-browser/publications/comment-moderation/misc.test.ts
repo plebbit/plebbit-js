@@ -100,7 +100,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => modFromStringifiedMod.once("challengerequest", resolve as (req: unknown) => void));
 
-            await publishWithExpectedResult(modFromStringifiedMod, true);
+            await publishWithExpectedResult({ publication: modFromStringifiedMod, expectedChallengeSuccess: true });
             const challengerequest = await challengeRequestPromise;
 
             expect(challengerequest.commentModeration).to.deep.equal(commentMod.toJSONPubsubMessagePublication());
@@ -138,7 +138,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: roles[2].signer,
                 subplebbitAddress
             });
-            await publishWithExpectedResult(commentMod, true);
+            await publishWithExpectedResult({ publication: commentMod, expectedChallengeSuccess: true });
             await modPost.update();
 
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: async () => modPost.removed === true });
@@ -191,7 +191,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: modPost.signer,
                 subplebbitAddress
             });
-            await publishWithExpectedResult(commentModeration1, true);
+            await publishWithExpectedResult({ publication: commentModeration1, expectedChallengeSuccess: true });
 
             fieldsToChange.removed = false;
             fieldsToChange.reason = "Testing unremoving" + Date.now();
@@ -203,7 +203,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress
             });
 
-            await publishWithExpectedResult(commentModeration2, true);
+            await publishWithExpectedResult({ publication: commentModeration2, expectedChallengeSuccess: true });
 
             await modPost.update();
             await resolveWhenConditionIsTrue({ toUpdate: modPost, predicate: async () => modPost.removed === fieldsToChange.removed });
@@ -246,7 +246,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 subplebbitAddress
             });
-            await publishWithExpectedResult(authorEdit, true);
+            await publishWithExpectedResult({ publication: authorEdit, expectedChallengeSuccess: true });
 
             const modFieldsToChange = {
                 removed: true,
@@ -262,7 +262,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress
             });
 
-            await publishWithExpectedResult(modEdit, true);
+            await publishWithExpectedResult({ publication: modEdit, expectedChallengeSuccess: true });
 
             await authorPost.update();
 
@@ -317,7 +317,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress
             });
 
-            await publishWithExpectedResult(modEdit, true);
+            await publishWithExpectedResult({ publication: modEdit, expectedChallengeSuccess: true });
 
             const authorFieldsToChange = {
                 spoiler: false,
@@ -331,7 +331,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 subplebbitAddress
             });
-            await publishWithExpectedResult(authorEdit, true);
+            await publishWithExpectedResult({ publication: authorEdit, expectedChallengeSuccess: true });
 
             await authorPost.update();
 

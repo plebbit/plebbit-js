@@ -72,7 +72,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
             receivedChallenge = true;
         });
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
         expect(receivedChallenge).to.be.false; // Should not receive challenge since answer is correct
 
         await subplebbit.delete();
@@ -108,7 +108,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
             await mockPost.publishChallengeAnswers(["London"]);
         });
 
-        await publishWithExpectedResult(mockPost, false); // Should fail due to wrong answer
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: false }); // Should fail due to wrong answer
         expect(challengeReceived).to.be.true; // Should receive challenge since answer was provided but wrong
 
         expect(challengeData!.challenges[0].challenge).to.equal("What is the capital of France?");
@@ -157,7 +157,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
             receivedChallenge = true;
         });
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
         expect(receivedChallenge).to.be.false;
 
         await subplebbit.delete();

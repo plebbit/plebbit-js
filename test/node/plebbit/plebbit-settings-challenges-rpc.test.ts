@@ -337,13 +337,13 @@ describe("plebbit.settings.challenges over RPC", () => {
         const correctPost = await generateMockPost(subplebbit.address, clientPlebbit, false, {
             challengeRequest: { challengeAnswers: ["blue"] }
         });
-        await publishWithExpectedResult(correctPost, true);
+        await publishWithExpectedResult({ publication: correctPost, expectedChallengeSuccess: true });
 
         // Publish with wrong pre-answer — should fail
         const wrongPost = await generateMockPost(subplebbit.address, clientPlebbit, false, {
             challengeRequest: { challengeAnswers: ["red"] }
         });
-        await publishWithExpectedResult(wrongPost, false);
+        await publishWithExpectedResult({ publication: wrongPost, expectedChallengeSuccess: false });
 
         await subplebbit.delete();
         await clientPlebbit.destroy();

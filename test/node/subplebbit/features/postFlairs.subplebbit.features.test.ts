@@ -48,14 +48,14 @@ describe(`subplebbit.features.postFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             flairs: [validPostFlair]
         });
-        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIRS_NOT_ALLOWED);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIRS_NOT_ALLOWED });
     });
 
     it(`Can't publish a reply with post flairs when postFlairs feature is disabled (default)`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             flairs: [validPostFlair]
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_POST_FLAIRS_NOT_ALLOWED);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIRS_NOT_ALLOWED });
     });
 
     it(`Can't edit a comment with flairs when postFlairs feature is disabled`, async () => {
@@ -65,7 +65,7 @@ describe(`subplebbit.features.postFlairs`, async () => {
             flairs: [validPostFlair],
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(flairsEdit, false, messages.ERR_POST_FLAIRS_NOT_ALLOWED);
+        await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIRS_NOT_ALLOWED });
     });
 
     it.sequential(`Feature is updated correctly in props`, async () => {
@@ -77,14 +77,14 @@ describe(`subplebbit.features.postFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             flairs: [validPostFlair]
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a reply with valid post flair when feature is enabled`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             flairs: [validPostFlair]
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a post with invalid post flair (not in allowed list)`, async () => {
@@ -92,7 +92,7 @@ describe(`subplebbit.features.postFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             flairs: [invalidFlair]
         });
-        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
     });
 
     it(`Can't publish a post with flair that has wrong colors`, async () => {
@@ -100,7 +100,7 @@ describe(`subplebbit.features.postFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             flairs: [wrongColorFlair]
         });
-        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
     });
 
     it(`Can edit a comment with valid flair when feature is enabled`, async () => {
@@ -110,7 +110,7 @@ describe(`subplebbit.features.postFlairs`, async () => {
             flairs: [validPostFlair],
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(flairsEdit, true);
+        await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: true });
     });
 
     it(`Can't edit a comment with invalid flair (not in allowed list)`, async () => {
@@ -121,12 +121,12 @@ describe(`subplebbit.features.postFlairs`, async () => {
             flairs: [invalidFlair],
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(flairsEdit, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+        await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
     });
 
     it(`Can publish a post without post flairs when feature is enabled`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a post with flair that has extra properties`, async () => {
@@ -134,7 +134,7 @@ describe(`subplebbit.features.postFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             flairs: [flairWithExtraProps]
         });
-        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
     });
 
     it(`Can't publish a post with flair that is missing properties`, async () => {
@@ -143,6 +143,6 @@ describe(`subplebbit.features.postFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             flairs: [flairMissingProps]
         });
-        await publishWithExpectedResult(post, false, messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
     });
 });

@@ -202,7 +202,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         mockPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
         expect(actualStates).to.deep.equal(expectedStates);
         await plebbit.destroy();
@@ -224,7 +224,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         mockPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
         expect(actualStates).to.deep.equal(expectedStates);
     });

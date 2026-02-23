@@ -56,14 +56,14 @@ describe.concurrent(`subplebbit.features.noImages`, async () => {
             link: "https://example.com/image.png",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE });
     });
 
     it(`Can't publish a reply with image link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/photo.jpg"
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE });
     });
 
     it(`Can publish a post with video link (noImages doesn't block videos)`, async () => {
@@ -71,20 +71,20 @@ describe.concurrent(`subplebbit.features.noImages`, async () => {
             link: "https://example.com/video.mp4",
             content: "Just text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a post with plain content (no link)`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             content: "Just plain text"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a post with markdown image in content (noImages only checks link field)`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             content: "Here is an image: ![alt](https://example.com/image.png)"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 });

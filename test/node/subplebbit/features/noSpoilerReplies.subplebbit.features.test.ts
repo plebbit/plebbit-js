@@ -59,7 +59,7 @@ describe.concurrent(`subplebbit.features.noSpoilerReplies`, async () => {
             content: "Spoiler content",
             spoiler: true
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a reply with spoiler=true`, async () => {
@@ -67,14 +67,14 @@ describe.concurrent(`subplebbit.features.noSpoilerReplies`, async () => {
             content: "Spoiler reply",
             spoiler: true
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_SPOILER_ENABLED);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_SPOILER_ENABLED });
     });
 
     it(`Can publish a reply without spoiler`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             content: "Normal reply"
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 
     it(`Can't edit a reply to set spoiler=true`, async () => {
@@ -84,7 +84,7 @@ describe.concurrent(`subplebbit.features.noSpoilerReplies`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedReply.signer
         });
-        await publishWithExpectedResult(commentEdit, false, messages.ERR_REPLY_HAS_SPOILER_ENABLED);
+        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_SPOILER_ENABLED });
     });
 
     it(`Can edit a post to set spoiler=true (noSpoilerReplies doesn't affect posts)`, async () => {
@@ -94,6 +94,6 @@ describe.concurrent(`subplebbit.features.noSpoilerReplies`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(commentEdit, true);
+        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
     });
 });

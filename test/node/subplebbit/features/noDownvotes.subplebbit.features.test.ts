@@ -53,12 +53,12 @@ describe.concurrent(`subplebbit.features.noDownvotes`, async () => {
     it(`Not allowed to publish downvotes if subplebbit.features.noDownvotes=true`, async () => {
         const downvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, -1, remotePlebbit); // should be rejected
 
-        await publishWithExpectedResult(downvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES);
+        await publishWithExpectedResult({ publication: downvote, expectedChallengeSuccess: false, expectedReason: messages.ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES });
     });
 
     it(`Allowed to publish upvotes if subplebbit.features.noDownvotes=true`, async () => {
         const upvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, 1, remotePlebbit); // should be accepted
 
-        await publishWithExpectedResult(upvote, true);
+        await publishWithExpectedResult({ publication: upvote, expectedChallengeSuccess: true });
     });
 });

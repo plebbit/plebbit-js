@@ -42,7 +42,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(modFlairs, true);
+            await publishWithExpectedResult({ publication: modFlairs, expectedChallengeSuccess: true });
         });
 
         it.sequential(`A new CommentUpdate is published with mod flairs`, async () => {
@@ -89,7 +89,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(modAuthorFlairs, true);
+            await publishWithExpectedResult({ publication: modAuthorFlairs, expectedChallengeSuccess: true });
         });
 
         it.sequential(`A new CommentUpdate is published with author flairs`, async () => {
@@ -142,7 +142,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult(modFlairs, true);
+            await publishWithExpectedResult({ publication: modFlairs, expectedChallengeSuccess: true });
         });
 
         it.sequential(`CommentUpdate reflects mod flairs overriding author flairs`, async () => {

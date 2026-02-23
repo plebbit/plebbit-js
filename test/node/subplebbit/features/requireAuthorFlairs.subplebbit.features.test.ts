@@ -54,26 +54,26 @@ describe(`subplebbit.features.requireAuthorFlairs`, async () => {
 
     it(`Can't publish a post without author flairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
-        await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIRS_REQUIRED);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIRS_REQUIRED });
     });
 
     it(`Can't publish a reply without author flairs`, async () => {
         const reply = await generateMockComment(publishedPost, remotePlebbit, false);
-        await publishWithExpectedResult(reply, false, messages.ERR_AUTHOR_FLAIRS_REQUIRED);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIRS_REQUIRED });
     });
 
     it(`Can publish a post with valid author flair`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [validAuthorFlair] }
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a reply with valid author flair`, async () => {
         const reply = await generateMockComment(publishedPost, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [validAuthorFlair] }
         });
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a post with invalid author flair even when required`, async () => {
@@ -81,6 +81,6 @@ describe(`subplebbit.features.requireAuthorFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [invalidFlair] }
         });
-        await publishWithExpectedResult(post, false, messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS });
     });
 });

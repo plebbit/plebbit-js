@@ -63,7 +63,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(recordedStates).to.deep.equal(expectedStates);
         });
@@ -84,7 +84,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(recordedStates).to.deep.equal(expectedStates);
         });
@@ -104,7 +104,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(recordedStates).to.deep.equal(expectedStates);
         });
@@ -184,7 +184,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(recordedStates).to.deep.equal(expectedStates);
         });
@@ -205,7 +205,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             mockPost.on("publishingstatechange", (newState: string) => recordedStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(recordedStates).to.deep.equal(expectedStates);
         });
@@ -237,7 +237,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await mockPost.publishChallengeAnswers(["12345"]); // Wrong answer here
             });
 
-            await publishWithExpectedResult(mockPost, false);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: false });
 
             expect(mockPost.publishingState).to.equal("failed");
             await mockPost.stop();

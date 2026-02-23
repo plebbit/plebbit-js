@@ -146,7 +146,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(actualStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
         });
@@ -160,7 +160,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             if (config.testConfigCode === "remote-kubo-rpc") {
                 expect(actualStates).to.deep.equal([]); // it's empty because we're not fetching anything due to caching

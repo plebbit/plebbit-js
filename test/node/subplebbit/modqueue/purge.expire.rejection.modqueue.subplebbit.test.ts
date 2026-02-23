@@ -91,7 +91,7 @@ async function createDisapprovedComment(
         commentModeration: moderationProps,
         commentCid: pendingComment.cid!
     });
-    await publishWithExpectedResult(commentModeration, true);
+    await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
 
     await resolveWhenConditionIsTrue({
         toUpdate: ctx.subplebbit,
@@ -127,7 +127,7 @@ async function createApprovedComment(ctx: TestContext, { depth = 1 }: { depth?: 
         commentModeration: { approved: true },
         commentCid: pendingComment.cid!
     });
-    await publishWithExpectedResult(commentModeration, true);
+    await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: true });
 
     await resolveWhenConditionIsTrue({
         toUpdate: ctx.subplebbit,
@@ -330,7 +330,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 commentModeration: { approved: false },
                 commentCid
             });
-            await publishWithExpectedResult(moderation, true);
+            await publishWithExpectedResult({ publication: moderation, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({
                 toUpdate: ctx.subplebbit,
@@ -465,7 +465,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 commentModeration: { approved: false },
                 commentCid
             });
-            await publishWithExpectedResult(moderation, true);
+            await publishWithExpectedResult({ publication: moderation, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({
                 toUpdate: ctx.subplebbit,
                 // @ts-expect-error - accessing private _dbHandler
@@ -642,7 +642,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 commentModeration: { approved: false, reason: "second disapproval" },
                 commentCid: disapprovedComment.cid!
             });
-            await publishWithExpectedResult(secondModeration, true);
+            await publishWithExpectedResult({ publication: secondModeration, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({
                 toUpdate: ctx.subplebbit,
                 predicate: async () => {
@@ -687,7 +687,7 @@ describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
                 commentModeration: { approved: true },
                 commentCid: disapprovedComment.cid!
             });
-            await publishWithExpectedResult(approval, true);
+            await publishWithExpectedResult({ publication: approval, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({
                 toUpdate: ctx.subplebbit,

@@ -65,7 +65,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it.sequential("Can upvote a post", async () => {
             const originalUpvote = remeda.clone(postToVote.upvoteCount);
             const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({
                 toUpdate: postToVote,
                 predicate: async () => postToVote.upvoteCount === originalUpvote + 1
@@ -81,7 +81,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`Can upvote a reply`, async () => {
             const originalUpvote = remeda.clone(replyToVote.upvoteCount);
             const vote = await generateMockVote(replyToVote as unknown as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({
                 toUpdate: replyToVote,
                 predicate: async () => replyToVote.upvoteCount === originalUpvote + 1
@@ -104,7 +104,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress: previousVotes[0].subplebbitAddress,
                 vote: -1
             });
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({
                 toUpdate: postToVote,
                 predicate: async () => postToVote.upvoteCount === originalUpvote - 1
@@ -126,7 +126,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress: previousVotes[1].subplebbitAddress,
                 vote: -1
             });
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({
                 toUpdate: replyToVote,
                 predicate: async () => replyToVote.upvoteCount === originalUpvote - 1
@@ -146,7 +146,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress: previousVotes[0].subplebbitAddress,
                 vote: previousVotes[0].vote
             });
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
         });
 
         it(`Can publish a vote that was created from jsonfied vote instance`, async () => {
@@ -161,7 +161,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 voteFromStringifiedVote.once("challengerequest", resolve)
             );
 
-            await publishWithExpectedResult(voteFromStringifiedVote, true);
+            await publishWithExpectedResult({ publication: voteFromStringifiedVote, expectedChallengeSuccess: true });
             const challengerequest = await challengeRequestPromise;
             expect(challengerequest.vote).to.deep.equal(vote.toJSONPubsubMessagePublication());
 
@@ -172,7 +172,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`A vote=0 is rejected if the author never published a vote on the comment before`, async () => {
             const vote = await generateMockVote(postToVote as CommentIpfsWithCidDefined, 0, plebbit); // will generate random signer
 
-            await publishWithExpectedResult(vote, false, messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL });
         });
     });
 });

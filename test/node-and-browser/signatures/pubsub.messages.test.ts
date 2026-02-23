@@ -413,7 +413,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 );
             });
 
-            await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
+            await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG });
             await tempPlebbit.destroy();
         });
 

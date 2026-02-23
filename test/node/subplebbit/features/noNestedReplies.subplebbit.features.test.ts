@@ -54,12 +54,12 @@ describe.concurrent(`subplebbit.features.noNestedReplies`, async () => {
 
     it(`Can publish a post`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a reply to a post (depth 1)`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false);
-        await publishWithExpectedResult(reply, true);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a nested reply (depth > 1)`, async () => {
@@ -68,6 +68,6 @@ describe.concurrent(`subplebbit.features.noNestedReplies`, async () => {
 
         // Now try to reply to that reply (nested reply)
         const nestedReply = await generateMockComment(reply as CommentIpfsWithCidDefined, remotePlebbit, false);
-        await publishWithExpectedResult(nestedReply, false, messages.ERR_NESTED_REPLIES_NOT_ALLOWED);
+        await publishWithExpectedResult({ publication: nestedReply, expectedChallengeSuccess: false, expectedReason: messages.ERR_NESTED_REPLIES_NOT_ALLOWED });
     });
 });

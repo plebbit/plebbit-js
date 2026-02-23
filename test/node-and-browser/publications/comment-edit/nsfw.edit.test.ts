@@ -40,7 +40,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 nsfw: true,
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult(nsfwEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+            await publishWithExpectedResult({ publication: nsfwEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
         });
 
         it(`Author can mark their own comment as nsfw with CommentEdit`, async () => {
@@ -53,7 +53,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 reason: "Author marking their own comment as nsfw"
             });
-            await publishWithExpectedResult(nsfwEdit, true);
+            await publishWithExpectedResult({ publication: nsfwEdit, expectedChallengeSuccess: true });
         });
         it(`A new CommentUpdate is published with nsfw=true`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.nsfw === true });
@@ -117,7 +117,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 reason: "An author unnsfwing their own comment"
             });
-            await publishWithExpectedResult(unnsfwEdit, true);
+            await publishWithExpectedResult({ publication: unnsfwEdit, expectedChallengeSuccess: true });
         });
         it(`A new CommentUpdate is published with nsfw=false`, async () => {
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.nsfw === false });
@@ -162,7 +162,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: roles[2].signer,
                 reason: "Mod marking their own comment as nsfw"
             });
-            await publishWithExpectedResult(nsfwEdit, true);
+            await publishWithExpectedResult({ publication: nsfwEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with nsfw=true`, async () => {
@@ -193,7 +193,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: roles[2].signer,
                 reason: "Mod unnsfwing their own comment"
             });
-            await publishWithExpectedResult(unnsfwEdit, true);
+            await publishWithExpectedResult({ publication: unnsfwEdit, expectedChallengeSuccess: true });
         });
 
         it(`A new CommentUpdate is published with nsfw=false`, async () => {

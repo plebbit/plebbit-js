@@ -31,7 +31,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             expect(comment.toJSONPubsubRequestToEncrypt().challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
             const challengeRequestPromise = new Promise<ChallengeRequestEvent>((resolve) => comment.once("challengerequest", resolve as (request: unknown) => void));
-            await publishWithExpectedResult(comment, true);
+            await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: true });
             const challengeRequestFromEvent = await challengeRequestPromise;
             for (const challengerequest of [challengeRequestFromEvent])
                 expect(challengerequest.challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
@@ -42,7 +42,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             expect(comment.toJSONPubsubRequestToEncrypt().challengeCommentCids).to.deep.equal(challengeRequestFields.challengeCommentCids);
             const challengeRequestPromise = new Promise<ChallengeRequestEvent>((resolve) => comment.once("challengerequest", resolve as (request: unknown) => void));
-            await publishWithExpectedResult(comment, true);
+            await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: true });
             const challengeRequestFromEvent = await challengeRequestPromise;
             for (const challengerequest of [challengeRequestFromEvent])
                 expect(challengerequest.challengeCommentCids).to.deep.equal(challengeRequestFields.challengeCommentCids);
@@ -63,7 +63,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(recreatedComment.toJSONPubsubRequestToEncrypt().challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
             const challengeRequestPromise = new Promise<ChallengeRequestEvent>((resolve) => recreatedComment.once("challengerequest", resolve as (request: unknown) => void));
 
-            await publishWithExpectedResult(recreatedComment, true);
+            await publishWithExpectedResult({ publication: recreatedComment, expectedChallengeSuccess: true });
             const challengeRequestFromEvent = await challengeRequestPromise;
             for (const challengerequest of [challengeRequestFromEvent]) {
                 expect(challengerequest.challengeCommentCids).to.deep.equal(challengeRequestFields.challengeCommentCids);

@@ -31,6 +31,6 @@ describe.skip("plebbit.browserLibp2pJsPublish", () => {
         const onlinePlebbit = await createOnlinePlebbit({ browserLibp2pJsPublish: true, resolveAuthorAddresses: false } as any);
         const post = await generatePostToAnswerMathQuestion({ subplebbitAddress: subs.onlineSub as unknown as string }, onlinePlebbit);
 
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 });

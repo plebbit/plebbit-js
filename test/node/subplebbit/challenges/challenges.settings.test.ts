@@ -112,7 +112,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
 
         const challengeVerificationPromise = new Promise<ChallengeVerificationMessageType>((resolve) => subplebbit.once("challengeverification", resolve));
         const post = await generateMockPost(subplebbit.address, remotePlebbit);
-        await publishWithExpectedResult(post, false);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false });
         const challengeVerification = await challengeVerificationPromise;
         expect(challengeVerification.challengeSuccess).to.equal(false);
         expect(challengeVerification.challengeErrors).to.not.equal(undefined);
@@ -182,7 +182,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
             receivedChallenge = true;
         });
 
-        await publishWithExpectedResult(mockPost, true);
+        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
         expect(receivedChallenge).to.be.false;
 

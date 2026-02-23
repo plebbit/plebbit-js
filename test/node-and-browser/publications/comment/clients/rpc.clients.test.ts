@@ -50,7 +50,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
             });
 
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
             expect(actualStates).to.deep.equal(expectedStates);
         });

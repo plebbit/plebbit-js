@@ -68,7 +68,7 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             "http://127.0.0.1:18080"
         ]);
         const post = await generateMockPost(subplebbitAddress, gatewayPlebbit);
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
         await gatewayPlebbit.destroy();
     });
     it(`Can publish a comment when all pubsub providers are down except one`, async () => {
@@ -100,7 +100,7 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             pubsubTopic: signers[0].address,
             address: signers[0].address
         };
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
         await tempPlebbit.destroy();
     });
     it(`comment.publish succeeds if provider 1 is not responding and 2 is responding`, async () => {
@@ -136,7 +136,7 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
             mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
 
         try {
-            await publishWithExpectedResult(mockPost, true);
+            await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
             expect(mockPost.publishingState).to.equal("succeeded");
             expect(actualStates).to.deep.equal(expectedStates);
         } finally {

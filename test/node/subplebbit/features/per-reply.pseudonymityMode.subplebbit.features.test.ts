@@ -255,7 +255,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 content: editedContent,
                 signer: editSigner
             });
-            await publishWithExpectedResult(edit, true);
+            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({
                 toUpdate: context.subplebbit,
@@ -288,7 +288,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 content: "Unauthorized edit " + Date.now(),
                 signer: intruderSigner
             });
-            await publishWithExpectedResult(badEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+            await publishWithExpectedResult({ publication: badEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
 
             const storedUpdate = (context.subplebbit as LocalSubplebbit)._dbHandler.queryStoredCommentUpdate({ cid: targetReply.cid }) as StoredCommentUpdate | undefined;
             expect(storedUpdate?.edit).to.be.undefined;
@@ -366,7 +366,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 parentCid: post.cid,
                 postCid: post.cid
             });
-            await publishWithExpectedResult(authoredReply, true);
+            await publishWithExpectedResult({ publication: authoredReply, expectedChallengeSuccess: true });
             expect(authoredReply.original).to.be.ok;
             await waitForStoredCommentUpdateWithAssertions(context.subplebbit as LocalSubplebbit, authoredReply);
 
@@ -421,7 +421,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 content: firstEditContent,
                 signer: authorSigner
             });
-            await publishWithExpectedResult(firstEdit, true);
+            await publishWithExpectedResult({ publication: firstEdit, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({
                 toUpdate: context.subplebbit,
@@ -436,7 +436,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 content: secondEditContent,
                 signer: authorSigner
             });
-            await publishWithExpectedResult(secondEdit, true);
+            await publishWithExpectedResult({ publication: secondEdit, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({
                 toUpdate: context.subplebbit,
@@ -524,7 +524,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 parentCid: post.cid,
                 postCid: post.cid
             });
-            await publishWithExpectedResult(domainReply, true);
+            await publishWithExpectedResult({ publication: domainReply, expectedChallengeSuccess: true });
             await waitForStoredCommentUpdateWithAssertions(context.subplebbit as LocalSubplebbit, domainReply);
 
             const aliasRow = (context.subplebbit as LocalSubplebbit)._dbHandler.queryPseudonymityAliasByCommentCid(domainReply.cid) as AliasRow;
@@ -762,7 +762,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     content: "per-reply challengerequest author.subplebbit check",
                     title: "per-reply challengerequest author.subplebbit check"
                 });
-                await publishWithExpectedResult(publication, true);
+                await publishWithExpectedResult({ publication: publication, expectedChallengeSuccess: true });
 
                 const challengerequest = await challengeRequestPromise;
                 expect(challengerequest.comment.author.address).to.equal(localAuthor.address);
@@ -834,7 +834,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     commentModeration: { author: { banExpiresAt }, reason: "ban for per-reply test" },
                     signer: moderator
                 });
-                await publishWithExpectedResult(banModeration, true);
+                await publishWithExpectedResult({ publication: banModeration, expectedChallengeSuccess: true });
 
                 await resolveWhenConditionIsTrue({
                     toUpdate: localContext.subplebbit,
@@ -860,7 +860,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     postCid: post.cid,
                     content: "should be blocked"
                 });
-                await publishWithExpectedResult(blockedReply, false, messages.ERR_AUTHOR_IS_BANNED);
+                await publishWithExpectedResult({ publication: blockedReply, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
 
                 await post.stop();
                 await firstReply.stop();
@@ -905,7 +905,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     commentModeration: { author: { banExpiresAt }, reason: "ban alias mapping test" },
                     signer: moderator
                 });
-                await publishWithExpectedResult(banModeration, true);
+                await publishWithExpectedResult({ publication: banModeration, expectedChallengeSuccess: true });
 
                 await resolveWhenConditionIsTrue({
                     toUpdate: localContext.subplebbit,
@@ -945,7 +945,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     vote: 1,
                     signer: voter
                 });
-                await publishWithExpectedResult(upvote, true);
+                await publishWithExpectedResult({ publication: upvote, expectedChallengeSuccess: true });
 
                 await resolveWhenConditionIsTrue({
                     toUpdate: localContext.subplebbit,
@@ -981,7 +981,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     vote: 1,
                     signer: voter
                 });
-                await publishWithExpectedResult(upvote, true);
+                await publishWithExpectedResult({ publication: upvote, expectedChallengeSuccess: true });
 
                 await resolveWhenConditionIsTrue({
                     toUpdate: localContext.subplebbit,
@@ -1025,7 +1025,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     vote: 1,
                     signer: voter
                 });
-                await publishWithExpectedResult(upvoteSecondReply, true);
+                await publishWithExpectedResult({ publication: upvoteSecondReply, expectedChallengeSuccess: true });
 
                 await resolveWhenConditionIsTrue({
                     toUpdate: localContext.subplebbit,
@@ -1114,7 +1114,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     vote: 1,
                     signer: voter
                 });
-                await publishWithExpectedResult(upvote, true);
+                await publishWithExpectedResult({ publication: upvote, expectedChallengeSuccess: true });
 
                 // Verify original author has post karma
                 await resolveWhenConditionIsTrue({
@@ -1194,7 +1194,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     commentModeration: { author: { banExpiresAt }, reason: "ban for per-reply test" },
                     signer: moderator
                 });
-                await publishWithExpectedResult(banModeration, true);
+                await publishWithExpectedResult({ publication: banModeration, expectedChallengeSuccess: true });
 
                 await resolveWhenConditionIsTrue({
                     toUpdate: localContext.subplebbit,
@@ -1220,7 +1220,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     postCid: post.cid,
                     content: "blocked after ban"
                 });
-                await publishWithExpectedResult(blockedReply, false, messages.ERR_AUTHOR_IS_BANNED);
+                await publishWithExpectedResult({ publication: blockedReply, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
 
                 const blockedPost = await localContext.publisherPlebbit.createComment({
                     subplebbitAddress: localContext.subplebbit.address,
@@ -1228,7 +1228,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                     title: "blocked post after ban",
                     content: "blocked post after ban"
                 });
-                await publishWithExpectedResult(blockedPost, false, messages.ERR_AUTHOR_IS_BANNED);
+                await publishWithExpectedResult({ publication: blockedPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
 
                 await post.stop();
                 await firstReply.stop();
@@ -1676,7 +1676,7 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
                 content: editedContent,
                 signer: modSigner
             });
-            await publishWithExpectedResult(edit, true);
+            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({
                 toUpdate: modContext.subplebbit,

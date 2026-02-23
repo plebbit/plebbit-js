@@ -98,7 +98,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const editFromStringifiedEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)));
 
             const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) => editFromStringifiedEdit.once("challengerequest", resolve as (req: unknown) => void));
-            await publishWithExpectedResult(editFromStringifiedEdit, true);
+            await publishWithExpectedResult({ publication: editFromStringifiedEdit, expectedChallengeSuccess: true });
             const challengerequest = await challengeRequestPromise;
 
             expect(challengerequest.commentEdit).to.deep.equal(edit.toJSONPubsubMessagePublication());
@@ -135,7 +135,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 subplebbitAddress
             });
-            await publishWithExpectedResult(edit, true);
+            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: true });
             await authorPost.update();
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.deleted });
             await authorPost.stop();
@@ -185,7 +185,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: authorPost.signer,
                 subplebbitAddress
             });
-            await publishWithExpectedResult(edit1, true);
+            await publishWithExpectedResult({ publication: edit1, expectedChallengeSuccess: true });
 
             const secondEditProps = {
                 ...firstEditProps,
@@ -200,7 +200,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 subplebbitAddress
             });
 
-            await publishWithExpectedResult(edit2, true);
+            await publishWithExpectedResult({ publication: edit2, expectedChallengeSuccess: true });
 
             await authorPost.update();
             await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.deleted === secondEditProps.deleted });

@@ -50,20 +50,20 @@ describe.concurrent(`subplebbit.features.requirePostLinkIsMedia (with requirePos
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
         await overrideCommentInstancePropsAndSign(post, { link: invalidUrl } as Parameters<typeof overrideCommentInstancePropsAndSign>[1]);
         expect(post.link).to.equal(invalidUrl);
-        await publishWithExpectedResult(post, false, messages.ERR_POST_LINK_IS_NOT_OF_MEDIA);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_LINK_IS_NOT_OF_MEDIA });
     });
 
     it(`Can't publish a post with link that isn't of a media`, async () => {
         const urlOfNotMedia = "https://google.com";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { link: urlOfNotMedia });
         expect(post.link).to.equal(urlOfNotMedia);
-        await publishWithExpectedResult(post, false, messages.ERR_POST_LINK_IS_NOT_OF_MEDIA);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_LINK_IS_NOT_OF_MEDIA });
     });
     it(`Can publish a post with valid media link`, async () => {
         const validUrl = "https://img1.wsimg.com/isteam/ip/eb02f20b-e787-4a02-b188-d0fcbc250ba1/blob-6af1ead.png";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { link: validUrl });
         expect(post.link).to.equal(validUrl);
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
         expect(post.link).to.equal(validUrl);
     });
 });
@@ -96,18 +96,18 @@ describe.concurrent(`subplebbit.features.requirePostLinkIsMedia (without require
 
     it(`Can publish a post without a link`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't publish a post with non-media link`, async () => {
         const urlOfNotMedia = "https://google.com";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { link: urlOfNotMedia });
-        await publishWithExpectedResult(post, false, messages.ERR_POST_LINK_IS_NOT_OF_MEDIA);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_LINK_IS_NOT_OF_MEDIA });
     });
 
     it(`Can publish a post with valid media link`, async () => {
         const validUrl = "https://img1.wsimg.com/isteam/ip/eb02f20b-e787-4a02-b188-d0fcbc250ba1/blob-6af1ead.png";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { link: validUrl });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 });

@@ -163,7 +163,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     await mockPost.publishChallengeAnswers(["2"]);
                 });
 
-                await publishWithExpectedResult(mockPost, true);
+                await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
                 expect(challengesReceived.length).to.equal(1);
 
@@ -188,7 +188,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     challengeRequestCount++;
                 });
 
-                await publishWithExpectedResult(mockPost, true);
+                await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
                 // Verify no race conditions occurred - should have at most 2 challenge requests
                 // (one to non-responding provider, one to working provider)
@@ -240,7 +240,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     return originalPublishOnProvider(topic, data, providerUrl);
                 };
 
-                await publishWithExpectedResult(mockPost, true);
+                await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
                 // Should not attempt the same provider multiple times unnecessarily
                 const uniqueProviders = new Set(providerAttempts);
@@ -280,7 +280,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                         return originalSubscribeOnProvider(topic, handler, providerUrl);
                     };
 
-                    await publishWithExpectedResult(mockPost, true);
+                    await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
                     expect(publishCount).to.equal(3); // 1st attempt fails, 2nd attempt succeeds, 3rd attempt is from publishChallengeAnswer
 

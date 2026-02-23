@@ -140,7 +140,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
 
         it(`Should not be able to publish a vote under a pending comment`, async () => {
             const vote = await generateMockVote(commentInPendingApproval as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult(vote, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT });
         });
         it(`should not be able to publish a CommentEdit under a pending comment`, async () => {
             const edit = await plebbit.createCommentEdit({
@@ -150,11 +150,11 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 content: "text to edit on pending comment",
                 signer: commentInPendingApproval.signer
             });
-            await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT });
         });
         it(`Should not be able to publish a reply under a pending comment`, async () => {
             const reply = await generateMockComment(commentInPendingApproval as CommentIpfsWithCidDefined, plebbit, false);
-            await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT });
         });
 
         itSkipIfRpc(`Pending comment should not be pinned in ipfs node`, async () => {

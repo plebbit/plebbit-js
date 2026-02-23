@@ -45,7 +45,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 content: editedText,
                 signer: signers[7] // different than the signer of the original comment
             });
-            await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+            await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
         });
 
         it.sequential("Original author can edit content", async function () {
@@ -59,7 +59,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 content: editedText,
                 signer: commentToBeEdited.signer
             });
-            await publishWithExpectedResult(commentEdit, true);
+            await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({ toUpdate: commentToBeEdited, predicate: async () => commentToBeEdited.content === editedText });
             expect(commentToBeEdited.edit.content).to.equal(editedText);
             expect(commentToBeEdited.raw.commentUpdate.edit.content).to.equal(editedText);
@@ -159,7 +159,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 content: editedText,
                 signer: commentToBeEdited.signer
             });
-            await publishWithExpectedResult(commentEdit, true);
+            await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({ toUpdate: commentToBeEdited, predicate: async () => commentToBeEdited.content === editedText });
             expect(commentToBeEdited.edit.content).to.equal(editedText);
             expect(commentToBeEdited.content).to.equal(editedText);
@@ -184,7 +184,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     content: editedText,
                     signer: roleTest.signer
                 });
-                await publishWithExpectedResult(commentEdit, true);
+                await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
                 await resolveWhenConditionIsTrue({ toUpdate: commentToEdit, predicate: async () => commentToEdit.edit?.content === editedText });
                 expect(commentToEdit.edit.content).to.equal(editedText);
                 expect(commentToEdit.content).to.equal(editedText);
@@ -205,7 +205,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     content: editedText,
                     signer: roleTest.signer
                 });
-                await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
+                await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
             })
         );
     });

@@ -56,7 +56,7 @@ describe.concurrent(`subplebbit.features.noSpoilers`, async () => {
             content: "Spoiler content",
             spoiler: true
         });
-        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_SPOILER_ENABLED);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_SPOILER_ENABLED });
     });
 
     it(`Can't publish a reply with spoiler=true`, async () => {
@@ -64,14 +64,14 @@ describe.concurrent(`subplebbit.features.noSpoilers`, async () => {
             content: "Spoiler reply",
             spoiler: true
         });
-        await publishWithExpectedResult(reply, false, messages.ERR_COMMENT_HAS_SPOILER_ENABLED);
+        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_SPOILER_ENABLED });
     });
 
     it(`Can publish a post without spoiler`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             content: "Normal content"
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can publish a post with spoiler=false`, async () => {
@@ -79,7 +79,7 @@ describe.concurrent(`subplebbit.features.noSpoilers`, async () => {
             content: "Normal content",
             spoiler: false
         });
-        await publishWithExpectedResult(post, true);
+        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     });
 
     it(`Can't edit a comment to set spoiler=true`, async () => {
@@ -89,6 +89,6 @@ describe.concurrent(`subplebbit.features.noSpoilers`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_HAS_SPOILER_ENABLED);
+        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_SPOILER_ENABLED });
     });
 });

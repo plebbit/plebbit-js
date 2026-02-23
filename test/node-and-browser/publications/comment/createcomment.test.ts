@@ -227,7 +227,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // it should delete author.shortAddress before publishing however
             const comment = await generateMockPost(subplebbitAddress, plebbit, false, { author: { shortAddress: "12345" } });
             expect(comment.author.shortAddress).to.be.a("string").and.not.equal("12345");
-            await publishWithExpectedResult(comment, true);
+            await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: true });
 
             const commentLoaded = await plebbit.getComment({ cid: comment.cid });
             expect(commentLoaded.author.shortAddress).to.be.a("string").and.not.equal("12345");
@@ -237,7 +237,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             // it should delete author.sublebbit before publishing however
             const comment = await generateMockPost(subplebbitAddress, plebbit, false, { author: { subplebbit: { postScore: 100 } } });
             expect(comment.author.subplebbit).to.be.undefined;
-            await publishWithExpectedResult(comment, true);
+            await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: true });
 
             const commentLoaded = await plebbit.getComment({ cid: comment.cid });
             expect(commentLoaded.author.subplebbit).to.be.undefined;

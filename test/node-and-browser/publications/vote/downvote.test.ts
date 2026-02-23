@@ -38,7 +38,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it.sequential("Can downvote a post", async () => {
             const originalDownvote = remeda.clone(postToVote.downvoteCount);
             const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, -1, plebbit);
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => postToVote.downvoteCount === originalDownvote + 1 });
 
@@ -53,7 +53,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it.sequential(`Can downvote a reply`, async () => {
             const originalDownvote = remeda.clone(replyToVote.downvoteCount);
             const vote = await generateMockVote(replyToVote as unknown as CommentIpfsWithCidDefined, -1, plebbit);
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({
                 toUpdate: replyToVote,
@@ -78,7 +78,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: previousVotes[0].signer,
                 vote: 1
             });
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => postToVote.upvoteCount === originalUpvote + 1 });
 
@@ -98,7 +98,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: previousVotes[1].signer,
                 vote: 1
             });
-            await publishWithExpectedResult(vote, true);
+            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
 
             await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: async () => replyToVote.upvoteCount === originalUpvote + 1 });
 

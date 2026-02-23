@@ -87,7 +87,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 commentModeration: { reason: "to remove a post RPC regression", removed: true },
                 signer: modSigner
             });
-            await publishWithExpectedResult(removeEdit, true);
+            await publishWithExpectedResult({ publication: removeEdit, expectedChallengeSuccess: true });
 
             await postToRemove.update();
             await resolveWhenConditionIsTrue({ toUpdate: postToRemove, predicate: async () => postToRemove.removed === true });
@@ -102,7 +102,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 commentModeration: { reason: "to unremove a post RPC regression", removed: false },
                 signer: modSigner
             });
-            await publishWithExpectedResult(unremoveEdit, true);
+            await publishWithExpectedResult({ publication: unremoveEdit, expectedChallengeSuccess: true });
 
             await postToRemove.update();
             await resolveWhenConditionIsTrue({ toUpdate: postToRemove, predicate: async () => postToRemove.removed === false });
@@ -134,7 +134,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                 commentModeration: { reason: "remove reply RPC regression", removed: true },
                 signer: modSigner
             });
-            await publishWithExpectedResult(removeEdit, true);
+            await publishWithExpectedResult({ publication: removeEdit, expectedChallengeSuccess: true });
 
             await replyToBeRemoved.update();
             await resolveWhenConditionIsTrue({ toUpdate: replyToBeRemoved, predicate: async () => replyToBeRemoved.removed === true });
@@ -179,7 +179,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                     commentModeration: { reason: "keep updates after sibling teardown", removed: true },
                     signer: modSigner
                 });
-                await publishWithExpectedResult(removeEdit, true);
+                await publishWithExpectedResult({ publication: removeEdit, expectedChallengeSuccess: true });
 
                 await pTimeout(
                     resolveWhenConditionIsTrue({
