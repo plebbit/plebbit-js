@@ -47,6 +47,7 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
     let moderatorSigner: SignerType;
     let rpcPort: number;
     const stressClients: PlebbitType[] = [];
+    let pubsubModified = false;
 
     function configureServerPubsubClients(options: { dropRate?: number; throwOnPublish?: boolean } = {}) {
         const { dropRate, throwOnPublish } = options;
@@ -114,6 +115,10 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
     });
 
     afterEach(async () => {
+        if (pubsubModified) {
+            configureServerPubsubClients();
+            pubsubModified = false;
+        }
         if (stressClients.length === 0) return;
         await Promise.allSettled(stressClients.splice(0).map((client) => client.destroy().catch(() => {})));
     });
@@ -176,6 +181,8 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
 
     it("surfaces deterministic errors when pubsub providers drop challenge exchanges", async () => {
         configureServerPubsubClients({ throwOnPublish: true });
+        pubsubModified = true;
+        await new Promise((r) => setTimeout(r, 2000));
 
         const ATTEMPTS = 10;
         const flows = Array.from({ length: ATTEMPTS }).map((_, i) => {
@@ -215,8 +222,6 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
         const timedOut = results.filter((result) => result.status === "rejected");
 
         expect(timedOut.length, "RPC server should surface forced pubsub failures as immediate errors instead of timing out").to.equal(0);
-
-        configureServerPubsubClients();
     });
 
     it("keeps pending-approval settings stable while publishng many pending comments", async () => {
