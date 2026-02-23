@@ -582,8 +582,7 @@ export async function retryKuboBlockPutPinAndProvidePubsubTopic({
     inputNumOfRetries,
     blockPutOptions,
     pinAddOptions,
-    provideOptions,
-    signal
+    provideOptions
 }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "block" | "pin" | "routing">;
     log: Logger;
@@ -592,7 +591,6 @@ export async function retryKuboBlockPutPinAndProvidePubsubTopic({
     blockPutOptions?: BlockPutOptions;
     pinAddOptions?: PinAddOptions;
     provideOptions?: RoutingProvideOptions;
-    signal?: AbortSignal;
 }): Promise<CID> {
     const numOfRetries = inputNumOfRetries ?? 3;
     const bytes = new TextEncoder().encode(`floodsub:${pubsubTopic}`);
@@ -607,14 +605,11 @@ export async function retryKuboBlockPutPinAndProvidePubsubTopic({
 
         operation.attempt(async (currentAttempt) => {
             try {
-                signal?.throwIfAborted();
-
                 const cid = (await kuboRpcClient.block.put(bytes, {
                     ...blockPutOptions,
                     format: "raw",
                     mhtype: "sha2-256",
-                    version: 1,
-                    signal
+                    version: 1
                 })) as CID;
 
                 if (!cid.equals(expectedCid)) {
@@ -623,10 +618,10 @@ export async function retryKuboBlockPutPinAndProvidePubsubTopic({
                     );
                 }
 
-                await kuboRpcClient.pin.add(cid, { ...pinAddOptions, signal });
+                await kuboRpcClient.pin.add(cid, pinAddOptions);
 
                 try {
-                    const provideEvents = kuboRpcClient.routing.provide(cid, { ...provideOptions, signal });
+                    const provideEvents = kuboRpcClient.routing.provide(cid, provideOptions);
                     for await (const event of provideEvents) {
                         log.trace(`Provide event for ${String(cid)}:`, event);
                     }
@@ -636,11 +631,6 @@ export async function retryKuboBlockPutPinAndProvidePubsubTopic({
 
                 resolve(cid);
             } catch (error) {
-                if (signal?.aborted) {
-                    operation.stop();
-                    reject(error);
-                    return;
-                }
                 log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to store and provide pubsub topic block:`, error);
 
                 if (operation.retry(error as Error)) return;
@@ -658,8 +648,7 @@ export async function retryKuboIpfsAddAndProvide({
     inputNumOfRetries,
     addOptions,
     provideOptions,
-    provideInBackground,
-    signal
+    provideInBackground
 }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add" | "routing">;
     log: Logger;
@@ -668,7 +657,6 @@ export async function retryKuboIpfsAddAndProvide({
     addOptions?: AddOptions;
     provideOptions?: RoutingProvideOptions;
     provideInBackground: boolean;
-    signal?: AbortSignal;
 }): Promise<AddResult> {
     const numOfRetries = inputNumOfRetries ?? 3;
 
@@ -681,14 +669,12 @@ export async function retryKuboIpfsAddAndProvide({
 
         operation.attempt(async (currentAttempt) => {
             try {
-                signal?.throwIfAborted();
-
-                const addRes = await kuboRpcClient.add(content, { ...addOptions, signal });
+                const addRes = await kuboRpcClient.add(content, addOptions);
                 // I think it's not needed to provide now that the re-providing bug has been fixed
 
                 const runProvide = async () => {
                     try {
-                        const provideEvents = kuboRpcClient.routing.provide(addRes.cid, { ...provideOptions, signal });
+                        const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
                         for await (const event of provideEvents) {
                             log.trace(`Provide event for ${addRes.cid}:`, event);
                         }
@@ -704,11 +690,6 @@ export async function retryKuboIpfsAddAndProvide({
                 }
                 resolve(addRes);
             } catch (error) {
-                if (signal?.aborted) {
-                    operation.stop();
-                    reject(error);
-                    return;
-                }
                 log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add and provide content to IPFS:`, error);
 
                 if (operation.retry(error as Error)) return;
