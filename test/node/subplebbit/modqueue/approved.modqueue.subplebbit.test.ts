@@ -24,8 +24,17 @@ const pendingApprovalCommentProps = { challengeRequest: { challengeAnswers: ["pe
 
 type ChunkItem = PageIpfs["comments"][0];
 
-for (const pendingCommentDepth of depthsToTest) {
-    describeSkipIfRpc.concurrent(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
+const batchSize = 3;
+const depthBatches: number[][] = [];
+for (let i = 0; i < depthsToTest.length; i += batchSize) {
+    depthBatches.push(depthsToTest.slice(i, i + batchSize));
+}
+
+for (const batch of depthBatches) {
+    // Sequential between batches — limits concurrent subplebbits to 3 at a time
+    describe(`Approved modqueue batch [${batch.join(",")}]`, () => {
+        for (const pendingCommentDepth of batch) {
+            describeSkipIfRpc.concurrent(`Approved comments after pending approval, with depth ` + pendingCommentDepth, async () => {
         let plebbit: PlebbitType;
         let subplebbit: LocalSubplebbit | RpcLocalSubplebbit;
         let approvedComment: Comment;
@@ -243,6 +252,8 @@ for (const pendingCommentDepth of depthsToTest) {
                 commentModeration, expectedChallengeSuccess: false, expectedReason: messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
              });
         });
+    });
+        }
     });
 }
 
