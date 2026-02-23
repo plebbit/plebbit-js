@@ -1,6 +1,6 @@
 import { getDefaultDataPath, listSubplebbitsSync as nodeListSubplebbits, createKuboRpcClient, monitorSubplebbitsDirectory, trytoDeleteSubsThatFailedToBeDeletedBefore } from "../runtime/browser/util.js";
 import { Comment } from "../publications/comment/comment.js";
-import { waitForUpdateInSubInstanceWithErrorAndTimeout, doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp, resolveWhenPredicateIsTrue } from "../util.js";
+import { waitForUpdateInSubInstanceWithErrorAndTimeout, areEquivalentSubplebbitAddresses, doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp, resolveWhenPredicateIsTrue } from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -80,6 +80,9 @@ export class Plebbit extends PlebbitTypedEmitter {
         this.validatePages = this.parsedPlebbitOptions.validatePages;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
         this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
+        this.settings = {
+            challenges: this.parsedPlebbitOptions.challenges
+        };
         this._domainResolver = new DomainResolver(this);
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
@@ -480,9 +483,10 @@ export class Plebbit extends PlebbitTypedEmitter {
         if ("address" in parsedOptions && !("signer" in parsedOptions)) {
             // sub is already created, need to check if it's local or remote
             const localSubs = await nodeListSubplebbits(this);
-            const isSubLocal = localSubs.includes(parsedOptions.address);
-            if (isSubLocal)
-                return this._createLocalSub({ address: parsedOptions.address });
+            // Check for exact match or .eth/.bso alias match
+            const localSubAddress = localSubs.find((localAddr) => areEquivalentSubplebbitAddresses(localAddr, parsedOptions.address));
+            if (localSubAddress)
+                return this._createLocalSub({ address: localSubAddress });
             else {
                 const parsedRemoteOptions = parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
                 return this._createRemoteSubplebbitInstance(parsedRemoteOptions);
@@ -763,15 +767,17 @@ export class Plebbit extends PlebbitTypedEmitter {
         for (const storage of Object.values(this._storageLRUs))
             await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
-        for (const client of Object.values(this.clients.pubsubKuboRpcClients)) {
-            try {
-                const subscribedPubsubTopics = await client._client.pubsub.ls();
-                for (const topic of subscribedPubsubTopics) {
-                    await client._client.pubsub.unsubscribe(topic);
+        if (Object.keys(this._pubsubSubscriptions).length > 0) {
+            for (const client of Object.values(this.clients.pubsubKuboRpcClients)) {
+                try {
+                    const subscribedPubsubTopics = await client._client.pubsub.ls();
+                    for (const topic of subscribedPubsubTopics) {
+                        await client._client.pubsub.unsubscribe(topic);
+                    }
                 }
-            }
-            catch (e) {
-                log.error("Error unsubscribing from pubsub topics", e);
+                catch (e) {
+                    log.error("Error unsubscribing from pubsub topics", e);
+                }
             }
         }
         const kuboClients = [...Object.values(this.clients.kuboRpcClients), ...Object.values(this.clients.pubsubKuboRpcClients)];

@@ -211,6 +211,19 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         }
     }
     async edit(newSubplebbitOptions) {
+        if (newSubplebbitOptions.settings?.challenges) {
+            const serverChallenges = this._plebbit._plebbitRpcClient.settings?.challenges;
+            if (serverChallenges) {
+                for (const challengeSetting of newSubplebbitOptions.settings.challenges) {
+                    if (challengeSetting.name && !challengeSetting.path && !(challengeSetting.name in serverChallenges)) {
+                        throw new PlebbitError("ERR_RPC_CLIENT_CHALLENGE_NAME_NOT_AVAILABLE_ON_SERVER", {
+                            challengeName: challengeSetting.name,
+                            availableChallenges: Object.keys(serverChallenges)
+                        });
+                    }
+                }
+            }
+        }
         const subPropsAfterEdit = await this._plebbit._plebbitRpcClient.editSubplebbit(this.address, newSubplebbitOptions);
         if ("updatedAt" in subPropsAfterEdit)
             this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);

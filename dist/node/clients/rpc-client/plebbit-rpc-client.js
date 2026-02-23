@@ -155,8 +155,10 @@ export default class PlebbitRpcClient extends TypedEmitter {
                 cleanupSubscriptionLocally(subscriptionId);
             }
         try {
-            if (this._webSocketClient instanceof WebSocketClient)
+            if (this._webSocketClient instanceof WebSocketClient) {
+                this._webSocketClient.setAutoReconnect(false);
                 this._webSocketClient.close();
+            }
         }
         catch (e) {
             log.error("Failed to close websocket", e);

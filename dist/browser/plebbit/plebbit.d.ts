@@ -6,7 +6,7 @@ import Stats from "../stats.js";
 import { PlebbitClientsManager } from "./plebbit-client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { InflightFetchManager } from "../util/inflight-fetch-manager.js";
-import type { CreateRemoteSubplebbitOptions, SubplebbitJson, SubplebbitIpfsType, RemoteSubplebbitJson, RpcRemoteSubplebbitJson } from "../subplebbit/types.js";
+import type { ChallengeFileFactoryInput, CreateRemoteSubplebbitOptions, SubplebbitJson, SubplebbitIpfsType, RemoteSubplebbitJson, RpcRemoteSubplebbitJson } from "../subplebbit/types.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
@@ -63,6 +63,9 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
         };
     };
     subplebbits: string[];
+    settings: {
+        challenges?: Record<string, ChallengeFileFactoryInput>;
+    };
     _plebbitRpcClient?: PlebbitRpcClient;
     private _pubsubSubscriptions;
     _clientsManager: PlebbitClientsManager;

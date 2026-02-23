@@ -3,7 +3,7 @@ import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import * as remeda from "remeda";
 import Logger from "@plebbit/plebbit-logger";
-import { hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKey, timestamp } from "../util.js";
+import { areEquivalentSubplebbitAddresses, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKey, timestamp } from "../util.js";
 import pLimit from "p-limit";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
@@ -87,6 +87,9 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     _getSubplebbitAddressFromInstance() {
         return this._subplebbit.address;
     }
+    _areEquivalentSubplebbitAddresses(addressA, addressB) {
+        return areEquivalentSubplebbitAddresses(addressA, addressB);
+    }
     // functions for updatingSubInstance
     async _retryLoadingSubplebbitAddress(subplebbitAddress) {
         const log = Logger("plebbit-js:remote-subplebbit:update:_retryLoadingSubplebbitIpns");
@@ -130,10 +133,16 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     }
     async updateOnce() {
         const log = Logger("plebbit-js:remote-subplebbit:update");
-        this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
+        this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2, maxTimeout: 30000 });
         const subLoadingRes = await this._retryLoadingSubplebbitAddress(this._subplebbit.address); // will return undefined if no new sub CID is found
         this._ipnsLoadingOperation.stop();
         if (subLoadingRes && "criticalError" in subLoadingRes) {
+            // Log individual gateway errors separately to avoid Node.js [Object] truncation
+            if (subLoadingRes.criticalError instanceof FailedToFetchSubplebbitFromGatewaysError) {
+                for (const [gatewayUrl, gatewayError] of Object.entries(subLoadingRes.criticalError.details.gatewayToError)) {
+                    log.error(`Subplebbit ${this._subplebbit.address} gateway ${gatewayUrl} non-retriable error:`, gatewayError);
+                }
+            }
             log.error(`Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and mark invalid cid to not be loaded again`, subLoadingRes.criticalError);
             this._subplebbit._changeStateEmitEventEmitStateChangeEvent({
                 event: { name: "error", args: [subLoadingRes.criticalError] },
@@ -459,11 +468,11 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         catch {
             cleanUp();
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error);
-            const allGatewaysAborted = Object.keys(gatewayFetches)
+            const hasGatewayConfirmingCurrentRecord = Object.keys(gatewayFetches)
                 .map((gatewayUrl) => gatewayFetches[gatewayUrl].error)
-                .every((err) => err.details?.status === 304 || err.code === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD");
-            if (allGatewaysAborted)
-                return undefined; // all gateways returned old update cids we already consumed
+                .some((err) => err.details?.status === 304 || err.code === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD");
+            if (hasGatewayConfirmingCurrentRecord)
+                return undefined; // any gateway confirmed we already have the latest consumed record
             const combinedError = new FailedToFetchSubplebbitFromGatewaysError({
                 ipnsName,
                 gatewayToError,
@@ -480,7 +489,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     }
     async _findErrorInSubplebbitRecord(subJson, ipnsNameOfSub, cidOfSubIpns) {
         const subInstanceAddress = this._getSubplebbitAddressFromInstance();
-        if (subJson.address !== subInstanceAddress) {
+        if (!this._areEquivalentSubplebbitAddresses(subJson.address, subInstanceAddress)) {
             // Did the gateway supply us with a different subplebbit's ipns
             const error = new PlebbitError("ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED", {
                 addressFromSubplebbitInstance: subInstanceAddress,

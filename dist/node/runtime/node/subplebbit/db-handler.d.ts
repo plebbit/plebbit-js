@@ -109,6 +109,8 @@ export declare class DbHandler {
     private _deletedFromUpdatesClause;
     private _deletedFromLookupClause;
     private _pendingApprovalClause;
+    private _subplebbitAddressClause;
+    private _subplebbitAddressClauseNamed;
     private _buildPageQueryParts;
     queryMaximumTimestampUnderComment(comment: Pick<CommentsTableRow, "cid">): number | undefined;
     queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"];

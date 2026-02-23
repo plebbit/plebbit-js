@@ -145,8 +145,9 @@ class PlebbitWsServer extends TypedEmitter {
         const dataPath = this.plebbit.dataPath;
         if (!dataPath)
             return undefined;
-        mkdirSync(dataPath, { recursive: true });
-        const dbPath = path.join(dataPath, "rpc-state.db");
+        const rpcServerDir = path.join(dataPath, "rpc-server");
+        mkdirSync(rpcServerDir, { recursive: true });
+        const dbPath = path.join(rpcServerDir, "rpc-state.db");
         this._rpcStateDb = new Database(dbPath);
         this._rpcStateDb.pragma("journal_mode = WAL");
         this._rpcStateDb.exec(`
@@ -585,7 +586,12 @@ class PlebbitWsServer extends TypedEmitter {
     }
     _serializeSettingsFromPlebbit(plebbit) {
         const plebbitOptions = plebbit.parsedPlebbitOptions;
-        const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) => remeda.omit(challengeFactory({ challengeSettings: {} }), ["getChallenge"]));
+        const builtInChallenges = PlebbitJs.Plebbit.challenges || {};
+        const allChallengeFactories = {
+            ...builtInChallenges, // built-ins first
+            ...(plebbit.settings?.challenges || {}) // user-defined override
+        };
+        const challenges = remeda.mapValues(allChallengeFactories, (challengeFactory) => remeda.omit(challengeFactory({ challengeSettings: {} }), ["getChallenge"]));
         return { plebbitOptions, challenges };
     }
     async settingsSubscribe(params, connectionId) {

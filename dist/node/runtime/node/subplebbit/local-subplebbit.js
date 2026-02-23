@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isLinkOfImage, isLinkOfVideo, isLinkOfAnimatedImage, isLinkValid, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0, getIpnsRecordInLocalKuboNode, contentContainsMarkdownImages, contentContainsMarkdownVideos, isLinkOfAudio, contentContainsMarkdownAudio } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isLinkOfImage, isLinkOfVideo, isLinkOfAnimatedImage, isLinkValid, isStringDomain, pubsubTopicToDhtKey, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, writeKuboFilesWithTimeout, retryKuboIpfsAddAndProvide, retryKuboBlockPutPinAndProvidePubsubTopic, calculateIpfsCidV0, calculateStringSizeSameAsIpfsAddCidV0, getIpnsRecordInLocalKuboNode, contentContainsMarkdownImages, contentContainsMarkdownVideos, isLinkOfAudio, contentContainsMarkdownAudio, areEquivalentSubplebbitAddresses } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -43,8 +43,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             {
                 name: "publication-match",
                 options: {
-                    matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth)$" }]),
-                    error: "Posting in this community requires a username (author address) that ends with .eth or .sol. Go to the settings to set your username."
+                    matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth|bso)$" }]),
+                    error: "Posting in this community requires a username (author address) that ends with .bso, .sol, or .eth. Go to the settings to set your username."
                 },
                 exclude: [
                     { role: ["moderator", "admin", "owner"] },
@@ -342,7 +342,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (typeof this.settings?.purgeDisapprovedCommentsOlderThan !== "number") {
             this.settings = { ...this.settings, purgeDisapprovedCommentsOlderThan: 1.21e6 }; // two weeks
         }
-        this.challenges = await Promise.all(this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings));
+        this.challenges = await Promise.all(this.settings.challenges.map((cs) => getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._plebbit)));
         if (this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
             throw Error("Internal state exists already");
         await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternalBeforeFirstUpdate());
@@ -859,6 +859,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const mode = this.features?.pseudonymityMode;
         if (!mode)
             return { publication: originalComment };
+        // Mods (owner, admin, moderator) are never pseudonymized
+        const isAuthorMod = await this._isPublicationAuthorPartOfRoles(originalComment, ["owner", "admin", "moderator"]);
+        if (isAuthorMod)
+            return { publication: originalComment };
         const originalAuthorSignerPublicKey = originalComment.signature.publicKey;
         const postCid = originalComment.postCid;
         const aliasPrivateKey = await this._resolveAliasPrivateKeyForCommentPublication({
@@ -1205,7 +1209,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _checkPublicationValidity(request, publication, authorSubplebbit) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest:checkPublicationValidity");
-        if (publication.subplebbitAddress !== this.address)
+        if (!areEquivalentSubplebbitAddresses(publication.subplebbitAddress, this.address))
             return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
         if (publication.timestamp <= timestamp() - 5 * 60 || publication.timestamp >= timestamp() + 5 * 60)
             return messages.ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE;
@@ -1259,10 +1263,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_COMMENT_HAS_RESERVED_FIELD;
             if (this.features?.requirePostLink &&
                 !commentPublication.parentCid &&
-                (!commentPublication.link || !isLinkValid(commentPublication.link)))
+                (!commentPublication.link || (!this.features?.requirePostLinkIsMedia && !isLinkValid(commentPublication.link))))
                 return messages.ERR_COMMENT_HAS_INVALID_LINK_FIELD;
-            if (this.features?.requirePostLinkIsMedia && commentPublication.link && !isLinkOfMedia(commentPublication.link))
+            if (this.features?.requirePostLinkIsMedia &&
+                commentPublication.link &&
+                (!isLinkValid(commentPublication.link) || !isLinkOfMedia(commentPublication.link)))
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
+            if (this.features?.requireReplyLink &&
+                commentPublication.parentCid &&
+                (!commentPublication.link || (!this.features?.requireReplyLinkIsMedia && !isLinkValid(commentPublication.link))))
+                return messages.ERR_REPLY_HAS_INVALID_LINK_FIELD;
+            if (this.features?.requireReplyLinkIsMedia &&
+                commentPublication.parentCid &&
+                commentPublication.link &&
+                (!isLinkValid(commentPublication.link) || !isLinkOfMedia(commentPublication.link)))
+                return messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA;
             if (this.features?.noMarkdownImages && commentPublication.content && contentContainsMarkdownImages(commentPublication.content))
                 return messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE;
             if (this.features?.noMarkdownVideos && commentPublication.content && contentContainsMarkdownVideos(commentPublication.content))
@@ -2235,14 +2250,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _parseChallengesToEdit(newChallengeSettings) {
         return {
-            challenges: await Promise.all(newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)),
+            challenges: await Promise.all(newChallengeSettings.map((cs) => getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._plebbit))),
             _usingDefaultChallenge: remeda.isDeepEqual(newChallengeSettings, this._defaultSubplebbitChallenges)
         };
     }
     async _validateNewAddressBeforeEditing(newAddress, log) {
         if (doesDomainAddressHaveCapitalLetter(newAddress))
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
-        if (this._plebbit.subplebbits.includes(newAddress))
+        // Check if any existing sub (other than this one) already has an equivalent address
+        // This handles both exact matches and .eth/.bso alias equivalence
+        const existingEquivalent = this._plebbit.subplebbits.find((existing) => areEquivalentSubplebbitAddresses(existing, newAddress) && !areEquivalentSubplebbitAddresses(existing, this.address));
+        if (existingEquivalent)
             throw new PlebbitError("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS", {
                 currentSubplebbitAddress: this.address,
                 newSubplebbitAddress: newAddress,
@@ -2394,7 +2412,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
             await this._listenToIncomingRequests();
-            this.challenges = await Promise.all(this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)); // make sure subplebbit.challenges is using latest props from settings.challenges
+            this.challenges = await Promise.all(this.settings.challenges.map((cs) => getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._plebbit))); // make sure subplebbit.challenges is using latest props from settings.challenges
         }
         catch (e) {
             await this.stop(); // Make sure to reset the sub state

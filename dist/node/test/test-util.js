@@ -167,8 +167,8 @@ async function _startEnsSubplebbit(signers, plebbit) {
         }
     });
     await subplebbit.start();
-    await subplebbit.edit({ address: "plebbit.eth" });
-    assert.equal(subplebbit.address, "plebbit.eth");
+    await subplebbit.edit({ address: "plebbit.bso" });
+    assert.equal(subplebbit.address, "plebbit.bso");
     return subplebbit;
 }
 async function _publishPosts(subplebbitAddress, numOfPosts, plebbit) {
@@ -228,12 +228,7 @@ export async function startSubplebbits(props) {
     await mainSub.edit({
         features: { postFlairs: true },
         flairs: {
-            post: [
-                { text: "Author Flair" },
-                { text: "Discussion" },
-                { text: "Updated" },
-                { text: "Important", backgroundColor: "#ff0000" }
-            ]
+            post: [{ text: "Author Flair" }, { text: "Discussion" }, { text: "Updated" }, { text: "Important", backgroundColor: "#ff0000" }]
         }
     });
     await mainSub.start();
@@ -444,7 +439,11 @@ export async function mockPlebbitNoDataPathWithOnlyKuboClientNoAdd(opts) {
 }
 export async function mockRpcServerPlebbit(plebbitOptions) {
     const plebbit = await mockPlebbitV2({
-        plebbitOptions,
+        plebbitOptions: {
+            kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+            ...plebbitOptions,
+            plebbitRpcClientsOptions: undefined
+        },
         mockResolve: true,
         forceMockPubsub: true,
         remotePlebbit: false,
@@ -494,7 +493,7 @@ export async function publishRandomReply(parentComment, plebbit, commentProps) {
         content: `Content ${uuidv4()}`,
         ...commentProps
     });
-    await publishWithExpectedResult(reply, true);
+    await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
     return reply;
 }
 export async function publishRandomPost(subplebbitAddress, plebbit, postProps) {
@@ -503,7 +502,7 @@ export async function publishRandomPost(subplebbitAddress, plebbit, postProps) {
         title: `Random post Title ${uuidv4()}`,
         ...postProps
     });
-    await publishWithExpectedResult(post, true);
+    await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
     return post;
 }
 export async function publishVote(commentCid, subplebbitAddress, vote, plebbit, voteProps) {
@@ -514,10 +513,10 @@ export async function publishVote(commentCid, subplebbitAddress, vote, plebbit, 
         signer: voteProps?.signer || (await plebbit.createSigner()),
         ...voteProps
     });
-    await publishWithExpectedResult(voteObj, true);
+    await publishWithExpectedResult({ publication: voteObj, expectedChallengeSuccess: true });
     return voteObj;
 }
-export async function publishWithExpectedResult(publication, expectedChallengeSuccess, expectedReason) {
+async function _publishWithExpectedResultOnce({ publication, expectedChallengeSuccess, expectedReason }) {
     const emittedErrors = [];
     const timeoutMs = 60000;
     const summarizePublication = () => removeUndefinedValuesRecursively({
@@ -575,6 +574,26 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
     }
     finally {
         cleanupChallengeVerificationListener?.();
+    }
+}
+const retriableSubLoadingCodes = new Set([
+    "ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P",
+    "ERR_GET_SUBPLEBBIT_TIMED_OUT",
+    "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"
+]);
+export async function publishWithExpectedResult({ publication, expectedChallengeSuccess, expectedReason }) {
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            await _publishWithExpectedResultOnce({ publication, expectedChallengeSuccess, expectedReason });
+            return;
+        }
+        catch (error) {
+            const isRetriable = error instanceof PlebbitError && retriableSubLoadingCodes.has(error.code);
+            if (!isRetriable || attempt === maxAttempts)
+                throw error;
+            console.log(`publishWithExpectedResult: retrying (attempt ${attempt + 1}/${maxAttempts}) after retriable error: ${error.code}`);
+        }
     }
 }
 export async function iterateThroughPageCidToFindComment(commentCid, pageCid, pages) {
@@ -1572,7 +1591,7 @@ export async function publishCommentToModQueue({ subplebbit, plebbit, parentComm
         throw Error("Should not received challenge with challengeRequest props");
     });
     const challengeVerificationPromise = new Promise((resolve) => pendingComment.once("challengeverification", resolve));
-    await publishWithExpectedResult(pendingComment, true); // a pending approval is technically challengeSucess = true
+    await publishWithExpectedResult({ publication: pendingComment, expectedChallengeSuccess: true }); // a pending approval is technically challengeSucess = true
     if (!pendingComment.pendingApproval)
         throw Error("The comment did not go to pending approval");
     return { comment: pendingComment, challengeVerification: await challengeVerificationPromise };
@@ -1598,7 +1617,7 @@ export async function publishToModQueueWithDepth({ subplebbit, depth, plebbit, m
             throw Error("Should not received challenge with challengeRequest props");
         });
         const challengeVerificationPromise = new Promise((resolve) => pendingReply.once("challengeverification", resolve));
-        await publishWithExpectedResult(pendingReply, true); // a pending approval is technically challengeSucess = true
+        await publishWithExpectedResult({ publication: pendingReply, expectedChallengeSuccess: true }); // a pending approval is technically challengeSucess = true
         if (!pendingReply.pendingApproval)
             throw Error("The reply did not go to pending approval");
         return { comment: pendingReply, challengeVerification: await challengeVerificationPromise };

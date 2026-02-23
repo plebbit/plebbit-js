@@ -44,6 +44,7 @@ export declare class SubplebbitClientsManager extends PlebbitClientsManager {
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedTextRecordResolve): void;
     postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedTextRecordResolve): void;
     protected _getSubplebbitAddressFromInstance(): string;
+    private _areEquivalentSubplebbitAddresses;
     private _retryLoadingSubplebbitAddress;
     updateOnce(): Promise<void>;
     startUpdatingLoop(): Promise<void>;
