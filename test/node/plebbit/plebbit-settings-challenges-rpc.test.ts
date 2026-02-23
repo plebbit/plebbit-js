@@ -1,5 +1,6 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import path from "path";
+import net from "node:net";
 import Plebbit from "../../../dist/node/index.js";
 import PlebbitWsServer from "../../../dist/node/rpc/src/index.js";
 import {
@@ -83,13 +84,30 @@ const overriddenQuestionChallenge = ({ challengeSettings }: { challengeSettings:
     return { getChallenge, type, challenge, description };
 };
 
-const RPC_PORT = 39660;
 const RPC_AUTH_KEY = "test-settings-challenges";
-const RPC_URL = `ws://localhost:${RPC_PORT}`;
+
+const getAvailablePort = async (startPort = 39660): Promise<number> => {
+    for (let port = startPort; port < startPort + 100; port++) {
+        try {
+            return await new Promise<number>((resolve, reject) => {
+                const server = net.createServer();
+                server.unref();
+                server.on("error", reject);
+                server.listen(port, () => {
+                    server.close(() => resolve(port));
+                });
+            });
+        } catch {
+            continue;
+        }
+    }
+    throw new Error(`No available port found in range ${startPort}-${startPort + 99}`);
+};
 
 describe("plebbit.settings.challenges over RPC", () => {
     let rpcServer: PlebbitWsServerType;
     let serverPlebbit: PlebbitType;
+    let RPC_URL: string;
 
     beforeAll(async () => {
         // Create a server plebbit with custom challenges
@@ -100,9 +118,13 @@ describe("plebbit.settings.challenges over RPC", () => {
             "sky-color": customSkyChallenge
         };
 
+        // Dynamically allocate a port to avoid EADDRINUSE in parallel test runs
+        const rpcPort = await getAvailablePort();
+        RPC_URL = `ws://localhost:${rpcPort}`;
+
         // Spin up the RPC server — pass plebbitOptions to avoid creating a heavyweight default Plebbit
         rpcServer = await PlebbitWsServer.PlebbitWsServer({
-            port: RPC_PORT,
+            port: rpcPort,
             authKey: RPC_AUTH_KEY,
             plebbitOptions: {
                 kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
@@ -134,6 +156,7 @@ describe("plebbit.settings.challenges over RPC", () => {
             dataPath: undefined,
             httpRoutersOptions: []
         });
+        clientPlebbit.on("error", () => {}); // Prevent uncaught errors from WebSocket reconnection
 
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
@@ -165,6 +188,7 @@ describe("plebbit.settings.challenges over RPC", () => {
             dataPath: undefined,
             httpRoutersOptions: []
         });
+        clientPlebbit.on("error", () => {}); // Prevent uncaught errors from WebSocket reconnection
 
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
@@ -200,6 +224,7 @@ describe("plebbit.settings.challenges over RPC", () => {
             dataPath: undefined,
             httpRoutersOptions: []
         });
+        clientPlebbit.on("error", () => {}); // Prevent uncaught errors from WebSocket reconnection
 
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
@@ -227,6 +252,7 @@ describe("plebbit.settings.challenges over RPC", () => {
             dataPath: undefined,
             httpRoutersOptions: []
         });
+        clientPlebbit.on("error", () => {}); // Prevent uncaught errors from WebSocket reconnection
 
         // Wait for the plebbit instance to initialize and receive settingschange
         const settingsPromise = new Promise<any>((resolve) => clientPlebbit.once("settingschange", resolve));
@@ -254,6 +280,7 @@ describe("plebbit.settings.challenges over RPC", () => {
             dataPath: undefined,
             httpRoutersOptions: []
         });
+        clientPlebbit.on("error", () => {}); // Prevent uncaught errors from WebSocket reconnection
 
         const rpcClient = clientPlebbit.clients.plebbitRpcClients[RPC_URL];
 
@@ -282,6 +309,7 @@ describe("plebbit.settings.challenges over RPC", () => {
             dataPath: undefined,
             httpRoutersOptions: []
         });
+        clientPlebbit.on("error", () => {}); // Prevent uncaught errors from WebSocket reconnection
 
         // Create subplebbit via RPC
         const subplebbit = (await clientPlebbit.createSubplebbit({})) as RpcLocalSubplebbit;

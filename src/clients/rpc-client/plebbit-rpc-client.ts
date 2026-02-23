@@ -198,7 +198,10 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
             }
 
         try {
-            if (this._webSocketClient instanceof WebSocketClient) this._webSocketClient.close();
+            if (this._webSocketClient instanceof WebSocketClient) {
+                this._webSocketClient.setAutoReconnect(false);
+                this._webSocketClient.close();
+            }
         } catch (e) {
             log.error("Failed to close websocket", e);
         }
