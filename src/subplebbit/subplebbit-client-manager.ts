@@ -213,6 +213,15 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         this._ipnsLoadingOperation.stop();
 
         if (subLoadingRes && "criticalError" in subLoadingRes) {
+            // Log individual gateway errors separately to avoid Node.js [Object] truncation
+            if (subLoadingRes.criticalError instanceof FailedToFetchSubplebbitFromGatewaysError) {
+                for (const [gatewayUrl, gatewayError] of Object.entries(subLoadingRes.criticalError.details.gatewayToError)) {
+                    log.error(
+                        `Subplebbit ${this._subplebbit.address} gateway ${gatewayUrl} non-retriable error:`,
+                        gatewayError
+                    );
+                }
+            }
             log.error(
                 `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and mark invalid cid to not be loaded again`,
                 subLoadingRes.criticalError
