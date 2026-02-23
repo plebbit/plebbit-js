@@ -41,9 +41,16 @@ const setupSubplebbitWithModerator = async (): Promise<SetupResult> => {
 };
 
 describe("Modqueue depths", () => {
-    // should be a for loop that iterates over all depths
-    for (const depth of depthsToTest) {
-        it(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
+    const batchSize = 3;
+    const depthBatches: number[][] = [];
+    for (let i = 0; i < depthsToTest.length; i += batchSize) {
+        depthBatches.push(depthsToTest.slice(i, i + batchSize));
+    }
+
+    for (const batch of depthBatches) {
+        describe(`Modqueue depths batch [${batch.join(",")}]`, () => {
+            for (const depth of batch) {
+                it.concurrent(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
             const { plebbit, subplebbit, modSigner } = await setupSubplebbitWithModerator();
             expect(subplebbit.lastPostCid).to.be.undefined;
             const numOfComments = 3;
@@ -90,6 +97,8 @@ describe("Modqueue depths", () => {
                 await subplebbit.delete();
                 await plebbit.destroy();
             }
+                });
+            }
         });
     }
 
@@ -101,17 +110,23 @@ describe("Modqueue depths", () => {
         const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
         try {
-            const pendingComments = await Promise.all(
-                depthsToTest.map((depth) =>
-                    publishToModQueueWithDepth({
-                        subplebbit,
-                        depth,
-                        modCommentProps: { signer: modSigner },
-                        plebbit: remotePlebbit,
-                        commentProps: pendingApprovalCommentProps
-                    })
-                )
-            );
+            const pendingComments: Awaited<ReturnType<typeof publishToModQueueWithDepth>>[] = [];
+            const publishBatchSize = 3;
+            for (let i = 0; i < depthsToTest.length; i += publishBatchSize) {
+                const batchDepths = depthsToTest.slice(i, i + publishBatchSize);
+                const batchResults = await Promise.all(
+                    batchDepths.map((depth) =>
+                        publishToModQueueWithDepth({
+                            subplebbit,
+                            depth,
+                            modCommentProps: { signer: modSigner },
+                            plebbit: remotePlebbit,
+                            commentProps: pendingApprovalCommentProps
+                        })
+                    )
+                );
+                pendingComments.push(...batchResults);
+            }
 
             // different depths should show up in mod queue
 
