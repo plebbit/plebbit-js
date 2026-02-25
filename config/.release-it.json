@@ -11,7 +11,7 @@
     "releaseName": "v${version}"
   },
   "hooks": {
-    "before:git:release": "git add docs/CHANGELOG.md package.json"
+    "before:git:release": "git add docs/CHANGELOG.md package.json && git add dist --force"
   },
   "plugins": {
     "@release-it/conventional-changelog": {

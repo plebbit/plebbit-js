@@ -27,22 +27,24 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-
-      # NOTE: doesn't work if `git add dist --force` is removed
-      - run: git add dist --force
-      - run: git status
-
-      # commit and push dist folder
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "chore: update dist"
-          file_pattern: dist
-          add_options: '--force'
-
-      # create github release with tags and changelog
+      # set git config for release-it
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # create github release with tags and changelog
+      # dist files are included via before:git:release hook in .release-it.json
       - run: npm run release -- --ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        id: release
+
+      # commit dist separately if release-it didn't create a release
+      - name: Commit dist if needed
+        run: |
+          if [ -n "$(git status --porcelain dist)" ]; then
+            git add dist --force
+            git commit -m "chore: update dist"
+            git push
+          fi
