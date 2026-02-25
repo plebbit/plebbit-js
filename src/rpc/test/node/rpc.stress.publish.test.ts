@@ -261,6 +261,10 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
             await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT });
         };
 
-        await Promise.all([Promise.all(Array.from({ length: publishAttempts }).map((_, i) => runPublishFlow(i)))]);
+        const batchSize = 10;
+        for (let i = 0; i < publishAttempts; i += batchSize) {
+            const batch = Array.from({ length: Math.min(batchSize, publishAttempts - i) }, (_, j) => runPublishFlow(i + j));
+            await Promise.all(batch);
+        }
     });
 });
