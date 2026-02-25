@@ -8,6 +8,7 @@ import Plebbit from "../../../../dist/node/index.js";
 import type { Plebbit as PlebbitType } from "../../../../dist/node/plebbit/plebbit.js";
 import type { RpcLocalSubplebbit } from "../../../../dist/node/subplebbit/rpc-local-subplebbit.js";
 import type { CreatePlebbitWsServerOptions } from "../../../../dist/node/rpc/src/types.js";
+import { PlebbitError } from "../../../../dist/node/plebbit-error.js";
 
 type PlebbitWsServerType = Awaited<ReturnType<typeof PlebbitWsServer.PlebbitWsServer>>;
 
@@ -182,13 +183,48 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
 
         const rpcUrl = `ws://${lanAddress}:${rpcServerPort}`;
         const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], httpRoutersOptions: [] });
-        clientPlebbit.on("error", () => {});
+        const emittedErrors: (PlebbitError | Error)[] = [];
+        clientPlebbit.on("error", (err) => emittedErrors.push(err));
 
         try {
             await clientPlebbit.createSubplebbit({});
             expect.fail("Should throw an error");
         } catch (e) {
-            expect((e as { code: string }).code).to.equal("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC");
+            expect((e as { code: string }).code).to.equal("ERR_RPC_AUTH_REQUIRED");
+            expect(emittedErrors.some((err) => err instanceof PlebbitError && err.code === "ERR_RPC_AUTH_REQUIRED")).to.be.true;
+        } finally {
+            await clientPlebbit.destroy();
+            await rpcServer.destroy();
+        }
+    });
+
+    it(`Fails to connect to rpc server from remote device with wrong auth key`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "correct-key";
+        const options: CreatePlebbitWsServerOptions = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions as CreatePlebbitWsServerOptions["plebbitOptions"]["kuboRpcClientsOptions"],
+                httpRoutersOptions: plebbit.httpRoutersOptions,
+                dataPath: plebbit.dataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options);
+
+        (rpcServer as unknown as PlebbitWsServerPrivateAccess)._getIpFromConnectionRequest = () => "::ffff:192.168.1.80";
+
+        const rpcUrl = `ws://${lanAddress}:${rpcServerPort}/wrong-key`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], httpRoutersOptions: [] });
+        const emittedErrors: (PlebbitError | Error)[] = [];
+        clientPlebbit.on("error", (err) => emittedErrors.push(err));
+
+        try {
+            await clientPlebbit.createSubplebbit({});
+            expect.fail("Should throw an error");
+        } catch (e) {
+            expect((e as { code: string }).code).to.equal("ERR_RPC_AUTH_REQUIRED");
+            expect(emittedErrors.some((err) => err instanceof PlebbitError && err.code === "ERR_RPC_AUTH_REQUIRED")).to.be.true;
         } finally {
             await clientPlebbit.destroy();
             await rpcServer.destroy();
