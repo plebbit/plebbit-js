@@ -331,6 +331,8 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 noDownvotes: z.ZodOptional<z.ZodBoolean>;
                 requirePostLink: z.ZodOptional<z.ZodBoolean>;
                 requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+                requireReplyLink: z.ZodOptional<z.ZodBoolean>;
+                requireReplyLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
                 pseudonymityMode: z.ZodOptional<z.ZodEnum<{
                     "per-post": "per-post";
                     "per-reply": "per-reply";
@@ -699,6 +701,8 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 noDownvotes: z.ZodOptional<z.ZodBoolean>;
                 requirePostLink: z.ZodOptional<z.ZodBoolean>;
                 requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+                requireReplyLink: z.ZodOptional<z.ZodBoolean>;
+                requireReplyLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
                 pseudonymityMode: z.ZodOptional<z.ZodEnum<{
                     "per-post": "per-post";
                     "per-reply": "per-reply";

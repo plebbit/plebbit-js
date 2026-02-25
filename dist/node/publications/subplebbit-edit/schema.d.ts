@@ -83,6 +83,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            requireReplyLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            requireReplyLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
             pseudonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
                 "per-post": "per-post";
                 "per-reply": "per-reply";
@@ -232,6 +234,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
             requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            requireReplyLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
+            requireReplyLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
             pseudonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
                 "per-post": "per-post";
                 "per-reply": "per-reply";
@@ -383,6 +387,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 noDownvotes: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 requirePostLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 requirePostLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                requireReplyLink: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                requireReplyLinkIsMedia: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 pseudonymityMode: import("zod").ZodOptional<import("zod").ZodEnum<{
                     "per-post": "per-post";
                     "per-reply": "per-reply";

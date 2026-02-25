@@ -13,6 +13,10 @@ import * as remeda from "remeda";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
 import { pathToFileURL } from "node:url";
+const resolveChallengeFactoryByName = (name, plebbit) => {
+    // User-defined shadows built-ins
+    return plebbit?.settings?.challenges?.[name] ?? plebbitJsChallenges[name];
+};
 const plebbitJsChallenges = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
@@ -65,14 +69,14 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
     for (const i in subplebbit.settings.challenges) {
         const challengeIndex = Number(i);
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-        if (!subplebbitChallengeSettings.path && !plebbitJsChallenges[subplebbitChallengeSettings.name])
+        if (!subplebbitChallengeSettings.path && !resolveChallengeFactoryByName(subplebbitChallengeSettings.name, subplebbit._plebbit))
             throw Error("You have to provide either path or a stored plebbit-js challenge");
         // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
         let ChallengeFileFactory;
         try {
             ChallengeFileFactory = ChallengeFileFactorySchema.parse(subplebbitChallengeSettings.path
                 ? (await import(pathToFileURL(subplebbitChallengeSettings.path).href)).default
-                : plebbitJsChallenges[subplebbitChallengeSettings.name]);
+                : resolveChallengeFactoryByName(subplebbitChallengeSettings.name, subplebbit._plebbit));
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
         }
         catch (e) {
@@ -116,7 +120,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
         const challengeIndex = Number(i);
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings, subplebbit._plebbit);
         // exclude author from challenge based on the subplebbit minimum karma settings
         if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage, subplebbit)) {
             continue;
@@ -266,7 +270,7 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     return challengeVerification;
 };
 // get the data to be published publicly to subplebbit.challenges
-const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (subplebbitChallengeSettings) => {
+const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (subplebbitChallengeSettings, plebbit) => {
     subplebbitChallengeSettings = SubplebbitChallengeSettingSchema.parse(subplebbitChallengeSettings);
     // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
     let challengeFile = undefined;
@@ -288,9 +292,9 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (subplebbitC
             throw e;
         }
     }
-    // else, the challenge is included with plebbit-js
+    // else, the challenge is included with plebbit-js or user-defined
     else if (subplebbitChallengeSettings.name) {
-        const ChallengeFileFactory = ChallengeFileFactorySchema.parse(plebbitJsChallenges[subplebbitChallengeSettings.name]);
+        const ChallengeFileFactory = ChallengeFileFactorySchema.parse(resolveChallengeFactoryByName(subplebbitChallengeSettings.name, plebbit));
         challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory({ challengeSettings: subplebbitChallengeSettings }));
     }
     if (!challengeFile)

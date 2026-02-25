@@ -357,6 +357,8 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
             noDownvotes?: boolean | undefined;
             requirePostLink?: boolean | undefined;
             requirePostLinkIsMedia?: boolean | undefined;
+            requireReplyLink?: boolean | undefined;
+            requireReplyLinkIsMedia?: boolean | undefined;
             pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
         } | undefined;
         suggested?: {

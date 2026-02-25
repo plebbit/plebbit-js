@@ -1,5 +1,5 @@
 import assert from "assert";
-import { calculateIpfsCidV0, delay, hideClassPrivateProps, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
+import { calculateIpfsCidV0, delay, hideClassPrivateProps, isEthAliasDomain, isIpns, isStringDomain, normalizeEthAliasDomain, throwWithErrorCode, timestamp } from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import { FailedToFetchCommentIpfsFromGatewaysError, FailedToFetchCommentUpdateFromGatewaysError, FailedToFetchGenericIpfsFromGatewaysError, FailedToFetchPageIpfsFromGatewaysError, FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
@@ -524,7 +524,9 @@ export class BaseClientsManager {
     }
     // Resolver methods here
     _getKeyOfCachedDomainTextRecord(domainAddress, txtRecord) {
-        return `${domainAddress}_${txtRecord}`;
+        // Normalize .bso to .eth so both aliases share the same cache entry
+        const normalizedAddress = normalizeEthAliasDomain(domainAddress);
+        return `${normalizedAddress}_${txtRecord}`;
     }
     async _getCachedTextRecord(address, txtRecord) {
         const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
@@ -537,29 +539,30 @@ export class BaseClientsManager {
     }
     async _resolveTextRecordWithCache(address, txtRecord) {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const chain = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
+        const chain = isEthAliasDomain(address) ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain)
             throw Error(`Can't figure out the chain of the address (${address}). Are you sure plebbit-js support this chain?`);
         const chainId = this._plebbit.chainProviders[chain]?.chainId;
+        const ensAddress = normalizeEthAliasDomain(address);
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {
             if (cachedTextRecord.stale)
-                this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId)
+                this._resolveTextRecordConcurrently({ address, ensAddress, txtRecordName: txtRecord, chain, chainId })
                     .then((newTextRecordValue) => log.trace(`Updated the stale text-record (${txtRecord}) value of address (${address}) to ${newTextRecordValue}`))
                     .catch((err) => log.error(`Failed to update the stale text record (${txtRecord}) of address (${address})`, err));
             return cachedTextRecord.valueOfTextRecord;
         }
         else
-            return this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId);
+            return this._resolveTextRecordConcurrently({ address, ensAddress, txtRecordName: txtRecord, chain, chainId });
     }
     preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) { }
     postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache) { }
     postResolveTextRecordFailure(address, txtRecordName, chain, chainProviderUrl, error, staleCache) { }
-    async _resolveTextRecordSingleChainProvider(address, txtRecordName, chain, chainproviderUrl, chainId, staleCache, signal) {
+    async _resolveTextRecordSingleChainProvider({ address, ensAddress, txtRecordName, chain, chainproviderUrl, chainId, staleCache, signal }) {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
         try {
-            const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl, chainId);
+            const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(ensAddress, txtRecordName, chain, chainproviderUrl, chainId);
             const abortPromise = new Promise((_, reject) => {
                 if (signal.aborted) {
                     reject(new PlebbitError("ERR_ABORTED_RESOLVING_TEXT_RECORD", { address, txtRecordName, chain, chainproviderUrl, chainId }));
@@ -590,7 +593,7 @@ export class BaseClientsManager {
             return { error: e };
         }
     }
-    async _resolveTextRecordConcurrently(address, txtRecordName, chain, chainId) {
+    async _resolveTextRecordConcurrently({ address, ensAddress, txtRecordName, chain, chainId }) {
         const log = Logger("plebbit-js:plebbit:client-manager:_resolveTextRecordConcurrently");
         const timeouts = [0, 0, 100, 1000];
         const _firstResolve = (promises) => {
@@ -617,7 +620,16 @@ export class BaseClientsManager {
                 : await this._plebbit._stats.sortGatewaysAccordingToScore(chain);
             const abortController = new AbortController();
             try {
-                const providerPromises = providersSorted.map((providerUrl) => queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl, chainId, cachedTextRecord, abortController.signal)));
+                const providerPromises = providersSorted.map((providerUrl) => queueLimit(() => this._resolveTextRecordSingleChainProvider({
+                    address,
+                    ensAddress,
+                    txtRecordName,
+                    chain,
+                    chainproviderUrl: providerUrl,
+                    chainId,
+                    staleCache: cachedTextRecord,
+                    signal: abortController.signal
+                })));
                 //@ts-expect-error
                 const resolvedTextRecord = await Promise.race([
                     _firstResolve(providerPromises),

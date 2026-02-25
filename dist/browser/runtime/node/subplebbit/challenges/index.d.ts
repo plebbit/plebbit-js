@@ -17,11 +17,16 @@ type ChallengeVerificationFailure = {
     challengeSuccess: false;
     challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]>;
 };
+type PlebbitWithSettingsChallenges = {
+    settings?: {
+        challenges?: Record<string, ChallengeFileFactoryInput>;
+    };
+};
 declare const plebbitJsChallenges: Record<string, ChallengeFileFactoryInput>;
 declare const getPendingChallengesOrChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit) => Promise<ChallengeVerificationSuccess | ChallengeVerificationPending | ChallengeVerificationFailure>;
 declare const getChallengeVerificationFromChallengeAnswers: (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: LocalSubplebbit) => Promise<ChallengeVerificationSuccess | ChallengeVerificationFailure>;
 declare const getChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit, getChallengeAnswers: GetChallengeAnswers) => Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess"> & {
     pendingApproval?: boolean;
 }>;
-declare const getSubplebbitChallengeFromSubplebbitChallengeSettings: (subplebbitChallengeSettings: SubplebbitChallengeSetting) => Promise<SubplebbitChallenge>;
+declare const getSubplebbitChallengeFromSubplebbitChallengeSettings: (subplebbitChallengeSettings: SubplebbitChallengeSetting, plebbit?: PlebbitWithSettingsChallenges) => Promise<SubplebbitChallenge>;
 export { plebbitJsChallenges, getPendingChallengesOrChallengeVerification, getChallengeVerificationFromChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings };

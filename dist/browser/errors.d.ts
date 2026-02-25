@@ -234,6 +234,8 @@ export declare enum messages {
     INCORRECT_VOTE_VALUE = "The vote can only be 1 or 0 or -1",
     ERR_COMMENT_HAS_INVALID_LINK_FIELD = "The comment arguments you provided contain an invalid .link",
     ERR_POST_LINK_IS_NOT_OF_MEDIA = "Publishing to the subplebbit requires a post with a link pointing to media (audio, video, image)",
+    ERR_REPLY_HAS_INVALID_LINK_FIELD = "The reply must include a valid .link (https URL)",
+    ERR_REPLY_LINK_IS_NOT_OF_MEDIA = "Publishing a reply to the subplebbit requires a link pointing to media (audio, video, image)",
     ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_IMAGE = "This subplebbit does not allow embedding images in markdown content",
     ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO = "This subplebbit does not allow embedding videos in markdown content",
     ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE = "This subplebbit does not allow comments with image links",
@@ -247,6 +249,8 @@ export declare enum messages {
     ERR_REPLY_HAS_SPOILER_ENABLED = "This subplebbit does not allow authors to mark replies as spoilers",
     ERR_NESTED_REPLIES_NOT_ALLOWED = "This subplebbit does not allow nested replies (depth > 1)",
     ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE = "Comment has no content, link or title",
+    ERR_COMMENT_EDIT_HAS_NO_EDIT_FIELD = "CommentEdit has no editable field. At least one of content, deleted, flairs, spoiler or nsfw must be defined",
+    ERR_COMMENT_MODERATION_HAS_NO_MODERATION_FIELD = "CommentModeration has no moderation field. At least one moderation field other than reason must be defined",
     ERR_REQUEST_ENCRYPTED_IS_INVALID_JSON_AFTER_DECRYPTION = "request.encrypted is an invalid json after decrypting",
     ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING = "request.encrypted has an invalid schema after decrypting",
     ERR_CHALLENGE_REQUEST_ENCRYPTED_HAS_NO_PUBLICATION_AFTER_DECRYPTING = "request.encrypted has not defined vote, comment, commentEdit, or commentModeration. At least one of them need to be defined",
@@ -322,5 +326,6 @@ export declare enum messages {
     ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB = "RPC client is attempting to stop a remote sub",
     ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB = "RPC client is attempting to edit remote sub",
     ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB = "RPC client is attempting to delete remote sub",
-    ERR_GENERIC_RPC_CLIENT_CALL_ERROR = "RPC client received an unknown error when executing call over websocket"
+    ERR_GENERIC_RPC_CLIENT_CALL_ERROR = "RPC client received an unknown error when executing call over websocket",
+    ERR_RPC_CLIENT_CHALLENGE_NAME_NOT_AVAILABLE_ON_SERVER = "The challenge name is not available on the RPC server. Available challenges are listed in details.availableChallenges"
 }

@@ -423,6 +423,8 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
             noDownvotes?: boolean | undefined;
             requirePostLink?: boolean | undefined;
             requirePostLinkIsMedia?: boolean | undefined;
+            requireReplyLink?: boolean | undefined;
+            requireReplyLinkIsMedia?: boolean | undefined;
             pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
         } | undefined;
         suggested?: {
@@ -534,6 +536,8 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
             noDownvotes?: boolean | undefined;
             requirePostLink?: boolean | undefined;
             requirePostLinkIsMedia?: boolean | undefined;
+            requireReplyLink?: boolean | undefined;
+            requireReplyLinkIsMedia?: boolean | undefined;
             pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
         } | undefined;
         suggested?: {
@@ -643,6 +647,8 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             noDownvotes?: boolean | undefined;
             requirePostLink?: boolean | undefined;
             requirePostLinkIsMedia?: boolean | undefined;
+            requireReplyLink?: boolean | undefined;
+            requireReplyLinkIsMedia?: boolean | undefined;
             pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
         } | undefined;
         suggested?: {
@@ -1396,6 +1402,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        requireReplyLink?: boolean | undefined;
+        requireReplyLinkIsMedia?: boolean | undefined;
         pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {
@@ -1457,6 +1465,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        requireReplyLink?: boolean | undefined;
+        requireReplyLinkIsMedia?: boolean | undefined;
         pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {
@@ -1617,6 +1627,8 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        requireReplyLink?: boolean | undefined;
+        requireReplyLinkIsMedia?: boolean | undefined;
         pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {
@@ -2120,6 +2132,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        requireReplyLink?: boolean | undefined;
+        requireReplyLinkIsMedia?: boolean | undefined;
         pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {
@@ -2181,6 +2195,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        requireReplyLink?: boolean | undefined;
+        requireReplyLinkIsMedia?: boolean | undefined;
         pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {
@@ -2341,6 +2357,8 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        requireReplyLink?: boolean | undefined;
+        requireReplyLinkIsMedia?: boolean | undefined;
         pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {

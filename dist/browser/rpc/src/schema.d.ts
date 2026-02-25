@@ -13,6 +13,117 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
             } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>> | undefined;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
+        challenges?: Record<string, z.core.$InferInnerFunctionType<z.ZodTuple<readonly [z.ZodObject<{
+            challengeSettings: z.ZodObject<{
+                path: z.ZodOptional<z.ZodString>;
+                name: z.ZodOptional<z.ZodString>;
+                options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                    subplebbit: z.ZodOptional<z.ZodObject<{
+                        addresses: z.ZodArray<z.ZodString>;
+                        maxCommentCids: z.ZodNumber;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    }, z.core.$strict>>;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    postCount: z.ZodOptional<z.ZodNumber>;
+                    replyCount: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                        owner: "owner";
+                        admin: "admin";
+                        moderator: "moderator";
+                    }>, z.ZodString]>>>;
+                    address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                    rateLimit: z.ZodOptional<z.ZodNumber>;
+                    rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    publicationType: z.ZodOptional<z.ZodObject<{
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        commentEdit: z.ZodOptional<z.ZodBoolean>;
+                        commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>>;
+                description: z.ZodOptional<z.ZodString>;
+                pendingApproval: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>;
+        }, z.core.$strip>], null>, z.ZodObject<{
+            optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                option: z.ZodString;
+                label: z.ZodString;
+                default: z.ZodOptional<z.ZodString>;
+                description: z.ZodOptional<z.ZodString>;
+                placeholder: z.ZodOptional<z.ZodString>;
+                required: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$loose>>>;
+            type: z.ZodString;
+            challenge: z.ZodOptional<z.ZodString>;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            description: z.ZodOptional<z.ZodString>;
+            getChallenge: z.ZodFunction<z.ZodTuple<readonly [z.ZodObject<{
+                challengeSettings: z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString>;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, z.core.$strict>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                            owner: "owner";
+                            admin: "admin";
+                            moderator: "moderator";
+                        }>, z.ZodString]>>>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                        publicationType: z.ZodOptional<z.ZodObject<{
+                            post: z.ZodOptional<z.ZodBoolean>;
+                            reply: z.ZodOptional<z.ZodBoolean>;
+                            vote: z.ZodOptional<z.ZodBoolean>;
+                            commentEdit: z.ZodOptional<z.ZodBoolean>;
+                            commentModeration: z.ZodOptional<z.ZodBoolean>;
+                            subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                        }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
+                    description: z.ZodOptional<z.ZodString>;
+                    pendingApproval: z.ZodOptional<z.ZodBoolean>;
+                }, z.core.$strict>;
+                challengeRequestMessage: z.ZodCustom<import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>;
+                challengeIndex: z.ZodNumber;
+                subplebbit: z.ZodCustom<import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+            }, z.core.$strip>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                challenge: z.ZodString;
+                verify: z.ZodFunction<z.ZodTuple<readonly [z.ZodLazy<z.ZodString>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                    success: z.ZodLiteral<true>;
+                }, z.core.$strip>, z.ZodObject<{
+                    success: z.ZodLiteral<false>;
+                    error: z.ZodString;
+                }, z.core.$strip>]>>>;
+                type: z.ZodString;
+                caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>, z.ZodUnion<[z.ZodObject<{
+                success: z.ZodLiteral<true>;
+            }, z.core.$strip>, z.ZodObject<{
+                success: z.ZodLiteral<false>;
+                error: z.ZodString;
+            }, z.core.$strip>]>]>>>;
+        }, z.core.$strict>>> | undefined;
         ipfsGatewayUrls?: string[] | undefined;
         pubsubKuboRpcClientsOptions?: import("../../util.js").KuboRpcClientCreateOption[] | undefined;
         httpRoutersOptions?: string[] | undefined;
@@ -37,6 +148,117 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
             } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>> | undefined;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
+        challenges?: Record<string, z.core.$InferInnerFunctionType<z.ZodTuple<readonly [z.ZodObject<{
+            challengeSettings: z.ZodObject<{
+                path: z.ZodOptional<z.ZodString>;
+                name: z.ZodOptional<z.ZodString>;
+                options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                    subplebbit: z.ZodOptional<z.ZodObject<{
+                        addresses: z.ZodArray<z.ZodString>;
+                        maxCommentCids: z.ZodNumber;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    }, z.core.$strict>>;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    postCount: z.ZodOptional<z.ZodNumber>;
+                    replyCount: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                        owner: "owner";
+                        admin: "admin";
+                        moderator: "moderator";
+                    }>, z.ZodString]>>>;
+                    address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                    rateLimit: z.ZodOptional<z.ZodNumber>;
+                    rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    publicationType: z.ZodOptional<z.ZodObject<{
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        commentEdit: z.ZodOptional<z.ZodBoolean>;
+                        commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>>;
+                description: z.ZodOptional<z.ZodString>;
+                pendingApproval: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>;
+        }, z.core.$strip>], null>, z.ZodObject<{
+            optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                option: z.ZodString;
+                label: z.ZodString;
+                default: z.ZodOptional<z.ZodString>;
+                description: z.ZodOptional<z.ZodString>;
+                placeholder: z.ZodOptional<z.ZodString>;
+                required: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$loose>>>;
+            type: z.ZodString;
+            challenge: z.ZodOptional<z.ZodString>;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            description: z.ZodOptional<z.ZodString>;
+            getChallenge: z.ZodFunction<z.ZodTuple<readonly [z.ZodObject<{
+                challengeSettings: z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString>;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, z.core.$strict>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                            owner: "owner";
+                            admin: "admin";
+                            moderator: "moderator";
+                        }>, z.ZodString]>>>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                        publicationType: z.ZodOptional<z.ZodObject<{
+                            post: z.ZodOptional<z.ZodBoolean>;
+                            reply: z.ZodOptional<z.ZodBoolean>;
+                            vote: z.ZodOptional<z.ZodBoolean>;
+                            commentEdit: z.ZodOptional<z.ZodBoolean>;
+                            commentModeration: z.ZodOptional<z.ZodBoolean>;
+                            subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                        }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
+                    description: z.ZodOptional<z.ZodString>;
+                    pendingApproval: z.ZodOptional<z.ZodBoolean>;
+                }, z.core.$strict>;
+                challengeRequestMessage: z.ZodCustom<import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>;
+                challengeIndex: z.ZodNumber;
+                subplebbit: z.ZodCustom<import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+            }, z.core.$strip>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                challenge: z.ZodString;
+                verify: z.ZodFunction<z.ZodTuple<readonly [z.ZodLazy<z.ZodString>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                    success: z.ZodLiteral<true>;
+                }, z.core.$strip>, z.ZodObject<{
+                    success: z.ZodLiteral<false>;
+                    error: z.ZodString;
+                }, z.core.$strip>]>>>;
+                type: z.ZodString;
+                caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>, z.ZodUnion<[z.ZodObject<{
+                success: z.ZodLiteral<true>;
+            }, z.core.$strip>, z.ZodObject<{
+                success: z.ZodLiteral<false>;
+                error: z.ZodString;
+            }, z.core.$strip>]>]>>>;
+        }, z.core.$strict>>> | undefined;
         ipfsGatewayUrls?: string[] | undefined;
         pubsubKuboRpcClientsOptions?: import("../../util.js").KuboRpcClientCreateOption[] | undefined;
         httpRoutersOptions?: string[] | undefined;
@@ -87,6 +309,227 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         publishInterval: z.ZodNumber;
         updateInterval: z.ZodNumber;
         noData: z.ZodBoolean;
+        challenges: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodCustom<z.core.$InferInnerFunctionType<z.ZodTuple<readonly [z.ZodObject<{
+            challengeSettings: z.ZodObject<{
+                path: z.ZodOptional<z.ZodString>;
+                name: z.ZodOptional<z.ZodString>;
+                options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                    subplebbit: z.ZodOptional<z.ZodObject<{
+                        addresses: z.ZodArray<z.ZodString>;
+                        maxCommentCids: z.ZodNumber;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    }, z.core.$strict>>;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    postCount: z.ZodOptional<z.ZodNumber>;
+                    replyCount: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                        owner: "owner";
+                        admin: "admin";
+                        moderator: "moderator";
+                    }>, z.ZodString]>>>;
+                    address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                    rateLimit: z.ZodOptional<z.ZodNumber>;
+                    rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    publicationType: z.ZodOptional<z.ZodObject<{
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        commentEdit: z.ZodOptional<z.ZodBoolean>;
+                        commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>>;
+                description: z.ZodOptional<z.ZodString>;
+                pendingApproval: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>;
+        }, z.core.$strip>], null>, z.ZodObject<{
+            optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                option: z.ZodString;
+                label: z.ZodString;
+                default: z.ZodOptional<z.ZodString>;
+                description: z.ZodOptional<z.ZodString>;
+                placeholder: z.ZodOptional<z.ZodString>;
+                required: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$loose>>>;
+            type: z.ZodString;
+            challenge: z.ZodOptional<z.ZodString>;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            description: z.ZodOptional<z.ZodString>;
+            getChallenge: z.ZodFunction<z.ZodTuple<readonly [z.ZodObject<{
+                challengeSettings: z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString>;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, z.core.$strict>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                            owner: "owner";
+                            admin: "admin";
+                            moderator: "moderator";
+                        }>, z.ZodString]>>>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                        publicationType: z.ZodOptional<z.ZodObject<{
+                            post: z.ZodOptional<z.ZodBoolean>;
+                            reply: z.ZodOptional<z.ZodBoolean>;
+                            vote: z.ZodOptional<z.ZodBoolean>;
+                            commentEdit: z.ZodOptional<z.ZodBoolean>;
+                            commentModeration: z.ZodOptional<z.ZodBoolean>;
+                            subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                        }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
+                    description: z.ZodOptional<z.ZodString>;
+                    pendingApproval: z.ZodOptional<z.ZodBoolean>;
+                }, z.core.$strict>;
+                challengeRequestMessage: z.ZodCustom<import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>;
+                challengeIndex: z.ZodNumber;
+                subplebbit: z.ZodCustom<import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+            }, z.core.$strip>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                challenge: z.ZodString;
+                verify: z.ZodFunction<z.ZodTuple<readonly [z.ZodLazy<z.ZodString>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                    success: z.ZodLiteral<true>;
+                }, z.core.$strip>, z.ZodObject<{
+                    success: z.ZodLiteral<false>;
+                    error: z.ZodString;
+                }, z.core.$strip>]>>>;
+                type: z.ZodString;
+                caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>, z.ZodUnion<[z.ZodObject<{
+                success: z.ZodLiteral<true>;
+            }, z.core.$strip>, z.ZodObject<{
+                success: z.ZodLiteral<false>;
+                error: z.ZodString;
+            }, z.core.$strip>]>]>>>;
+        }, z.core.$strict>>, z.core.$InferInnerFunctionType<z.ZodTuple<readonly [z.ZodObject<{
+            challengeSettings: z.ZodObject<{
+                path: z.ZodOptional<z.ZodString>;
+                name: z.ZodOptional<z.ZodString>;
+                options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                    subplebbit: z.ZodOptional<z.ZodObject<{
+                        addresses: z.ZodArray<z.ZodString>;
+                        maxCommentCids: z.ZodNumber;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    }, z.core.$strict>>;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    postCount: z.ZodOptional<z.ZodNumber>;
+                    replyCount: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                        owner: "owner";
+                        admin: "admin";
+                        moderator: "moderator";
+                    }>, z.ZodString]>>>;
+                    address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                    rateLimit: z.ZodOptional<z.ZodNumber>;
+                    rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    publicationType: z.ZodOptional<z.ZodObject<{
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        commentEdit: z.ZodOptional<z.ZodBoolean>;
+                        commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>>;
+                description: z.ZodOptional<z.ZodString>;
+                pendingApproval: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>;
+        }, z.core.$strip>], null>, z.ZodObject<{
+            optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                option: z.ZodString;
+                label: z.ZodString;
+                default: z.ZodOptional<z.ZodString>;
+                description: z.ZodOptional<z.ZodString>;
+                placeholder: z.ZodOptional<z.ZodString>;
+                required: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$loose>>>;
+            type: z.ZodString;
+            challenge: z.ZodOptional<z.ZodString>;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            description: z.ZodOptional<z.ZodString>;
+            getChallenge: z.ZodFunction<z.ZodTuple<readonly [z.ZodObject<{
+                challengeSettings: z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString>;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, z.core.$strict>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                            owner: "owner";
+                            admin: "admin";
+                            moderator: "moderator";
+                        }>, z.ZodString]>>>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                        publicationType: z.ZodOptional<z.ZodObject<{
+                            post: z.ZodOptional<z.ZodBoolean>;
+                            reply: z.ZodOptional<z.ZodBoolean>;
+                            vote: z.ZodOptional<z.ZodBoolean>;
+                            commentEdit: z.ZodOptional<z.ZodBoolean>;
+                            commentModeration: z.ZodOptional<z.ZodBoolean>;
+                            subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                        }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
+                    description: z.ZodOptional<z.ZodString>;
+                    pendingApproval: z.ZodOptional<z.ZodBoolean>;
+                }, z.core.$strict>;
+                challengeRequestMessage: z.ZodCustom<import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>;
+                challengeIndex: z.ZodNumber;
+                subplebbit: z.ZodCustom<import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+            }, z.core.$strip>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                challenge: z.ZodString;
+                verify: z.ZodFunction<z.ZodTuple<readonly [z.ZodLazy<z.ZodString>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                    success: z.ZodLiteral<true>;
+                }, z.core.$strip>, z.ZodObject<{
+                    success: z.ZodLiteral<false>;
+                    error: z.ZodString;
+                }, z.core.$strip>]>>>;
+                type: z.ZodString;
+                caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>, z.ZodUnion<[z.ZodObject<{
+                success: z.ZodLiteral<true>;
+            }, z.core.$strip>, z.ZodObject<{
+                success: z.ZodLiteral<false>;
+                error: z.ZodString;
+            }, z.core.$strip>]>]>>>;
+        }, z.core.$strict>>>>>;
     }, z.core.$loose>;
 }, z.core.$strip>;
 export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
@@ -118,6 +561,227 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         publishInterval: z.ZodNumber;
         updateInterval: z.ZodNumber;
         noData: z.ZodBoolean;
+        challenges: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodCustom<z.core.$InferInnerFunctionType<z.ZodTuple<readonly [z.ZodObject<{
+            challengeSettings: z.ZodObject<{
+                path: z.ZodOptional<z.ZodString>;
+                name: z.ZodOptional<z.ZodString>;
+                options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                    subplebbit: z.ZodOptional<z.ZodObject<{
+                        addresses: z.ZodArray<z.ZodString>;
+                        maxCommentCids: z.ZodNumber;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    }, z.core.$strict>>;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    postCount: z.ZodOptional<z.ZodNumber>;
+                    replyCount: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                        owner: "owner";
+                        admin: "admin";
+                        moderator: "moderator";
+                    }>, z.ZodString]>>>;
+                    address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                    rateLimit: z.ZodOptional<z.ZodNumber>;
+                    rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    publicationType: z.ZodOptional<z.ZodObject<{
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        commentEdit: z.ZodOptional<z.ZodBoolean>;
+                        commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>>;
+                description: z.ZodOptional<z.ZodString>;
+                pendingApproval: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>;
+        }, z.core.$strip>], null>, z.ZodObject<{
+            optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                option: z.ZodString;
+                label: z.ZodString;
+                default: z.ZodOptional<z.ZodString>;
+                description: z.ZodOptional<z.ZodString>;
+                placeholder: z.ZodOptional<z.ZodString>;
+                required: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$loose>>>;
+            type: z.ZodString;
+            challenge: z.ZodOptional<z.ZodString>;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            description: z.ZodOptional<z.ZodString>;
+            getChallenge: z.ZodFunction<z.ZodTuple<readonly [z.ZodObject<{
+                challengeSettings: z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString>;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, z.core.$strict>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                            owner: "owner";
+                            admin: "admin";
+                            moderator: "moderator";
+                        }>, z.ZodString]>>>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                        publicationType: z.ZodOptional<z.ZodObject<{
+                            post: z.ZodOptional<z.ZodBoolean>;
+                            reply: z.ZodOptional<z.ZodBoolean>;
+                            vote: z.ZodOptional<z.ZodBoolean>;
+                            commentEdit: z.ZodOptional<z.ZodBoolean>;
+                            commentModeration: z.ZodOptional<z.ZodBoolean>;
+                            subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                        }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
+                    description: z.ZodOptional<z.ZodString>;
+                    pendingApproval: z.ZodOptional<z.ZodBoolean>;
+                }, z.core.$strict>;
+                challengeRequestMessage: z.ZodCustom<import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>;
+                challengeIndex: z.ZodNumber;
+                subplebbit: z.ZodCustom<import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+            }, z.core.$strip>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                challenge: z.ZodString;
+                verify: z.ZodFunction<z.ZodTuple<readonly [z.ZodLazy<z.ZodString>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                    success: z.ZodLiteral<true>;
+                }, z.core.$strip>, z.ZodObject<{
+                    success: z.ZodLiteral<false>;
+                    error: z.ZodString;
+                }, z.core.$strip>]>>>;
+                type: z.ZodString;
+                caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>, z.ZodUnion<[z.ZodObject<{
+                success: z.ZodLiteral<true>;
+            }, z.core.$strip>, z.ZodObject<{
+                success: z.ZodLiteral<false>;
+                error: z.ZodString;
+            }, z.core.$strip>]>]>>>;
+        }, z.core.$strict>>, z.core.$InferInnerFunctionType<z.ZodTuple<readonly [z.ZodObject<{
+            challengeSettings: z.ZodObject<{
+                path: z.ZodOptional<z.ZodString>;
+                name: z.ZodOptional<z.ZodString>;
+                options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                    subplebbit: z.ZodOptional<z.ZodObject<{
+                        addresses: z.ZodArray<z.ZodString>;
+                        maxCommentCids: z.ZodNumber;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    }, z.core.$strict>>;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    postCount: z.ZodOptional<z.ZodNumber>;
+                    replyCount: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                    challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                        owner: "owner";
+                        admin: "admin";
+                        moderator: "moderator";
+                    }>, z.ZodString]>>>;
+                    address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                    rateLimit: z.ZodOptional<z.ZodNumber>;
+                    rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    publicationType: z.ZodOptional<z.ZodObject<{
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        commentEdit: z.ZodOptional<z.ZodBoolean>;
+                        commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>>;
+                description: z.ZodOptional<z.ZodString>;
+                pendingApproval: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>;
+        }, z.core.$strip>], null>, z.ZodObject<{
+            optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                option: z.ZodString;
+                label: z.ZodString;
+                default: z.ZodOptional<z.ZodString>;
+                description: z.ZodOptional<z.ZodString>;
+                placeholder: z.ZodOptional<z.ZodString>;
+                required: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$loose>>>;
+            type: z.ZodString;
+            challenge: z.ZodOptional<z.ZodString>;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            description: z.ZodOptional<z.ZodString>;
+            getChallenge: z.ZodFunction<z.ZodTuple<readonly [z.ZodObject<{
+                challengeSettings: z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString>;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, z.core.$strict>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        postCount: z.ZodOptional<z.ZodNumber>;
+                        replyCount: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<{
+                            owner: "owner";
+                            admin: "admin";
+                            moderator: "moderator";
+                        }>, z.ZodString]>>>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString>>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                        publicationType: z.ZodOptional<z.ZodObject<{
+                            post: z.ZodOptional<z.ZodBoolean>;
+                            reply: z.ZodOptional<z.ZodBoolean>;
+                            vote: z.ZodOptional<z.ZodBoolean>;
+                            commentEdit: z.ZodOptional<z.ZodBoolean>;
+                            commentModeration: z.ZodOptional<z.ZodBoolean>;
+                            subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
+                        }, z.core.$loose>>;
+                    }, z.core.$loose>>>;
+                    description: z.ZodOptional<z.ZodString>;
+                    pendingApproval: z.ZodOptional<z.ZodBoolean>;
+                }, z.core.$strict>;
+                challengeRequestMessage: z.ZodCustom<import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>;
+                challengeIndex: z.ZodNumber;
+                subplebbit: z.ZodCustom<import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+            }, z.core.$strip>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                challenge: z.ZodString;
+                verify: z.ZodFunction<z.ZodTuple<readonly [z.ZodLazy<z.ZodString>], null>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
+                    success: z.ZodLiteral<true>;
+                }, z.core.$strip>, z.ZodObject<{
+                    success: z.ZodLiteral<false>;
+                    error: z.ZodString;
+                }, z.core.$strip>]>>>;
+                type: z.ZodString;
+                caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+            }, z.core.$strict>, z.ZodUnion<[z.ZodObject<{
+                success: z.ZodLiteral<true>;
+            }, z.core.$strip>, z.ZodObject<{
+                success: z.ZodLiteral<false>;
+                error: z.ZodString;
+            }, z.core.$strip>]>]>>>;
+        }, z.core.$strict>>>>>;
         kuboRpcClientsOptions: z.ZodOptional<z.ZodCustom<import("kubo-rpc-client").Options[], import("kubo-rpc-client").Options[]>>;
         pubsubKuboRpcClientsOptions: z.ZodOptional<z.ZodCustom<import("kubo-rpc-client").Options[], import("kubo-rpc-client").Options[]>>;
     }, z.core.$loose>;

@@ -1,7 +1,7 @@
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
-import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
+import { derivePublicationFromChallengeRequest, isEthAliasDomain, isStringDomain, normalizeEthAliasDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 const optionInputs = [
     {
@@ -116,11 +116,13 @@ const verifyAuthorWalletAddress = async (props) => {
     return walletValidationFailure; // will be a string if error, otherwise undefined
 };
 const verifyAuthorENSAddress = async (props) => {
-    if (!props.publication.author.address.endsWith(".eth"))
-        return "Author address is not an ENS domain";
+    const authorAddress = props.publication.author.address;
+    if (!isEthAliasDomain(authorAddress))
+        return "Author address is not a .bso/.eth domain";
+    const ensAddress = normalizeEthAliasDomain(authorAddress);
     const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded("eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
     const ownerOfAddress = await viemClient.getEnsAddress({
-        name: normalize(props.publication.author.address)
+        name: normalize(ensAddress)
     });
     if (!ownerOfAddress)
         throw Error("Failed to get owner of ENS address of author.address");

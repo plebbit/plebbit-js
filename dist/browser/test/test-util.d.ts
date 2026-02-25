@@ -71,7 +71,11 @@ export declare function mockGatewayPlebbit(opts?: MockPlebbitOptions): Promise<P
 export declare function publishRandomReply(parentComment: CommentIpfsWithCidDefined, plebbit: Plebbit, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function publishVote(commentCid: string, subplebbitAddress: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<CreateVoteOptions>): Promise<Vote>;
-export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
+export declare function publishWithExpectedResult({ publication, expectedChallengeSuccess, expectedReason }: {
+    publication: Publication;
+    expectedChallengeSuccess: boolean;
+    expectedReason?: string;
+}): Promise<void>;
 export declare function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: PostsPages | RepliesPages): Promise<CommentWithinRepliesPostsPageJson | undefined>;
 export declare function findCommentInSubplebbitInstancePagesPreloadedAndPageCids(opts: {
     comment: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>;
@@ -428,6 +432,8 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
             noDownvotes?: boolean | undefined;
             requirePostLink?: boolean | undefined;
             requirePostLinkIsMedia?: boolean | undefined;
+            requireReplyLink?: boolean | undefined;
+            requireReplyLinkIsMedia?: boolean | undefined;
             pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
         } | undefined;
         suggested?: {
@@ -483,12 +489,12 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     title?: string | undefined;
     updatedAt?: SubplebbitIpfsType["updatedAt"] | undefined;
     posts: PostsPages;
+    challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
+    description?: string | undefined;
     encryption: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
     createdAt: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
     statsCid?: SubplebbitIpfsType["statsCid"] | undefined;
     modQueue: import("../pages/pages.js").ModQueuePages;
-    challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
-    description?: string | undefined;
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, {
@@ -528,6 +534,8 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
         noDownvotes?: boolean | undefined;
         requirePostLink?: boolean | undefined;
         requirePostLinkIsMedia?: boolean | undefined;
+        requireReplyLink?: boolean | undefined;
+        requireReplyLinkIsMedia?: boolean | undefined;
         pseudonymityMode?: "per-post" | "per-reply" | "per-author" | undefined;
     } | undefined;
     suggested?: {
