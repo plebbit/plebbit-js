@@ -86,6 +86,17 @@ export default class PlebbitRpcClient extends TypedEmitter {
                     log("Ignoring websocket error emitted after destroy request", error);
                     return;
                 }
+                // Detect HTTP 403 from server auth rejection
+                const errorMessage = typeof error?.message === "string" ? error.message : "";
+                if (errorMessage.includes("Unexpected server response: 403")) {
+                    lastWebsocketError = new PlebbitError("ERR_RPC_AUTH_REQUIRED", {
+                        rpcServerUrl: this._websocketServerUrl
+                    });
+                    this._webSocketClient.setAutoReconnect(false);
+                    this.emit("error", lastWebsocketError);
+                    this.setState("failed");
+                    return;
+                }
                 this.emit("error", error);
             });
             this._webSocketClient.on("close", () => {
@@ -113,7 +124,17 @@ export default class PlebbitRpcClient extends TypedEmitter {
         if (this._webSocketClient.ready)
             return;
         if (!this._openConnectionPromise)
-            this._openConnectionPromise = pTimeout(resolveWhenPredicateIsTrue({ toUpdate: this, predicate: () => this.state === "connected", eventName: "statechange" }), {
+            this._openConnectionPromise = pTimeout(resolveWhenPredicateIsTrue({
+                toUpdate: this,
+                predicate: () => {
+                    if (this.state === "connected")
+                        return true;
+                    if (lastWebsocketError instanceof PlebbitError)
+                        throw lastWebsocketError;
+                    return false;
+                },
+                eventName: "statechange"
+            }), {
                 milliseconds: this._timeoutSeconds * 1000
             });
         try {
@@ -124,11 +145,13 @@ export default class PlebbitRpcClient extends TypedEmitter {
                 log("Aborted RPC connection before it finished opening because destroy was requested", this._websocketServerUrl);
                 return;
             }
-            const err = new PlebbitError("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
-                timeoutSeconds: this._timeoutSeconds,
-                error: lastWebsocketError,
-                rpcServerUrl: this._websocketServerUrl
-            });
+            const err = e instanceof PlebbitError
+                ? e
+                : new PlebbitError("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
+                    timeoutSeconds: this._timeoutSeconds,
+                    error: lastWebsocketError,
+                    rpcServerUrl: this._websocketServerUrl
+                });
             this.setState("failed");
             this.emit("error", err);
             throw err;
