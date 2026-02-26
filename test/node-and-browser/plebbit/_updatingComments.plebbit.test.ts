@@ -241,10 +241,16 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const secondComment = await plebbit.createComment({ cid: secondPost.cid });
 
                 await firstComment.update();
-                await resolveWhenConditionIsTrue({ toUpdate: firstComment, predicate: async () => typeof firstComment.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: firstComment,
+                    predicate: async () => typeof firstComment.updatedAt === "number"
+                });
 
                 await secondComment.update();
-                await resolveWhenConditionIsTrue({ toUpdate: secondComment, predicate: async () => typeof secondComment.updatedAt === "number" });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: secondComment,
+                    predicate: async () => typeof secondComment.updatedAt === "number"
+                });
 
                 const subAddress = firstComment.subplebbitAddress;
                 expect(plebbit._updatingSubplebbits[subAddress]).to.exist;
@@ -280,7 +286,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const post = await plebbit.createComment({ cid: postCid });
             const errors: PlebbitError[] = [];
-            post.on("error", (e: PlebbitError | Error) => { errors.push(e as PlebbitError); });
+            post.on("error", (e: PlebbitError | Error) => {
+                errors.push(e as PlebbitError);
+            });
 
             await post.update();
             await resolveWhenConditionIsTrue({ toUpdate: post, predicate: async () => errors.length >= 1, eventName: "error" });
@@ -316,7 +324,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishRandomReply(postComment2 as Parameters<typeof publishRandomReply>[0], plebbit);
 
             // we don't know if another test might publish a reply to postComment2, so we wait until we see a reply count increase
-            await resolveWhenConditionIsTrue({ toUpdate: postComment2, predicate: async () => postComment2.replyCount > initialReplyCount });
+            await resolveWhenConditionIsTrue({
+                toUpdate: postComment2,
+                predicate: async () => postComment2.replyCount > initialReplyCount
+            });
 
             expect(postComment2.replyCount).to.be.greaterThan(initialReplyCount);
 

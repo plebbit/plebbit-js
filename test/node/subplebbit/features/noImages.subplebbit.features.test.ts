@@ -56,14 +56,22 @@ describe.concurrent(`subplebbit.features.noImages`, async () => {
             link: "https://example.com/image.png",
             content: "Just text"
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE
+        });
     });
 
     it(`Can't publish a reply with image link`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/photo.jpg"
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_IMAGE
+        });
     });
 
     it(`Can publish a post with video link (noImages doesn't block videos)`, async () => {

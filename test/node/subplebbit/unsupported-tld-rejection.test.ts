@@ -48,7 +48,11 @@ describe("Subplebbit rejects publications with unsupported author TLDs", () => {
             subplebbitAddress: subplebbit.address
         });
 
-        await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: false, expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN });
+        await publishWithExpectedResult({
+            publication: comment,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN
+        });
     });
 
     itSkipIfRpc("rejects Vote with unsupported TLD (.xyz)", async () => {
@@ -63,7 +67,11 @@ describe("Subplebbit rejects publications with unsupported author TLDs", () => {
             subplebbitAddress: subplebbit.address
         });
 
-        await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN });
+        await publishWithExpectedResult({
+            publication: vote,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN
+        });
     });
 
     itSkipIfRpc("rejects CommentEdit with unsupported TLD (.xyz)", async () => {
@@ -78,7 +86,11 @@ describe("Subplebbit rejects publications with unsupported author TLDs", () => {
             subplebbitAddress: subplebbit.address
         });
 
-        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN });
+        await publishWithExpectedResult({
+            publication: commentEdit,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN
+        });
     });
 
     itSkipIfRpc("rejects CommentModeration with unsupported TLD (.xyz)", async () => {
@@ -101,6 +113,10 @@ describe("Subplebbit rejects publications with unsupported author TLDs", () => {
             subplebbitAddress: subplebbit.address
         });
 
-        await publishWithExpectedResult({ publication: commentModeration, expectedChallengeSuccess: false, expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN });
+        await publishWithExpectedResult({
+            publication: commentModeration,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN
+        });
     });
 });

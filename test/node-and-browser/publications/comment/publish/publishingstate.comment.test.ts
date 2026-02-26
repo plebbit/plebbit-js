@@ -305,7 +305,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(mockPost.publishingState).to.equal("failed");
             const expectedPublishingState = ["fetching-subplebbit-ipns"].concat(
                 ...(isPlebbitFetchingUsingGateways(plebbit) ? [] : ["fetching-subplebbit-ipfs"]),
-                ...new Array(Object.keys((mockPost as unknown as CommentWithInternals)._challengeExchanges).length).fill(["publishing-challenge-request", "waiting-challenge"]),
+                ...new Array(Object.keys((mockPost as unknown as CommentWithInternals)._challengeExchanges).length).fill([
+                    "publishing-challenge-request",
+                    "waiting-challenge"
+                ]),
                 "failed"
             );
             expect(recordedPublishingStates).to.deep.equal(expectedPublishingState);

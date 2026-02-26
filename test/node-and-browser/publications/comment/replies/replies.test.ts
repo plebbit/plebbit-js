@@ -178,7 +178,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         expect((e as PlebbitError).code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
-                            expect((e as PlebbitError).details.gatewayToError[gatewayUrl].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+                            expect((e as PlebbitError).details.gatewayToError[gatewayUrl].code).to.equal(
+                                "ERR_GATEWAY_TIMED_OUT_OR_ABORTED"
+                            );
                     } else {
                         expect((e as PlebbitError).code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
                     }
@@ -303,7 +305,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect((e as PlebbitError).code).to.equal("ERR_REPLIES_PAGE_IS_INVALID");
-                expect((e as PlebbitError).details.signatureValidity.reason).to.equal(messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT);
+                expect((e as PlebbitError).details.signatureValidity.reason).to.equal(
+                    messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT
+                );
             }
         });
 
@@ -337,7 +341,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect((e as PlebbitError).code).to.equal("ERR_REPLIES_PAGE_IS_INVALID");
-                expect((e as PlebbitError).details.signatureValidity.reason).to.equal(messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT);
+                expect((e as PlebbitError).details.signatureValidity.reason).to.equal(
+                    messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT
+                );
             }
         });
 

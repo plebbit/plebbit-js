@@ -63,7 +63,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         mockViemClient({ plebbit, chainTicker: "eth", mockedViem: viemEthFake, url: ethRpcUrl });
         mockViemClient({ plebbit, chainTicker: "matic", mockedViem: viemMaticFake, url: maticRpcUrl });
 
-        sub = await plebbit.createSubplebbit() as LocalSubplebbit;
+        sub = (await plebbit.createSubplebbit()) as LocalSubplebbit;
         await sub.edit({ settings });
         await sub.start();
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
@@ -146,7 +146,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock wallet to have 0 pleb
 
         await postWithAuthorAddress.publish();
-        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+            postWithAuthorAddress.once("challengeverification", resolve)
+        );
 
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
@@ -208,7 +210,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have 0 pleb
 
         await postWithAuthorAddress.publish();
-        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+            postWithAuthorAddress.once("challengeverification", resolve)
+        );
 
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
@@ -220,7 +224,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         const post = await generateMockPost(sub.address, plebbit);
 
         await post.publish();
-        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) => post.once("challengeverification", resolve));
+        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+            post.once("challengeverification", resolve)
+        );
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.comment).to.be.undefined;
@@ -325,7 +331,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have more than 100 pleb
 
         await postWithAuthorAddress.publish();
-        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+            postWithAuthorAddress.once("challengeverification", resolve)
+        );
 
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
@@ -362,7 +370,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have 0 pleb
 
         await postWithAuthorAddress.publish();
-        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+            postWithAuthorAddress.once("challengeverification", resolve)
+        );
 
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
@@ -397,7 +407,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have 0 pleb
 
         await postWithAuthorAddress.publish();
-        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+        const challengeVerification = await new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+            postWithAuthorAddress.once("challengeverification", resolve)
+        );
 
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;

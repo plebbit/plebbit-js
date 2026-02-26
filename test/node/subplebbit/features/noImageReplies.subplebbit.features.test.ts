@@ -63,7 +63,11 @@ describe.concurrent(`subplebbit.features.noImageReplies`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/photo.jpg"
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_IMAGE
+        });
     });
 
     it(`Can publish a reply without image link`, async () => {

@@ -108,7 +108,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
         it.sequential(`Updating states is in correct upon updating a post that's included in preloaded pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
-            const postCid = sub.posts.pages.hot.comments.find((comment: { author: { address: string } }) => !comment.author.address.includes(".")).cid;
+            const postCid = sub.posts.pages.hot.comments.find(
+                (comment: { author: { address: string } }) => !comment.author.address.includes(".")
+            ).cid;
             const mockPost = await plebbit.createComment({ cid: postCid });
             const recordedStates: string[] = [];
             mockPost.on("updatingstatechange", (newState: string) => recordedStates.push(newState));
@@ -226,10 +228,18 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
                 await mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
-                await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: async () => errors.length === 1, eventName: "error" });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: createdComment,
+                    predicate: async () => errors.length === 1,
+                    eventName: "error"
+                });
 
                 await publishRandomPost(subplebbitAddress, dedicatedPlebbit); // force subplebbit to publish a new update which will increase loading attempts
-                await resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: async () => errors.length >= 2, eventName: "error" });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: createdComment,
+                    predicate: async () => errors.length >= 2,
+                    eventName: "error"
+                });
 
                 await createdComment.stop();
 
@@ -342,7 +352,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 const createErrorPromise = () =>
                     new Promise<void>((resolve) =>
                         createdComment.once("error", (err) => {
-                            if ((err as PlebbitError).details.gatewayToError["http://localhost:18080"].code === "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID")
+                            if (
+                                (err as PlebbitError).details.gatewayToError["http://localhost:18080"].code ===
+                                "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID"
+                            )
                                 resolve();
                         })
                     );

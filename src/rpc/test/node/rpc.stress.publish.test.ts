@@ -214,7 +214,11 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                     signer: authorSigner
                 });
 
-                return publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT });
+                return publishWithExpectedResult({
+                    publication: edit,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT
+                });
             })();
         });
 
@@ -258,7 +262,11 @@ describeSkipIfRpc("Plebbit RPC server stress publish", function () {
                 content: "toggle edit content",
                 signer: authorSigner
             });
-            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT });
+            await publishWithExpectedResult({
+                publication: edit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT
+            });
         };
 
         const batchSize = 10;

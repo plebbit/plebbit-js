@@ -101,7 +101,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expectedPostProps.cid = loadedPost.cid;
 
             for (const key of Object.keys(expectedPostProps))
-                expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify((loadedPost as unknown as Record<string, unknown>)[key]));
+                expect(deterministicStringify(expectedPostProps[key])).to.equal(
+                    deterministicStringify((loadedPost as unknown as Record<string, unknown>)[key])
+                );
         });
 
         it("reply props are loaded correctly", async () => {
@@ -129,7 +131,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(loadedReply.constructor.name).to.equal("Comment");
             if (loadedReply.author.subplebbit) delete loadedReply.author.subplebbit; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
             for (const key of Object.keys(expectedReplyProps))
-                expect(deterministicStringify(expectedReplyProps[key])).to.equal(deterministicStringify((loadedReply as unknown as Record<string, unknown>)[key]));
+                expect(deterministicStringify(expectedReplyProps[key])).to.equal(
+                    deterministicStringify((loadedReply as unknown as Record<string, unknown>)[key])
+                );
         });
 
         it(`plebbit.getComment is not fetching comment updates in background after fulfilling its promise`, async () => {
@@ -184,7 +188,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const error = e as PlebbitError;
                 if (isPlebbitFetchingUsingGateways(customPlebbit)) {
                     expect(error.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS");
-                    expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+                    expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal(
+                        "ERR_GATEWAY_TIMED_OUT_OR_ABORTED"
+                    );
                 } else expect(error.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
             }
             await customPlebbit.destroy();

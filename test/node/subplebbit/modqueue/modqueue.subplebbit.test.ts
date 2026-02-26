@@ -84,8 +84,8 @@ describe(`Pending approval modqueue functionality`, async () => {
 
             vote.once("challenge", async () => await vote.publishChallengeAnswers(["1234 " + Math.random()])); // wrong answers
 
-            const challengeVerificationPromise = new Promise<DecryptedChallengeVerificationMessageType>(
-                (resolve) => vote.once("challengeverification", resolve)
+            const challengeVerificationPromise = new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+                vote.once("challengeverification", resolve)
             );
 
             await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false });
@@ -106,8 +106,8 @@ describe(`Pending approval modqueue functionality`, async () => {
             });
             edit.once("challenge", async () => await edit.publishChallengeAnswers(["1234 " + Math.random()])); // wrong answers
 
-            const challengeVerificationPromise = new Promise<DecryptedChallengeVerificationMessageType>(
-                (resolve) => edit.once("challengeverification", resolve)
+            const challengeVerificationPromise = new Promise<DecryptedChallengeVerificationMessageType>((resolve) =>
+                edit.once("challengeverification", resolve)
             );
 
             await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false });

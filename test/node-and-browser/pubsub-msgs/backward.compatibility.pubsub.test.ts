@@ -147,7 +147,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
                 await publishChallengeMessageWithExtraProps(post, pubsubSigner, extraProps, true);
 
-                const emittedChallenge = await new Promise<ChallengeMessage>((resolve) => post.once("challenge", resolve as (msg: unknown) => void));
+                const emittedChallenge = await new Promise<ChallengeMessage>((resolve) =>
+                    post.once("challenge", resolve as (msg: unknown) => void)
+                );
 
                 expect(emittedChallenge.extraProp).to.equal(extraProps.extraProp);
 
@@ -183,7 +185,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 const extraProps = { extraProp: "1234" };
                 await publishChallengeAnswerMessageWithExtraProps(post, ["2"], extraProps, true);
 
-                const challengeVerification = await new Promise<ChallengeVerification>((resolve) => post.once("challengeverification", resolve as (msg: unknown) => void));
+                const challengeVerification = await new Promise<ChallengeVerification>((resolve) =>
+                    post.once("challengeverification", resolve as (msg: unknown) => void)
+                );
                 expect(challengeVerification.challengeSuccess).to.be.true;
                 expect(challengeVerification.reason).to.be.undefined;
                 expect(challengeVerification.publication).to.be.undefined;
@@ -243,7 +247,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
                 await publishChallengeVerificationMessageWithExtraProps(post, pubsubSigner, extraProps, true);
 
-                const emittedChallengeVerification = await new Promise<ChallengeVerification>((resolve) => post.once("challengeverification", resolve as (msg: unknown) => void));
+                const emittedChallengeVerification = await new Promise<ChallengeVerification>((resolve) =>
+                    post.once("challengeverification", resolve as (msg: unknown) => void)
+                );
 
                 expect(emittedChallengeVerification.extraProp).to.equal(extraProps.extraProp);
 
@@ -288,7 +294,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
                 // verification.encrypted should decrypt to {comment, commentUpdate, extraProp}
 
-                const challengeVerification = await new Promise<ChallengeVerification>((resolve) => post.once("challengeverification", resolve as (msg: unknown) => void));
+                const challengeVerification = await new Promise<ChallengeVerification>((resolve) =>
+                    post.once("challengeverification", resolve as (msg: unknown) => void)
+                );
 
                 await post.stop();
                 expect(challengeVerification.extraProp).to.equal(extraPropsInEncrypted.extraProp);

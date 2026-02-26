@@ -80,10 +80,10 @@ describeSkipIfRpc("reply.updatingState via parent pageCIDs (node)", () => {
                         const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
                         expect(numOfUpdates).to.be.greaterThan(0);
                         // Access private property for test verification
-                        const clientsManager = updatingMockReply._clientsManager as unknown as { _parentFirstPageCidsAlreadyLoaded: Set<string> };
-                        expect(clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(
-                            numOfUpdates
-                        );
+                        const clientsManager = updatingMockReply._clientsManager as unknown as {
+                            _parentFirstPageCidsAlreadyLoaded: Set<string>;
+                        };
+                        expect(clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
 
                         await reply.stop();
 
@@ -134,7 +134,7 @@ async function createReplyParentPagesTestEnvironment({ replyDepth }: { replyDept
     if (replyDepth < 1) throw new Error("replyDepth must be at least 1");
 
     const publisherPlebbit = await mockPlebbit();
-    const subplebbit = await createSubWithNoChallenge({}, publisherPlebbit) as LocalSubplebbit | RpcLocalSubplebbit;
+    const subplebbit = (await createSubWithNoChallenge({}, publisherPlebbit)) as LocalSubplebbit | RpcLocalSubplebbit;
 
     try {
         await subplebbit.start();

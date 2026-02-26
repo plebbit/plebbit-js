@@ -9,11 +9,7 @@ import type { LocalSubplebbit } from "../../dist/node/runtime/node/subplebbit/lo
 import { Plebbit } from "./fixtures/fixtures.ts";
 
 // Wrapper function for type assertion boilerplate
-const testGetChallengeVerification = (
-    challengeRequestMessage: unknown,
-    subplebbit: unknown,
-    getChallengeAnswers: GetChallengeAnswers
-) => {
+const testGetChallengeVerification = (challengeRequestMessage: unknown, subplebbit: unknown, getChallengeAnswers: GetChallengeAnswers) => {
     return getChallengeVerification(
         challengeRequestMessage as DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
         subplebbit as LocalSubplebbit,

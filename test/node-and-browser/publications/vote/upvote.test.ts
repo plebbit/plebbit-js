@@ -172,7 +172,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`A vote=0 is rejected if the author never published a vote on the comment before`, async () => {
             const vote = await generateMockVote(postToVote as CommentIpfsWithCidDefined, 0, plebbit); // will generate random signer
 
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL
+            });
         });
     });
 });

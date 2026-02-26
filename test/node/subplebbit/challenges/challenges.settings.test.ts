@@ -79,7 +79,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
 
     it(`default challenges are configured on new subplebbit`, async () => {
         // Should be set to default on subplebbit.start()
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
         // subplebbit?.settings?.challenges should be set to defaultSettingsChallenges
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
         expect(subplebbit?.settings?.challenges).to.deep.equal(defaultSettingsChallenges);
@@ -88,7 +88,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
 
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
-        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address }) as RemoteSubplebbit;
+        const remoteSub = (await remotePlebbit.getSubplebbit({ address: subplebbit.address })) as RemoteSubplebbit;
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges!.length).to.equal(defaultSettingsChallenges.length);
             _subplebbit.challenges!.forEach((challenge, index) => {
@@ -106,11 +106,13 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
 
     it(`Default challenges reject authors without an allowed address`, async () => {
         // skip this test for now till we update mintpass
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
 
-        const challengeVerificationPromise = new Promise<ChallengeVerificationMessageType>((resolve) => subplebbit.once("challengeverification", resolve));
+        const challengeVerificationPromise = new Promise<ChallengeVerificationMessageType>((resolve) =>
+            subplebbit.once("challengeverification", resolve)
+        );
         const post = await generateMockPost(subplebbit.address, remotePlebbit);
         await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false });
         const challengeVerification = await challengeVerificationPromise;
@@ -124,7 +126,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
     });
 
     it(`settings.challenges=[] means sub won't send a challenge`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
         await subplebbit.edit({ settings: { challenges: [] } });
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
@@ -135,7 +137,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
     });
 
     itSkipIfRpc(`plebbit-js will upgrade default challenge if there is a new one`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit;
         expect(subplebbit?.settings?.challenges).to.deep.equal(defaultSettingsChallenges);
         expect(subplebbit._usingDefaultChallenge).to.be.true;
         const differentDefaultChallenges: SubplebbitChallengeSetting[] = [];
@@ -153,7 +155,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
     });
 
     it(`Can set a basic question challenge system`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
         const challenges: SubplebbitChallengeSetting[] = [{ name: "question", options: { question: "1+1=?", answer: "2" } }];
         await subplebbit.edit({ settings: { challenges } });
         expect(subplebbit._usingDefaultChallenge).to.be.false;
@@ -163,7 +165,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
 
-        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address }) as RemoteSubplebbit;
+        const remoteSub = (await remotePlebbit.getSubplebbit({ address: subplebbit.address })) as RemoteSubplebbit;
 
         expect(subplebbit.updatedAt).to.equal(remoteSub.updatedAt);
         for (const _subplebbit of [subplebbit, remoteSub]) {
@@ -190,7 +192,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
     });
 
     it(`subplebbit.settings.challenges isn't overridden with subplebbit.start() if it was edited before starting the sub`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
         await subplebbit.edit({ settings: { challenges: [] } });
         expect(subplebbit.settings!.challenges).to.deep.equal([]);
         expect(subplebbit._usingDefaultChallenge).to.be.false;
@@ -198,7 +200,7 @@ describe.concurrent(`subplebbit.settings.challenges`, async () => {
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
         expect(subplebbit.settings!.challenges).to.deep.equal([]);
-        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address }) as RemoteSubplebbit;
+        const remoteSub = (await remotePlebbit.getSubplebbit({ address: subplebbit.address })) as RemoteSubplebbit;
         for (const _subplebbit of [subplebbit, remoteSub]) expect(_subplebbit.challenges).to.deep.equal([]);
 
         await subplebbit.delete();
@@ -217,7 +219,7 @@ describeIfRpc(`subplebbit.settings.challenges with path (RPC)`, async () => {
     });
 
     it(`RPC server throws error when editing with a challenge path that doesn't exist on the server`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
 
         // This path exists on the client machine but not necessarily on the RPC server
         // In RPC mode, the server tries to import this file and should fail

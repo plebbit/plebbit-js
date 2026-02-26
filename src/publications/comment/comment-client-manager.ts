@@ -669,7 +669,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             await parentCommentInstance.update();
             startedUpdatingParentComment = true;
         }
-        await resolveWhenPredicateIsTrue({ toUpdate: parentCommentInstance, predicate: () => typeof parentCommentInstance.updatedAt === "number" });
+        await resolveWhenPredicateIsTrue({
+            toUpdate: parentCommentInstance,
+            predicate: () => typeof parentCommentInstance.updatedAt === "number"
+        });
         if (startedUpdatingParentComment) await parentCommentInstance.stop();
         if (parentCommentInstance.updatedAt! < this._comment.timestamp) return; // if updatedAt is older then it doesn't include this comment yet
         const replyInPreloadedParentPages =

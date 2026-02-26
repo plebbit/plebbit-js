@@ -105,7 +105,10 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
 
             await replyRecreated.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: replyRecreated, predicate: async () => typeof replyRecreated.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: replyRecreated,
+                predicate: async () => typeof replyRecreated.updatedAt === "number"
+            });
 
             expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
             expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
@@ -133,7 +136,8 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         subPrivate._postUpdatesBuckets = [43200, ...currentBuckets];
         await resolveWhenConditionIsTrue({
             toUpdate: subplebbit,
-            predicate: async () => Object.keys(subplebbit.postUpdates || {}).length === 1 && Object.keys(subplebbit.postUpdates!)[0] === "43200"
+            predicate: async () =>
+                Object.keys(subplebbit.postUpdates || {}).length === 1 && Object.keys(subplebbit.postUpdates!)[0] === "43200"
         });
         expect(Object.keys(subplebbit.postUpdates!)).to.deep.equal(["43200"]);
     });

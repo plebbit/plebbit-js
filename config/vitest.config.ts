@@ -10,10 +10,7 @@ const isGithubActions = Boolean(process.env.GITHUB_ACTIONS);
 const vitestReportDir = ".vitest-reports";
 const vitestJsonReportPath = `${vitestReportDir}/browser-tests.json`;
 const stderrJsonReporterPath = "./config/vitest-stderr-json-reporter.js";
-const baseReporters = [
-    "verbose",
-    [stderrJsonReporterPath, { outputFile: vitestJsonReportPath }]
-] as const;
+const baseReporters = ["verbose", [stderrJsonReporterPath, { outputFile: vitestJsonReportPath }]] as const;
 const sharedReporters = isGithubActions ? [...baseReporters, "github-actions"] : [...baseReporters];
 
 mkdirSync(vitestReportDir, { recursive: true });
@@ -37,7 +34,13 @@ const parseIncludeOverride = (): string[] | undefined => {
 };
 
 const includeOverride = parseIncludeOverride();
-const defaultNodeInclude = ["test/node/**/*.test.{js,ts}", "test/node-and-browser/**/*.test.{js,ts}", "test/challenges/**/*.test.{js,ts}", "src/rpc/test/node/**/*.test.{js,ts}", "src/rpc/test/node-and-browser/**/*.test.{js,ts}"];
+const defaultNodeInclude = [
+    "test/node/**/*.test.{js,ts}",
+    "test/node-and-browser/**/*.test.{js,ts}",
+    "test/challenges/**/*.test.{js,ts}",
+    "src/rpc/test/node/**/*.test.{js,ts}",
+    "src/rpc/test/node-and-browser/**/*.test.{js,ts}"
+];
 const defaultBrowserInclude = ["test/*browser/**/*.test.{js,ts}"];
 const nodeTestInclude = includeOverride ?? defaultNodeInclude;
 const browserTestInclude = includeOverride ?? defaultBrowserInclude;

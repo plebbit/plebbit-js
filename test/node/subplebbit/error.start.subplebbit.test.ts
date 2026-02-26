@@ -28,7 +28,9 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         await sub.start();
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
         const errors: PlebbitError[] = [];
-        sub.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+        sub.on("error", (err: PlebbitError | Error) => {
+            errors.push(err as PlebbitError);
+        });
         // @ts-expect-error _listenToIncomingRequests is private but we need to mock it for testing
         sub._listenToIncomingRequests = async () => {
             throw Error("Failed to load sub from db");
@@ -51,7 +53,9 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         await sub.start();
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
         const errors: PlebbitError[] = [];
-        sub.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+        sub.on("error", (err: PlebbitError | Error) => {
+            errors.push(err as PlebbitError);
+        });
 
         const ipfsClient = sub._clientsManager.getDefaultKuboRpcClient()!._client;
 
@@ -77,7 +81,9 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         await sub.start();
         await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" });
         const errors: PlebbitError[] = [];
-        sub.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+        sub.on("error", (err: PlebbitError | Error) => {
+            errors.push(err as PlebbitError);
+        });
 
         const pubsubClient = Object.values(plebbit.clients.pubsubKuboRpcClients)[0]._client;
 

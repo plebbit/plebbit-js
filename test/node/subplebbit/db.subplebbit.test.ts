@@ -165,9 +165,12 @@ describeSkipIfRpc.sequential(`DB importing`, async () => {
 
         expect(ipnsRecordOfSubInDifferentKubo).to.exist;
 
-        const ipnsRecordOfSubInDifferentKuboDecoded = cborg.decode(new Uint8Array(Object.values(ipnsRecordOfSubInDifferentKubo as object)), {
-            allowBigInt: true
-        });
+        const ipnsRecordOfSubInDifferentKuboDecoded = cborg.decode(
+            new Uint8Array(Object.values(ipnsRecordOfSubInDifferentKubo as object)),
+            {
+                allowBigInt: true
+            }
+        );
         expect(ipnsRecordOfSubInDifferentKuboDecoded.sequence).to.equal(3);
 
         await subplebbit.stop();

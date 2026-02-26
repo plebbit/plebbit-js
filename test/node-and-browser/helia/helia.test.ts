@@ -118,9 +118,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2p
 
             const pubsubMsgs: IpfsHttpClientPubsubMessage[] = [];
 
-            await heliaWithKuboRpcClientFunctions.pubsub.subscribe(mathCliNoMockedPubsubSubplebbitAddress, (msg: IpfsHttpClientPubsubMessage) => {
-                pubsubMsgs.push(msg);
-            });
+            await heliaWithKuboRpcClientFunctions.pubsub.subscribe(
+                mathCliNoMockedPubsubSubplebbitAddress,
+                (msg: IpfsHttpClientPubsubMessage) => {
+                    pubsubMsgs.push(msg);
+                }
+            );
 
             const numOfPeersAfterSubscribing = libp2pJsClient._helia.libp2p.getConnections().length;
             expect(numOfPeersAfterSubscribing).to.be.greaterThan(numOfPeersBeforeSubscribing);

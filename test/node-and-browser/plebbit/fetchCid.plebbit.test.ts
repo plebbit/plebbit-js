@@ -63,7 +63,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const error = e as PlebbitError;
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
                     expect(error.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
-                    expect((error.details.gatewayToError as Record<string, PlebbitError>)[Object.keys(error.details.gatewayToError as Record<string, PlebbitError>)[0]].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                    expect(
+                        (error.details.gatewayToError as Record<string, PlebbitError>)[
+                            Object.keys(error.details.gatewayToError as Record<string, PlebbitError>)[0]
+                        ].code
+                    ).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
                 } else {
                     // fetching with kubo/helia
                     expect(error.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
@@ -98,9 +102,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             } catch (e) {
                 const error = e as PlebbitError;
                 expect(error.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
-                expect((error.details.gatewayToError as Record<string, PlebbitError>)[Object.keys(error.details.gatewayToError as Record<string, PlebbitError>)[0]].code).to.equal(
-                    "ERR_CALCULATED_CID_DOES_NOT_MATCH"
-                );
+                expect(
+                    (error.details.gatewayToError as Record<string, PlebbitError>)[
+                        Object.keys(error.details.gatewayToError as Record<string, PlebbitError>)[0]
+                    ].code
+                ).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
             }
             await plebbitWithMaliciousGateway.destroy();
         });

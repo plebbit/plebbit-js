@@ -82,7 +82,11 @@ describeSkipIfRpc("quotedCids with pending approval comments", async () => {
             quotedCids: [pendingReply.cid!]
         });
 
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL
+        });
     });
 
     it("Reply quoting approved comment and pending comment is rejected", async () => {
@@ -92,7 +96,11 @@ describeSkipIfRpc("quotedCids with pending approval comments", async () => {
             quotedCids: [approvedReply.cid!, pendingReply.cid!]
         });
 
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_QUOTED_CID_IS_PENDING_APPROVAL
+        });
     });
 
     it("Reply quoting only approved comments succeeds", async () => {

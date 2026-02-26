@@ -86,7 +86,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`Validate props of challengerequest`, async () => {
             const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-            const requestPromise = new Promise<ChallengeRequest>((resolve) => comment.once("challengerequest", resolve as (req: unknown) => void));
+            const requestPromise = new Promise<ChallengeRequest>((resolve) =>
+                comment.once("challengerequest", resolve as (req: unknown) => void)
+            );
             await comment.publish();
             const request = await requestPromise;
             expect(deterministicStringify(request.comment)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
@@ -160,7 +162,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`Validate props of challengeanswer`, async () => {
             const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-            const challengeAnswerPromise = new Promise<ChallengeAnswer>((resolve) => comment.once("challengeanswer", resolve as (msg: unknown) => void));
+            const challengeAnswerPromise = new Promise<ChallengeAnswer>((resolve) =>
+                comment.once("challengeanswer", resolve as (msg: unknown) => void)
+            );
             await comment.publish();
             const challengeAnswer = await challengeAnswerPromise;
             expect(challengeAnswer.challengeRequestId.constructor.name).to.equal("Uint8Array");
@@ -198,7 +202,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const challengePromise = new Promise((resolve) => comment.once("challenge", resolve));
             await comment.publish();
             await challengePromise;
-            const challengeVerificationPromise = new Promise<ChallengeVerification>((resolve) => comment.once("challengeverification", resolve as (msg: unknown) => void));
+            const challengeVerificationPromise = new Promise<ChallengeVerification>((resolve) =>
+                comment.once("challengeverification", resolve as (msg: unknown) => void)
+            );
             await comment.publishChallengeAnswers(["12345"]); // wrong answer here
             const challengeVerifcation = await challengeVerificationPromise;
             expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");
@@ -235,7 +241,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`Validate props of challengeverification (challengeSuccess=true)`, async () => {
             const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-            const challengeVerificationPromise = new Promise<ChallengeVerification>((resolve) => comment.once("challengeverification", resolve as (msg: unknown) => void));
+            const challengeVerificationPromise = new Promise<ChallengeVerification>((resolve) =>
+                comment.once("challengeverification", resolve as (msg: unknown) => void)
+            );
             await comment.publish();
             const challengeVerifcation = await challengeVerificationPromise;
             expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");

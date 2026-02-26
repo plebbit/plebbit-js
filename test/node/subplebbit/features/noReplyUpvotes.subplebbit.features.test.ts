@@ -47,7 +47,11 @@ describe.concurrent(`subplebbit.features.noReplyUpvotes`, async () => {
     it(`Not allowed to publish upvotes to replies if subplebbit.features.noReplyUpvotes=true`, async () => {
         const upvote = await generateMockVote(replyToVoteOn as CommentIpfsWithCidDefined, 1, remotePlebbit); // should be rejected
 
-        await publishWithExpectedResult({ publication: upvote, expectedChallengeSuccess: false, expectedReason: messages.ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_UPVOTES });
+        await publishWithExpectedResult({
+            publication: upvote,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_UPVOTES
+        });
     });
 
     it(`Allowed to publish downvote to replies if subplebbit.features.noReplyUpvotes=true`, async () => {
@@ -60,6 +64,8 @@ describe.concurrent(`subplebbit.features.noReplyUpvotes`, async () => {
         const upvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, 1, remotePlebbit);
         const downvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, -1, remotePlebbit);
 
-        await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true })));
+        await Promise.all(
+            [upvote, downvote].map((vote) => publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true }))
+        );
     });
 });

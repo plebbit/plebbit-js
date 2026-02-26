@@ -29,11 +29,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const recreatedSubFromInstance = await remotePlebbit.createSubplebbit(sub);
             expect(recreatedSubFromInstance.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
             expect(JSON.parse(JSON.stringify(recreatedSubFromInstance)).extraProp).to.equal(opts.extraProps.extraProp);
-            expect((recreatedSubFromInstance as unknown as Record<string, unknown>)["extraProp"]).to.equal(publishedSub.subplebbitRecord.extraProp);
+            expect((recreatedSubFromInstance as unknown as Record<string, unknown>)["extraProp"]).to.equal(
+                publishedSub.subplebbitRecord.extraProp
+            );
 
             const recreatedSubFromJson = await remotePlebbit.createSubplebbit(JSON.parse(JSON.stringify(sub)));
             expect(JSON.parse(JSON.stringify(recreatedSubFromJson)).extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
-            expect((recreatedSubFromJson as unknown as Record<string, unknown>)["extraProp"]).to.equal(publishedSub.subplebbitRecord.extraProp);
+            expect((recreatedSubFromJson as unknown as Record<string, unknown>)["extraProp"]).to.equal(
+                publishedSub.subplebbitRecord.extraProp
+            );
 
             await remotePlebbit.destroy();
         });

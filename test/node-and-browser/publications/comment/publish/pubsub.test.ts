@@ -40,7 +40,11 @@ const workingPubsubUrl = "http://localhost:15002/api/v0"; // kubo node with work
 
 const offlinePubsubUrl = "http://localhost:23425"; // Non-existent URL that will fail
 
-const waitForPubsubTopicToBeRemoved = async (pubsubClient: { pubsub: { ls: () => Promise<string[]> } }, pubsubTopic: string, { timeoutMs = 10000, intervalMs = 200 } = {}) => {
+const waitForPubsubTopicToBeRemoved = async (
+    pubsubClient: { pubsub: { ls: () => Promise<string[]> } },
+    pubsubTopic: string,
+    { timeoutMs = 10000, intervalMs = 200 } = {}
+) => {
     const start = Date.now();
     while (true) {
         const subscribedTopics = await pubsubClient.pubsub.ls();
@@ -97,7 +101,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
                 expect(errorsEmitted.length).to.equal(0);
 
-                await validateKuboRpcNotListeningToPubsubTopic(testPlebbit, (mockPost as unknown as CommentWithInternals)._pubsubTopicWithfallback());
+                await validateKuboRpcNotListeningToPubsubTopic(
+                    testPlebbit,
+                    (mockPost as unknown as CommentWithInternals)._pubsubTopicWithfallback()
+                );
 
                 await testPlebbit.destroy();
             });
@@ -122,7 +129,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             await mockPost.publish();
 
             // Wait for the timeout handler to run
-            await new Promise((resolve) => setTimeout(resolve, (mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds * 1000 * 3)); // Wait longer than failure threshold
+            await new Promise((resolve) =>
+                setTimeout(resolve, (mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds * 1000 * 3)
+            ); // Wait longer than failure threshold
 
             // Bug #1: When state is "stopped" during timeout, it should emit error and clean up properly
             // Currently it just logs an error and returns without cleanup
@@ -133,7 +142,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             expect(errorsEmitted[0].details.challengeExchanges[0].timedoutWaitingForChallengeRequestResponse).to.be.true;
             expect(errorsEmitted[0].details.challengeExchanges[1].timedoutWaitingForChallengeRequestResponse).to.be.true;
 
-            await validateKuboRpcNotListeningToPubsubTopic(testPlebbit, (mockPost as unknown as CommentWithInternals)._pubsubTopicWithfallback());
+            await validateKuboRpcNotListeningToPubsubTopic(
+                testPlebbit,
+                (mockPost as unknown as CommentWithInternals)._pubsubTopicWithfallback()
+            );
 
             await testPlebbit.destroy();
         });
@@ -209,10 +221,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 }
 
                 // Verify no active subscriptions remain in the client manager
-                const activeSubscriptions = Object.values((testPlebbit as PlebbitWithInternals)._clientsManager.pubsubProviderSubscriptions).reduce(
-                    (total, subs) => total + subs.length,
-                    0
-                );
+                const activeSubscriptions = Object.values(
+                    (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubProviderSubscriptions
+                ).reduce((total, subs) => total + subs.length, 0);
                 expect(activeSubscriptions).to.equal(0, `${activeSubscriptions} active subscriptions remain after publication should be 0`);
 
                 await testPlebbit.destroy();
@@ -233,9 +244,15 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 (mockPost as unknown as CommentWithInternals)._publishToDifferentProviderThresholdSeconds = 2;
 
                 const providerAttempts: string[] = [];
-                const originalPublishOnProvider = (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubPublishOnProvider.bind((testPlebbit as PlebbitWithInternals)._clientsManager);
+                const originalPublishOnProvider = (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubPublishOnProvider.bind(
+                    (testPlebbit as PlebbitWithInternals)._clientsManager
+                );
 
-                (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubPublishOnProvider = async (topic, data, providerUrl) => {
+                (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubPublishOnProvider = async (
+                    topic,
+                    data,
+                    providerUrl
+                ) => {
                     providerAttempts.push(providerUrl);
                     return originalPublishOnProvider(topic, data, providerUrl);
                 };
@@ -264,18 +281,28 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     );
 
                     let publishCount = 0;
-                    const originalPublishOnProvider = (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubPublishOnProvider.bind((testPlebbit as PlebbitWithInternals)._clientsManager);
-                    (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubPublishOnProvider = async (topic, data, providerUrl) => {
+                    const originalPublishOnProvider = (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubPublishOnProvider.bind(
+                        (testPlebbit as PlebbitWithInternals)._clientsManager
+                    );
+                    (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubPublishOnProvider = async (
+                        topic,
+                        data,
+                        providerUrl
+                    ) => {
                         publishCount++;
                         if (publishCount === 1) throw new Error("Mock pubsub publish failure");
                         else return originalPublishOnProvider(topic, data, providerUrl);
                     };
 
-                    const originalSubscribeOnProvider = (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubSubscribeOnProvider.bind(
-                        (testPlebbit as PlebbitWithInternals)._clientsManager
-                    );
+                    const originalSubscribeOnProvider = (
+                        testPlebbit as PlebbitWithInternals
+                    )._clientsManager.pubsubSubscribeOnProvider.bind((testPlebbit as PlebbitWithInternals)._clientsManager);
                     let subscribeCount = 0;
-                    (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubSubscribeOnProvider = async (topic, handler, providerUrl) => {
+                    (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubSubscribeOnProvider = async (
+                        topic,
+                        handler,
+                        providerUrl
+                    ) => {
                         subscribeCount++;
                         return originalSubscribeOnProvider(topic, handler, providerUrl);
                     };
@@ -300,9 +327,13 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 const mockPost = await generateMockPost(subplebbitWithNoChallenge, testPlebbit);
 
                 // Track subscription state
-                const numOfPubsubProvidersBefore = Object.keys((mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions).length;
+                const numOfPubsubProvidersBefore = Object.keys(
+                    (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions
+                ).length;
                 expect(numOfPubsubProvidersBefore).to.equal(1);
-                expect((mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions[offlinePubsubUrl].length).to.equal(0);
+                expect(
+                    (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions[offlinePubsubUrl].length
+                ).to.equal(0);
 
                 try {
                     await mockPost.publish();
@@ -320,15 +351,18 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                         "NetworkError when attempting to fetch resource." // on firefox
                     ]);
 
-                    expect((mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions[offlinePubsubUrl].length).to.equal(0);
+                    expect(
+                        (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions[offlinePubsubUrl].length
+                    ).to.equal(0);
                 }
 
                 // Check for subscription leaks
-                const numOfPubsubProvidersAfter = Object.keys((testPlebbit as PlebbitWithInternals)._clientsManager.pubsubProviderSubscriptions).length;
-                const activeSubscriptions = Object.values((testPlebbit as PlebbitWithInternals)._clientsManager.pubsubProviderSubscriptions).reduce(
-                    (total, subs) => total + subs.length,
-                    0
-                );
+                const numOfPubsubProvidersAfter = Object.keys(
+                    (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubProviderSubscriptions
+                ).length;
+                const activeSubscriptions = Object.values(
+                    (testPlebbit as PlebbitWithInternals)._clientsManager.pubsubProviderSubscriptions
+                ).reduce((total, subs) => total + subs.length, 0);
 
                 expect(numOfPubsubProvidersAfter).to.equal(numOfPubsubProvidersBefore);
                 expect(activeSubscriptions).to.equal(0);
@@ -387,7 +421,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                 const ipfsClientTopics = await testPlebbit.clients.pubsubKuboRpcClients[pubsubMockedWithError]._client.pubsub.ls();
                 expect(ipfsClientTopics).to.deep.equal([]);
 
-                expect((mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions[pubsubMockedWithError].length).to.equal(0); // no active subscriptions
+                expect(
+                    (mockPost as unknown as CommentWithInternals)._clientsManager.pubsubProviderSubscriptions[pubsubMockedWithError].length
+                ).to.equal(0); // no active subscriptions
 
                 expect(subscribeCount).to.be.at.most(3).and.at.least(2);
                 await testPlebbit.destroy();

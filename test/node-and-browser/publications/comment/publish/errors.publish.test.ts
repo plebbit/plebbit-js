@@ -133,7 +133,9 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         const actualStates: Record<string, string[]> = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
 
         for (const pubsubUrl of Object.keys(expectedStates))
-            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
+            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) =>
+                actualStates[pubsubUrl].push(newState)
+            );
 
         try {
             await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
@@ -208,14 +210,18 @@ describeSkipIfRpc.concurrent(`Publishing resilience and errors of gateways and p
         const actualStates: Record<string, string[]> = { [notRespondingPubsubUrl]: [], [offlinePubsubUrl]: [] };
 
         for (const pubsubUrl of Object.keys(expectedStates))
-            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) => actualStates[pubsubUrl].push(newState));
+            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState: string) =>
+                actualStates[pubsubUrl].push(newState)
+            );
 
         const timeBeforePublish = Date.now();
         await mockPost.publish();
 
         await resolveWhenConditionIsTrue({ toUpdate: mockPost, predicate: async () => errors.length >= 1, eventName: "error" });
         const timeItTookToEmitError = Date.now() - timeBeforePublish;
-        expect(timeItTookToEmitError).to.be.greaterThan((mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds * 1000);
+        expect(timeItTookToEmitError).to.be.greaterThan(
+            (mockPost as unknown as CommentWithInternals)._setProviderFailureThresholdSeconds * 1000
+        );
 
         expect(errors.length).to.equal(1);
         expect(errors[0].code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");

@@ -312,7 +312,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await subB.update();
 
             await Promise.all(
-                [subA, subB].map((sub) => resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" }))
+                [subA, subB].map((sub) =>
+                    resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => typeof sub.updatedAt === "number" })
+                )
             );
 
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;

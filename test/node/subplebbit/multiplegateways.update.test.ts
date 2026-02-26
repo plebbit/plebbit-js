@@ -331,7 +331,9 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
             await customPlebbit.getSubplebbit({ address: subAddress });
             expect.fail("Should not fulfill");
         } catch (e) {
-            expect((e as { details: { gatewayToError: Record<string, { code: string }> } }).details.gatewayToError[stallingGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+            expect(
+                (e as { details: { gatewayToError: Record<string, { code: string }> } }).details.gatewayToError[stallingGateway].code
+            ).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
             expect((e as { message: string }).message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
         } finally {
             await customPlebbit.destroy();
@@ -366,7 +368,9 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     });
 
     it(`all gateways are throwing an error`, async () => {
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] } });
+        const customPlebbit = await mockGatewayPlebbit({
+            plebbitOptions: { ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] }
+        });
         customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
         try {
@@ -383,7 +387,9 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
         // Algorithm: returns the first valid record that's newer than current state (which is 0 for new fetch)
         // hourLateGateway responds immediately with 60-min old record, normalWithStallingGateway delays 3s
         // Since any record with updatedAt > 0 is accepted, the algorithm returns the hour-old record immediately
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [normalWithStallingGateway, hourLateGateway] } });
+        const customPlebbit = await mockGatewayPlebbit({
+            plebbitOptions: { ipfsGatewayUrls: [normalWithStallingGateway, hourLateGateway] }
+        });
         customPlebbit._timeouts["subplebbit-ipns"] = 10 * 1000; // change timeout from 5min to 10s
 
         try {
@@ -429,9 +435,11 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     });
 
     it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: {
-            ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
-        } });
+        const customPlebbit = await mockGatewayPlebbit({
+            plebbitOptions: {
+                ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
+            }
+        });
         customPlebbit._timeouts["subplebbit-ipns"] = 10 * 1000; // change timeout from 5min to 10s
 
         try {
@@ -501,7 +509,9 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     });
 
     it(`returns undefined when one gateway returns 304 and another returns invalid json`, async () => {
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, invalidJsonGateway] } });
+        const customPlebbit = await mockGatewayPlebbit({
+            plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, invalidJsonGateway] }
+        });
         try {
             const sub = await customPlebbit.getSubplebbit({ address: subAddress });
             expect(sub.updateCid).to.equal(conditional304RecordCid);
@@ -514,7 +524,9 @@ describe("Test fetching subplebbit record from multiple gateways (isolated)", as
     });
 
     it(`updates when a fast 304 arrives before a delayed 200 newer record`, async () => {
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, delayedNewerGateway] } });
+        const customPlebbit = await mockGatewayPlebbit({
+            plebbitOptions: { ipfsGatewayUrls: [conditional304Gateway, delayedNewerGateway] }
+        });
         try {
             const sub = await customPlebbit.getSubplebbit({ address: subAddress });
             expect(sub.updateCid).to.equal(conditional304RecordCid);

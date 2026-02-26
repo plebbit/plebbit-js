@@ -1,6 +1,16 @@
 import { Plebbit } from "../plebbit/plebbit.js";
 import assert from "assert";
-import { calculateIpfsCidV0, delay, hideClassPrivateProps, isEthAliasDomain, isIpns, isStringDomain, normalizeEthAliasDomain, throwWithErrorCode, timestamp } from "../util.js";
+import {
+    calculateIpfsCidV0,
+    delay,
+    hideClassPrivateProps,
+    isEthAliasDomain,
+    isIpns,
+    isStringDomain,
+    normalizeEthAliasDomain,
+    throwWithErrorCode,
+    timestamp
+} from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import {
@@ -673,8 +683,7 @@ export class BaseClientsManager {
         txtRecord: "subplebbit-address" | "plebbit-author-address"
     ): Promise<string | null> {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const chain: ChainTicker | undefined =
-            isEthAliasDomain(address) ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
+        const chain: ChainTicker | undefined = isEthAliasDomain(address) ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address (${address}). Are you sure plebbit-js support this chain?`);
         const chainId = this._plebbit.chainProviders[chain]?.chainId;
         const ensAddress = normalizeEthAliasDomain(address);
@@ -738,7 +747,13 @@ export class BaseClientsManager {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
         try {
-            const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(ensAddress, txtRecordName, chain, chainproviderUrl, chainId);
+            const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(
+                ensAddress,
+                txtRecordName,
+                chain,
+                chainproviderUrl,
+                chainId
+            );
 
             const abortPromise = new Promise<never>((_, reject) => {
                 if (signal!.aborted) {

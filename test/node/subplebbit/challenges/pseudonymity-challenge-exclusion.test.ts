@@ -18,7 +18,10 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
 } from "../../../../dist/node/pubsub-messages/types.js";
 
-type StoredCommentUpdate = Pick<CommentUpdatesRow, "cid" | "updatedAt" | "replyCount" | "protocolVersion" | "signature" | "edit" | "author">;
+type StoredCommentUpdate = Pick<
+    CommentUpdatesRow,
+    "cid" | "updatedAt" | "replyCount" | "protocolVersion" | "signature" | "edit" | "author"
+>;
 
 interface ChallengeExclusionTestContext {
     plebbit: Plebbit;
@@ -227,12 +230,7 @@ describeSkipIfRpc("Challenge exclusion with pseudonymity mode", () => {
                 const voter = await context.plebbit.createSigner();
 
                 // First, publish a post and answer challenge to build karma baseline
-                const firstPost = await publishPostWithChallengeAnswer(
-                    context.subplebbit.address,
-                    context.plebbit,
-                    author,
-                    "2"
-                );
+                const firstPost = await publishPostWithChallengeAnswer(context.subplebbit.address, context.plebbit, author, "2");
                 await waitForStoredCommentUpdateWithAssertions(context.subplebbit as LocalSubplebbit, firstPost);
 
                 // Upvote the post to give author postScore = 1

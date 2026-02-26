@@ -1,4 +1,3 @@
-
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     mockPlebbitToTimeoutFetchingCid,
@@ -22,7 +21,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const nonExistentIpns = "12D3KooWHS5A6Ey4V8fLWD64jpPn2EKi4r4btGN6FfkNgMTnfqVa"; // Random non-existent IPNS
             const tempSubplebbit = await plebbit.createSubplebbit({ address: nonExistentIpns });
             const waitingRetryErrs: PlebbitError[] = [];
-            tempSubplebbit.on("error", (err: PlebbitError | Error) => { waitingRetryErrs.push(err as PlebbitError); });
+            tempSubplebbit.on("error", (err: PlebbitError | Error) => {
+                waitingRetryErrs.push(err as PlebbitError);
+            });
             await tempSubplebbit.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: tempSubplebbit,
@@ -59,7 +60,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const tempSubplebbit = await plebbit.createSubplebbit({ address: nonExistentIpns });
             const waitingRetryErrs: PlebbitError[] = [];
-            tempSubplebbit.on("error", (err: PlebbitError | Error) => { waitingRetryErrs.push(err as PlebbitError); });
+            tempSubplebbit.on("error", (err: PlebbitError | Error) => {
+                waitingRetryErrs.push(err as PlebbitError);
+            });
             await tempSubplebbit.update();
             await resolveWhenConditionIsTrue({
                 toUpdate: tempSubplebbit,
@@ -91,7 +94,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const tempSubplebbit = await plebbit.createSubplebbit({ address: validIpns });
             const { cleanUp } = mockPlebbitToTimeoutFetchingCid(plebbit);
             const waitingRetryErrs: PlebbitError[] = [];
-            tempSubplebbit.on("error", (err: PlebbitError | Error) => { waitingRetryErrs.push(err as PlebbitError); });
+            tempSubplebbit.on("error", (err: PlebbitError | Error) => {
+                waitingRetryErrs.push(err as PlebbitError);
+            });
             try {
                 await tempSubplebbit.update();
 

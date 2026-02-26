@@ -44,7 +44,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`comment.clients.${clientFieldName}[key] is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
             expect(Object.keys(mockPost.clients[clientFieldName as keyof typeof mockPost.clients]).length).to.equal(1);
-            expect((Object.values(mockPost.clients[clientFieldName as keyof typeof mockPost.clients])[0] as { state: string }).state).to.equal("stopped");
+            expect(
+                (Object.values(mockPost.clients[clientFieldName as keyof typeof mockPost.clients])[0] as { state: string }).state
+            ).to.equal("stopped");
         });
 
         it(`Correct order of ${clientFieldName} state when updating a post that was created with plebbit.createComment({cid})`, async () => {
@@ -66,7 +68,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) =>
+                actualStates.push(newState)
+            );
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -97,7 +101,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const keyOfClient = Object.keys((reply.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            (reply.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
+            (reply.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) =>
+                actualStates.push(newState)
+            );
 
             await reply.update();
 
@@ -123,7 +129,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) =>
+                actualStates.push(newState)
+            );
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -144,7 +152,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) =>
+                actualStates.push(newState)
+            );
 
             await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
@@ -158,7 +168,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => actualStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) =>
+                actualStates.push(newState)
+            );
 
             await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
 
@@ -192,7 +204,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const keyOfClient = Object.keys((mockPost.clients as unknown as ClientsRecord)[clientFieldName])[0];
 
-            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) => recordedStates.push(newState));
+            (mockPost.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (newState: string) =>
+                recordedStates.push(newState)
+            );
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -233,7 +247,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const clientStates: string[] = [];
             const keyOfClient = Object.keys((createdComment.clients as unknown as ClientsRecord)[clientFieldName])[0];
-            (createdComment.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (state: string) => clientStates.push(state));
+            (createdComment.clients as unknown as ClientsRecord)[clientFieldName][keyOfClient].on("statechange", (state: string) =>
+                clientStates.push(state)
+            );
 
             const createErrorPromise = () =>
                 new Promise<void>((resolve) =>

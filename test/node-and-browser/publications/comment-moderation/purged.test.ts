@@ -108,7 +108,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     commentModeration: { reason: "To purge a post", purged: true },
                     signer: await plebbit.createSigner() // random author
                 });
-                await publishWithExpectedResult({ publication: purgeEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+                await publishWithExpectedResult({
+                    publication: purgeEdit,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+                });
             });
 
             it.sequential(`Mod can mark an author comment with depth ${commentDepth} as purged`, async () => {
@@ -165,22 +169,38 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             it(`Sub rejects votes on purged comment with depth ${commentDepth}`, async () => {
                 const vote = await generateMockVote(commentToPurge as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
-                await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB });
+                await publishWithExpectedResult({
+                    publication: vote,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
+                });
             });
 
             it(`Sub rejects replies under purged comment with depth ${commentDepth}`, async () => {
                 const reply = await generateMockComment(commentToPurge as CommentIpfsWithCidDefined, plebbit, false);
-                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB });
+                await publishWithExpectedResult({
+                    publication: reply,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
+                });
             });
 
             it(`Sub rejects votes on a reply of a purged comment with depth ${commentDepth}`, async () => {
                 const vote = await generateMockVote(replyOfCommentToPurge as CommentIpfsWithCidDefined, 1, plebbit);
-                await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB });
+                await publishWithExpectedResult({
+                    publication: vote,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
+                });
             });
 
             it(`Sub rejects replies on a reply of a purged comment with depth ${commentDepth}`, async () => {
                 const reply = await generateMockComment(replyOfCommentToPurge as CommentIpfsWithCidDefined, plebbit, false);
-                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB });
+                await publishWithExpectedResult({
+                    publication: reply,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
+                });
             });
 
             it(`Author of comment with depth ${commentDepth} can't purge their own comment`, async () => {
@@ -192,9 +212,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     commentModeration: { reason: "To purge a post" + Date.now(), purged: true },
                     signer: commentToAttemptToPurge.signer
                 });
-                await publishWithExpectedResult({ publication: 
-                    purgeCommentModeration, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
-                 });
+                await publishWithExpectedResult({
+                    publication: purgeCommentModeration,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+                });
             });
 
             it(`Mod can't un-purge a comment with depth ${commentDepth}`, async () => {
@@ -204,7 +226,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     commentModeration: { reason: "To unpurge a post", purged: false },
                     signer: roles[2].signer
                 });
-                await publishWithExpectedResult({ publication: unPurgeMod, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB });
+                await publishWithExpectedResult({
+                    publication: unPurgeMod,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
+                });
             });
 
             it(`Purged comment with depth ${commentDepth} don't show in subplebbit.posts`, async () => {

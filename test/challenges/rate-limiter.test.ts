@@ -3,14 +3,8 @@ import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from ".
 import type { Exclude, SubplebbitSettings, ChallengeResult } from "../../dist/node/subplebbit/types.js";
 
 // Wrapper functions for type assertion boilerplate
-const wrapTestRateLimit = (
-    exclude: Record<string, unknown>,
-    request: Record<string, unknown>
-): boolean => {
-    return testRateLimit(
-        exclude as Exclude,
-        request as unknown as DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-    );
+const wrapTestRateLimit = (exclude: Record<string, unknown>, request: Record<string, unknown>): boolean => {
+    return testRateLimit(exclude as Exclude, request as unknown as DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor);
 };
 
 const wrapAddToRateLimiter = (
@@ -53,10 +47,10 @@ describe("testRateLimit", () => {
         const publication1 = { author: author1 };
         const publication2 = { author: author2 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publication2 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publication2 })).to.equal(true);
     });
 
     it("1 any publication type challengeSuccess false", async () => {
@@ -67,11 +61,11 @@ describe("testRateLimit", () => {
         const publication1 = { author: author1 };
         const publication2 = { author: author2 };
         const challengeSuccess = false;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
         // without rateLimitChallengeSuccess set, only successful publications are rate limited
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publication2 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication2 })).to.equal(true);
     });
 
     it("10 any publication type", async () => {
@@ -79,12 +73,12 @@ describe("testRateLimit", () => {
         const subplebbitChallenges = [{ exclude: [exclude] }];
         const publication = { author: { address: getRandomAddress() } };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publication })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication })).to.equal(true);
         let count = 20;
         while (count--) {
-            wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication }, challengeSuccess);
+            wrapAddToRateLimiter(subplebbitChallenges, { comment: publication }, challengeSuccess);
         }
-        expect(wrapTestRateLimit(exclude,{ comment: publication })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publication })).to.equal(false);
     });
 
     it("1 publicationType.post true", async () => {
@@ -99,24 +93,24 @@ describe("testRateLimit", () => {
         const publicationSubplebbitEdit = { author, subplebbitAddress: "Qm...", subplebbitEdit: { title: "New Title" } };
 
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
     });
 
     it("1 publicationType.commentEdit true", async () => {
@@ -127,21 +121,21 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ commentEdit: publicationCommentEdit }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { commentEdit: publicationCommentEdit }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
     it("1 publicationType.commentModeration true", async () => {
@@ -152,21 +146,21 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ commentModeration: publicationCommentModeration }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { commentModeration: publicationCommentModeration }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
     it("1 publicationType.subplebbitEdit true", async () => {
@@ -177,21 +171,21 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ subplebbitEdit: publicationSubplebbitEdit }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { subplebbitEdit: publicationSubplebbitEdit }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
     it("1 publicationType.post true challengeSuccess false", async () => {
@@ -202,14 +196,14 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = false;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
         // without rateLimitChallengeSuccess set, only successful publications are rate limited
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
     it("1 publicationType.post false", async () => {
@@ -224,18 +218,18 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(false);
     });
 
     it("1 publicationType.post and publicationType.reply false", async () => {
@@ -247,15 +241,15 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(false);
     });
 
     it("1 any publication type rateLimitChallengeSuccess true", async () => {
@@ -266,10 +260,10 @@ describe("testRateLimit", () => {
         const publication1 = { author: author1 };
         const publication2 = { author: author2 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publication2 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publication2 })).to.equal(true);
     });
 
     it("1 any publication type rateLimitChallengeSuccess true challengeSuccess false", async () => {
@@ -280,11 +274,11 @@ describe("testRateLimit", () => {
         const publication1 = { author: author1 };
         const publication2 = { author: author2 };
         const challengeSuccess = false;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
         // true because if rateLimitChallengeSuccess true, dont count challengeSuccess false
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publication2 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication2 })).to.equal(true);
     });
 
     it("1 any publication type rateLimitChallengeSuccess false challengeSuccess true", async () => {
@@ -295,11 +289,11 @@ describe("testRateLimit", () => {
         const publication1 = { author: author1 };
         const publication2 = { author: author2 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
         // true because if rateLimitChallengeSuccess false, dont count challengeSuccess true
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publication2 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication2 })).to.equal(true);
     });
 
     it("1 any publication type rateLimitChallengeSuccess false challengeSuccess false", async () => {
@@ -310,11 +304,11 @@ describe("testRateLimit", () => {
         const publication1 = { author: author1 };
         const publication2 = { author: author2 };
         const challengeSuccess = false;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
         // false because if rateLimitChallengeSuccess false, count challengeSuccess false
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publication2 })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publication2 })).to.equal(true);
     });
 
     it("1 publicationType.post true rateLimitChallengeSuccess true", async () => {
@@ -325,21 +319,21 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
     it("1 publicationType.post true rateLimitChallengeSuccess true challengeSuccess false", async () => {
@@ -350,21 +344,21 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = false;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
     it("1 publicationType.post true rateLimitChallengeSuccess false challengeSuccess true", async () => {
@@ -375,21 +369,21 @@ describe("testRateLimit", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
     it("1 publicationType.post true rateLimitChallengeSuccess false challengeSuccess false", async () => {
@@ -404,48 +398,48 @@ describe("testRateLimit", () => {
         const publicationSubplebbitEdit = { author, subplebbitAddress: "Qm...", subplebbitEdit: { title: "New Title" } };
 
         const challengeSuccess = false;
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        wrapAddToRateLimiter(subplebbitChallenges,{ vote: publicationVote }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
 
-        wrapAddToRateLimiter(subplebbitChallenges,{ commentEdit: publicationCommentEdit }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { commentEdit: publicationCommentEdit }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
 
-        wrapAddToRateLimiter(subplebbitChallenges,{ commentModeration: publicationCommentModeration }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { commentModeration: publicationCommentModeration }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
 
-        wrapAddToRateLimiter(subplebbitChallenges,{ subplebbitEdit: publicationSubplebbitEdit }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationPost })).to.equal(false);
-        expect(wrapTestRateLimit(exclude,{ comment: publicationReply })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ vote: publicationVote })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentEdit: publicationCommentEdit })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ commentModeration: publicationCommentModeration })).to.equal(true);
-        expect(wrapTestRateLimit(exclude,{ subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+        wrapAddToRateLimiter(subplebbitChallenges, { subplebbitEdit: publicationSubplebbitEdit }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(wrapTestRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
     });
 
     it("multiple exclude publicationType", async () => {
@@ -468,7 +462,7 @@ describe("testRateLimit", () => {
         expect(wrapTestRateLimit(excludeVote, { comment: publicationReply })).to.equal(true);
 
         // publish one post
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
 
         // test post publication against all exclude, only post exclude fails
         expect(wrapTestRateLimit(excludePost, { comment: publicationPost })).to.equal(false);
@@ -481,7 +475,7 @@ describe("testRateLimit", () => {
         expect(wrapTestRateLimit(excludeVote, { comment: publicationReply })).to.equal(true);
 
         // publish one reply
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationReply }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
 
         // test post publication against all exclude, only post exclude fails
         expect(wrapTestRateLimit(excludePost, { comment: publicationPost })).to.equal(false);
@@ -517,7 +511,7 @@ describe("testRateLimit", () => {
         expect(wrapTestRateLimit(excludePost2, { comment: publicationPost })).to.equal(true);
 
         // publish 1 post
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
 
         expect(wrapTestRateLimit(exclude1, { comment: publicationPost })).to.equal(false);
         expect(wrapTestRateLimit(exclude2, { comment: publicationPost })).to.equal(true);
@@ -525,7 +519,7 @@ describe("testRateLimit", () => {
         expect(wrapTestRateLimit(excludePost2, { comment: publicationPost })).to.equal(true);
 
         // // publish 2 post
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
 
         expect(wrapTestRateLimit(exclude1, { comment: publicationPost })).to.equal(false);
         expect(wrapTestRateLimit(exclude2, { comment: publicationPost })).to.equal(false);
@@ -545,14 +539,14 @@ describe("testRateLimit", () => {
         expect(wrapTestRateLimit(exclude2, { comment: publicationPost })).to.equal(true);
 
         // publish 1 post
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
 
         expect(wrapTestRateLimit(exclude1, { comment: publicationPost })).to.equal(false);
         expect(wrapTestRateLimit(exclude2, { comment: publicationPost })).to.equal(true);
 
         // publish 2 post
         challengeSuccess = false;
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publicationPost }, challengeSuccess);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
 
         expect(wrapTestRateLimit(exclude1, { comment: publicationPost })).to.equal(false);
         expect(wrapTestRateLimit(exclude2, { comment: publicationPost })).to.equal(false);
@@ -564,9 +558,9 @@ describe("testRateLimit", () => {
         const subplebbitChallenges = [{ exclude: [exclude] }];
         const publication1 = { author: author1 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
     });
 
     it("0 any publication type rateLimitChallengeSuccess true", async () => {
@@ -575,9 +569,9 @@ describe("testRateLimit", () => {
         const subplebbitChallenges = [{ exclude: [exclude] }];
         const publication1 = { author: author1 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
     });
 
     it("0 any publication type rateLimitChallengeSuccess false", async () => {
@@ -586,8 +580,8 @@ describe("testRateLimit", () => {
         const subplebbitChallenges = [{ exclude: [exclude] }];
         const publication1 = { author: author1 };
         const challengeSuccess = true;
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
-        wrapAddToRateLimiter(subplebbitChallenges,{ comment: publication1 }, challengeSuccess);
-        expect(wrapTestRateLimit(exclude,{ comment: publication1 })).to.equal(false);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
+        wrapAddToRateLimiter(subplebbitChallenges, { comment: publication1 }, challengeSuccess);
+        expect(wrapTestRateLimit(exclude, { comment: publication1 })).to.equal(false);
     });
 });

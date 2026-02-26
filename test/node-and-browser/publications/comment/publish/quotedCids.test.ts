@@ -126,7 +126,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1]
                 });
                 await setExtraPropOnCommentAndSign(newPost, { quotedCids: [post.cid!] }, true);
-                await publishWithExpectedResult({ publication: newPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS });
+                await publishWithExpectedResult({
+                    publication: newPost,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_POST_CANNOT_HAVE_QUOTED_CIDS
+                });
             });
 
             it("Reply with non-existent quotedCid is rejected", async () => {
@@ -134,7 +138,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [nonExistentCid]
                 });
-                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_DOES_NOT_EXIST });
+                await publishWithExpectedResult({
+                    publication: reply,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_QUOTED_CID_DOES_NOT_EXIST
+                });
             });
 
             it("Reply quoting comment from different post is rejected", async () => {
@@ -143,7 +151,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [post2.cid!]
                 });
-                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_NOT_UNDER_POST });
+                await publishWithExpectedResult({
+                    publication: reply,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_QUOTED_CID_NOT_UNDER_POST
+                });
             });
 
             it("Reply with duplicate quotedCids is accepted", async () => {
@@ -159,7 +171,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [post.cid!, nonExistentCid]
                 });
-                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_DOES_NOT_EXIST });
+                await publishWithExpectedResult({
+                    publication: reply,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_QUOTED_CID_DOES_NOT_EXIST
+                });
             });
 
             it("Reply with one valid and one from different post is rejected", async () => {
@@ -168,7 +184,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     signer: signers[1],
                     quotedCids: [post.cid!, post2.cid!]
                 });
-                await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_QUOTED_CID_NOT_UNDER_POST });
+                await publishWithExpectedResult({
+                    publication: reply,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_QUOTED_CID_NOT_UNDER_POST
+                });
             });
         });
 

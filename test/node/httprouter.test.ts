@@ -127,7 +127,9 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
                     200,
                     "http router " + httpRouterUrl + " has responded with wrong status code, did it provide correctly?"
                 );
-                const resJson = (await res.json()) as { Providers: Array<{ Schema: string; ID: string; Addrs: string[]; Protocols?: string[] }> };
+                const resJson = (await res.json()) as {
+                    Providers: Array<{ Schema: string; ID: string; Addrs: string[]; Protocols?: string[] }>;
+                };
                 expect(resJson["Providers"]).to.be.a("array");
                 expect(resJson["Providers"].length).to.be.at.least(1);
                 for (const provider of resJson["Providers"]) {

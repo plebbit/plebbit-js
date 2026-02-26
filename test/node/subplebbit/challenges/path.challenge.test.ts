@@ -29,7 +29,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
     });
 
     it(`Can use a challenge via path instead of name`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
 
         // Use the built question challenge via path instead of name
         const questionChallengePath = path.resolve(
@@ -50,7 +50,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
 
-        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address }) as RemoteSubplebbit;
+        const remoteSub = (await remotePlebbit.getSubplebbit({ address: subplebbit.address })) as RemoteSubplebbit;
 
         expect(subplebbit.updatedAt).to.equal(remoteSub.updatedAt);
         for (const _subplebbit of [subplebbit, remoteSub]) {
@@ -79,7 +79,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
     });
 
     it(`Challenge via path sends challenge when answer is wrong`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
 
         const questionChallengePath = path.resolve(
             process.cwd(),
@@ -118,7 +118,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
     });
 
     it(`Can use multiple challenges with mix of path and name`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
 
         const questionChallengePath = path.resolve(
             process.cwd(),
@@ -139,7 +139,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
         await subplebbit.start();
         await resolveWhenConditionIsTrue({ toUpdate: subplebbit, predicate: async () => typeof subplebbit.updatedAt === "number" });
 
-        const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address }) as RemoteSubplebbit;
+        const remoteSub = (await remotePlebbit.getSubplebbit({ address: subplebbit.address })) as RemoteSubplebbit;
 
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges).to.have.length(2);
@@ -164,7 +164,7 @@ describeSkipIfRpc.concurrent(`subplebbit.settings.challenges with path`, async (
     });
 
     it(`Throws error for invalid challenge path when we try to edit subplebbit`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({}) as LocalSubplebbit | RpcLocalSubplebbit;
+        const subplebbit = (await plebbit.createSubplebbit({})) as LocalSubplebbit | RpcLocalSubplebbit;
 
         const invalidPath = "/path/to/nonexistent/challenge.js";
         const challenges: SubplebbitChallengeSetting[] = [

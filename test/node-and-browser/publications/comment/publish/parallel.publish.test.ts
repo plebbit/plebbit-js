@@ -197,7 +197,8 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                               const url = typeof input === "string" ? input : (input as { url?: string })?.url;
                               return typeof url === "string" && url.includes("/ipns/" + targetAddressForGatewayIpnsUrl);
                           }).length
-                        : nameResolveSpy!.mock.calls.filter((callArgs: unknown[]) => callArgs[0] === randomSub.subplebbitRecord.address).length;
+                        : nameResolveSpy!.mock.calls.filter((callArgs: unknown[]) => callArgs[0] === randomSub.subplebbitRecord.address)
+                              .length;
 
                     expect(resolveCallsCount).to.equal(1, "Publishing to the same subplebbit should only resolve IPNS once");
                     await Promise.all(comments.map((comment) => comment.stop()));

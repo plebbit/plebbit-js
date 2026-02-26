@@ -80,27 +80,47 @@ describeSkipIfRpc.concurrent("Verify vote", async () => {
 
     it(`Valid vote signature fixture is validated correctly`, async () => {
         const vote = remeda.clone(validVoteFixture) as VotePubsubMessagePublication;
-        const verification = await verifyVote({ vote, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyVote({
+            vote,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid vote signature gets invalidated correctly`, async () => {
         const vote = remeda.clone(validVoteFixture) as VotePubsubMessagePublication;
         vote.commentCid += "1234"; // Should invalidate signature
-        const verification = await verifyVote({ vote, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyVote({
+            vote,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyVote invalidates a vote with author.address not a domain or IPNS`, async () => {
         const vote = remeda.clone(validVoteFixture) as VotePubsubMessagePublication;
         vote.author.address = "gibbresish"; // Not a domain or IPNS
-        const verification = await verifyVote({ vote, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyVote({
+            vote,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyVote invalidates a vote with author.address = undefined", async () => {
         const vote = remeda.clone(validVoteFixture) as VotePubsubMessagePublication;
         (vote.author as { address: string | undefined }).address = undefined; // Not a domain or IPNS
-        const verification = await verifyVote({ vote, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyVote({
+            vote,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });
     });
 });

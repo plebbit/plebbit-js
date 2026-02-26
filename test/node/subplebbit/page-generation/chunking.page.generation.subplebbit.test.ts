@@ -328,7 +328,14 @@ function loadFixture<T>(relativePath: string): T {
     return JSON.parse(readFileSync(fileUrl, "utf8")) as T;
 }
 
-function createReplyEntries({ parentCid, parentDepth, postCid, subplebbitAddress, count, contentLength }: ReplyEntryParams): CommentEntry[] {
+function createReplyEntries({
+    parentCid,
+    parentDepth,
+    postCid,
+    subplebbitAddress,
+    count,
+    contentLength
+}: ReplyEntryParams): CommentEntry[] {
     if (!count || count <= 0) return [];
     return Array.from({ length: count }, (_, index) =>
         createShallowReplyEntry({
@@ -342,7 +349,14 @@ function createReplyEntries({ parentCid, parentDepth, postCid, subplebbitAddress
     );
 }
 
-function createShallowReplyEntry({ parentCid, parentDepth, postCid, subplebbitAddress, label, contentLength }: ShallowReplyParams): CommentEntry {
+function createShallowReplyEntry({
+    parentCid,
+    parentDepth,
+    postCid,
+    subplebbitAddress,
+    label,
+    contentLength
+}: ShallowReplyParams): CommentEntry {
     const entry = createCommentEntry({
         contentLength,
         label,

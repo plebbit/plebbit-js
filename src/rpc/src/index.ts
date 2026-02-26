@@ -282,9 +282,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         const db = this._getRpcStateDb();
         if (!db) return;
 
-        const rows = db
-            .prepare("SELECT address FROM subplebbit_states WHERE wasStarted = 1 AND wasExplicitlyStopped = 0")
-            .all() as { address: string }[];
+        const rows = db.prepare("SELECT address FROM subplebbit_states WHERE wasStarted = 1 AND wasExplicitlyStopped = 0").all() as {
+            address: string;
+        }[];
 
         const plebbit = await this._getPlebbitInstance();
         const localSubs = plebbit.subplebbits;

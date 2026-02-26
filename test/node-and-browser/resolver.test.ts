@@ -153,7 +153,11 @@ describe("Comments with Authors as domains", async () => {
 
         expect(mockPost.author.address).to.equal(authorAddress);
 
-        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
+        await publishWithExpectedResult({
+            publication: mockPost,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE
+        });
         expect(mockPost.author.address).to.equal("testgibbreish.bso");
         await tempPlebbit.destroy();
     });
@@ -210,7 +214,11 @@ describe(`Vote with authors as domains`, async () => {
         });
         expect(vote.author.address).to.equal("testgibbreish.bso");
 
-        await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
+        await publishWithExpectedResult({
+            publication: vote,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE
+        });
         expect(vote.author.address).to.equal("testgibbreish.bso");
         await tempPlebbit.destroy();
     });

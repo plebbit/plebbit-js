@@ -63,7 +63,11 @@ describe.concurrent(`subplebbit.features.noAudioReplies`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/track.flac"
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_AUDIO
+        });
     });
 
     it(`Can publish a reply without audio link`, async () => {

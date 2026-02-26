@@ -478,13 +478,7 @@ async function createValidateCommentTestEnvironment(): Promise<ValidateCommentTe
     };
 }
 
-async function ensureCommentHasPaginatedReplies({
-    subplebbit,
-    comment
-}: {
-    subplebbit: LocalSubplebbit;
-    comment: Comment;
-}): Promise<void> {
+async function ensureCommentHasPaginatedReplies({ subplebbit, comment }: { subplebbit: LocalSubplebbit; comment: Comment }): Promise<void> {
     const { cleanup: cleanupForcedChunking } = await forceLocalSubPagesToAlwaysGenerateMultipleChunks({
         subplebbit,
         parentComment: comment,

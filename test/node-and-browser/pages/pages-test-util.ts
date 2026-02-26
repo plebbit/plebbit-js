@@ -7,7 +7,10 @@ import type { CommentWithinRepliesPostsPageJson } from "../../../dist/node/publi
 
 const defaultSubplebbitAddress = signers[0].address;
 
-export const testCommentFieldsInPageJson = (comment: CommentWithinRepliesPostsPageJson, expectedSubplebbitAddress: string = defaultSubplebbitAddress) => {
+export const testCommentFieldsInPageJson = (
+    comment: CommentWithinRepliesPostsPageJson,
+    expectedSubplebbitAddress: string = defaultSubplebbitAddress
+) => {
     if (!comment.link && !comment.content && !comment.title) expect.fail("Comment should either have link, content or title defined");
     expect(comment.author.address).to.be.a("string");
     expect(comment.cid).to.be.a("string");
@@ -137,7 +140,11 @@ const activeScore = async (comment: CommentWithinRepliesPostsPageJson, plebbit: 
     return maxTimestamp;
 };
 
-export const testPageCommentsIfSortedCorrectly = async (sortedComments: CommentWithinRepliesPostsPageJson[], sortName: string, subplebbit: RemoteSubplebbit) => {
+export const testPageCommentsIfSortedCorrectly = async (
+    sortedComments: CommentWithinRepliesPostsPageJson[],
+    sortName: string,
+    subplebbit: RemoteSubplebbit
+) => {
     const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe: string) =>
         sortName.toLowerCase().includes(timeframe.toLowerCase())
     )[0];
@@ -149,7 +156,8 @@ export const testPageCommentsIfSortedCorrectly = async (sortedComments: CommentW
         if (currentTimeframe && !sortedComments[j].pinned && currentTimeframe !== "ALL") {
             const syncIntervalSeconds = 5 * 60;
 
-            const sortStart = subplebbit.updatedAt! - TIMEFRAMES_TO_SECONDS[currentTimeframe as keyof typeof TIMEFRAMES_TO_SECONDS] - syncIntervalSeconds; // Should probably add extra buffer here
+            const sortStart =
+                subplebbit.updatedAt! - TIMEFRAMES_TO_SECONDS[currentTimeframe as keyof typeof TIMEFRAMES_TO_SECONDS] - syncIntervalSeconds; // Should probably add extra buffer here
             const errMsg = `${sortName} sort includes posts from different timeframes`;
             expect(sortedComments[j].timestamp).to.be.greaterThanOrEqual(sortStart, errMsg);
             expect(sortedComments[j].timestamp).to.be.lessThanOrEqual(subplebbit.updatedAt!, errMsg);

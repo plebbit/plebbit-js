@@ -52,7 +52,9 @@ describe.concurrent(`plebbit._startedSubplebbits`, () => {
         const startedSubplebbit = (await anotherPlebbitInstance.createSubplebbit()) as LocalSubplebbit;
         await startedSubplebbit.start();
 
-        const updatingSubplebbit = (await anotherPlebbitInstance.createSubplebbit({ address: startedSubplebbit.address })) as LocalSubplebbit;
+        const updatingSubplebbit = (await anotherPlebbitInstance.createSubplebbit({
+            address: startedSubplebbit.address
+        })) as LocalSubplebbit;
         await updatingSubplebbit.update();
         await resolveWhenConditionIsTrue({ toUpdate: updatingSubplebbit, predicate: async () => Boolean(updatingSubplebbit.updatedAt) });
         expect((updatingSubplebbit as LocalSubplebbit)["_mirroredStartedOrUpdatingSubplebbit"]?.subplebbit.address).to.equal(

@@ -197,7 +197,10 @@ describeSkipIfRpc("db-handler duplicate signature purge during migration", funct
             return undefined;
         }
         return pathSegments.reduce<unknown>(
-            (acc, segment) => (acc && typeof acc === "object" && segment in (acc as Record<string, unknown>) ? (acc as Record<string, unknown>)[segment] : undefined),
+            (acc, segment) =>
+                acc && typeof acc === "object" && segment in (acc as Record<string, unknown>)
+                    ? (acc as Record<string, unknown>)[segment]
+                    : undefined,
             parsed
         ) as string | undefined;
     }
@@ -233,7 +236,10 @@ describeSkipIfRpc("db-handler duplicate signature purge during migration", funct
         const commentKeeps = rowsWithSignature("comments", "signature", ["signature"], "comment-keep");
         expect(commentKeeps.map((row) => row.cid)).to.deep.equal([commentToKeep.cid]);
 
-        const dbHandlerWithPrivate = dbHandler as unknown as { _purgePublicationTablesWithDuplicateSignatures: () => void; _subplebbit: FakeSubplebbit };
+        const dbHandlerWithPrivate = dbHandler as unknown as {
+            _purgePublicationTablesWithDuplicateSignatures: () => void;
+            _subplebbit: FakeSubplebbit;
+        };
         dbHandlerWithPrivate._purgePublicationTablesWithDuplicateSignatures();
 
         const commentDuplicatesAfter = rowsWithSignature("comments", "signature", ["signature"], "comment-duplicate");

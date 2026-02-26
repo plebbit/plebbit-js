@@ -49,14 +49,22 @@ describe(`subplebbit.features.authorFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [validAuthorFlair] }
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED
+        });
     });
 
     it(`Can't publish a reply with author flairs when authorFlairs feature is disabled (default)`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [validAuthorFlair] }
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_FLAIRS_NOT_ALLOWED
+        });
     });
 
     it.sequential(`Feature is updated correctly in props`, async () => {
@@ -83,7 +91,11 @@ describe(`subplebbit.features.authorFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [invalidFlair] }
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS
+        });
     });
 
     it(`Can't publish a post with author flair that has wrong colors`, async () => {
@@ -91,7 +103,11 @@ describe(`subplebbit.features.authorFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [wrongColorFlair] }
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS
+        });
     });
 
     it(`Can publish a post without author flairs when feature is enabled`, async () => {
@@ -104,7 +120,11 @@ describe(`subplebbit.features.authorFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [flairWithExtraProps] }
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS
+        });
     });
 
     it(`Can't publish a post with author flair that is missing properties`, async () => {
@@ -113,7 +133,11 @@ describe(`subplebbit.features.authorFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             author: { displayName: "Test", flairs: [flairMissingProps] }
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_FLAIR_NOT_IN_ALLOWED_FLAIRS
+        });
     });
 });
 

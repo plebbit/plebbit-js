@@ -247,7 +247,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
 
                 const publishedPost = await publishPromise;
                 await subToKeep.update();
-                await waitTillPostInSubplebbitInstancePages(publishedPost as Parameters<typeof waitTillPostInSubplebbitInstancePages>[0], subToKeep);
+                await waitTillPostInSubplebbitInstancePages(
+                    publishedPost as Parameters<typeof waitTillPostInSubplebbitInstancePages>[0],
+                    subToKeep
+                );
                 const remotePost = await plebbitToKeep.getComment({ cid: publishedPost.cid });
 
                 expect(remotePost.cid).to.equal(publishedPost.cid);
@@ -345,7 +348,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                                     plebbitB
                                 );
 
-                                const settingsPromise = plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: optionsWithJitter } as unknown as SetSettingsArg);
+                                const settingsPromise = plebbitA._plebbitRpcClient.setSettings({
+                                    plebbitOptions: optionsWithJitter
+                                } as unknown as SetSettingsArg);
 
                                 const createdSub = await createPromise;
                                 await settingsPromise;
@@ -509,7 +514,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
             try {
                 const freshSub = await createSubWithNoChallenge({ title: "temp sub " + Date.now(), description: "tmp" }, plebbitB);
                 const freshAddress = freshSub.address;
-                const startSubId = await (plebbitB._plebbitRpcClient as unknown as RpcClientWithInternals)._webSocketClient.call("startSubplebbit", [{ address: freshAddress }]);
+                const startSubId = await (plebbitB._plebbitRpcClient as unknown as RpcClientWithInternals)._webSocketClient.call(
+                    "startSubplebbit",
+                    [{ address: freshAddress }]
+                );
 
                 const currentSettings = await waitForSettings(plebbitA._plebbitRpcClient);
                 const updatedOptions = {
@@ -650,10 +658,13 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                     message: "subplebbit.update timed out while setSettings ran"
                 });
 
-                const setSettingsPromise = pTimeout(plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: updatedOptions } as unknown as SetSettingsArg), {
-                    milliseconds: 45000,
-                    message: "setSettings hung with active subplebbitUpdate subscription"
-                });
+                const setSettingsPromise = pTimeout(
+                    plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: updatedOptions } as unknown as SetSettingsArg),
+                    {
+                        milliseconds: 45000,
+                        message: "setSettings hung with active subplebbitUpdate subscription"
+                    }
+                );
 
                 await Promise.all([setSettingsPromise, overlappingUpdate]);
 
@@ -713,10 +724,13 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbi
                     message: "publish stalled while setSettings ran alongside startSubplebbit"
                 });
 
-                const setSettingsPromise = pTimeout(plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: updatedOptions } as unknown as SetSettingsArg), {
-                    milliseconds: 50000,
-                    message: "setSettings hung while startSubplebbit/subplebbitUpdate listeners were active"
-                });
+                const setSettingsPromise = pTimeout(
+                    plebbitA._plebbitRpcClient.setSettings({ plebbitOptions: updatedOptions } as unknown as SetSettingsArg),
+                    {
+                        milliseconds: 50000,
+                        message: "setSettings hung while startSubplebbit/subplebbitUpdate listeners were active"
+                    }
+                );
 
                 const [publishedPost] = await Promise.all([publishPromise, nextStartUpdate, subUpdateAfterSettings, setSettingsPromise]);
                 const fetched = await plebbitB.getComment({ cid: publishedPost.cid });

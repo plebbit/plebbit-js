@@ -140,7 +140,11 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
 
         it(`Should not be able to publish a vote under a pending comment`, async () => {
             const vote = await generateMockVote(commentInPendingApproval as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT
+            });
         });
         it(`should not be able to publish a CommentEdit under a pending comment`, async () => {
             const edit = await plebbit.createCommentEdit({
@@ -150,11 +154,19 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 content: "text to edit on pending comment",
                 signer: commentInPendingApproval.signer
             });
-            await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT });
+            await publishWithExpectedResult({
+                publication: edit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT
+            });
         });
         it(`Should not be able to publish a reply under a pending comment`, async () => {
             const reply = await generateMockComment(commentInPendingApproval as CommentIpfsWithCidDefined, plebbit, false);
-            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT });
+            await publishWithExpectedResult({
+                publication: reply,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT
+            });
         });
 
         itSkipIfRpc(`Pending comment should not be pinned in ipfs node`, async () => {
@@ -168,15 +180,15 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
 
         if (commentInPendingApprovalDepth > 0) {
             it.sequential(`pending approval reply does not show up in parentComment.replyCount`, async () => {
-                expect(
-                    (await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid!, plebbit })).replyCount
-                ).to.equal(0);
+                expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid!, plebbit })).replyCount).to.equal(
+                    0
+                );
             });
 
             it.sequential(`pending approval reply does not show up in parentComment.childCount`, async () => {
-                expect(
-                    (await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid!, plebbit })).childCount
-                ).to.equal(0);
+                expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid!, plebbit })).childCount).to.equal(
+                    0
+                );
             });
 
             it.sequential(`pending approval reply does not show up in parentComment.lastChildCid`, async () => {

@@ -47,7 +47,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { archived: true },
                 signer: postToBeArchived.signer
             });
-            await publishWithExpectedResult({ publication: archivedEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: archivedEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
         it(`Regular author can't archive another author comment`, async () => {
             const archivedEdit = await plebbit.createCommentModeration({
@@ -56,7 +60,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { archived: true },
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult({ publication: archivedEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: archivedEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
 
         it(`Mod Can't archive a reply`, async () => {
@@ -66,7 +74,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { archived: true },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult({ publication: archivedEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY });
+            await publishWithExpectedResult({
+                publication: archivedEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY
+            });
         });
 
         it.sequential(`Mod can archive an author post`, async () => {
@@ -112,22 +124,38 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`Can't publish a reply on an archived post`, async () => {
             const comment = await generateMockComment(postToBeArchived as CommentIpfsWithCidDefined, plebbit, false);
-            await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED });
+            await publishWithExpectedResult({
+                publication: comment,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED
+            });
         });
 
         it(`Can't vote on an archived post`, async () => {
             const vote = await generateMockVote(postToBeArchived as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED
+            });
         });
 
         it(`Can't vote on a reply of an archived post`, async () => {
             const vote = await generateMockVote(replyUnderPostToBeArchived as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED
+            });
         });
 
         it(`Can't reply on a reply of an archived post`, async () => {
             const reply = await generateMockComment(replyUnderPostToBeArchived as CommentIpfsWithCidDefined, plebbit);
-            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED });
+            await publishWithExpectedResult({
+                publication: reply,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_ARCHIVED
+            });
         });
 
         it.sequential(`Mod can unarchive a post`, async () => {

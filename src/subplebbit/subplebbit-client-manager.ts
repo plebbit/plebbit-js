@@ -9,7 +9,13 @@ import * as remeda from "remeda";
 import type { SubplebbitIpfsType, SubplebbitJson } from "./types.js";
 import Logger from "@plebbit/plebbit-logger";
 
-import { areEquivalentSubplebbitAddresses, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKey, timestamp } from "../util.js";
+import {
+    areEquivalentSubplebbitAddresses,
+    hideClassPrivateProps,
+    ipnsNameToIpnsOverPubsubTopic,
+    pubsubTopicToDhtKey,
+    timestamp
+} from "../util.js";
 import pLimit from "p-limit";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
@@ -216,10 +222,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             // Log individual gateway errors separately to avoid Node.js [Object] truncation
             if (subLoadingRes.criticalError instanceof FailedToFetchSubplebbitFromGatewaysError) {
                 for (const [gatewayUrl, gatewayError] of Object.entries(subLoadingRes.criticalError.details.gatewayToError)) {
-                    log.error(
-                        `Subplebbit ${this._subplebbit.address} gateway ${gatewayUrl} non-retriable error:`,
-                        gatewayError
-                    );
+                    log.error(`Subplebbit ${this._subplebbit.address} gateway ${gatewayUrl} non-retriable error:`, gatewayError);
                 }
             }
             log.error(
@@ -492,9 +495,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 let parsedCid: string;
                 try {
                     // clean up W/ prefix and quotes from the etag header
-                    parsedCid = CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join(""))
-                        .toV0()
-                        .toString();
+                    parsedCid = CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join("")).toV0().toString();
                 } catch (e) {
                     // Malformed etag header - skip optimization and let body be fetched
                     return; // Continue to fetch and validate the body normally

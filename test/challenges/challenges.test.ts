@@ -49,7 +49,10 @@ describe("plebbitJsChallenges", () => {
     it("text-math challenge answer can be eval", async () => {
         const textMath = TextMathFactory({} as Parameters<typeof TextMathFactory>[0]);
         const getChallengeResult = await textMath.getChallenge({} as Parameters<typeof textMath.getChallenge>[0]);
-        const { challenge, verify } = getChallengeResult as { challenge: string; verify: (answer: string) => Promise<{ success: boolean; error?: string }> };
+        const { challenge, verify } = getChallengeResult as {
+            challenge: string;
+            verify: (answer: string) => Promise<{ success: boolean; error?: string }>;
+        };
         // the challenge can be eval
         expect(await verify(String(eval(challenge)))).to.deep.equal({ success: true });
         expect(await verify("wrong")).to.deep.equal({ success: false, error: "Wrong answer." });
@@ -58,7 +61,10 @@ describe("plebbitJsChallenges", () => {
     it("captcha-canvas-v3 challenge is string", async () => {
         const captchaCanvasV3 = CaptchaCanvasV3Factory({} as Parameters<typeof CaptchaCanvasV3Factory>[0]);
         const getChallengeResult = await captchaCanvasV3.getChallenge({} as Parameters<typeof captchaCanvasV3.getChallenge>[0]);
-        const { challenge, verify } = getChallengeResult as { challenge: string; verify: (answer: string) => Promise<{ success: boolean; error?: string }> };
+        const { challenge, verify } = getChallengeResult as {
+            challenge: string;
+            verify: (answer: string) => Promise<{ success: boolean; error?: string }>;
+        };
         // the challenge can be eval
         expect(typeof challenge).to.equal("string");
         expect(typeof verify).to.equal("function");

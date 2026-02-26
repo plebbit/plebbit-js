@@ -54,19 +54,31 @@ describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
     it(`Can't publish a post with markdown video syntax (video extension)`, async () => {
         const contentWithMarkdownVideo = "Here is a video: ![video](https://example.com/video.mp4)";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithMarkdownVideo });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO
+        });
     });
 
     it(`Can't publish a post with HTML video tag`, async () => {
         const contentWithHtmlVideo = 'Here is a video: <video src="https://example.com/video.mp4"></video>';
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithHtmlVideo });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO
+        });
     });
 
     it(`Can't publish a post with HTML iframe tag`, async () => {
         const contentWithIframe = 'Embedded video: <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>';
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithIframe });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO
+        });
     });
 
     it(`Can't publish a reply with markdown video`, async () => {
@@ -74,7 +86,11 @@ describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             content: contentWithMarkdownVideo
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO
+        });
     });
 
     it(`Can publish a post with plain text content`, async () => {
@@ -86,7 +102,11 @@ describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
     it(`Can't publish a post with markdown GIF`, async () => {
         const contentWithGif = "Here is a gif: ![gif](https://example.com/animation.gif)";
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { content: contentWithGif });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO
+        });
     });
 
     it(`Can publish a post with markdown image (not video)`, async () => {
@@ -112,7 +132,11 @@ describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO });
+        await publishWithExpectedResult({
+            publication: commentEdit,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO
+        });
     });
 
     it(`Can't edit a comment to add iframe embed`, async () => {
@@ -123,7 +147,11 @@ describe.concurrent(`subplebbit.features.noMarkdownVideos`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedPost.signer
         });
-        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO });
+        await publishWithExpectedResult({
+            publication: commentEdit,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_CONTENT_CONTAINS_MARKDOWN_VIDEO
+        });
     });
 
     it(`Can edit a comment with plain text content`, async () => {

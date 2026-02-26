@@ -137,8 +137,7 @@ describeSkipIfRpc(`.eth <-> .bso alias equivalence`, async () => {
             const postOnBso = await publishRandomPost(bsoNameAddress, plebbit);
             await resolveWhenConditionIsTrue({
                 toUpdate: subplebbit,
-                predicate: async () =>
-                    Boolean(subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postOnBso.cid))
+                predicate: async () => Boolean(subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postOnBso.cid))
             });
 
             const comment = await remotePlebbit.createComment({ cid: postOnBso.cid!, subplebbitAddress: ethNameAddress });
@@ -164,9 +163,7 @@ describeSkipIfRpc(`.eth <-> .bso alias equivalence`, async () => {
 
         it(`getComment(cid) works for a comment published under .bso (after transition from .eth)`, async () => {
             expect(subplebbit.address).to.equal(bsoNameAddress);
-            const bsoPost = subplebbit.posts!.pages.hot!.comments!.find(
-                (c) => c.raw.comment!.subplebbitAddress === bsoNameAddress
-            );
+            const bsoPost = subplebbit.posts!.pages.hot!.comments!.find((c) => c.raw.comment!.subplebbitAddress === bsoNameAddress);
             expect(bsoPost).to.not.be.undefined;
 
             const comment = await remotePlebbit.getComment({ cid: bsoPost!.cid! });

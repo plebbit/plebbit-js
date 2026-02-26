@@ -4,7 +4,9 @@ import { PlebbitError } from "../../../../dist/node/plebbit-error.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { sanitizeRpcNotificationResult } from "../../../../dist/node/rpc/src/json-rpc-util.js";
 
-type RpcClientWithDeserialize = { _deserializeRpcError: (error: unknown) => Error & { code?: string; details?: unknown; metadata?: unknown } };
+type RpcClientWithDeserialize = {
+    _deserializeRpcError: (error: unknown) => Error & { code?: string; details?: unknown; metadata?: unknown };
+};
 
 describe("RPC error (de)serialization helpers", () => {
     describe("_deserializeRpcError", () => {

@@ -37,7 +37,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 flairs: [{ text: "Hacked" }],
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
+            await publishWithExpectedResult({
+                publication: flairsEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR
+            });
         });
 
         it(`Author can't set flairs not in the allowed list`, async () => {
@@ -47,7 +51,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 flairs: [{ text: "NotAllowed" }],
                 signer: authorPost.signer
             });
-            await publishWithExpectedResult({ publication: flairsEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
+            await publishWithExpectedResult({
+                publication: flairsEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS
+            });
         });
 
         it.sequential(`Author can set flairs on their own comment`, async () => {

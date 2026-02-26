@@ -613,10 +613,7 @@ async function buildReplyDepthChain({
     };
 }
 
-async function waitForStoredCommentUpdateWithAssertions(
-    subplebbit: LocalSubplebbit,
-    comment: Comment
-): Promise<CommentUpdateType> {
+async function waitForStoredCommentUpdateWithAssertions(subplebbit: LocalSubplebbit, comment: Comment): Promise<CommentUpdateType> {
     const storedUpdate = await waitForStoredCommentUpdate(subplebbit, comment.cid!);
     expect(storedUpdate.cid).to.equal(comment.cid);
     expect(storedUpdate.updatedAt).to.be.a("number");

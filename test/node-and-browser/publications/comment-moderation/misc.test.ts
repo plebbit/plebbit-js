@@ -98,7 +98,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const commentMod = await plebbit.createCommentModeration(modProps);
             const modFromStringifiedMod = await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentMod)));
 
-            const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) => modFromStringifiedMod.once("challengerequest", resolve as (req: unknown) => void));
+            const challengeRequestPromise = new Promise<ChallengeRequestWithCommentModeration>((resolve) =>
+                modFromStringifiedMod.once("challengerequest", resolve as (req: unknown) => void)
+            );
 
             await publishWithExpectedResult({ publication: modFromStringifiedMod, expectedChallengeSuccess: true });
             const challengerequest = await challengeRequestPromise;
@@ -266,7 +268,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             await authorPost.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.removed === (modFieldsToChange as Record<string, unknown>).removed });
+            await resolveWhenConditionIsTrue({
+                toUpdate: authorPost,
+                predicate: async () => authorPost.removed === (modFieldsToChange as Record<string, unknown>).removed
+            });
 
             await authorPost.stop();
 

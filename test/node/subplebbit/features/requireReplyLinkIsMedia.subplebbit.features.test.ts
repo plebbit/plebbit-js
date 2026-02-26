@@ -48,7 +48,10 @@ describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia (with requireRe
         expect(subplebbit.features?.requireReplyLink).to.be.true;
         const remoteSub = await remotePlebbit.getSubplebbit({ address: subplebbit.address });
         await remoteSub.update();
-        await resolveWhenConditionIsTrue({ toUpdate: remoteSub, predicate: async () => remoteSub.features?.requireReplyLinkIsMedia === true });
+        await resolveWhenConditionIsTrue({
+            toUpdate: remoteSub,
+            predicate: async () => remoteSub.features?.requireReplyLinkIsMedia === true
+        });
         expect(remoteSub.features?.requireReplyLinkIsMedia).to.be.true;
         expect(remoteSub.features?.requireReplyLink).to.be.true;
         await remoteSub.stop();
@@ -59,7 +62,11 @@ describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia (with requireRe
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false);
         await overrideCommentInstancePropsAndSign(reply, { link: invalidUrl } as Parameters<typeof overrideCommentInstancePropsAndSign>[1]);
         expect(reply.link).to.equal(invalidUrl);
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA
+        });
     });
 
     it(`Can't publish a reply with link that isn't of a media`, async () => {
@@ -68,7 +75,11 @@ describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia (with requireRe
             link: urlOfNotMedia
         });
         expect(reply.link).to.equal(urlOfNotMedia);
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA
+        });
     });
 
     it(`Can publish a reply with valid media link`, async () => {
@@ -129,7 +140,11 @@ describe.concurrent(`subplebbit.features.requireReplyLinkIsMedia (without requir
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: urlOfNotMedia
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_LINK_IS_NOT_OF_MEDIA
+        });
     });
 
     it(`Can publish a reply with valid media link`, async () => {

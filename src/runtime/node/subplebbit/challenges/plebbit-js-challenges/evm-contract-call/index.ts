@@ -11,7 +11,12 @@ import type {
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import type { Plebbit } from "../../../../../../plebbit/plebbit.js";
-import { derivePublicationFromChallengeRequest, isEthAliasDomain, isStringDomain, normalizeEthAliasDomain } from "../../../../../../util.js";
+import {
+    derivePublicationFromChallengeRequest,
+    isEthAliasDomain,
+    isStringDomain,
+    normalizeEthAliasDomain
+} from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[

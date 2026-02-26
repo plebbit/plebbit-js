@@ -97,7 +97,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const edit = await plebbit.createCommentEdit(props);
             const editFromStringifiedEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)));
 
-            const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) => editFromStringifiedEdit.once("challengerequest", resolve as (req: unknown) => void));
+            const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) =>
+                editFromStringifiedEdit.once("challengerequest", resolve as (req: unknown) => void)
+            );
             await publishWithExpectedResult({ publication: editFromStringifiedEdit, expectedChallengeSuccess: true });
             const challengerequest = await challengeRequestPromise;
 
@@ -203,7 +205,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await publishWithExpectedResult({ publication: edit2, expectedChallengeSuccess: true });
 
             await authorPost.update();
-            await resolveWhenConditionIsTrue({ toUpdate: authorPost, predicate: async () => authorPost.deleted === secondEditProps.deleted });
+            await resolveWhenConditionIsTrue({
+                toUpdate: authorPost,
+                predicate: async () => authorPost.deleted === secondEditProps.deleted
+            });
 
             await authorPost.stop();
             expect(authorPost.deleted).to.equal(secondEditProps.deleted);

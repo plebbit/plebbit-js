@@ -135,16 +135,11 @@ for (const commentMod of commentModProps) {
                         }
                     );
                 if (shouldCommentBePurged) {
-                    itSkipIfRpc(
-                        `Rejecting a pending comment with only ${JSON.stringify(commentMod)} will purge it out of DB`,
-                        async () => {
-                            // @ts-expect-error - accessing private _dbHandler
-                            const queryRes = (subplebbit._dbHandler as LocalSubplebbit["_dbHandler"]).queryComment(
-                                commentToBeRejected.cid!
-                            );
-                            expect(queryRes).to.be.not.exist;
-                        }
-                    );
+                    itSkipIfRpc(`Rejecting a pending comment with only ${JSON.stringify(commentMod)} will purge it out of DB`, async () => {
+                        // @ts-expect-error - accessing private _dbHandler
+                        const queryRes = (subplebbit._dbHandler as LocalSubplebbit["_dbHandler"]).queryComment(commentToBeRejected.cid!);
+                        expect(queryRes).to.be.not.exist;
+                    });
                 }
 
                 if (pendingCommentDepth > 0) {
@@ -218,37 +213,31 @@ for (const commentMod of commentModProps) {
 
                             const foundInReplies = cidExistsInChunks(capturedChunks, commentToBeRejected.cid!);
                             expect(foundInReplies).to.equal(expectedResult);
-                            if (expectedResult)
-                                expect(generated, "expected replies generation to contain the rejected comment").to.exist;
+                            if (expectedResult) expect(generated, "expected replies generation to contain the rejected comment").to.exist;
                         }
                     );
                 if (pendingCommentDepth > 0)
-                    itSkipIfRpc(
-                        `A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`,
-                        async () => {
-                            const shouldCommentBeInFlatPages = !shouldCommentBePurged;
-                            // @ts-expect-error - accessing private _dbHandler
-                            const postRow = (subplebbit._dbHandler as LocalSubplebbit["_dbHandler"]).queryComment(
-                                commentToBeRejected.postCid!
-                            );
-                            expect(postRow).to.exist;
+                    itSkipIfRpc(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in flat pages of post`, async () => {
+                        const shouldCommentBeInFlatPages = !shouldCommentBePurged;
+                        // @ts-expect-error - accessing private _dbHandler
+                        const postRow = (subplebbit._dbHandler as LocalSubplebbit["_dbHandler"]).queryComment(commentToBeRejected.postCid!);
+                        expect(postRow).to.exist;
 
-                            for (const sortName of ["newFlat", "oldFlat"]) {
-                                const { generated, capturedChunks } = await captureRepliesGeneration({
-                                    subplebbit: subplebbit as LocalSubplebbit,
-                                    parentCid: postRow!.cid,
-                                    parentDepth: postRow!.depth,
-                                    preloadedSortName: sortName,
-                                    preloadedPageSizeBytes: 1024 * 1024
-                                });
+                        for (const sortName of ["newFlat", "oldFlat"]) {
+                            const { generated, capturedChunks } = await captureRepliesGeneration({
+                                subplebbit: subplebbit as LocalSubplebbit,
+                                parentCid: postRow!.cid,
+                                parentDepth: postRow!.depth,
+                                preloadedSortName: sortName,
+                                preloadedPageSizeBytes: 1024 * 1024
+                            });
 
-                                const foundInFlatPages = cidExistsInChunks(capturedChunks, commentToBeRejected.cid!);
-                                expect(foundInFlatPages).to.equal(shouldCommentBeInFlatPages);
-                                if (shouldCommentBeInFlatPages)
-                                    expect(generated, "expected flat pages generation to include the rejected comment").to.exist;
-                            }
+                            const foundInFlatPages = cidExistsInChunks(capturedChunks, commentToBeRejected.cid!);
+                            expect(foundInFlatPages).to.equal(shouldCommentBeInFlatPages);
+                            if (shouldCommentBeInFlatPages)
+                                expect(generated, "expected flat pages generation to include the rejected comment").to.exist;
                         }
-                    );
+                    });
 
                 it(`comments with approved: false should not be in pageCids.pendingApproval`, async () => {
                     expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
@@ -412,9 +401,15 @@ for (const commentMod of commentModProps) {
                                         predicate: async () => Boolean(newComment.updatedAt)
                                     });
 
-                                    for (const commentModKey of Object.keys(commentMod) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
-                                        expect((newComment as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
-                                        expect((newComment.raw.commentUpdate! as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
+                                    for (const commentModKey of Object.keys(
+                                        commentMod
+                                    ) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
+                                        expect((newComment as unknown as Record<string, unknown>)[commentModKey]).to.equal(
+                                            commentMod[commentModKey]
+                                        );
+                                        expect(
+                                            (newComment.raw.commentUpdate! as unknown as Record<string, unknown>)[commentModKey]
+                                        ).to.equal(commentMod[commentModKey]);
                                     }
 
                                     expect(newComment.updatedAt).to.be.a("number");
@@ -455,9 +450,15 @@ for (const commentMod of commentModProps) {
                                             predicate: async () => Boolean(newComment.updatedAt)
                                         });
 
-                                        for (const commentModKey of Object.keys(commentMod) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
-                                            expect((newComment as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
-                                            expect((newComment.raw.commentUpdate! as unknown as Record<string, unknown>)[commentModKey]).to.equal(commentMod[commentModKey]);
+                                        for (const commentModKey of Object.keys(
+                                            commentMod
+                                        ) as (keyof CreateCommentModerationOptions["commentModeration"])[]) {
+                                            expect((newComment as unknown as Record<string, unknown>)[commentModKey]).to.equal(
+                                                commentMod[commentModKey]
+                                            );
+                                            expect(
+                                                (newComment.raw.commentUpdate! as unknown as Record<string, unknown>)[commentModKey]
+                                            ).to.equal(commentMod[commentModKey]);
                                         }
 
                                         expect(newComment.updatedAt).to.be.a("number");
@@ -541,7 +542,11 @@ for (const commentMod of commentModProps) {
                           ? messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
                           : messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT;
                     const vote = await generateMockVote(commentToBeRejected as CommentIpfsWithCidDefined, 1, plebbit, modSigner); // need to publish under mod otherwise we're gonna get captcha challenge
-                    await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: expectedMessage });
+                    await publishWithExpectedResult({
+                        publication: vote,
+                        expectedChallengeSuccess: false,
+                        expectedReason: expectedMessage
+                    });
                 });
 
                 it(`Can't publish a reply under a rejected comment`, async () => {
@@ -551,7 +556,11 @@ for (const commentMod of commentModProps) {
                           ? messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
                           : messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT;
                     const reply = await generateMockComment(commentToBeRejected as CommentIpfsWithCidDefined, plebbit, false);
-                    await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: expectedMessage });
+                    await publishWithExpectedResult({
+                        publication: reply,
+                        expectedChallengeSuccess: false,
+                        expectedReason: expectedMessage
+                    });
                 });
 
                 it(`Can't publish an edit under a rejected comment`, async () => {
@@ -567,7 +576,11 @@ for (const commentMod of commentModProps) {
                         content: "text to edit on pending comment",
                         signer: commentToBeRejected.signer
                     });
-                    await publishWithExpectedResult({ publication: edit, expectedChallengeSuccess: false, expectedReason: expectedMessage });
+                    await publishWithExpectedResult({
+                        publication: edit,
+                        expectedChallengeSuccess: false,
+                        expectedReason: expectedMessage
+                    });
                 });
 
                 itSkipIfRpc(`A rejected comment is not pinned to IPFS node`, async () => {
@@ -603,7 +616,11 @@ for (const commentMod of commentModProps) {
                         commentCid: commentToBeRejected.cid!
                     });
 
-                    await publishWithExpectedResult({ publication: commentModerationDisapproval, expectedChallengeSuccess: false, expectedReason: expectedMessage });
+                    await publishWithExpectedResult({
+                        publication: commentModerationDisapproval,
+                        expectedChallengeSuccess: false,
+                        expectedReason: expectedMessage
+                    });
                 });
 
                 itSkipIfRpc.sequential(`A rejected comment is not pinned to IPFS node after restarting the sub`, async () => {

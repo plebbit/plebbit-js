@@ -248,7 +248,10 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 const createErrorPromise = () =>
                     new Promise<void>((resolve) =>
                         mockReply.once("error", (err) => {
-                            if ((err as PlebbitError).details.gatewayToError["http://localhost:18080"].code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID")
+                            if (
+                                (err as PlebbitError).details.gatewayToError["http://localhost:18080"].code ===
+                                "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID"
+                            )
                                 resolve();
                         })
                     );
@@ -289,7 +292,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`the order of state-event-statechange is correct when we get a new update from reply`, async () => {
             const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
-            const replyCid = sub.posts.pages.hot.comments.find((post: { replies?: unknown }) => post.replies).replies.pages.best.comments[0].cid;
+            const replyCid = sub.posts.pages.hot.comments.find((post: { replies?: unknown }) => post.replies).replies.pages.best.comments[0]
+                .cid;
             const mockReply = await plebbit.createComment({ cid: replyCid });
             expect(mockReply.updatedAt).to.be.undefined;
             const recordedStates: string[] = [];

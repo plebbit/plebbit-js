@@ -50,7 +50,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 deleted: true,
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult({ publication: deleteEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
+            await publishWithExpectedResult({
+                publication: deleteEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR
+            });
         });
 
         it(`Mod can't delete a post that is not theirs`, async () => {
@@ -60,7 +64,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 deleted: true,
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult({ publication: deleteEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
+            await publishWithExpectedResult({
+                publication: deleteEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR
+            });
         });
 
         it.sequential(`Author of post can delete their own post`, async () => {
@@ -108,23 +116,48 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can't publish vote on deleted post`, async () => {
-            const voteUnderDeletedPost = await generateMockVote(postToDelete as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
-            await publishWithExpectedResult({ publication: voteUnderDeletedPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED });
+            const voteUnderDeletedPost = await generateMockVote(
+                postToDelete as CommentIpfsWithCidDefined,
+                1,
+                plebbit,
+                remeda.sample(signers, 1)[0]
+            );
+            await publishWithExpectedResult({
+                publication: voteUnderDeletedPost,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED
+            });
         });
 
         it(`Can't publish reply under deleted post`, async () => {
-            const replyUnderDeletedPost = await generateMockComment(postToDelete as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
-            await publishWithExpectedResult({ publication: replyUnderDeletedPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED });
+            const replyUnderDeletedPost = await generateMockComment(postToDelete as CommentIpfsWithCidDefined, plebbit, false, {
+                signer: remeda.sample(signers, 1)[0]
+            });
+            await publishWithExpectedResult({
+                publication: replyUnderDeletedPost,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED
+            });
         });
 
         it(`Can't publish a reply under a reply of a deleted post`, async () => {
-            const reply = await generateMockComment(postReply as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
-            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED });
+            const reply = await generateMockComment(postReply as CommentIpfsWithCidDefined, plebbit, false, {
+                signer: remeda.sample(signers, 1)[0]
+            });
+            await publishWithExpectedResult({
+                publication: reply,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED
+            });
         });
 
         it(`Can't publish a vote under a reply of a deleted post`, async () => {
             const vote = await generateMockVote(postReply as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED
+            });
         });
         it.sequential(`Mod can delete their own post`, async () => {
             const deleteEdit = await plebbit.createCommentEdit({
@@ -156,7 +189,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: postToDelete.signer,
                 reason: "For author to test undelete their own post"
             });
-            await publishWithExpectedResult({ publication: undeleteEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED });
+            await publishWithExpectedResult({
+                publication: undeleteEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED
+            });
         });
 
         it(`Mod can not undelete their own post`, async () => {
@@ -167,7 +204,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 signer: modPostToDelete.signer,
                 reason: "For mod to test undeleting their own post"
             });
-            await publishWithExpectedResult({ publication: undeleteEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED });
+            await publishWithExpectedResult({
+                publication: undeleteEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED
+            });
         });
     });
 

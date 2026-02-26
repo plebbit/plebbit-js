@@ -4,7 +4,9 @@ import { describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import type { CommentsTableRowInsert } from "../../../dist/node/publications/comment/types.js";
 
 interface InsertCommentOptions
-    extends Partial<Pick<CommentsTableRowInsert, "cid" | "depth" | "parentCid" | "postCid" | "timestamp" | "authorSignerAddress" | "pendingApproval">> {
+    extends Partial<
+        Pick<CommentsTableRowInsert, "cid" | "depth" | "parentCid" | "postCid" | "timestamp" | "authorSignerAddress" | "pendingApproval">
+    > {
     overrides?: Partial<CommentsTableRowInsert>;
 }
 

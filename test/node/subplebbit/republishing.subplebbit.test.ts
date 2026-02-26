@@ -54,7 +54,10 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
 
         plebbitDifferentIpfs = await mockPlebbit({ kuboRpcClientsOptions: ["http://localhost:15004/api/v0"] }); // Different IPFS repo
 
-        subAfterMigration = await createSubWithNoChallenge({ address: subBeforeMigration.address } as CreateNewLocalSubplebbitUserOptions, plebbitDifferentIpfs);
+        subAfterMigration = await createSubWithNoChallenge(
+            { address: subBeforeMigration.address } as CreateNewLocalSubplebbitUserOptions,
+            plebbitDifferentIpfs
+        );
         expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);
         await subAfterMigration.start(); // should migrate everything here
         await resolveWhenConditionIsTrue({

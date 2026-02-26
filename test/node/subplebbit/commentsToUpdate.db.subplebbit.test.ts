@@ -22,7 +22,15 @@ interface InsertCommentUpdateOptions
     extends Partial<
         Pick<
             CommentUpdatesTableRowInsert,
-            "updatedAt" | "replyCount" | "childCount" | "upvoteCount" | "downvoteCount" | "lastChildCid" | "lastReplyTimestamp" | "postUpdatesBucket" | "insertedAt"
+            | "updatedAt"
+            | "replyCount"
+            | "childCount"
+            | "upvoteCount"
+            | "downvoteCount"
+            | "lastChildCid"
+            | "lastReplyTimestamp"
+            | "postUpdatesBucket"
+            | "insertedAt"
         >
     > {
     // These fields differ from plebbit-js types: booleans stored as numbers, objects as JSON strings

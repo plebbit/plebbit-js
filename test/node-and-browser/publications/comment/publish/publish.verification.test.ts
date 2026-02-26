@@ -54,7 +54,10 @@ describe.sequential(`Client side verification`, async () => {
             await mockPost.publish();
             expect.fail("should fail");
         } catch (e) {
-            expect((e as PlebbitError).code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", "Got a different error than expected: " + JSON.stringify(e));
+            expect((e as PlebbitError).code).to.equal(
+                "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID",
+                "Got a different error than expected: " + JSON.stringify(e)
+            );
         }
     });
 });
@@ -82,20 +85,35 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
             content: `Random Content` + Date.now(),
             subplebbitAddress
         });
-        await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB });
+        await publishWithExpectedResult({
+            publication: comment,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
+        });
     });
 
     it(`A reply with timestamp earlier than its parent is rejected`, async () => {
         expect(post.timestamp).to.be.a("number");
-        const reply = await generateMockComment(post as CommentIpfsWithCidDefined, plebbit, false, { signer: signers[0], timestamp: post.timestamp - 1 });
+        const reply = await generateMockComment(post as CommentIpfsWithCidDefined, plebbit, false, {
+            signer: signers[0],
+            timestamp: post.timestamp - 1
+        });
         expect(reply.timestamp).to.be.lessThan(post.timestamp);
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT
+        });
     });
 
     it("Throws an error when publishing a duplicate post", async function () {
         const newPost = await generateMockPost(subplebbitAddress, plebbit);
         newPost.toJSONPubsubMessagePublication = () => post.toJSONPubsubMessagePublication();
-        await publishWithExpectedResult({ publication: newPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_DUPLICATE_COMMENT });
+        await publishWithExpectedResult({
+            publication: newPost,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_DUPLICATE_COMMENT
+        });
     });
 
     it(`Throws an error when comment is over size`, async () => {
@@ -103,7 +121,11 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
         const mockPost = await generateMockPost(signers[0].address, plebbit, false, { content: veryLongString });
         // Size of post should be ~50kb now
 
-        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_REQUEST_PUBLICATION_OVER_ALLOWED_SIZE });
+        await publishWithExpectedResult({
+            publication: mockPost,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REQUEST_PUBLICATION_OVER_ALLOWED_SIZE
+        });
     });
 
     itSkipIfRpc(`Throws an error when a comment has no title, link or content`, async () => {
@@ -128,7 +150,11 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
             title: undefined
         });
 
-        await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: false, expectedReason: messages.ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING });
+        await publishWithExpectedResult({
+            publication: mockPost,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING
+        });
     });
 
     it.skip(`Throws an error if author.avatar.signature.signature is of a json string instead of a 0x string`, async () => {
@@ -152,7 +178,11 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
         // @ts-expect-error - intentionally returning invalid type to test error handling
         post.toJSONPubsubRequestToEncrypt = () => "<html>dwad"; // Publication will encrypt this invalid json
         disableValidationOfSignatureBeforePublishing(post);
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING
+        });
     });
 
     it(`Subs respond with error if you attempt to publish a reply without postCid defined`, async () => {
@@ -166,8 +196,14 @@ describe.concurrent("Subplebbit rejection of incorrect values of fields", async 
         const reply = await generateMockComment(post as CommentIpfsWithCidDefined, plebbit, false);
         await setExtraPropOnCommentAndSign(reply, { postCid: undefined }, true);
         expect(reply.postCid).to.be.undefined;
-        const challengerequestPromise = new Promise<{ comment?: { postCid?: string } }>((resolve) => reply.once("challengerequest", resolve as (request: unknown) => void));
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID });
+        const challengerequestPromise = new Promise<{ comment?: { postCid?: string } }>((resolve) =>
+            reply.once("challengerequest", resolve as (request: unknown) => void)
+        );
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID
+        });
         const challengeRequest = await challengerequestPromise;
         expect(challengeRequest.comment?.postCid).to.be.undefined;
     });
@@ -186,7 +222,11 @@ describe.concurrent(`Posts with forbidden fields are rejected during challenge e
     it(`Can't publish a post to sub with signer being part of CommentPubsubMessage`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         await setExtraPropOnCommentAndSign(post, { signer: { privateKey: post.signer.privateKey } }, true);
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_RESERVED_FIELD });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_HAS_RESERVED_FIELD
+        });
     });
 
     const forbiddenFieldsWithValue = [
@@ -210,7 +250,11 @@ describe.concurrent(`Posts with forbidden fields are rejected during challenge e
         itSkipIfRpc(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
             const post = await generateMockPost(subplebbitAddress, plebbit, false);
             await setExtraPropOnCommentAndSign(post, forbiddenType, true);
-            await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_RESERVED_FIELD });
+            await publishWithExpectedResult({
+                publication: post,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_HAS_RESERVED_FIELD
+            });
         })
     );
 });
@@ -244,7 +288,11 @@ describe("Posts with forbidden author fields are rejected", async () => {
                 },
                 true
             );
-            await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD });
+            await publishWithExpectedResult({
+                publication: post,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD
+            });
         })
     );
 });

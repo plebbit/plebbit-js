@@ -115,10 +115,7 @@ class UrlsAddressesSet {
 }
 const urlsAddressesSet = new UrlsAddressesSet();
 
-const getChallenge = async ({
-    challengeSettings,
-    challengeRequestMessage
-}: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
+const getChallenge = async ({ challengeSettings, challengeRequestMessage }: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
     // add a custom error message to display to the author
     const error = challengeSettings?.options?.error;
     const addresses = challengeSettings?.options?.addresses
@@ -130,11 +127,7 @@ const getChallenge = async ({
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     if (
         addressesSet.has(publication?.author?.address) ||
-        (await urlsAddressesSet.has(
-            publication?.author?.address,
-            publication?.subplebbitAddress,
-            challengeSettings?.options?.urls
-        ))
+        (await urlsAddressesSet.has(publication?.author?.address, publication?.subplebbitAddress, challengeSettings?.options?.urls))
     ) {
         return {
             success: false,

@@ -102,7 +102,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To pin a post", pinned: true },
                 signer: postToPin.signer
             });
-            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: pinEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
         it(`Regular author can't pin another author comment`, async () => {
             const pinEdit = await plebbit.createCommentModeration({
@@ -111,7 +115,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To pin a post", pinned: true },
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult({ publication: pinEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: pinEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
 
         it(`Mod can pin a post`, async () => {

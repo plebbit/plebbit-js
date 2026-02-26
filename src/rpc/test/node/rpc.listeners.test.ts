@@ -189,10 +189,7 @@ describeSkipIfRpc("PlebbitWsServer listener lifecycle", function () {
             expect(deleteResult).to.equal(true);
 
             expect(trackedListenersMap.get(capturedSubplebbit!)).to.equal(undefined, "Tracked listeners should be removed after delete");
-            expect(rpcServer.plebbit._startedSubplebbits[address]).to.equal(
-                undefined,
-                "Started sub list should not contain deleted sub"
-            );
+            expect(rpcServer.plebbit._startedSubplebbits[address]).to.equal(undefined, "Started sub list should not contain deleted sub");
 
             trackedSnapshot.forEach((listeners, event) => {
                 const emitterListeners = capturedSubplebbit!.listeners(event as Parameters<typeof capturedSubplebbit.listeners>[0]);

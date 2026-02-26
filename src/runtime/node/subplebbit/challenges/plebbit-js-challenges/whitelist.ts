@@ -115,10 +115,7 @@ class UrlsAddressesSet {
 }
 const urlsAddressesSet = new UrlsAddressesSet();
 
-const getChallenge = async ({
-    challengeSettings,
-    challengeRequestMessage
-}: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
+const getChallenge = async ({ challengeSettings, challengeRequestMessage }: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
     // add a custom error message to display to the author
     const error = challengeSettings?.options?.error;
     const addresses = challengeSettings?.options?.addresses

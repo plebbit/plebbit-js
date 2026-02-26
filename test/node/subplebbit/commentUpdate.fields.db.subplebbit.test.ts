@@ -387,7 +387,8 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             const pendingPost = insertComment({ depth: 0, overrides: { pendingApproval: true } });
             insertCommentUpdate(pendingPost);
             // Access internal _db for test manipulation
-            const db = (_dbHandler as unknown as { _db: { prepare: (sql: string) => { run: (...args: (string | number)[]) => void } } })._db;
+            const db = (_dbHandler as unknown as { _db: { prepare: (sql: string) => { run: (...args: (string | number)[]) => void } } })
+                ._db;
             db.prepare(`UPDATE comments SET number = ?, postNumber = ? WHERE cid = ?`).run(7, 3, pendingPost.cid);
             db.prepare(`UPDATE commentUpdates SET number = ?, postNumber = ? WHERE cid = ?`).run(7, 3, pendingPost.cid);
 

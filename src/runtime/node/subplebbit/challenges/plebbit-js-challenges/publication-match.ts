@@ -49,10 +49,7 @@ const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
 
 const type: ChallengeInput["type"] = "text/plain";
 
-const getChallenge = async ({
-    challengeSettings,
-    challengeRequestMessage
-}: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
+const getChallenge = async ({ challengeSettings, challengeRequestMessage }: GetChallengeArgsInput): Promise<ChallengeResultInput> => {
     // Get the publication from the challenge request
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     if (!publication) {

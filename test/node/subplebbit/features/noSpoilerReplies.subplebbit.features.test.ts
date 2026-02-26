@@ -67,7 +67,11 @@ describe.concurrent(`subplebbit.features.noSpoilerReplies`, async () => {
             content: "Spoiler reply",
             spoiler: true
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_SPOILER_ENABLED });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_HAS_SPOILER_ENABLED
+        });
     });
 
     it(`Can publish a reply without spoiler`, async () => {
@@ -84,7 +88,11 @@ describe.concurrent(`subplebbit.features.noSpoilerReplies`, async () => {
             subplebbitAddress: subplebbit.address,
             signer: publishedReply.signer
         });
-        await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_SPOILER_ENABLED });
+        await publishWithExpectedResult({
+            publication: commentEdit,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_HAS_SPOILER_ENABLED
+        });
     });
 
     it(`Can edit a post to set spoiler=true (noSpoilerReplies doesn't affect posts)`, async () => {

@@ -63,7 +63,11 @@ describe.concurrent(`subplebbit.features.noVideoReplies`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/movie.webm"
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO
+        });
     });
 
     it(`Can publish a reply without video link`, async () => {
@@ -77,7 +81,11 @@ describe.concurrent(`subplebbit.features.noVideoReplies`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/animation.gif"
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_REPLY_HAS_LINK_THAT_IS_VIDEO
+        });
     });
 
     it(`Can publish a reply with image link (noVideoReplies doesn't block images)`, async () => {

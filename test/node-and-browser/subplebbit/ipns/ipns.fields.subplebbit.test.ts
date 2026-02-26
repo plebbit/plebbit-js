@@ -43,7 +43,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const subplebbit = await plebbit.createSubplebbit({ address: testDomain });
 
-                subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+                subplebbit.on("error", (err: PlebbitError | Error) => {
+                    errors.push(err as PlebbitError);
+                });
 
                 // At this point, the domain hasn't been resolved yet
                 // For a domain address, ipnsName, ipnsPubsubTopic and ipnsPubsubTopicRoutingCid are not set initially
@@ -102,7 +104,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const subplebbit = await plebbit.createSubplebbit({ address: testDomain });
             const errors: PlebbitError[] = [];
-            subplebbit.on("error", (err: PlebbitError | Error) => { errors.push(err as PlebbitError); });
+            subplebbit.on("error", (err: PlebbitError | Error) => {
+                errors.push(err as PlebbitError);
+            });
 
             await subplebbit.update();
             await resolveWhenConditionIsTrue({
@@ -145,7 +149,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
             const subplebbitA = await plebbit.createSubplebbit({ address: testDomain });
             const errorsA: PlebbitError[] = [];
-            subplebbitA.on("error", (err: PlebbitError | Error) => { errorsA.push(err as PlebbitError); });
+            subplebbitA.on("error", (err: PlebbitError | Error) => {
+                errorsA.push(err as PlebbitError);
+            });
 
             await subplebbitA.update();
             await resolveWhenConditionIsTrue({

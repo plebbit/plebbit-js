@@ -77,7 +77,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         it(`Preloaded pages are sorted correctly`, async () => {
             expect(Object.keys(subplebbit.posts.pages).length).to.be.greaterThan(0);
             for (const preloadedPageSortName of Object.keys(subplebbit.posts.pages)) {
-                const allPostsUnderPreloadedSortName = await loadAllPagesBySortName(preloadedPageSortName, subplebbit.posts) as CommentWithinRepliesPostsPageJson[];
+                const allPostsUnderPreloadedSortName = (await loadAllPagesBySortName(
+                    preloadedPageSortName,
+                    subplebbit.posts
+                )) as CommentWithinRepliesPostsPageJson[];
                 await testPageCommentsIfSortedCorrectly(allPostsUnderPreloadedSortName, preloadedPageSortName, subplebbit);
             }
         });
@@ -267,7 +270,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const validPageIpfs = subplebbit.raw.subplebbitIpfs.posts.pages.hot;
                 const invalidPage = JSON.parse(JSON.stringify(validPageIpfs));
                 const postWithNoRepliesIndex = invalidPage.comments.findIndex(
-                    (comment: { comment: { depth: number }; commentUpdate: { replies?: unknown } }) => comment.comment.depth === 0 && !comment.commentUpdate.replies
+                    (comment: { comment: { depth: number }; commentUpdate: { replies?: unknown } }) =>
+                        comment.comment.depth === 0 && !comment.commentUpdate.replies
                 );
                 expect(postWithNoRepliesIndex).to.be.greaterThanOrEqual(0);
                 invalidPage.comments[postWithNoRepliesIndex].comment.postCid =

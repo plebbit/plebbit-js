@@ -40,7 +40,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 nsfw: true,
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult({ publication: nsfwEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
+            await publishWithExpectedResult({
+                publication: nsfwEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR
+            });
         });
 
         it(`Author can mark their own comment as nsfw with CommentEdit`, async () => {

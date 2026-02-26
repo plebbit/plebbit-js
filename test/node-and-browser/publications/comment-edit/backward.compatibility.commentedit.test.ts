@@ -40,7 +40,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             commentToEdit = await publishRandomPost(signers[0].address, plebbit);
             await commentToEdit.update();
-            await resolveWhenConditionIsTrue({ toUpdate: commentToEdit, predicate: async () => typeof commentToEdit.updatedAt === "number" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: commentToEdit,
+                predicate: async () => typeof commentToEdit.updatedAt === "number"
+            });
         });
 
         afterAll(async () => {
@@ -57,10 +60,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, false);
 
-            const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) => commentEdit.once("challengerequest", resolve as (req: unknown) => void));
-            await publishWithExpectedResult({ publication: 
-                commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-             });
+            const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) =>
+                commentEdit.once("challengerequest", resolve as (req: unknown) => void)
+            );
+            await publishWithExpectedResult({
+                publication: commentEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
+            });
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.commentEdit.extraProp).to.equal("1234");
         });
@@ -76,7 +83,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 });
                 await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, true);
 
-                const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) => commentEdit.once("challengerequest", resolve as (req: unknown) => void));
+                const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) =>
+                    commentEdit.once("challengerequest", resolve as (req: unknown) => void)
+                );
 
                 await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
 
@@ -99,8 +108,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await setExtraPropOnCommentEditAndSign(commentEdit, { insertedAt: "1234" }, true);
 
-            const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) => commentEdit.once("challengerequest", resolve as (req: unknown) => void));
-            await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_HAS_RESERVED_FIELD });
+            const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) =>
+                commentEdit.once("challengerequest", resolve as (req: unknown) => void)
+            );
+            await publishWithExpectedResult({
+                publication: commentEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_EDIT_HAS_RESERVED_FIELD
+            });
             const challengeRequest = await challengeRequestPromise;
             expect(challengeRequest.commentEdit.insertedAt).to.equal("1234");
         });
@@ -120,9 +135,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     true
                 );
 
-                const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) => commentEdit.once("challengerequest", resolve as (req: unknown) => void));
+                const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) =>
+                    commentEdit.once("challengerequest", resolve as (req: unknown) => void)
+                );
 
-                await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD });
+                await publishWithExpectedResult({
+                    publication: commentEdit,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD
+                });
                 const challengerequest = await challengeRequestPromise;
                 expect(challengerequest.commentEdit.author.subplebbit).to.equal("random");
             });
@@ -142,7 +163,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
 
-                const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) => commentEdit.once("challengerequest", resolve as (req: unknown) => void));
+                const challengeRequestPromise = new Promise<ChallengeRequestWithEdit>((resolve) =>
+                    commentEdit.once("challengerequest", resolve as (req: unknown) => void)
+                );
 
                 await publishWithExpectedResult({ publication: commentEdit, expectedChallengeSuccess: true });
                 const challengeRequest = await challengeRequestPromise;

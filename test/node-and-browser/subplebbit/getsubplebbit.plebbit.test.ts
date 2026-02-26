@@ -142,7 +142,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const plebbitErr = e as PlebbitError;
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
                     expect(plebbitErr.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-                    const gatewayError = plebbitErr.details.gatewayToError[Object.keys(plebbitErr.details.gatewayToError)[0]] as PlebbitError;
+                    const gatewayError = plebbitErr.details.gatewayToError[
+                        Object.keys(plebbitErr.details.gatewayToError)[0]
+                    ] as PlebbitError;
                     expect(gatewayError.code).to.equal("ERR_INVALID_JSON");
                 } else expect(plebbitErr.code).to.equal("ERR_INVALID_JSON");
             } finally {

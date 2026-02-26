@@ -424,7 +424,11 @@ describe("shouldExcludePublication", () => {
         expect(resultModWithoutSubplebbit).to.equal(false);
 
         // CORRECT: When subplebbit parameter is provided with roles
-        const resultRegularUserWithSubplebbit = testShouldExcludePublication(subplebbitChallenge, { comment: postByRegularUser }, subplebbit);
+        const resultRegularUserWithSubplebbit = testShouldExcludePublication(
+            subplebbitChallenge,
+            { comment: postByRegularUser },
+            subplebbit
+        );
         const resultModWithSubplebbit = testShouldExcludePublication(subplebbitChallenge, { comment: postByMod }, subplebbit);
 
         // Expected behavior: regular user should NOT be excluded
@@ -587,7 +591,9 @@ describe("shouldExcludePublication", () => {
         // postCount too low -> not excluded despite postScore being high
         expect(testShouldExcludePublication(subplebbitChallenge, { comment: publication }, mockSubplebbitLowCount)).to.equal(false);
         // postScore too low -> not excluded despite postCount being high
-        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publicationLowScore }, mockSubplebbitHighCount)).to.equal(false);
+        expect(testShouldExcludePublication(subplebbitChallenge, { comment: publicationLowScore }, mockSubplebbitHighCount)).to.equal(
+            false
+        );
     });
 
     it("postCount AND firstCommentTimestamp in same exclude rule", () => {
@@ -1077,7 +1083,9 @@ describe("shouldExcludeChallengeCommentCids", () => {
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsNoAuthorSubplebbit, plebbit)).to.equal(false);
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsEmpty, plebbit)).to.equal(false);
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsUndefined, plebbit)).to.equal(false);
-        expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsWrongSubplebbitAddress, plebbit)).to.equal(false);
+        expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsWrongSubplebbitAddress, plebbit)).to.equal(
+            false
+        );
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsMoreThanMax, plebbit)).to.equal(false);
     });
 
@@ -1113,7 +1121,9 @@ describe("shouldExcludeChallengeCommentCids", () => {
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsLowKarmaOld, plebbit)).to.equal(false);
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsNoAuthorSubplebbit, plebbit)).to.equal(false);
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsEmpty, plebbit)).to.equal(false);
-        expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsWrongSubplebbitAddress, plebbit)).to.equal(false);
+        expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsWrongSubplebbitAddress, plebbit)).to.equal(
+            false
+        );
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsMoreThanMax, plebbit)).to.equal(false);
     });
 
@@ -1158,7 +1168,9 @@ describe("shouldExcludeChallengeCommentCids", () => {
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsLowKarmaNew, plebbit)).to.equal(false);
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsNoAuthorSubplebbit, plebbit)).to.equal(false);
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsEmpty, plebbit)).to.equal(false);
-        expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsWrongSubplebbitAddress, plebbit)).to.equal(false);
+        expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsWrongSubplebbitAddress, plebbit)).to.equal(
+            false
+        );
         expect(await testShouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsMoreThanMax, plebbit)).to.equal(false);
     });
 });

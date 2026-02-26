@@ -26,7 +26,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
     describe(`modQueue.getPage - ${config.name}`, async () => {
         it(`modQueue.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
             const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
-            const plebbit: PlebbitType = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [gatewayUrl], validatePages: true } });
+            const plebbit: PlebbitType = await mockGatewayPlebbit({
+                plebbitOptions: { ipfsGatewayUrls: [gatewayUrl], validatePages: true }
+            });
 
             try {
                 const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
@@ -128,12 +130,17 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
 
-                invalidPage.comments.find((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0).comment.parentCid =
-                    "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
+                invalidPage.comments.find(
+                    (comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0
+                ).comment.parentCid = "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
 
                 // Update the commentUpdate.cid to match the modified comment
-                invalidPage.comments.find((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0).commentUpdate.cid = await calculateIpfsHash(
-                    JSON.stringify(invalidPage.comments.find((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0).comment)
+                invalidPage.comments.find(
+                    (comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0
+                ).commentUpdate.cid = await calculateIpfsHash(
+                    JSON.stringify(
+                        invalidPage.comments.find((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0).comment
+                    )
                 );
 
                 const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
@@ -158,7 +165,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
 
-                const indexOfPost = invalidPage.comments.findIndex((comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0);
+                const indexOfPost = invalidPage.comments.findIndex(
+                    (comment: Record<string, Record<string, unknown>>) => comment.comment.depth === 0
+                );
                 expect(indexOfPost).to.be.greaterThanOrEqual(0);
                 invalidPage.comments[indexOfPost].comment.postCid = "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
 
@@ -237,7 +246,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
                     expect(error.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
                     for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
-                        expect((error.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+                        expect((error.details.gatewayToError[gatewayUrl] as PlebbitError).code).to.equal(
+                            "ERR_GATEWAY_TIMED_OUT_OR_ABORTED"
+                        );
                 } else {
                     expect(error.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
                 }

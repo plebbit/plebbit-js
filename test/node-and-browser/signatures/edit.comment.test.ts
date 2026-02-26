@@ -8,7 +8,11 @@ import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/si
 import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" with { type: "json" };
 import type { Plebbit as PlebbitType } from "../../../dist/node/plebbit/plebbit.js";
 import type { RemoteSubplebbit } from "../../../dist/node/subplebbit/remote-subplebbit.js";
-import type { CommentEditOptionsToSign, CommentEditSignature, CommentEditPubsubMessagePublication } from "../../../dist/node/publications/comment-edit/types.js";
+import type {
+    CommentEditOptionsToSign,
+    CommentEditSignature,
+    CommentEditPubsubMessagePublication
+} from "../../../dist/node/publications/comment-edit/types.js";
 
 describe("Sign commentedit", async () => {
     let plebbit: PlebbitType;
@@ -84,27 +88,47 @@ describeSkipIfRpc("Verify CommentEdit", async () => {
     });
     it(`Valid CommentEdit signature fixture is validated correctly`, async () => {
         const edit = remeda.clone(validCommentEditFixture) as CommentEditPubsubMessagePublication;
-        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyCommentEdit({
+            edit,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid CommentEdit signature gets invalidated correctly`, async () => {
         const edit = remeda.clone(validCommentEditFixture) as CommentEditPubsubMessagePublication & { reason: string };
         edit.reason += "1234"; // Should invalidate comment edit
-        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyCommentEdit({
+            edit,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyCommentEdit invalidates a commentEdit with author.address not a domain or IPNS`, async () => {
         const edit = remeda.clone(validCommentEditFixture) as CommentEditPubsubMessagePublication;
         edit.author.address = "gibbresish"; // Not a domain or IPNS
-        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyCommentEdit({
+            edit,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyCommentEdit invalidates a commentEdit with author.address = undefined", async () => {
         const edit = remeda.clone(validCommentEditFixture) as CommentEditPubsubMessagePublication;
         (edit.author as { address: string | undefined }).address = undefined; // Not a domain or IPNS
-        const verification = await verifyCommentEdit({ edit, resolveAuthorAddresses: plebbit.resolveAuthorAddresses, clientsManager: plebbit._clientsManager, overrideAuthorAddressIfInvalid: false });
+        const verification = await verifyCommentEdit({
+            edit,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });
     });
 });

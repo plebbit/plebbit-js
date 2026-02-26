@@ -123,7 +123,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             sub.on("updatingstatechange", (newState: string) => newState === "waiting-retry" && waitingRetryCount++);
 
             const emittedErrors: PlebbitError[] = [];
-            sub.on("error", (error: PlebbitError | Error) => { emittedErrors.push(error as PlebbitError); });
+            sub.on("error", (error: PlebbitError | Error) => {
+                emittedErrors.push(error as PlebbitError);
+            });
 
             // Record states for verification
             const recordedStates: string[] = [];
@@ -132,7 +134,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             await sub.update();
 
-            await resolveWhenConditionIsTrue({ toUpdate: sub, predicate: async () => waitingRetryCount >= 2, eventName: "updatingstatechange" });
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => waitingRetryCount >= 2,
+                eventName: "updatingstatechange"
+            });
 
             await sub.stop();
             expect(sub.updatedAt).to.be.undefined; // should not defined since signature is invalid
@@ -153,7 +159,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
             for (const emittedError of emittedErrors) {
                 expect(emittedError.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-                expect((emittedError.details.gatewayToError["http://localhost:18080"] as PlebbitError).code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+                expect((emittedError.details.gatewayToError["http://localhost:18080"] as PlebbitError).code).to.equal(
+                    "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID"
+                );
             }
 
             expect(waitingRetryCount).to.be.greaterThan(0);

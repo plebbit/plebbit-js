@@ -131,7 +131,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const commentClone = await plebbit.createComment(pageComment);
                     const commentCloneFromStringified = await plebbit.createComment(JSON.parse(JSON.stringify(pageComment)));
                     const commentCloneFromSpread = await plebbit.createComment({ ...pageComment });
-                    const commentCloneFromRaw = await plebbit.createComment({ raw: (pageComment as unknown as Comment).raw } as unknown as Parameters<typeof plebbit.createComment>[0]);
+                    const commentCloneFromRaw = await plebbit.createComment({
+                        raw: (pageComment as unknown as Comment).raw
+                    } as unknown as Parameters<typeof plebbit.createComment>[0]);
 
                     expect(
                         jsonifyCommentAndRemoveInstanceProps(pageComment as unknown as Comment),
@@ -251,7 +253,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`Can create a comment with replies.pages`, async () => {
-            const comment = await plebbit.createComment(validCommentWithRepliesFixture as unknown as Parameters<typeof plebbit.createComment>[0]);
+            const comment = await plebbit.createComment(
+                validCommentWithRepliesFixture as unknown as Parameters<typeof plebbit.createComment>[0]
+            );
             expect(comment.cid).to.equal(validCommentWithRepliesFixture.raw.commentUpdate.cid);
             expect(comment.replies.pages.best.comments.length).to.equal(
                 validCommentWithRepliesFixture.raw.commentUpdate.replies.pages.best.comments.length
@@ -353,7 +357,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const reply = await publishRandomReply(parentComment as CommentIpfsWithCidDefined, plebbit);
 
                     await waitTillReplyInParentPages(reply as CommentWithRequiredFields, plebbit);
-                    const replyInPage = await findReplyInParentCommentPagesInstancePreloadedAndPageCids({ parentComment, reply: reply as CommentWithRequiredFields });
+                    const replyInPage = await findReplyInParentCommentPagesInstancePreloadedAndPageCids({
+                        parentComment,
+                        reply: reply as CommentWithRequiredFields
+                    });
 
                     await reply.stop();
                     expect(plebbit._updatingComments[parentComment.cid!]).to.be.ok;

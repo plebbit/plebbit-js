@@ -40,7 +40,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 spoiler: true,
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult({ publication: spoilerEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR });
+            await publishWithExpectedResult({
+                publication: spoilerEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR
+            });
         });
 
         it(`Author can mark their own comment as spoiler`, async () => {

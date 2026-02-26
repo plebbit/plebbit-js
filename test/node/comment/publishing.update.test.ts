@@ -217,9 +217,7 @@ class MockPageGenerator {
         return {
             singlePreloadedPage: {
                 best: {
-                    comments: children.map((childRow) =>
-                        buildRepliesPageEntry(childRow, clone(this.calculatedUpdates.get(childRow.cid)))
-                    )
+                    comments: children.map((childRow) => buildRepliesPageEntry(childRow, clone(this.calculatedUpdates.get(childRow.cid))))
                 }
             }
         };

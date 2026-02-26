@@ -54,7 +54,11 @@ describe(`subplebbit.features.requirePostFlairs`, async () => {
 
     it(`Can't publish a post without post flairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIRS_REQUIRED });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_POST_FLAIRS_REQUIRED
+        });
     });
 
     it(`Can publish a reply without post flairs (requirePostFlairs only applies to posts)`, async () => {
@@ -74,6 +78,10 @@ describe(`subplebbit.features.requirePostFlairs`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false, {
             flairs: [invalidFlair]
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_POST_FLAIR_NOT_IN_ALLOWED_FLAIRS
+        });
     });
 });

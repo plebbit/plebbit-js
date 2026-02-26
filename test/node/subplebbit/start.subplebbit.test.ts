@@ -64,8 +64,7 @@ describe(`subplebbit.start`, async () => {
             .getDefaultKuboPubsubClient()!
             // @ts-expect-error handleChallengeExchange is private but we need to access it for testing pubsub unsubscribe
             ._client.pubsub.unsubscribe(localSub.pubsubTopic!, localSub.handleChallengeExchange);
-        const listedTopics = async () =>
-            await localSub._plebbit._clientsManager.getDefaultKuboPubsubClient()!._client.pubsub.ls();
+        const listedTopics = async () => await localSub._plebbit._clientsManager.getDefaultKuboPubsubClient()!._client.pubsub.ls();
         expect(await listedTopics()).to.not.include(subplebbit.address);
 
         await new Promise((resolve) => setTimeout(resolve, localSub._plebbit.publishInterval * 2));

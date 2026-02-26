@@ -35,17 +35,38 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
         it(`subplebbit.modQueue.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const sub = await gatewayPlebbit.getSubplebbit({ address: subplebbitAddress });
-            const sortTypes = Object.keys((sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName]);
+            const sortTypes = Object.keys(
+                (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[
+                    clientFieldName
+                ]
+            );
             expect(sortTypes.length).to.be.greaterThan(0);
-            for (const sortType of sortTypes) expect((sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName][sortType]).to.deep.equal({});
+            for (const sortType of sortTypes)
+                expect(
+                    (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[
+                        clientFieldName
+                    ][sortType]
+                ).to.deep.equal({});
             await gatewayPlebbit.destroy();
         });
 
         it(`subplebbit.modQueue.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
             const sub = await plebbit.getSubplebbit({ address: subplebbitAddress });
             const key = Object.keys((sub.clients as unknown as Record<string, Record<string, unknown>>)[clientFieldName])[0];
-            expect(Object.keys((sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName].pendingApproval).length).to.equal(1);
-            expect(((sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName].pendingApproval[key] as { state: string }).state).to.equal("stopped");
+            expect(
+                Object.keys(
+                    (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[
+                        clientFieldName
+                    ].pendingApproval
+                ).length
+            ).to.equal(1);
+            expect(
+                (
+                    (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[
+                        clientFieldName
+                    ].pendingApproval[key] as { state: string }
+                ).state
+            ).to.equal("stopped");
         });
 
         it(`Correct state of 'pendingApproval' sort is updated after fetching from subplebbit.modQueue.pageCids.pendingApproval`, async () => {
@@ -60,7 +81,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates: string[] = [];
-            (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName].pendingApproval[clientKey].on("statechange", (newState: string) => {
+            (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[
+                clientFieldName
+            ].pendingApproval[clientKey].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 
@@ -84,7 +107,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const expectedStates = ["fetching-ipfs", "stopped", "fetching-ipfs", "stopped"];
             const actualStates: string[] = [];
-            (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName].pendingApproval[clientKey].on("statechange", (newState: string) => {
+            (sub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[
+                clientFieldName
+            ].pendingApproval[clientKey].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 
@@ -113,7 +138,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates: string[] = [];
-            (fetchSub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[clientFieldName].pendingApproval[clientKey].on("statechange", (newState: string) => {
+            (fetchSub.modQueue.clients as unknown as Record<string, Record<string, Record<string, { on: Function; state: string }>>>)[
+                clientFieldName
+            ].pendingApproval[clientKey].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 

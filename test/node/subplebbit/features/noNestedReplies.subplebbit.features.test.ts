@@ -68,6 +68,10 @@ describe.concurrent(`subplebbit.features.noNestedReplies`, async () => {
 
         // Now try to reply to that reply (nested reply)
         const nestedReply = await generateMockComment(reply as CommentIpfsWithCidDefined, remotePlebbit, false);
-        await publishWithExpectedResult({ publication: nestedReply, expectedChallengeSuccess: false, expectedReason: messages.ERR_NESTED_REPLIES_NOT_ALLOWED });
+        await publishWithExpectedResult({
+            publication: nestedReply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_NESTED_REPLIES_NOT_ALLOWED
+        });
     });
 });

@@ -68,8 +68,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const subplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
 
                 const postCid =
-                    subplebbit.posts.pages.hot.comments.find((post: { replyCount: number; locked?: boolean; removed?: boolean }) => post.replyCount > 0 && !post.locked && !post.removed)?.cid ||
-                    subplebbit.lastPostCid;
+                    subplebbit.posts.pages.hot.comments.find(
+                        (post: { replyCount: number; locked?: boolean; removed?: boolean }) =>
+                            post.replyCount > 0 && !post.locked && !post.removed
+                    )?.cid || subplebbit.lastPostCid;
 
                 const reply = await publishRandomReply((await plebbit.getComment({ cid: postCid })) as CommentIpfsWithCidDefined, plebbit);
 
@@ -389,7 +391,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await mockPostToReturnSpecificCommentUpdate(createdComment, invalidCommentUpdateJson);
 
                 await Promise.all([
-                    resolveWhenConditionIsTrue({ toUpdate: createdComment, predicate: async () => errors.length === 2, eventName: "error" }),
+                    resolveWhenConditionIsTrue({
+                        toUpdate: createdComment,
+                        predicate: async () => errors.length === 2,
+                        eventName: "error"
+                    }),
                     publishRandomPost(subplebbitAddress, plebbit) // force sub to publish a new update
                 ]);
 

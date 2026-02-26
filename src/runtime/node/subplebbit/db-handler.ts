@@ -1,4 +1,11 @@
-import { getEquivalentSubplebbitAddresses, hideClassPrivateProps, isStringDomain, removeNullUndefinedValues, throwWithErrorCode, timestamp } from "../../../util.js";
+import {
+    getEquivalentSubplebbitAddresses,
+    hideClassPrivateProps,
+    isStringDomain,
+    removeNullUndefinedValues,
+    throwWithErrorCode,
+    timestamp
+} from "../../../util.js";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
@@ -519,7 +526,11 @@ export class DbHandler {
                         : "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f";
                 const newSettings = this._migrateOldSettings(internalState.settings);
                 const newChallenges = newSettings.challenges
-                    ? await Promise.all(newSettings.challenges?.map((cs) => getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._subplebbit._plebbit)))
+                    ? await Promise.all(
+                          newSettings.challenges?.map((cs) =>
+                              getSubplebbitChallengeFromSubplebbitChallengeSettings(cs, this._subplebbit._plebbit)
+                          )
+                      )
                     : newSettings.challenges;
                 await this._subplebbit._updateDbInternalState({
                     posts: undefined,

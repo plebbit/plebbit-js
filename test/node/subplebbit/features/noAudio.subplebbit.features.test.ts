@@ -56,14 +56,22 @@ describe.concurrent(`subplebbit.features.noAudio`, async () => {
             link: "https://example.com/song.mp3",
             content: "Just text"
         });
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO
+        });
     });
 
     it(`Can't publish a reply with audio link (.ogg)`, async () => {
         const reply = await generateMockComment(publishedPost as CommentIpfsWithCidDefined, remotePlebbit, false, {
             link: "https://example.com/track.ogg"
         });
-        await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO });
+        await publishWithExpectedResult({
+            publication: reply,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_HAS_LINK_THAT_IS_AUDIO
+        });
     });
 
     it(`Can publish a post with image link (noAudio doesn't block images)`, async () => {

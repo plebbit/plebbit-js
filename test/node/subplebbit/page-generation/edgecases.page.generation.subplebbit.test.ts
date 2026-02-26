@@ -111,7 +111,10 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
 
             const pageGenerator = getPageGenerator(context.subplebbit);
             // @ts-expect-error - accessing private method for testing
-            const originalAddQueued = pageGenerator.addQueuedCommentChunksToIpfs as (chunks: TestCommentRow[][], sortName: string) => Promise<unknown>;
+            const originalAddQueued = pageGenerator.addQueuedCommentChunksToIpfs as (
+                chunks: TestCommentRow[][],
+                sortName: string
+            ) => Promise<unknown>;
             let capturedChunks: TestCommentRow[][] | undefined;
             addQueuedChunkSpy = vi
                 // @ts-expect-error - spying on private method for testing
@@ -188,7 +191,11 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             expect(generatedPosts, "expected generateSubplebbitPosts to return posts data").to.exist;
             expect(generatedPosts).to.have.property("singlePreloadedPage"); // deeper comments should've gotten folded
 
-            const postsPages = generatedPosts as { pageCids?: Record<string, string>; pages?: Record<string, unknown>; singlePreloadedPage?: unknown };
+            const postsPages = generatedPosts as {
+                pageCids?: Record<string, string>;
+                pages?: Record<string, unknown>;
+                singlePreloadedPage?: unknown;
+            };
             expect(postsPages.pageCids).to.be.undefined;
             expect(postsPages.pageCids?.[preloadedSortName], "expected subplebbit.posts to be only a single preloaded page").to.be
                 .undefined;
@@ -267,9 +274,13 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
             expect(generatedPosts).to.have.property("singlePreloadedPage");
             expect((generatedPosts as { pageCids?: unknown }).pageCids).to.be.undefined;
 
-            const preloadedHot = (generatedPosts as { singlePreloadedPage?: Record<string, { comments?: unknown[] }> }).singlePreloadedPage?.[preloadedSortName];
+            const preloadedHot = (generatedPosts as { singlePreloadedPage?: Record<string, { comments?: unknown[] }> })
+                .singlePreloadedPage?.[preloadedSortName];
             expect(preloadedHot?.comments?.length, "expected hot to remain preloaded").to.be.greaterThan(0);
-            expect((generatedPosts as { pageCids?: Record<string, string> }).pageCids?.[preloadedSortName], "hot sort should not collapse into pageCids").to.be.undefined;
+            expect(
+                (generatedPosts as { pageCids?: Record<string, string> }).pageCids?.[preloadedSortName],
+                "hot sort should not collapse into pageCids"
+            ).to.be.undefined;
             const preloadedPost = (preloadedHot as { comments: Array<{ commentUpdate: { replies?: RepliesPagesTypeIpfs } }> }).comments[0];
             expect(
                 preloadedPost.commentUpdate.replies?.pageCids?.best || preloadedPost.commentUpdate.replies?.pages?.best,
@@ -392,7 +403,10 @@ describeSkipIfRpc.concurrent("page-generator disables oversized preloaded pages"
     });
 });
 
-async function seedHeavyDiscussion(subplebbit: LocalSubplebbit, overrides: SeedHeavyDiscussionOverrides = {}): Promise<SeededComments & { labels: HeavyTreeLabels }> {
+async function seedHeavyDiscussion(
+    subplebbit: LocalSubplebbit,
+    overrides: SeedHeavyDiscussionOverrides = {}
+): Promise<SeededComments & { labels: HeavyTreeLabels }> {
     const { trees, labels } = buildHeavyTreeStructure(overrides);
     const seeded = await seedSubplebbitComments(subplebbit, trees);
     return { ...seeded, labels };
@@ -443,7 +457,14 @@ interface BuildTreeParams {
     depthLabels?: string[];
 }
 
-function buildTree({ rootLabel, primaryChainDepth, normalizedExtraChildren, contentBytesPerDepth, captureDepthLabels, depthLabels }: BuildTreeParams): TreeNode {
+function buildTree({
+    rootLabel,
+    primaryChainDepth,
+    normalizedExtraChildren,
+    contentBytesPerDepth,
+    captureDepthLabels,
+    depthLabels
+}: BuildTreeParams): TreeNode {
     function bytesForDepth(depth: number): number {
         const override = Array.isArray(contentBytesPerDepth) ? contentBytesPerDepth[depth] : undefined;
         return typeof override === "number" && override > 0 ? override : HEAVY_COMMENT_BYTES;
@@ -476,7 +497,10 @@ function buildTree({ rootLabel, primaryChainDepth, normalizedExtraChildren, cont
     return buildNode(0, rootLabel);
 }
 
-function normalizeExtraChildrenPlan(extraChildrenPerDepth: Record<number, number> | number[] | undefined, primaryChainDepth: number): number[] {
+function normalizeExtraChildrenPlan(
+    extraChildrenPerDepth: Record<number, number> | number[] | undefined,
+    primaryChainDepth: number
+): number[] {
     const normalized: number[] = Array.from({ length: Math.max(0, primaryChainDepth) }, () => 0);
     if (!extraChildrenPerDepth) return normalized;
 
@@ -523,11 +547,13 @@ async function calculateAvailablePostsSizeForSubplebbit(subplebbit: LocalSubpleb
 async function createSubplebbitWithDefaultDb(): Promise<SubplebbitContext> {
     // Keep the disk-backed database configuration to avoid storing large fixtures in memory.
     const plebbit: PlebbitType = await mockPlebbit();
-    const subplebbit = await plebbit.createSubplebbit() as LocalSubplebbit;
+    const subplebbit = (await plebbit.createSubplebbit()) as LocalSubplebbit;
     await subplebbit._dbHandler.initDbIfNeeded();
     await subplebbit._dbHandler.createOrMigrateTablesIfNeeded();
     const fakeIpfsClient = createFakeIpfsClient();
-    vi.spyOn(subplebbit._clientsManager, "getDefaultKuboRpcClient").mockReturnValue({ _client: fakeIpfsClient } as unknown as ReturnType<typeof subplebbit._clientsManager.getDefaultKuboRpcClient>);
+    vi.spyOn(subplebbit._clientsManager, "getDefaultKuboRpcClient").mockReturnValue({ _client: fakeIpfsClient } as unknown as ReturnType<
+        typeof subplebbit._clientsManager.getDefaultKuboRpcClient
+    >);
     return {
         plebbit,
         subplebbit,
@@ -596,7 +622,10 @@ async function seedSubplebbitComments(subplebbit: LocalSubplebbit, commentTrees:
     return { rows, labelToCid };
 }
 
-async function seedPendingApprovalComments(subplebbit: LocalSubplebbit, { pendingCount, contentBytes = HEAVY_COMMENT_BYTES }: { pendingCount: number; contentBytes?: number }): Promise<TestCommentRow[]> {
+async function seedPendingApprovalComments(
+    subplebbit: LocalSubplebbit,
+    { pendingCount, contentBytes = HEAVY_COMMENT_BYTES }: { pendingCount: number; contentBytes?: number }
+): Promise<TestCommentRow[]> {
     if (!Number.isFinite(pendingCount) || pendingCount <= 0) throw new Error("pendingCount must be a positive number");
     const trees: TreeNode[] = Array.from({ length: pendingCount }, (_, index) => ({
         label: `modqueue-root-${index}-${randomUUID()}`,
@@ -613,7 +642,13 @@ async function seedPendingApprovalComments(subplebbit: LocalSubplebbit, { pendin
     return rows;
 }
 
-async function buildTestCommentRowsFromTrees({ subplebbitAddress, trees }: { subplebbitAddress: string; trees: TreeNode[] }): Promise<{ rows: TestCommentRow[]; labelToCid: Map<string, string> }> {
+async function buildTestCommentRowsFromTrees({
+    subplebbitAddress,
+    trees
+}: {
+    subplebbitAddress: string;
+    trees: TreeNode[];
+}): Promise<{ rows: TestCommentRow[]; labelToCid: Map<string, string> }> {
     const rows: TestCommentRow[] = [];
     const labelToCid = new Map<string, string>();
     let timestampCursor = Math.floor(Date.now() / 1000);
@@ -693,7 +728,13 @@ async function calculateModQueueChunkSize(comments: unknown[], hasNextCid: boole
     return await calculateStringSizeSameAsIpfsAddCidV0(JSON.stringify(payload));
 }
 
-function assertParentAndPostCid(rows: TestCommentRow[], labelToCid: Map<string, string>, label: string, parentLabel: string | null, rootLabel: string): void {
+function assertParentAndPostCid(
+    rows: TestCommentRow[],
+    labelToCid: Map<string, string>,
+    label: string,
+    parentLabel: string | null,
+    rootLabel: string
+): void {
     const cid = labelToCid.get(label);
     expect(cid, `missing cid for label ${label}`).to.be.a("string");
     const row = rows.find((entry) => entry.cid === cid);
@@ -719,7 +760,11 @@ async function expectCommentUpdatesUnderLimit(updates: CommentUpdateResult[], li
     }
 }
 
-async function expectCommentUpdateUnderLimit(commentUpdate: CommentUpdateType & { cid: string }, contextMessage: string, limitBytes: number = MB): Promise<number> {
+async function expectCommentUpdateUnderLimit(
+    commentUpdate: CommentUpdateType & { cid: string },
+    contextMessage: string,
+    limitBytes: number = MB
+): Promise<number> {
     expect(commentUpdate, `${contextMessage} (comment update missing)`).to.exist;
     const serialized = JSON.stringify(commentUpdate);
     const sizeBytes = await calculateStringSizeSameAsIpfsAddCidV0(serialized);

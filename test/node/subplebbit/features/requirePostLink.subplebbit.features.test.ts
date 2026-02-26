@@ -49,7 +49,11 @@ describe(`subplebbit.features.requirePostLink`, async () => {
         const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
         await overrideCommentInstancePropsAndSign(post, { link: invalidUrl } as Parameters<typeof overrideCommentInstancePropsAndSign>[1]);
         expect(post.link).to.equal(invalidUrl);
-        await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_INVALID_LINK_FIELD });
+        await publishWithExpectedResult({
+            publication: post,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_COMMENT_HAS_INVALID_LINK_FIELD
+        });
     });
     it(`Can publish a post with valid link`, async () => {
         const validUrl = "https://google.com";

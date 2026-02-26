@@ -36,7 +36,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
 
                 await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: true });
-                const challengeRequest = await challengeRequestPromise as { extraProp?: string };
+                const challengeRequest = (await challengeRequestPromise) as { extraProp?: string };
                 expect(challengeRequest.extraProp).to.equal("1234");
             });
         });
@@ -49,10 +49,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await setExtraPropOnCommentAndSign(post, extraProps, false);
 
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
-                await publishWithExpectedResult({ publication: 
-                    post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-                 });
-                const challengeRequest = await challengeRequestPromise as { comment?: { extraProp?: string } };
+                await publishWithExpectedResult({
+                    publication: post,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
+                });
+                const challengeRequest = (await challengeRequestPromise) as { comment?: { extraProp?: string } };
                 expect(challengeRequest.comment?.extraProp).to.equal(extraProps.extraProp);
             });
 
@@ -63,8 +65,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
 
-                await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_HAS_RESERVED_FIELD });
-                const challengeRequest = await challengeRequestPromise as { comment?: { cid?: string } };
+                await publishWithExpectedResult({
+                    publication: post,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_COMMENT_HAS_RESERVED_FIELD
+                });
+                const challengeRequest = (await challengeRequestPromise) as { comment?: { cid?: string } };
                 expect(challengeRequest.comment?.cid).to.equal(extraProps.cid);
             });
 
@@ -78,9 +84,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
 
                 await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
-                const challengeRequest = await challengeRequestPromise as { comment?: { extraProp?: string } };
+                const challengeRequest = (await challengeRequestPromise) as { comment?: { extraProp?: string } };
                 expect(challengeRequest.comment?.extraProp).to.equal(extraProps.extraProp);
-                const challengeVerification = await challengeVerificationPromise as { comment?: { extraProp?: string } };
+                const challengeVerification = (await challengeVerificationPromise) as { comment?: { extraProp?: string } };
                 expect(challengeVerification.comment?.extraProp).to.equal(extraProps.extraProp);
                 expect((post as CommentWithExtraProp).extraProp).to.equal(extraProps.extraProp);
             });
@@ -150,8 +156,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
 
-                await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: false, expectedReason: messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD });
-                const challengeRequest = await challengeRequestPromise as { comment?: { author?: { subplebbit?: string } } };
+                await publishWithExpectedResult({
+                    publication: post,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD
+                });
+                const challengeRequest = (await challengeRequestPromise) as { comment?: { author?: { subplebbit?: string } } };
                 expect(challengeRequest.comment?.author?.subplebbit).to.equal("random");
             });
             it(`Publishing with extra prop for author should succeed`, async () => {
@@ -162,7 +172,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
 
                 await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
-                const challengeRequest = await challengeRequestPromise as { comment?: { author?: { extraProp?: string } } };
+                const challengeRequest = (await challengeRequestPromise) as { comment?: { author?: { extraProp?: string } } };
                 expect(challengeRequest.comment?.author?.extraProp).to.equal(extraProps.extraProp);
                 expect((post.author as AuthorWithExtraProp).extraProp).to.equal(extraProps.extraProp);
             });
@@ -207,7 +217,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 for (const shape of shapes) expect((shape.author as AuthorWithExtraProp).extraProp).to.equal(extraProps.extraProp);
             });
             it(`Can load a page with comment.author.extraProp`, async () => {
-                await waitTillPostInSubplebbitPages(postWithExtraAuthorProp as Parameters<typeof waitTillPostInSubplebbitPages>[0], plebbit);
+                await waitTillPostInSubplebbitPages(
+                    postWithExtraAuthorProp as Parameters<typeof waitTillPostInSubplebbitPages>[0],
+                    plebbit
+                );
 
                 const subplebbit = await plebbit.getSubplebbit({ address: postWithExtraAuthorProp.subplebbitAddress });
                 const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(

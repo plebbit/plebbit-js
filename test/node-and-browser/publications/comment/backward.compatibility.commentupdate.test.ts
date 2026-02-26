@@ -67,7 +67,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             postToUpdate.once("update", () => (updateEmitted = true));
             mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(invalidCommentUpdate));
 
-            const error = await errorPromise as PlebbitError;
+            const error = (await errorPromise) as PlebbitError;
 
             await postToUpdate.stop();
 
@@ -84,8 +84,12 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             } else {
                 // gateways
                 expect(error.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS");
-                expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
-                expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].details.signatureValidity).to.deep.equal({
+                expect((error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].code).to.equal(
+                    "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID"
+                );
+                expect(
+                    (error.details.gatewayToError as Record<string, PlebbitError>)["http://localhost:18080"].details.signatureValidity
+                ).to.deep.equal({
                     valid: false,
                     reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
                 });
@@ -154,7 +158,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 await plebbit.createComment(JSON.parse(JSON.stringify(postToUpdate)))
             ];
 
-            for (const commentShape of shapes) expect((commentShape.author as AuthorWithExtraProp).extraPropUpdate).to.equal(extraProps.extraPropUpdate);
+            for (const commentShape of shapes)
+                expect((commentShape.author as AuthorWithExtraProp).extraPropUpdate).to.equal(extraProps.extraPropUpdate);
         });
 
         itSkipIfRpc(`Can load pages with CommentUpdate that has extra props in them`, async () => {
@@ -256,7 +261,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 comment: { ...post.raw.pubsubMessageToPublish, depth: 0 }
             });
 
-            const error = await errorPromise as PlebbitError;
+            const error = (await errorPromise) as PlebbitError;
 
             expect(error.code).to.equal("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE");
             expect(error.details.reason).to.equal(messages["ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES"]);
@@ -290,7 +295,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 comment: mockCommentIpfs
             });
 
-            const challengeVerification = await verificationPromise as ChallengeVerificationWithExtraProp;
+            const challengeVerification = (await verificationPromise) as ChallengeVerificationWithExtraProp;
             await post.stop();
             expect(challengeVerification.commentUpdate?.extraProp).to.equal(extraProps.extraProp);
 
@@ -325,7 +330,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 comment: mockCommentIpfs
             });
 
-            const challengeVerification = await verificationPromise as ChallengeVerificationWithExtraProp;
+            const challengeVerification = (await verificationPromise) as ChallengeVerificationWithExtraProp;
             await post.stop();
             expect(challengeVerification.commentUpdate?.author?.extraProp).to.equal(extraProps.extraProp);
 

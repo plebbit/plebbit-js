@@ -3,7 +3,11 @@ import { DbHandler } from "../../../dist/node/runtime/node/subplebbit/db-handler
 import { TIMEFRAMES_TO_SECONDS } from "../../../dist/node/pages/util.js";
 import { describe, it, beforeEach, afterEach } from "vitest";
 import type { SubplebbitStats } from "../../../dist/node/subplebbit/types.js";
-import type { CommentsTableRow, CommentsTableRowInsert, CommentUpdatesTableRowInsert } from "../../../dist/node/publications/comment/types.js";
+import type {
+    CommentsTableRow,
+    CommentsTableRowInsert,
+    CommentUpdatesTableRowInsert
+} from "../../../dist/node/publications/comment/types.js";
 import type { VotesTableRowInsert } from "../../../dist/node/publications/vote/types.js";
 
 const PROTOCOL_VERSION = "1.0.0";
@@ -39,7 +43,9 @@ const postCountKeys: (keyof SubplebbitStats)[] = [
 // Type aliases derived from plebbit-js types
 type InsertedComment = Pick<CommentsTableRow, "cid" | "depth" | "parentCid" | "postCid" | "timestamp" | "authorSignerAddress">;
 
-type InsertCommentOptions = Partial<Pick<CommentsTableRowInsert, "depth" | "parentCid" | "postCid" | "authorSignerAddress" | "timestamp">> & {
+type InsertCommentOptions = Partial<
+    Pick<CommentsTableRowInsert, "depth" | "parentCid" | "postCid" | "authorSignerAddress" | "timestamp">
+> & {
     parent?: InsertedComment | null;
     overrides?: Partial<CommentsTableRowInsert>;
 };
@@ -50,11 +56,7 @@ type InsertVoteOptions = Partial<Pick<VotesTableRowInsert, "authorSignerAddress"
 
 type InsertCommentUpdateOptions = Partial<Omit<CommentUpdatesTableRowInsert, "cid" | "protocolVersion" | "signature" | "author">>;
 
-function createMockEdit(
-    comment: InsertedComment,
-    subAddress: string,
-    deleted: boolean
-): NonNullable<CommentUpdatesTableRowInsert["edit"]> {
+function createMockEdit(comment: InsertedComment, subAddress: string, deleted: boolean): NonNullable<CommentUpdatesTableRowInsert["edit"]> {
     return {
         timestamp: Math.floor(Date.now() / 1000),
         signature: {

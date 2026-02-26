@@ -52,10 +52,7 @@ type PlebbitWithSettingsChallenges = {
     settings?: { challenges?: Record<string, ChallengeFileFactoryInput> };
 };
 
-const resolveChallengeFactoryByName = (
-    name: string,
-    plebbit?: PlebbitWithSettingsChallenges
-): ChallengeFileFactoryInput | undefined => {
+const resolveChallengeFactoryByName = (name: string, plebbit?: PlebbitWithSettingsChallenges): ChallengeFileFactoryInput | undefined => {
     // User-defined shadows built-ins
     return plebbit?.settings?.challenges?.[name] ?? plebbitJsChallenges[name];
 };
@@ -186,7 +183,10 @@ const getPendingChallengesOrChallengeVerification = async (
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
 
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings, subplebbit._plebbit);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(
+            subplebbitChallengeSettings,
+            subplebbit._plebbit
+        );
 
         // exclude author from challenge based on the subplebbit minimum karma settings
         if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage, subplebbit)) {
@@ -392,7 +392,9 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (
     }
     // else, the challenge is included with plebbit-js or user-defined
     else if (subplebbitChallengeSettings.name) {
-        const ChallengeFileFactory = ChallengeFileFactorySchema.parse(resolveChallengeFactoryByName(subplebbitChallengeSettings.name, plebbit));
+        const ChallengeFileFactory = ChallengeFileFactorySchema.parse(
+            resolveChallengeFactoryByName(subplebbitChallengeSettings.name, plebbit)
+        );
         challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory({ challengeSettings: subplebbitChallengeSettings }));
     }
     if (!challengeFile) throw Error("Failed to load challenge file");

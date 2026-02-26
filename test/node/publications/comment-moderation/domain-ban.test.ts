@@ -110,7 +110,11 @@ describeSkipIfRpc("Domain-based author bans", () => {
             const newComment = await generateMockPost(subplebbit.address, plebbit, false, {
                 signer: domainAuthorSigner
             });
-            await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
+            await publishWithExpectedResult({
+                publication: newComment,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_AUTHOR_IS_BANNED
+            });
         });
 
         it.sequential("banned author can't publish with same domain but different signer", async () => {
@@ -130,7 +134,11 @@ describeSkipIfRpc("Domain-based author bans", () => {
                 author: { address: testDomain },
                 signer: newSigner
             });
-            await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
+            await publishWithExpectedResult({
+                publication: newComment,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_AUTHOR_IS_BANNED
+            });
         });
     });
 
@@ -193,7 +201,11 @@ describeSkipIfRpc("Domain-based author bans", () => {
                 author: { address: newDomain },
                 signer: regularAuthorSigner
             });
-            await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
+            await publishWithExpectedResult({
+                publication: newComment,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_AUTHOR_IS_BANNED
+            });
         });
     });
 });
@@ -297,7 +309,11 @@ describeSkipIfRpc("Domain bans with pseudonymity mode", () => {
         const newComment = await generateMockPost(subplebbit.address, plebbit, false, {
             signer: domainAuthorSigner
         });
-        await publishWithExpectedResult({ publication: newComment, expectedChallengeSuccess: false, expectedReason: messages.ERR_AUTHOR_IS_BANNED });
+        await publishWithExpectedResult({
+            publication: newComment,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_IS_BANNED
+        });
     });
 });
 

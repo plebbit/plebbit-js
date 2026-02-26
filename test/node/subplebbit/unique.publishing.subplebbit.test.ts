@@ -9,7 +9,10 @@ import type Publication from "../../../dist/node/publications/publication.js";
 import type { SignerWithPublicKeyAddress } from "../../../dist/node/signer/index.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../../dist/node/pubsub-messages/types.js";
 import type { CommentPubsubMessagePublication, CommentsTableRowInsert } from "../../../dist/node/publications/comment/types.js";
-import type { CommentEditPubsubMessagePublication, CommentEditsTableRowInsert } from "../../../dist/node/publications/comment-edit/types.js";
+import type {
+    CommentEditPubsubMessagePublication,
+    CommentEditsTableRowInsert
+} from "../../../dist/node/publications/comment-edit/types.js";
 import type {
     CommentModerationPubsubMessagePublication,
     CommentModerationsTableRowInsert
@@ -277,7 +280,11 @@ describeSkipIfRpc("LocalSubplebbit duplicate publication regression coverage", f
         };
 
         try {
-            await publishWithExpectedResult({ publication: publication as any, expectedChallengeSuccess: expectedChallengeSuccess, expectedReason: expectedReason });
+            await publishWithExpectedResult({
+                publication: publication as any,
+                expectedChallengeSuccess: expectedChallengeSuccess,
+                expectedReason: expectedReason
+            });
         } finally {
             publicationMutable.publish = originalPublish;
         }

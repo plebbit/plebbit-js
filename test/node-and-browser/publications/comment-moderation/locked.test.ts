@@ -49,7 +49,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { locked: true },
                 signer: postToBeLocked.signer
             });
-            await publishWithExpectedResult({ publication: lockedEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: lockedEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
         it(`Regular author can't lock another author comment`, async () => {
             const lockedEdit = await plebbit.createCommentModeration({
@@ -58,7 +62,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { locked: true },
                 signer: await plebbit.createSigner()
             });
-            await publishWithExpectedResult({ publication: lockedEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: lockedEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
 
         it(`Mod Can't lock a reply`, async () => {
@@ -69,7 +77,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { locked: true },
                 signer: roles[2].signer
             });
-            await publishWithExpectedResult({ publication: lockedEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY });
+            await publishWithExpectedResult({
+                publication: lockedEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY
+            });
         });
 
         it.sequential(`Mod can lock an author post`, async () => {
@@ -147,22 +159,38 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`Can't publish a reply on a locked post`, async () => {
             const comment = await generateMockComment(postToBeLocked as CommentIpfsWithCidDefined, plebbit, false);
-            await publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED });
+            await publishWithExpectedResult({
+                publication: comment,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED
+            });
         });
 
         it(`Can't vote on a locked post`, async () => {
             const vote = await generateMockVote(postToBeLocked as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED
+            });
         });
 
         it(`Can't vote on a reply of a locked post`, async () => {
             const vote = await generateMockVote(replyUnderPostToBeLocked as CommentIpfsWithCidDefined, 1, plebbit);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED
+            });
         });
 
         it(`Can't reply on a reply of a locked post`, async () => {
             const reply = await generateMockComment(replyUnderPostToBeLocked as CommentIpfsWithCidDefined, plebbit);
-            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED });
+            await publishWithExpectedResult({
+                publication: reply,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED
+            });
         });
 
         it.sequential(`Mod can unlock a post`, async () => {

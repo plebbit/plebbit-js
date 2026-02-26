@@ -104,15 +104,17 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                     );
                     expect(availableSorts.length).to.be.greaterThan(0);
                     for (const sortName of availableSorts) {
-                        const repliesUnderPost = await loadAllPagesBySortName(sortName, post.replies) as CommentWithinRepliesPostsPageJson[];
+                        const repliesUnderPost = (await loadAllPagesBySortName(
+                            sortName,
+                            post.replies
+                        )) as CommentWithinRepliesPostsPageJson[];
                         await testPageCommentsIfSortedCorrectly(repliesUnderPost, sortName, subplebbit);
                     }
                 });
 
                 it("flat sorts include nested replies and hide nested replies fields", async () => {
                     const availableFlatSorts = Object.keys(POST_REPLIES_SORT_TYPES).filter(
-                        (sortName) =>
-                            (POST_REPLIES_SORT_TYPES as ReplySort)[sortName].flat && post.replies.pageCids[sortName]
+                        (sortName) => (POST_REPLIES_SORT_TYPES as ReplySort)[sortName].flat && post.replies.pageCids[sortName]
                     );
                     if (availableFlatSorts.length === 0) return;
 
@@ -173,7 +175,10 @@ describeSkipIfRpc("comment.replies pagination coverage (node-only)", () => {
                     );
                     expect(availableSorts.length).to.be.greaterThan(0);
                     for (const sortName of availableSorts) {
-                        const repliesUnderReply = await loadAllPagesBySortName(sortName, reply.replies) as CommentWithinRepliesPostsPageJson[];
+                        const repliesUnderReply = (await loadAllPagesBySortName(
+                            sortName,
+                            reply.replies
+                        )) as CommentWithinRepliesPostsPageJson[];
                         await testPageCommentsIfSortedCorrectly(repliesUnderReply, sortName, subplebbit);
                     }
                 });
@@ -219,12 +224,8 @@ async function createLocalCommentWithPaginatedReplies(): Promise<LocalCommentWit
         parentCommentReplyProps: { content: "pagination coverage reply" }
     });
 
-    const replies = await Promise.all(
-        new Array(10).fill(null).map(() => publishRandomReply(post as CommentIpfsWithCidDefined, plebbit))
-    );
-    await Promise.all(
-        new Array(10).fill(null).map(() => publishRandomReply(replies[0] as CommentIpfsWithCidDefined, plebbit))
-    );
+    const replies = await Promise.all(new Array(10).fill(null).map(() => publishRandomReply(post as CommentIpfsWithCidDefined, plebbit)));
+    await Promise.all(new Array(10).fill(null).map(() => publishRandomReply(replies[0] as CommentIpfsWithCidDefined, plebbit)));
     await post.update();
 
     await resolveWhenConditionIsTrue({

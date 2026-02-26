@@ -40,7 +40,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const vote = await generateMockVote(postToVote as unknown as CommentIpfsWithCidDefined, -1, plebbit);
             await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
 
-            await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => postToVote.downvoteCount === originalDownvote + 1 });
+            await resolveWhenConditionIsTrue({
+                toUpdate: postToVote,
+                predicate: async () => postToVote.downvoteCount === originalDownvote + 1
+            });
 
             expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
             expect(postToVote.upvoteCount).to.equal(0);
@@ -80,7 +83,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
 
-            await resolveWhenConditionIsTrue({ toUpdate: postToVote, predicate: async () => postToVote.upvoteCount === originalUpvote + 1 });
+            await resolveWhenConditionIsTrue({
+                toUpdate: postToVote,
+                predicate: async () => postToVote.upvoteCount === originalUpvote + 1
+            });
 
             expect(postToVote.upvoteCount).to.equal(originalUpvote + 1);
             expect(postToVote.downvoteCount).to.equal(originalDownvote - 1);
@@ -100,7 +106,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             });
             await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: true });
 
-            await resolveWhenConditionIsTrue({ toUpdate: replyToVote, predicate: async () => replyToVote.upvoteCount === originalUpvote + 1 });
+            await resolveWhenConditionIsTrue({
+                toUpdate: replyToVote,
+                predicate: async () => replyToVote.upvoteCount === originalUpvote + 1
+            });
 
             expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
             expect(replyToVote.downvoteCount).to.equal(originalDownvote - 1);
@@ -120,7 +129,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 expect.fail("should fail");
             } catch (e: unknown) {
                 expect((e as { code: string }).code).to.equal("ERR_INVALID_CREATE_VOTE_ARGS_SCHEMA");
-                expect((e as { details: { zodError: { issues: Array<{ message: string }> } } }).details.zodError.issues[0].message).to.equal("CID is invalid");
+                expect(
+                    (e as { details: { zodError: { issues: Array<{ message: string }> } } }).details.zodError.issues[0].message
+                ).to.equal("CID is invalid");
             }
         });
 

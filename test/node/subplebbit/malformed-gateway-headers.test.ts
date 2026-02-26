@@ -196,7 +196,9 @@ describe("Test gateway response with malformed etag headers", async () => {
 
     it(`All gateways with malformed etag headers still succeed by fetching body`, async () => {
         // Since etag is optional, gateways with malformed etag will fetch body and succeed
-        const customPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [malformedEtagGateway, weakMalformedEtagGateway] } });
+        const customPlebbit = await mockGatewayPlebbit({
+            plebbitOptions: { ipfsGatewayUrls: [malformedEtagGateway, weakMalformedEtagGateway] }
+        });
         try {
             const sub = await customPlebbit.getSubplebbit({ address: subAddress });
             expect(sub.address).to.equal(subAddress);

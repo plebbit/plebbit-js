@@ -54,7 +54,11 @@ describe.concurrent(`subplebbit.features.noUpvotes`, async () => {
     it(`Not allowed to publish upvotes if subplebbit.features.noUpvotes=true`, async () => {
         const upvote = await generateMockVote(postToVoteOn as CommentIpfsWithCidDefined, 1, remotePlebbit); // should be rejected
 
-        await publishWithExpectedResult({ publication: upvote, expectedChallengeSuccess: false, expectedReason: messages.ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES });
+        await publishWithExpectedResult({
+            publication: upvote,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES
+        });
     });
 
     it(`Allowed to publish downvotes if subplebbit.features.noUpvotes=true`, async () => {

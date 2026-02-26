@@ -32,14 +32,22 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
             const sortTypes = Object.keys((comment.replies.clients as Record<string, Record<string, unknown>>)[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
 
-            for (const sortType of sortTypes) expect((comment.replies.clients as Record<string, Record<string, unknown>>)[clientFieldName][sortType]).to.deep.equal({}); // should be empty
+            for (const sortType of sortTypes)
+                expect((comment.replies.clients as Record<string, Record<string, unknown>>)[clientFieldName][sortType]).to.deep.equal({}); // should be empty
             await gatewayPlebbit.destroy();
         });
         it(`comment.replies.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
             const comment = await plebbit.getComment({ cid: await getRandomPostCidFromSub(subplebbitAddress, plebbit) });
             const ipfsUrl = Object.keys((comment.clients as Record<string, Record<string, unknown>>)[clientFieldName])[0];
-            expect(Object.keys((comment.replies.clients as Record<string, Record<string, Record<string, unknown>>>)[clientFieldName]["new"]).length).to.equal(1);
-            expect((comment.replies.clients as Record<string, Record<string, Record<string, { state: string }>>>)[clientFieldName]["new"][ipfsUrl].state).to.equal("stopped");
+            expect(
+                Object.keys((comment.replies.clients as Record<string, Record<string, Record<string, unknown>>>)[clientFieldName]["new"])
+                    .length
+            ).to.equal(1);
+            expect(
+                (comment.replies.clients as Record<string, Record<string, Record<string, { state: string }>>>)[clientFieldName]["new"][
+                    ipfsUrl
+                ].state
+            ).to.equal("stopped");
         });
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
@@ -49,7 +57,12 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates: string[] = [];
-            (comment.replies.clients as Record<string, Record<string, Record<string, { on: (event: string, handler: (state: string) => void) => void }>>>)[clientFieldName]["new"][ipfsUrl].on("statechange", (newState: string) => {
+            (
+                comment.replies.clients as Record<
+                    string,
+                    Record<string, Record<string, { on: (event: string, handler: (state: string) => void) => void }>>
+                >
+            )[clientFieldName]["new"][ipfsUrl].on("statechange", (newState: string) => {
                 actualStates.push(newState);
             });
 

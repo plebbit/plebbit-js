@@ -31,7 +31,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             postToRemove = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post to be removed" });
             postToRemove.on("updatingstatechange", console.log);
-            postReply = await publishRandomReply(postToRemove as CommentIpfsWithCidDefined, plebbit, { content: "reply under removed post" });
+            postReply = await publishRandomReply(postToRemove as CommentIpfsWithCidDefined, plebbit, {
+                content: "reply under removed post"
+            });
             await postToRemove.update();
         });
         afterAll(async () => {
@@ -79,22 +81,42 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
 
         it(`Sub rejects votes on removed post`, async () => {
             const vote = await generateMockVote(postToRemove as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED
+            });
         });
 
         it(`Sub rejects replies on removed post`, async () => {
-            const reply = await generateMockComment(postToRemove as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
-            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED });
+            const reply = await generateMockComment(postToRemove as CommentIpfsWithCidDefined, plebbit, false, {
+                signer: remeda.sample(signers, 1)[0]
+            });
+            await publishWithExpectedResult({
+                publication: reply,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED
+            });
         });
 
         it(`Sub rejects votes on a reply of a removed post`, async () => {
             const vote = await generateMockVote(postReply as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0]);
-            await publishWithExpectedResult({ publication: vote, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED });
+            await publishWithExpectedResult({
+                publication: vote,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED
+            });
         });
 
         it(`Sub rejects replies on a reply of a removed post`, async () => {
-            const reply = await generateMockComment(postReply as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
-            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: false, expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED });
+            const reply = await generateMockComment(postReply as CommentIpfsWithCidDefined, plebbit, false, {
+                signer: remeda.sample(signers, 1)[0]
+            });
+            await publishWithExpectedResult({
+                publication: reply,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED
+            });
         });
 
         it(`Author of post can't remove it`, async () => {
@@ -105,7 +127,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To remove a post" + Date.now(), removed: true },
                 signer: postToBeRemoved.signer
             });
-            await publishWithExpectedResult({ publication: removeEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: removeEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
 
         it.sequential(`Mod can unremove a post`, async () => {
@@ -192,7 +218,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             plebbit = await config.plebbitInstancePromise();
             post = await publishRandomPost(subplebbitAddress, plebbit, { content: "Post with removed reply under it" });
             replyToBeRemoved = await publishRandomReply(post as CommentIpfsWithCidDefined, plebbit, { content: "reply to be removed" });
-            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved as CommentIpfsWithCidDefined, plebbit, { content: "reply under removed reply" });
+            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved as CommentIpfsWithCidDefined, plebbit, {
+                content: "reply under removed reply"
+            });
             await Promise.all([
                 replyToBeRemoved.update(),
                 post.update(),
@@ -253,7 +281,9 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             //     -- replyUnderRemovedReply (removed = false)
             // We're testing publishing under replyUnderRemovedReply
             const [reply, vote] = [
-                await generateMockComment(replyUnderRemovedReply as CommentIpfsWithCidDefined, plebbit, false, { signer: remeda.sample(signers, 1)[0] }),
+                await generateMockComment(replyUnderRemovedReply as CommentIpfsWithCidDefined, plebbit, false, {
+                    signer: remeda.sample(signers, 1)[0]
+                }),
                 await generateMockVote(replyUnderRemovedReply as CommentIpfsWithCidDefined, 1, plebbit, remeda.sample(signers, 1)[0])
             ];
             await Promise.all([reply, vote].map((pub) => publishWithExpectedResult({ publication: pub, expectedChallengeSuccess: true })));
@@ -266,7 +296,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 commentModeration: { reason: "To unremove a reply by author" + Date.now(), removed: false },
                 signer: replyToBeRemoved.signer
             });
-            await publishWithExpectedResult({ publication: unremoveEdit, expectedChallengeSuccess: false, expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR });
+            await publishWithExpectedResult({
+                publication: unremoveEdit,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            });
         });
         it.sequential("Mod can unremove a reply", async () => {
             const unremoveEdit = await plebbit.createCommentModeration({
