@@ -3,7 +3,8 @@ import type { MockInstance } from "vitest";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     createMockedSubplebbitIpns,
-    isPlebbitFetchingUsingGateways
+    isPlebbitFetchingUsingGateways,
+    publishWithExpectedResult
 } from "../../../../../dist/node/test/test-util.js";
 import * as cborg from "cborg";
 import { io as createSocketClient } from "socket.io-client";
@@ -188,7 +189,11 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                         )
                     );
 
-                    await Promise.all(comments.map((comment) => comment.publish()));
+                    Promise.all(
+                        comments.map((comment) => publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: true }))
+                    );
+
+                    await new Promise((resolve) => setTimeout(resolve, 5000));
 
                     expect(localPlebbit._updatingSubplebbits).to.deep.equal({});
 
