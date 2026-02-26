@@ -222,14 +222,11 @@ const startIpfsNode = async (nodeArgs) => {
 
     const ipfsProcess = exec(ipfsCmd, { env: debugEnv });
 
-    // 🔧 ENHANCED: Stream logs to both files and console
     ipfsProcess.stdout.on("data", (data) => {
-        console.log(`[${nodeBaseName}] ${data}`);
         stdoutStream.write(data);
     });
 
     ipfsProcess.stderr.on("data", (data) => {
-        console.error(`[${nodeBaseName}] ${data}`);
         stderrStream.write(data);
     });
 
