@@ -1,6 +1,6 @@
 {
   "name": "@plebbit/plebbit-js",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "type": "module",
   "scripts": {
     "prebuild": "node config/generate-version.js",
