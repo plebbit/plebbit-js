@@ -1,9 +1,15 @@
 {
-    "prettier.configPath": "./prettier.config.js",
+    "prettier.configPath": "./config/prettier.config.js",
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "typescript.tsdk": "node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.tsserver.watchOptions": {
+        "watchFile": "dynamicPriorityPolling",
+        "watchDirectory": "dynamicPriorityPolling",
+        "fallbackPolling": "dynamicPriorityPolling",
+        "synchronousWatchDirectory": true
+    },
 
     "files.exclude": {
         "dist/": true
