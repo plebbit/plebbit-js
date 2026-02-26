@@ -1,7 +1,7 @@
 // use this file to launch an ipfs node and some subplebbits
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
-import { execSync, exec } from "child_process";
+import { execSync, spawn } from "child_process";
 import { startSubplebbits, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
@@ -181,8 +181,9 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["Addresses"]["Swarm"] = [`/ip4/0.0.0.0/tcp/${nodeArgs.swarmPort}/ws`];
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
 
-    const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
-    console.log(ipfsCmd);
+    const daemonArgs = nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs.trim().split(/\s+/) : [];
+    const spawnArgs = ["daemon", ...daemonArgs];
+    console.log(`${ipfsPath} ${spawnArgs.join(" ")}`);
 
     // 🔧 ENHANCED: Create environment for IPFS process with debug logging enabled by default
     const debugEnv = {
@@ -220,7 +221,7 @@ const startIpfsNode = async (nodeArgs) => {
     stdoutStream = fs.createWriteStream(stdoutLogFile, { flags: "a" });
     stderrStream = fs.createWriteStream(stderrLogFile, { flags: "a" });
 
-    const ipfsProcess = exec(ipfsCmd, { env: debugEnv });
+    const ipfsProcess = spawn(ipfsPath, spawnArgs, { env: debugEnv });
 
     ipfsProcess.stdout.on("data", (data) => {
         stdoutStream.write(data);
@@ -230,7 +231,6 @@ const startIpfsNode = async (nodeArgs) => {
         stderrStream.write(data);
     });
 
-    ipfsProcess.stdin.on("data", console.log);
     ipfsProcess.on("error", console.error);
     ipfsProcess.on("exit", () => {
         console.error(`${ipfsPath} process with dir ${path.basename(nodeArgs.dir)} with pid ${ipfsProcess.pid} exited`);
@@ -239,7 +239,9 @@ const startIpfsNode = async (nodeArgs) => {
         stderrStream.end();
     });
     process.on("exit", () => {
-        exec(`kill ${ipfsProcess.pid + 1}`);
+        try {
+            process.kill(ipfsProcess.pid);
+        } catch {}
         stdoutStream.end();
         stderrStream.end();
     });
@@ -247,17 +249,31 @@ const startIpfsNode = async (nodeArgs) => {
     const ipfsDaemonIsReady = () =>
         new Promise((resolve) => {
             ipfsProcess.stdout.on("data", (data) => {
-                if (data.match("Daemon is ready")) {
+                if (data.toString().match("Daemon is ready")) {
                     resolve();
                 }
             });
         });
     await ipfsDaemonIsReady();
 
-    // is this http router config node
+    // Restart on exit with port-wait retry logic
     ipfsProcess.on("exit", async () => {
         console.log("ipfs node", nodeArgs, "has been shut down. Will attempt to restart");
-        await startIpfsNode(nodeArgs);
+        // Wait for ports to be released (TCP TIME_WAIT)
+        const maxWait = 10000; // 10 seconds
+        const interval = 500;
+        let waited = 0;
+        while (waited < maxWait) {
+            const apiUsed = await tcpPortUsed.check(nodeArgs.apiPort);
+            if (!apiUsed) break;
+            await new Promise((r) => setTimeout(r, interval));
+            waited += interval;
+        }
+        try {
+            await startIpfsNode(nodeArgs);
+        } catch (e) {
+            console.error("Failed to restart ipfs node", nodeArgs.dir, e);
+        }
     });
     return { ipfsProcess };
 };
