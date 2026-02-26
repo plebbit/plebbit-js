@@ -2,6 +2,7 @@
 // stuff for browsers
 
 // fix "ReferenceError: process is not defined" in "assert" package
+declare var window: any;
 if (window.process === undefined) {
     const processPolyfill: any = {};
     // @ts-ignore
@@ -20,12 +21,9 @@ import { sha256 } from "js-sha256";
 if (window && !window?.crypto?.subtle) {
     console.log("window.crypto.subtle is not set, attempting to polyfill window.crypto.subtle.digest");
 
-    //@ts-expect-error
     if (!window.crypto) window.crypto = {}; // to handle vitest in plebbit-react-hooks
-    //@ts-expect-error
     window.crypto.subtle = {
-        //@ts-expect-error
-        digest: (hashMethod, arrayBuffer) => {
+        digest: (hashMethod: any, arrayBuffer: any) => {
             if (hashMethod === "SHA-512") return sha512.digest(arrayBuffer);
             else if (hashMethod?.name === "SHA-256") return sha256.digest(arrayBuffer);
             else {

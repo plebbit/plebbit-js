@@ -91,7 +91,7 @@ class UrlsAddressesSet {
 
     private async fetchAndUpdateUrlSet(url: string, subplebbitAddresses: string[]): Promise<void> {
         try {
-            const addresses = await fetch(url, { cache: "no-cache" }).then((res) => res.json());
+            const addresses: string[] = await fetch(url).then((res) => res.json() as Promise<string[]>);
             for (const subplebbitAddress of subplebbitAddresses) {
                 this.subplebbits[subplebbitAddress].urlsSets[url] = new Set(addresses);
             }

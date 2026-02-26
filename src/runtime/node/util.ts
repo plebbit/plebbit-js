@@ -282,7 +282,7 @@ export async function importSignerIntoKuboNode(
 
     if (res.status !== 200)
         throw new PlebbitError("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
-    const resJson: { Id: string; Name: string } = await res.json();
+    const resJson = (await res.json()) as { Id: string; Name: string };
 
     log("Imported IPNS' signer into kubo node", resJson, " Onto kubo rpc URL", kuboRpcUrl);
     return { id: resJson.Id, name: resJson.Name };

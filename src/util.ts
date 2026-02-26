@@ -891,7 +891,7 @@ export async function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient,
             status: res.status,
             statusText: res.statusText
         });
-    const ipnsRecordRaw = await res.bytes();
+    const ipnsRecordRaw = new Uint8Array(await res.arrayBuffer());
     try {
         return unmarshalIPNSRecord(ipnsRecordRaw);
     } catch (e) {

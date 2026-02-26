@@ -993,10 +993,11 @@ export function isRpcFlagOn(): boolean {
 }
 
 export function isRunningInBrowser(): boolean {
-    const hasWindow = typeof globalThis["window"] !== "undefined";
+    const hasWindow = typeof (globalThis as any)["window"] !== "undefined";
     const hasDocument = typeof (globalThis as any)["window"]?.["document"] !== "undefined";
     const isNodeProcess = typeof globalThis["process"] !== "undefined" && Boolean((globalThis as any)["process"]?.versions?.node);
-    const isJsDom = typeof globalThis["navigator"]?.userAgent === "string" && globalThis["navigator"]!.userAgent.includes("jsdom");
+    const isJsDom =
+        typeof (globalThis as any)["navigator"]?.userAgent === "string" && (globalThis as any)["navigator"]!.userAgent.includes("jsdom");
 
     return hasWindow && hasDocument && !isNodeProcess && !isJsDom;
 }
@@ -1419,11 +1420,11 @@ export function setPlebbitConfigs(configs: PlebbitTestConfigCode[]) {
 
     plebbitConfigs = configs.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
 
-    if (globalThis.window) {
-        window.addEventListener("uncaughtException", (err) => {
+    if ((globalThis as any).window) {
+        (globalThis as any).window.addEventListener("uncaughtException", (err: any) => {
             console.error("uncaughtException", JSON.stringify(err, ["message", "arguments", "type", "name"]));
         });
-        window.addEventListener("unhandledrejection", (err) => {
+        (globalThis as any).window.addEventListener("unhandledrejection", (err: any) => {
             console.error("unhandledRejection", JSON.stringify(err, ["message", "arguments", "type", "name"]));
         });
     } else if (process) {

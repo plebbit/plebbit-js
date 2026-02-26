@@ -47,7 +47,7 @@ export async function importSignerIntoKuboNode(ipnsKeyName: string, ipfsKey: Uin
 
     if (res.status !== 200)
         throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
-    const resJson: { Id: string; Name: string } = await res.json();
+    const resJson = (await res.json()) as { Id: string; Name: string };
 
     return { id: resJson.Id, name: resJson.Name };
 }
