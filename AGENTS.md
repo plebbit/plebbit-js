@@ -3,7 +3,7 @@
 -   each http router keep provider announcement for only 24 hours
 -   If you're gonna edit schema make sure to check for docs relevant to the local zod version by checking package.json
 -   Run every automated test suite through `node test/run-test-config.js --plebbit-config ${plebbit-config} ${testPath}` so our Vitest setup enforces bail/allowOnly/timeouts automatically. you need to supply test path to run-test-config.js. You also need to choose plebbit-config. If the test is inside test/node then choose "local-kubo-rpc,remote-plebbit-rpc". For tests inside test/node-and-browser, choose "remote-kubo-rpc,remote-plebbit-rpc".
-- If RPC tests are failing, consider the rpc server may be outdated and carrying old dist/. 
+-   If RPC tests are failing, consider the rpc server may be outdated and carrying old dist/.
 -   When running RPC tests (e.g. remove.test.js), set `USE_RPC=1` in the environment
 -   You should never use removeAllListeners because it removes error listener initialized in constructor which may cause process to crash
 -   If you need to troubleshoot or debug anything related to a local subplebbit, you can run sqlite queries against its database at `${plebbitDataPath}/subplebbits/${subplebbitAddress}`
@@ -24,3 +24,4 @@
 -   Do not commit /dist to git
 -   In tests, prefer `createSubplebbit()` + `update()` over `getSubplebbit()`, since `getSubplebbit` does a one-shot fetch that fails randomly in CI
 -   When creating a Plebbit instance pointing at the local test Kubo (`http://localhost:15001/api/v0`), always pass `httpRoutersOptions: []` to prevent the Zod default from adding production routers, which triggers a Kubo shutdown/restart and breaks parallel tests with ECONNREFUSED
+-   Use `npx ipfs` not systemwide `ipfs` binary
