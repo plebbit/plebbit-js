@@ -35,7 +35,7 @@ class PlebbitWsServer extends TypedEmitter {
         this._autoStartOnBoot = false;
         const log = Logger("plebbit-js:PlebbitWsServer");
         this.authKey = authKey;
-        this._autoStartOnBoot = startStartedSubplebbitsOnStartup ?? false;
+        this._autoStartOnBoot = startStartedSubplebbitsOnStartup ?? true;
         // don't instantiate plebbit in constructor because it's an async function
         this._initPlebbit(plebbit);
         this.rpcWebsockets = new RpcWebsocketsServer({
