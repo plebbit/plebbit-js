@@ -659,8 +659,10 @@ describe(`Editing subplebbit.roles`, async () => {
     });
 
     it(`Setting sub.roles[author-address] to undefined removes the role`, async () => {
-        const authorAddress = "hello.bso";
-        const secondAuthorAddress = "hello2.bso";
+        const signer1 = await plebbit.createSigner();
+        const signer2 = await plebbit.createSigner();
+        const authorAddress = signer1.address;
+        const secondAuthorAddress = signer2.address;
         await sub.edit({ roles: { [authorAddress]: { role: "admin" }, [secondAuthorAddress]: { role: "moderator" } } });
 
         expect(sub.roles![authorAddress].role).to.equal("admin");
@@ -691,6 +693,26 @@ describe(`Editing subplebbit.roles`, async () => {
 
         remoteSub = (await remotePlebbit.getSubplebbit({ address: sub.address })) as RemoteSubplebbit;
         expect(remoteSub.roles).to.be.undefined;
+    });
+
+    it(`Editing roles with an unresolvable domain throws ERR_ROLE_ADDRESS_DOMAIN_COULD_NOT_BE_RESOLVED`, async () => {
+        // "nonexistent.bso" doesn't resolve in the mock resolver
+        await expect(sub.edit({ roles: { "nonexistent.bso": { role: "moderator" } } })).rejects.toMatchObject({
+            code: "ERR_ROLE_ADDRESS_DOMAIN_COULD_NOT_BE_RESOLVED"
+        });
+    });
+
+    it(`Removing an unresolvable domain role (setting to undefined) does NOT throw`, async () => {
+        // Removing a role should skip resolution
+        await sub.edit({ roles: { "nonexistent.bso": undefined } });
+    });
+
+    it(`Editing roles with a resolvable domain succeeds`, async () => {
+        // "plebbit.eth" resolves plebbit-author-address in the mock resolver
+        await sub.edit({ roles: { "plebbit.eth": { role: "moderator" } } });
+        expect(sub.roles!["plebbit.eth"].role).to.equal("moderator");
+        // Clean up
+        await sub.edit({ roles: { "plebbit.eth": undefined } });
     });
 
     it.skip(`Setting sub.roles.[author-address.bso].role to null doesn't corrupt the signature`, async () => {

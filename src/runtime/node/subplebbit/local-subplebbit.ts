@@ -2940,9 +2940,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._dbHandler.initDbIfNeeded();
     }
 
-    private _parseRolesToEdit(
+    private async _parseRolesToEdit(
         newRawRoles: NonNullable<SubplebbitEditOptions["roles"]>
-    ): NonNullable<InternalSubplebbitRecordAfterFirstUpdateType["roles"]> {
+    ): Promise<NonNullable<InternalSubplebbitRecordAfterFirstUpdateType["roles"]>> {
+        for (const [roleAddress, roleValue] of Object.entries(newRawRoles)) {
+            if (roleValue === undefined || roleValue === null) continue; // skip removals
+            if (isStringDomain(roleAddress)) {
+                let resolved: string | null;
+                try {
+                    resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(roleAddress);
+                } catch {
+                    resolved = null;
+                }
+                if (!resolved) throw new PlebbitError("ERR_ROLE_ADDRESS_DOMAIN_COULD_NOT_BE_RESOLVED", { roleAddress });
+            }
+        }
         return <NonNullable<SubplebbitIpfsType["roles"]>>remeda.omitBy(newRawRoles, (val, key) => val === undefined || val === null);
     }
 
@@ -3083,7 +3095,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const parsedEditOptions = parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(newSubplebbitOptions);
 
         const newInternalProps = <Pick<InternalSubplebbitRecordAfterFirstUpdateType, "roles" | "challenges" | "_usingDefaultChallenge">>{
-            ...(parsedEditOptions.roles ? { roles: this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
+            ...(parsedEditOptions.roles ? { roles: await this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
             ...(parsedEditOptions?.settings?.challenges
                 ? await this._parseChallengesToEdit(parsedEditOptions.settings.challenges)
                 : undefined)

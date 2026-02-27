@@ -313,6 +313,7 @@ export enum messages {
     ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS = "Resolved the text record value to a string that is non IPNS",
     ERR_SUBPLEBBIT_DOMAIN_HAS_NO_TEXT_RECORD = "Domain resolver did not find the text record subplebbit-address",
     ERR_AUTHOR_DOMAIN_HAS_NO_TEXT_RECORD = "Domain resolver did not find the text record plebbit-autho-address",
+    ERR_ROLE_ADDRESS_DOMAIN_COULD_NOT_BE_RESOLVED = "Failed to resolve the plebbit-author-address text record for role address domain",
 
     // Local sub errors
     ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE = "subplebbit.signer needs to be defined before proceeding",
