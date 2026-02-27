@@ -59,9 +59,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`mod flairs appear in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: randomPost.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: randomPost.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.flairs).to.deep.equal([{ text: "Mod Tag", backgroundColor: "#0000ff" }]);
+            await sub.stop();
         });
     });
 
@@ -101,9 +107,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`author flairs appear in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: randomPost.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: randomPost.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.author.flairs).to.deep.equal([{ text: "Trusted", textColor: "#fff", backgroundColor: "#00ff00" }]);
+            await sub.stop();
         });
     });
 

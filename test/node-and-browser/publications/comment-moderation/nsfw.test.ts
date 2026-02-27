@@ -52,9 +52,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`nsfw=true appears in pages of subplebibt`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: randomPost.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: randomPost.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.true;
+            await sub.stop();
         });
 
         it(`Mod can mark unnsfw author comment `, async () => {
@@ -78,9 +84,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`nsfw=false appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: randomPost.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: randomPost.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.false;
+            await sub.stop();
         });
     });
 });

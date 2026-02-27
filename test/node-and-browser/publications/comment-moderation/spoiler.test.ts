@@ -51,9 +51,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=true appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: randomPost.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: randomPost.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.true;
+            await sub.stop();
         });
 
         it(`Mod can mark unspoiler author comment `, async () => {
@@ -77,9 +83,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`spoiler=false appears in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: randomPost.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: randomPost.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
             const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(randomPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.false;
+            await sub.stop();
         });
     });
 });

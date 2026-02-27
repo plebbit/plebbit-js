@@ -71,9 +71,15 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
         });
 
         it(`author.banExpires is included in pages of subplebbit`, async () => {
-            const sub = await plebbit.getSubplebbit({ address: commentToBeBanned.subplebbitAddress });
+            const sub = await plebbit.createSubplebbit({ address: commentToBeBanned.subplebbitAddress });
+            await sub.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: sub,
+                predicate: async () => typeof sub.updatedAt === "number"
+            });
             const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(commentToBeBanned.cid, sub.posts);
             expect(postInSubplebbitPage.author.subplebbit.banExpiresAt).to.be.a("number");
+            await sub.stop();
         });
 
         it(`Regular author can't ban another author`, async () => {
