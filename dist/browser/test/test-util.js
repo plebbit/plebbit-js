@@ -1025,10 +1025,10 @@ export function setPlebbitConfigs(configs) {
             throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(testConfigCodeToPlebbitInstanceWithHumanName)}`);
     plebbitConfigs = configs.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
     if (globalThis.window) {
-        window.addEventListener("uncaughtException", (err) => {
+        globalThis.window.addEventListener("uncaughtException", (err) => {
             console.error("uncaughtException", JSON.stringify(err, ["message", "arguments", "type", "name"]));
         });
-        window.addEventListener("unhandledrejection", (err) => {
+        globalThis.window.addEventListener("unhandledrejection", (err) => {
             console.error("unhandledRejection", JSON.stringify(err, ["message", "arguments", "type", "name"]));
         });
     }
@@ -1044,12 +1044,13 @@ export function setPlebbitConfigs(configs) {
 }
 export function getAvailablePlebbitConfigsToTestAgainst(opts) {
     if (opts?.includeAllPossibleConfigOnEnv) {
-        // if node, ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"], also 'remote-plebbit-rpc' if isRpcFlagOn()
-        // if browser, ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
+        // if node, ["local-kubo-rpc", "remote-kubo-rpc", "remote-ipfs-gateway"], also 'remote-plebbit-rpc' if isRpcFlagOn()
+        // if browser, ["remote-kubo-rpc", "remote-ipfs-gateway"]
+        // NOTE: "remote-libp2pjs" is temporarily disabled due to stability issues
         const isBrowser = isRunningInBrowser();
         const plebbitConfigCodes = isBrowser
-            ? ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
-            : ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"];
+            ? ["remote-kubo-rpc", "remote-ipfs-gateway"]
+            : ["local-kubo-rpc", "remote-kubo-rpc", "remote-ipfs-gateway"];
         if (!isBrowser && isRpcFlagOn())
             plebbitConfigCodes.push("remote-plebbit-rpc");
         const availableConfigs = remeda.pick(testConfigCodeToPlebbitInstanceWithHumanName, plebbitConfigCodes);

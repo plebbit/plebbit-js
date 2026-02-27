@@ -162,39 +162,39 @@ export async function signSubplebbit({ subplebbit, signer }) {
 }
 export async function signChallengeRequest({ request, signer }) {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
-    return (await _signPubsubMsg({
+    return await _signPubsubMsg({
         signedPropertyNames: ChallengeRequestMessageSignedPropertyNames,
         msg: request,
         signer,
         log
-    }));
+    });
 }
 export async function signChallengeMessage({ challengeMessage, signer }) {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
-    return (await _signPubsubMsg({
+    return await _signPubsubMsg({
         signedPropertyNames: ChallengeMessageSignedPropertyNames,
         msg: challengeMessage,
         signer,
         log
-    }));
+    });
 }
 export async function signChallengeAnswer({ challengeAnswer, signer }) {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
-    return (await _signPubsubMsg({
+    return await _signPubsubMsg({
         signedPropertyNames: ChallengeAnswerMessageSignedPropertyNames,
         msg: challengeAnswer,
         signer,
         log
-    }));
+    });
 }
 export async function signChallengeVerification({ challengeVerification, signer }) {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
-    return (await _signPubsubMsg({
+    return await _signPubsubMsg({
         signedPropertyNames: ChallengeVerificationMessageSignedPropertyNames,
         msg: challengeVerification,
         signer,
         log
-    }));
+    });
 }
 // Verify functions
 const _verifyAuthorDomainResolvesToSignatureAddress = async (publicationJson, resolveAuthorAddresses, clientsManager) => {
@@ -340,7 +340,8 @@ export async function verifyCommentIpfs(opts) {
         opts.subplebbitAddressFromInstance || "");
     if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.get(cacheKey))
         return { valid: true };
-    if (opts.subplebbitAddressFromInstance && !areEquivalentSubplebbitAddresses(opts.comment.subplebbitAddress, opts.subplebbitAddressFromInstance))
+    if (opts.subplebbitAddressFromInstance &&
+        !areEquivalentSubplebbitAddresses(opts.comment.subplebbitAddress, opts.subplebbitAddressFromInstance))
         return { valid: false, reason: messages.ERR_COMMENT_IPFS_SUBPLEBBIT_ADDRESS_MISMATCH };
     const keysCasted = opts.comment.signature.signedPropertyNames;
     const validRes = await verifyCommentPubsubMessage({
