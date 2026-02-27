@@ -9,6 +9,7 @@ import type {
     CommentUpdatesTableRowInsert
 } from "../../../dist/node/publications/comment/types.js";
 import type { VotesTableRowInsert } from "../../../dist/node/publications/vote/types.js";
+import signers from "../../fixtures/signers.js";
 
 const PROTOCOL_VERSION = "1.0.0";
 const BUFFER_SECONDS = 60;
@@ -230,6 +231,26 @@ describe(`subplebbit.statsCid`, function () {
         dbHandler.insertVotes([voteRecord]);
     }
 
+    function insertPseudonymityAlias(opts: {
+        commentCid: string;
+        originalAuthorSignerPublicKey: string;
+        aliasPrivateKey?: string;
+        insertedAt?: number;
+        mode?: "per-post" | "per-reply" | "per-author";
+    }): void {
+        assert(dbHandler, "DbHandler not initialised");
+        dbHandler.insertPseudonymityAliases([
+            {
+                commentCid: opts.commentCid,
+                aliasPrivateKey: opts.aliasPrivateKey ?? `alias-private-key-${opts.commentCid}`,
+                originalAuthorSignerPublicKey: opts.originalAuthorSignerPublicKey,
+                originalAuthorDomain: null,
+                mode: opts.mode ?? "per-post",
+                insertedAt: opts.insertedAt ?? currentTimestamp()
+            }
+        ]);
+    }
+
     function expectDelta(keys: (keyof SubplebbitStats)[], before: SubplebbitStats, after: SubplebbitStats, delta: number): void {
         keys.forEach((key) => expect(after[key]).to.equal(before[key] + delta));
     }
@@ -307,6 +328,93 @@ describe(`subplebbit.statsCid`, function () {
             insertVote(anotherPost, { authorSignerAddress: author });
             const statsAfter = queryStats();
             expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ActiveUserCount dedupes aliases that map to the same original author`, () => {
+            const originalSigner = signers[0];
+            const statsBefore = queryStats();
+            const firstAliasPost = insertPost({ authorSignerAddress: "alias-author-one" });
+            insertPseudonymityAlias({
+                commentCid: firstAliasPost.cid,
+                originalAuthorSignerPublicKey: originalSigner.publicKey
+            });
+            const secondAliasPost = insertPost({ authorSignerAddress: "alias-author-two" });
+            insertPseudonymityAlias({
+                commentCid: secondAliasPost.cid,
+                originalAuthorSignerPublicKey: originalSigner.publicKey
+            });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 1);
+        });
+
+        it(`ActiveUserCount merges pseudonymous history with later non-pseudonymous activity`, () => {
+            const originalSigner = signers[1];
+            const pseudonymousPost = insertPost({ authorSignerAddress: "alias-transition-author" });
+            insertPseudonymityAlias({
+                commentCid: pseudonymousPost.cid,
+                originalAuthorSignerPublicKey: originalSigner.publicKey
+            });
+            const statsBefore = queryStats();
+            insertPost({ authorSignerAddress: originalSigner.address });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ActiveUserCount dedupes per-reply aliases that map to the same original author`, () => {
+            const originalSigner = signers[3];
+            const post = insertPost({ authorSignerAddress: "per-reply-thread-owner" });
+            const statsBefore = queryStats();
+            const firstReply = insertReply({ parent: post, authorSignerAddress: "per-reply-alias-one" });
+            insertPseudonymityAlias({
+                commentCid: firstReply.cid,
+                originalAuthorSignerPublicKey: originalSigner.publicKey,
+                mode: "per-reply"
+            });
+            const secondReply = insertReply({ parent: post, authorSignerAddress: "per-reply-alias-two" });
+            insertPseudonymityAlias({
+                commentCid: secondReply.cid,
+                originalAuthorSignerPublicKey: originalSigner.publicKey,
+                mode: "per-reply"
+            });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 1);
+        });
+
+        it(`ActiveUserCount merges per-author pseudonymous activity with later non-pseudonymous activity`, () => {
+            const originalSigner = signers[4];
+            const pseudonymousPost = insertPost({ authorSignerAddress: "per-author-alias" });
+            insertPseudonymityAlias({
+                commentCid: pseudonymousPost.cid,
+                originalAuthorSignerPublicKey: originalSigner.publicKey,
+                mode: "per-author"
+            });
+            const statsBefore = queryStats();
+            insertPost({ authorSignerAddress: originalSigner.address });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ActiveUserCount merges pseudonymous comment activity with non-pseudonymous vote activity`, () => {
+            const originalSigner = signers[2];
+            const post = insertPost({ authorSignerAddress: "vote-target-author" });
+            const pseudonymousReply = insertReply({ parent: post, authorSignerAddress: "alias-comment-author" });
+            insertPseudonymityAlias({
+                commentCid: pseudonymousReply.cid,
+                originalAuthorSignerPublicKey: originalSigner.publicKey
+            });
+            const statsBefore = queryStats();
+            insertVote(post, { authorSignerAddress: originalSigner.address });
+            const statsAfter = queryStats();
+            expectDelta(activeUserCountKeys, statsBefore, statsAfter, 0);
+        });
+
+        it(`ActiveUserCount throws when an active alias row has an invalid original signer public key`, () => {
+            const pseudonymousPost = insertPost({ authorSignerAddress: "invalid-alias-author" });
+            insertPseudonymityAlias({
+                commentCid: pseudonymousPost.cid,
+                originalAuthorSignerPublicKey: "invalid-public-key"
+            });
+            expect(() => queryStats()).to.throw("Failed to resolve original author address for alias signer address invalid-alias-author");
         });
     });
 

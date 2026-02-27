@@ -1495,7 +1495,7 @@ export class DbHandler {
     }
 
     querySubplebbitStats(): SubplebbitStats {
-        // if you change this query, make sure to run stats.subplebbit.test.js
+        // if you change this logic, make sure to run stats.subplebbit.test.js
         const now = timestamp(); // All timestamps are in seconds
         const { clause: commentAddrClause, params: commentAddrParams } = this._subplebbitAddressClauseNamed("comments", "statsComments");
         const { clause: votesAddrClause, params: votesAddrParams } = this._subplebbitAddressClauseNamed("comments_for_votes", "statsVotes");
@@ -1504,43 +1504,68 @@ export class DbHandler {
         const removedVotesClause = this._removedClause("cu_votes");
         const deletedVotesClause = this._deletedFromUpdatesClause("cu_votes");
         const pendingCommentsClause = this._pendingApprovalClause("comments");
-
-        const queryString = `
+        type PostAndReplyCounts = Pick<
+            SubplebbitStats,
+            | "hourPostCount"
+            | "dayPostCount"
+            | "weekPostCount"
+            | "monthPostCount"
+            | "yearPostCount"
+            | "allPostCount"
+            | "hourReplyCount"
+            | "dayReplyCount"
+            | "weekReplyCount"
+            | "monthReplyCount"
+            | "yearReplyCount"
+            | "allReplyCount"
+        >;
+        const postAndReplyCountsQuery = `
             SELECT
-                -- Active user counts from combined activity
-                COALESCE(COUNT(DISTINCT CASE WHEN hour_active > 0 THEN authorSignerAddress END), 0) as hourActiveUserCount,
-                COALESCE(COUNT(DISTINCT CASE WHEN day_active > 0 THEN authorSignerAddress END), 0) as dayActiveUserCount,
-                COALESCE(COUNT(DISTINCT CASE WHEN week_active > 0 THEN authorSignerAddress END), 0) as weekActiveUserCount,
-                COALESCE(COUNT(DISTINCT CASE WHEN month_active > 0 THEN authorSignerAddress END), 0) as monthActiveUserCount,
-                COALESCE(COUNT(DISTINCT CASE WHEN year_active > 0 THEN authorSignerAddress END), 0) as yearActiveUserCount,
-                COALESCE(COUNT(DISTINCT authorSignerAddress), 0) as allActiveUserCount,
+                COALESCE(SUM(CASE WHEN comments.depth = 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) AS hourPostCount,
+                COALESCE(SUM(CASE WHEN comments.depth = 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) AS dayPostCount,
+                COALESCE(SUM(CASE WHEN comments.depth = 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END), 0) AS weekPostCount,
+                COALESCE(SUM(CASE WHEN comments.depth = 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END), 0) AS monthPostCount,
+                COALESCE(SUM(CASE WHEN comments.depth = 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) AS yearPostCount,
+                COALESCE(SUM(CASE WHEN comments.depth = 0 THEN 1 ELSE 0 END), 0) AS allPostCount,
+                COALESCE(SUM(CASE WHEN comments.depth > 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) AS hourReplyCount,
+                COALESCE(SUM(CASE WHEN comments.depth > 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) AS dayReplyCount,
+                COALESCE(SUM(CASE WHEN comments.depth > 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END), 0) AS weekReplyCount,
+                COALESCE(SUM(CASE WHEN comments.depth > 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END), 0) AS monthReplyCount,
+                COALESCE(SUM(CASE WHEN comments.depth > 0 AND comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) AS yearReplyCount,
+                COALESCE(SUM(CASE WHEN comments.depth > 0 THEN 1 ELSE 0 END), 0) AS allReplyCount
+            FROM ${TABLES.COMMENTS} AS comments
+            LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_comments ON cu_comments.cid = comments.cid
+            WHERE ${commentAddrClause}
+              AND ${removedCommentsClause}
+              AND ${deletedCommentsClause}
+              AND ${pendingCommentsClause}
+        `;
+        const postAndReplyCounts = this._db.prepare(postAndReplyCountsQuery).get(commentAddrParams) as PostAndReplyCounts;
 
-                -- Post counts from comments only
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) as hourPostCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) as dayPostCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END), 0) as weekPostCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END), 0) as monthPostCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) as yearPostCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 THEN 1 ELSE 0 END), 0) as allPostCount,
-
-                -- Reply counts from comments only
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) as hourReplyCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) as dayReplyCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END), 0) as weekReplyCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END), 0) as monthReplyCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) as yearReplyCount,
-                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 THEN 1 ELSE 0 END), 0) as allReplyCount
+        type ActiveIdentityRow = {
+            authorSignerAddress: string;
+            hourActive: number;
+            dayActive: number;
+            weekActive: number;
+            monthActive: number;
+            yearActive: number;
+        };
+        const activeIdentityRowsQuery = `
+            SELECT
+                activity.authorSignerAddress AS authorSignerAddress,
+                MAX(activity.hour_active) AS hourActive,
+                MAX(activity.day_active) AS dayActive,
+                MAX(activity.week_active) AS weekActive,
+                MAX(activity.month_active) AS monthActive,
+                MAX(activity.year_active) AS yearActive
             FROM (
                 SELECT
                     comments.authorSignerAddress,
-                    comments.timestamp,
-                    comments.depth,
-                    1 as is_comment,
-                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
-                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
-                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
-                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
-                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END AS hour_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END AS day_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END AS week_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END AS month_active,
+                    CASE WHEN comments.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END AS year_active
                 FROM ${TABLES.COMMENTS} AS comments
                 LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_comments ON cu_comments.cid = comments.cid
                 WHERE ${commentAddrClause}
@@ -1550,24 +1575,106 @@ export class DbHandler {
                 UNION ALL
                 SELECT
                     votes.authorSignerAddress,
-                    votes.timestamp,
-                    NULL as depth,
-                    0 as is_comment,
-                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
-                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
-                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
-                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
-                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END AS hour_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END AS day_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END AS week_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END AS month_active,
+                    CASE WHEN votes.timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END AS year_active
                 FROM ${TABLES.VOTES} AS votes
                 INNER JOIN ${TABLES.COMMENTS} AS comments_for_votes ON comments_for_votes.cid = votes.commentCid
                 LEFT JOIN ${TABLES.COMMENT_UPDATES} AS cu_votes ON cu_votes.cid = comments_for_votes.cid
                 WHERE ${votesAddrClause}
                   AND ${removedVotesClause}
                   AND ${deletedVotesClause}
-            )
+            ) AS activity
+            GROUP BY activity.authorSignerAddress
         `;
+        const activeIdentityRows = this._db
+            .prepare(activeIdentityRowsQuery)
+            .all({ ...commentAddrParams, ...votesAddrParams }) as ActiveIdentityRow[];
 
-        return this._db.prepare(queryString).get({ ...commentAddrParams, ...votesAddrParams }) as SubplebbitStats;
+        type CanonicalActivity = Omit<ActiveIdentityRow, "authorSignerAddress">;
+        const canonicalAddressesByAlias = new Map<string, string>();
+        if (activeIdentityRows.length > 0) {
+            const uniqueActiveAddresses = [...new Set(activeIdentityRows.map((row) => row.authorSignerAddress))];
+            const aliasPlaceholders = uniqueActiveAddresses.map(() => "?").join(", ");
+            const aliasesQuery = `
+                SELECT DISTINCT
+                    comments.authorSignerAddress AS aliasSignerAddress,
+                    alias.originalAuthorSignerPublicKey AS originalAuthorSignerPublicKey
+                FROM ${TABLES.PSEUDONYMITY_ALIASES} AS alias
+                INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+                WHERE comments.authorSignerAddress IN (${aliasPlaceholders})
+            `;
+            const aliasRows = this._db.prepare(aliasesQuery).all(...uniqueActiveAddresses) as {
+                aliasSignerAddress: string;
+                originalAuthorSignerPublicKey: string;
+            }[];
+            for (const aliasRow of aliasRows) {
+                let originalAuthorAddress: string;
+                try {
+                    originalAuthorAddress = getPlebbitAddressFromPublicKeySync(aliasRow.originalAuthorSignerPublicKey);
+                } catch {
+                    throw new Error(`Failed to resolve original author address for alias signer address ${aliasRow.aliasSignerAddress}`);
+                }
+                const existingCanonicalAddress = canonicalAddressesByAlias.get(aliasRow.aliasSignerAddress);
+                if (existingCanonicalAddress && existingCanonicalAddress !== originalAuthorAddress) {
+                    throw new Error(`Inconsistent pseudonymity alias mappings for signer address ${aliasRow.aliasSignerAddress}`);
+                }
+                canonicalAddressesByAlias.set(aliasRow.aliasSignerAddress, originalAuthorAddress);
+            }
+        }
+
+        const canonicalActivityByAddress = new Map<string, CanonicalActivity>();
+        for (const activeIdentityRow of activeIdentityRows) {
+            const canonicalAddress =
+                canonicalAddressesByAlias.get(activeIdentityRow.authorSignerAddress) || activeIdentityRow.authorSignerAddress;
+            const existing = canonicalActivityByAddress.get(canonicalAddress);
+            if (!existing) {
+                canonicalActivityByAddress.set(canonicalAddress, {
+                    hourActive: activeIdentityRow.hourActive,
+                    dayActive: activeIdentityRow.dayActive,
+                    weekActive: activeIdentityRow.weekActive,
+                    monthActive: activeIdentityRow.monthActive,
+                    yearActive: activeIdentityRow.yearActive
+                });
+                continue;
+            }
+            existing.hourActive = Math.max(existing.hourActive, activeIdentityRow.hourActive);
+            existing.dayActive = Math.max(existing.dayActive, activeIdentityRow.dayActive);
+            existing.weekActive = Math.max(existing.weekActive, activeIdentityRow.weekActive);
+            existing.monthActive = Math.max(existing.monthActive, activeIdentityRow.monthActive);
+            existing.yearActive = Math.max(existing.yearActive, activeIdentityRow.yearActive);
+        }
+
+        const activeUserCounts: Pick<
+            SubplebbitStats,
+            | "hourActiveUserCount"
+            | "dayActiveUserCount"
+            | "weekActiveUserCount"
+            | "monthActiveUserCount"
+            | "yearActiveUserCount"
+            | "allActiveUserCount"
+        > = {
+            hourActiveUserCount: 0,
+            dayActiveUserCount: 0,
+            weekActiveUserCount: 0,
+            monthActiveUserCount: 0,
+            yearActiveUserCount: 0,
+            allActiveUserCount: canonicalActivityByAddress.size
+        };
+        for (const canonicalActivity of canonicalActivityByAddress.values()) {
+            if (canonicalActivity.hourActive > 0) activeUserCounts.hourActiveUserCount++;
+            if (canonicalActivity.dayActive > 0) activeUserCounts.dayActiveUserCount++;
+            if (canonicalActivity.weekActive > 0) activeUserCounts.weekActiveUserCount++;
+            if (canonicalActivity.monthActive > 0) activeUserCounts.monthActiveUserCount++;
+            if (canonicalActivity.yearActive > 0) activeUserCounts.yearActiveUserCount++;
+        }
+
+        return {
+            ...activeUserCounts,
+            ...postAndReplyCounts
+        };
     }
 
     queryCommentsUnderComment(parentCid: string | null): CommentsTableRow[] {
