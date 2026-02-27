@@ -6,7 +6,7 @@ import { CID } from "multiformats/cid";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { bitswap } from "@helia/block-brokers";
 import { MemoryBlockstore } from "blockstore-core";
-import { createDelegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
+import { delegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
 import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
 import { createIpnsFetchRouter } from "./ipns-over-pubsub-with-fetch.js";
@@ -25,11 +25,13 @@ const creatingLibp2pJsClients = {};
 function getDelegatedRoutingFields(routers) {
     const routersObj = {};
     for (let i = 0; i < routers.length; i++) {
-        const routingClient = createDelegatedRoutingV1HttpApiClient(routers[i]);
-        //@ts-expect-error
-        routingClient.getIPNS = routingClient.getPeers = routingClient.putIPNS = undefined; // our routers don't support any of these
-        //@ts-expect-error
-        routersObj["delegatedRouting" + i] = () => routingClient;
+        const factory = delegatedRoutingV1HttpApiClient({ url: routers[i] });
+        routersObj["delegatedRouting" + i] = (components) => {
+            const client = factory(components);
+            //@ts-expect-error - our routers don't support any of these
+            client.getIPNS = client.getPeers = client.putIPNS = undefined;
+            return client;
+        };
     }
     return routersObj;
 }

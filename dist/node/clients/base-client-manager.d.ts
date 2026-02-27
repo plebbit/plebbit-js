@@ -41,7 +41,7 @@ export declare class BaseClientsManager {
     pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, kuboPubsubRpcUrlOrLibp2pJsKey: string): Promise<void>;
     pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void>;
     _fetchWithLimit(url: string, options: {
-        cache: RequestCache;
+        cache: string;
         signal: AbortSignal;
     } & Pick<OptionsToLoadFromGateway, "abortRequestErrorBeforeLoadingBodyFunc" | "maxFileSizeBytes" | "requestHeaders">): Promise<{
         resText: string | undefined;

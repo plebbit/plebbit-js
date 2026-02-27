@@ -378,9 +378,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 let parsedCid;
                 try {
                     // clean up W/ prefix and quotes from the etag header
-                    parsedCid = CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join(""))
-                        .toV0()
-                        .toString();
+                    parsedCid = CID.parse(cidOfIpnsFromEtagHeader.replace(/^W\//, "").split('"').join("")).toV0().toString();
                 }
                 catch (e) {
                     // Malformed etag header - skip optimization and let body be fetched

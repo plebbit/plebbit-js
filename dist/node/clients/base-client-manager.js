@@ -256,9 +256,9 @@ export class BaseClientsManager {
         // should have a callback after calling fetch, but before streaming the body
         try {
             res = await nativeFunctions.fetch(url, {
+                //@ts-expect-error, cache option is for browsers
                 cache: options.cache,
                 signal: options.signal,
-                //@ts-expect-error, this option is for node-fetch
                 size: options.maxFileSizeBytes,
                 headers: options.requestHeaders
             });

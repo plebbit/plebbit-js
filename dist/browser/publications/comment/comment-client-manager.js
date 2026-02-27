@@ -561,7 +561,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             await parentCommentInstance.update();
             startedUpdatingParentComment = true;
         }
-        await resolveWhenPredicateIsTrue({ toUpdate: parentCommentInstance, predicate: () => typeof parentCommentInstance.updatedAt === "number" });
+        await resolveWhenPredicateIsTrue({
+            toUpdate: parentCommentInstance,
+            predicate: () => typeof parentCommentInstance.updatedAt === "number"
+        });
         if (startedUpdatingParentComment)
             await parentCommentInstance.stop();
         if (parentCommentInstance.updatedAt < this._comment.timestamp)
@@ -696,6 +699,8 @@ export class CommentClientsManager extends PublicationClientsManager {
     handleUpdatingStateChangeEventFromSub(newSubUpdatingState) {
         if (this._comment.state === "publishing")
             return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
+        if (this._comment.updatingState === "fetching-update-ipfs")
+            return;
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
     }
     handleErrorEventFromPost(error) {

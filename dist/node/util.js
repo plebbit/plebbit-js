@@ -721,7 +721,7 @@ export async function getIpnsRecordInLocalKuboNode(kuboRpcClient, ipnsName) {
             status: res.status,
             statusText: res.statusText
         });
-    const ipnsRecordRaw = await res.bytes();
+    const ipnsRecordRaw = new Uint8Array(await res.arrayBuffer());
     try {
         return unmarshalIPNSRecord(ipnsRecordRaw);
     }

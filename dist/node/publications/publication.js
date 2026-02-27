@@ -94,7 +94,11 @@ class Publication extends TypedEmitter {
         const log = Logger("plebbit-js:publication:_handleIncomingChallengePubsubMessage");
         if (Object.values(this._challengeExchanges).some((exchange) => exchange.challenge))
             return; // We only process one challenge
-        const challengeMsgValidity = await verifyChallengeMessage({ challenge: msg, pubsubTopic: this._pubsubTopicWithfallback(), validateTimestampRange: true });
+        const challengeMsgValidity = await verifyChallengeMessage({
+            challenge: msg,
+            pubsubTopic: this._pubsubTopicWithfallback(),
+            validateTimestampRange: true
+        });
         if (!challengeMsgValidity.valid) {
             const error = new PlebbitError("ERR_CHALLENGE_SIGNATURE_IS_INVALID", {
                 pubsubMsg: msg,
@@ -164,7 +168,11 @@ class Publication extends TypedEmitter {
         const log = Logger("plebbit-js:publication:_handleIncomingChallengeVerificationPubsubMessage");
         if (this._challengeExchanges[msg.challengeRequestId.toString()].challengeVerification)
             return;
-        const signatureValidation = await verifyChallengeVerification({ verification: msg, pubsubTopic: this._pubsubTopicWithfallback(), validateTimestampRange: true });
+        const signatureValidation = await verifyChallengeVerification({
+            verification: msg,
+            pubsubTopic: this._pubsubTopicWithfallback(),
+            validateTimestampRange: true
+        });
         if (!signatureValidation.valid) {
             const error = new PlebbitError("ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID", {
                 pubsubMsg: msg,
