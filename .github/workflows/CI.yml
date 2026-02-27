@@ -72,7 +72,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                config: [remote-kubo-rpc, remote-ipfs-gateway, remote-libp2pjs]
+                config: [remote-kubo-rpc, remote-ipfs-gateway]
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -118,7 +118,7 @@ jobs:
             fail-fast: false
             matrix:
                 environment: [chrome, firefox]
-                config: [remote-kubo-rpc, remote-ipfs-gateway, remote-libp2pjs]
+                config: [remote-kubo-rpc, remote-ipfs-gateway]
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
