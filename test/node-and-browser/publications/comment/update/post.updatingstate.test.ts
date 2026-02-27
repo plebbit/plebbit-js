@@ -78,23 +78,6 @@ const cleanupStateArray = (states: string[]): string[] => {
     return filteredStates;
 };
 
-// Sometimes a subplebbit emits another fetching-subplebbit-ipns while a post update fetch is underway.
-// This normalizes the transient sequence [..., "fetching-update-ipfs", "fetching-subplebbit-ipns", "failed"].
-const normalizePostUpdateFailureStates = (states: string[]): string[] => {
-    const normalized = [...states];
-    for (let i = 0; i < normalized.length - 2; i++) {
-        if (
-            normalized[i] === "fetching-update-ipfs" &&
-            normalized[i + 1] === "fetching-subplebbit-ipns" &&
-            normalized[i + 2] === "failed"
-        ) {
-            normalized.splice(i + 1, 1);
-            i--;
-        }
-    }
-    return normalized;
-};
-
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc.concurrent(`post.updatingState - ${config.name}`, async () => {
         let plebbit: Plebbit;
@@ -259,8 +242,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-r
                     "fetching-update-ipfs",
                     "failed"
                 ];
-                const normalizedStates = normalizePostUpdateFailureStates(updatingStates.slice(0, expectedUpdateStates.length + 1));
-                expect(normalizedStates.slice(0, expectedUpdateStates.length)).to.deep.equal(expectedUpdateStates);
+                expect(updatingStates.slice(0, expectedUpdateStates.length)).to.deep.equal(expectedUpdateStates);
 
                 const restOfUpdatingStates = updatingStates.slice(expectedUpdateStates.length, updatingStates.length);
                 for (let i = 0; i < restOfUpdatingStates.length; i += 2) {
@@ -374,8 +356,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                 expect(createdComment.updatedAt).to.be.undefined; // should not accept the comment update
 
                 const expectedUpdateStates = ["fetching-ipfs", "succeeded", "fetching-subplebbit-ipns", "fetching-update-ipfs", "failed"];
-                const normalizedStates = normalizePostUpdateFailureStates(recordedStates.slice(0, expectedUpdateStates.length + 1));
-                expect(normalizedStates.slice(0, expectedUpdateStates.length)).to.deep.equal(expectedUpdateStates);
+                expect(recordedStates.slice(0, expectedUpdateStates.length)).to.deep.equal(expectedUpdateStates);
 
                 const restOfUpdatingStates = recordedStates.slice(expectedUpdateStates.length, recordedStates.length);
                 for (let i = 0; i < restOfUpdatingStates.length; i += 2) {

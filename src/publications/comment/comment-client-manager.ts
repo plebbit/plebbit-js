@@ -859,6 +859,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     override handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
         if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
+        if (this._comment.updatingState === "fetching-update-ipfs") return;
 
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
     }
