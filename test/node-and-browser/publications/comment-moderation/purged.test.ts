@@ -270,14 +270,21 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                     const postUpdatesTimes = Object.keys(subplebbit.postUpdates);
                     expect(postUpdatesTimes.length).to.equal(1);
                     const mfsPath = `/${commentToPurge.subplebbitAddress}/postUpdates/${postUpdatesTimes[0]}/${commentToPurge.postCid}/update`;
-                    try {
-                        await remotePlebbitIpfs.clients.kuboRpcClients[
-                            Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
-                        ]._client.files.stat(mfsPath);
-                        expect.fail("Should have thrown an error");
-                    } catch (e) {
-                        expect((e as Error).message).to.equal("file does not exist");
+
+                    const ipfsClient =
+                        remotePlebbitIpfs.clients.kuboRpcClients[Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]]._client;
+
+                    // Retry until MFS entry is removed (async purge cleanup)
+                    for (let i = 0; i < 30; i++) {
+                        try {
+                            await ipfsClient.files.stat(mfsPath);
+                            await new Promise((r) => setTimeout(r, 1000));
+                        } catch (e) {
+                            expect((e as Error).message).to.equal("file does not exist");
+                            return; // success
+                        }
                     }
+                    expect.fail(`MFS path ${mfsPath} still exists after 30s - purge cleanup did not complete`);
                 });
             it(`purged comment should not appear in subplebbit.lastPostCid`, async () => {
                 const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
