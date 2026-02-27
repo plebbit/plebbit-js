@@ -7,7 +7,8 @@ import {
     isRunningInBrowser,
     addStringToIpfs,
     mockPlebbitV2,
-    describeIfRpc
+    describeIfRpc,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -33,7 +34,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
+            const loadedSubplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await loadedSubplebbit.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: loadedSubplebbit,
+                predicate: async () => typeof loadedSubplebbit.updatedAt === "number"
+            });
+            await loadedSubplebbit.stop();
+
             const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
             const createdSubplebbitJson = jsonifySubplebbitAndRemoveInternalProps(createdSubplebbit);
             const loadedSubplebbitJson = jsonifySubplebbitAndRemoveInternalProps(loadedSubplebbit);
@@ -42,7 +50,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
+            const loadedSubplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await loadedSubplebbit.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: loadedSubplebbit,
+                predicate: async () => typeof loadedSubplebbit.updatedAt === "number"
+            });
+            await loadedSubplebbit.stop();
+
             const spread = { ...loadedSubplebbit };
             const createdFromSpreadSubplebbit = await plebbit.createSubplebbit(spread);
             for (const key of Object.keys(loadedSubplebbit)) {
@@ -61,7 +76,14 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
-            const loadedSubplebbit = await plebbit.getSubplebbit({ address: subplebbitAddress });
+            const loadedSubplebbit = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await loadedSubplebbit.update();
+            await resolveWhenConditionIsTrue({
+                toUpdate: loadedSubplebbit,
+                predicate: async () => typeof loadedSubplebbit.updatedAt === "number"
+            });
+            await loadedSubplebbit.stop();
+
             const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
             const loadedSubJson = JSON.parse(JSON.stringify(loadedSubplebbit));
             const createdSubJson = JSON.parse(JSON.stringify(createdSubplebbit));
@@ -127,7 +149,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it("comment._updateRepliesPostsInstance with empty replies pages/pageCids does not throw", async () => {
-            const loadedSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
+            const loadedSub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await loadedSub.update();
+            await resolveWhenConditionIsTrue({ toUpdate: loadedSub, predicate: async () => typeof loadedSub.updatedAt === "number" });
+            await loadedSub.stop();
+
             const post = loadedSub.posts.pages.hot!.comments[0];
             const comment = await plebbit.createComment({ cid: post.cid, subplebbitAddress });
             // updatedAt must be defined for _updateRepliesPostsInstance not to throw
@@ -137,7 +163,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) =>
         });
 
         it("Remote subplebbit instance created with only address prop can call getPage", async () => {
-            const actualSub = await plebbit.getSubplebbit({ address: subplebbitAddress });
+            const actualSub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await actualSub.update();
+            await resolveWhenConditionIsTrue({ toUpdate: actualSub, predicate: async () => typeof actualSub.updatedAt === "number" });
+            await actualSub.stop();
+
             expect(actualSub.createdAt).to.be.a("number");
 
             expect(actualSub.posts.pages.hot).to.be.a("object");
