@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, describe, it } from "vitest";
+import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import {
     mockPlebbit,
     createSubWithNoChallenge,
@@ -93,30 +93,19 @@ describe("Subplebbit rejects publications with unsupported author TLDs", () => {
         });
     });
 
-    itSkipIfRpc("rejects CommentModeration with unsupported TLD (.xyz)", async () => {
+    it("rejects setting a role with unsupported TLD (.xyz) during edit", async () => {
         const unsupportedTldAddress = "moderator.xyz";
-        const signer = await plebbit.createSigner();
 
-        // Add the unsupported TLD address as a moderator
-        await subplebbit.edit({
-            roles: {
-                ...subplebbit.roles,
-                [unsupportedTldAddress]: { role: "moderator" }
-            }
-        });
-
-        const commentModeration = await plebbit.createCommentModeration({
-            author: { address: unsupportedTldAddress },
-            signer,
-            commentCid: validPost.cid,
-            commentModeration: { removed: true, reason: "Test moderation from unsupported TLD" },
-            subplebbitAddress: subplebbit.address
-        });
-
-        await publishWithExpectedResult({
-            publication: commentModeration,
-            expectedChallengeSuccess: false,
-            expectedReason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN
+        // subplebbit.edit() should reject unsupported TLD domain in roles
+        await expect(
+            subplebbit.edit({
+                roles: {
+                    ...subplebbit.roles,
+                    [unsupportedTldAddress]: { role: "moderator" }
+                }
+            })
+        ).rejects.toMatchObject({
+            code: "ERR_ROLE_ADDRESS_DOMAIN_COULD_NOT_BE_RESOLVED"
         });
     });
 });
