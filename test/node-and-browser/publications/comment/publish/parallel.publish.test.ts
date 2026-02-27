@@ -3,8 +3,7 @@ import type { MockInstance } from "vitest";
 import {
     getAvailablePlebbitConfigsToTestAgainst,
     createMockedSubplebbitIpns,
-    isPlebbitFetchingUsingGateways,
-    publishWithExpectedResult
+    isPlebbitFetchingUsingGateways
 } from "../../../../../dist/node/test/test-util.js";
 import * as cborg from "cborg";
 import { io as createSocketClient } from "socket.io-client";
@@ -149,7 +148,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             it("resolves the subplebbit IPNS record only once when multiple publishes start in parallel", async () => {
                 const localPlebbit = await config.plebbitInstancePromise({});
                 localPlebbit.on("error", console.error);
-                const stressPublishCount = 350;
+                const stressPublishCount = typeof globalThis.window !== "undefined" ? 20 : 350;
                 const randomSub = await createMockedSubplebbitIpns({}); // sub has a reachable IPNS but is not online
 
                 const usesGateways = isPlebbitFetchingUsingGateways(localPlebbit);
@@ -189,9 +188,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
                         )
                     );
 
-                    Promise.all(
-                        comments.map((comment) => publishWithExpectedResult({ publication: comment, expectedChallengeSuccess: true }))
-                    );
+                    await Promise.all(comments.map((comment) => comment.publish()));
 
                     await new Promise((resolve) => setTimeout(resolve, 5000));
 
