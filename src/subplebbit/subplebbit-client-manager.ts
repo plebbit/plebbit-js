@@ -469,6 +469,17 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, calculatedSubCidFromBody);
                 if (errorWithinRecord) {
                     delete errorWithinRecord["stack"];
+                    if (errorWithinRecord.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") {
+                        const log = Logger("plebbit-js:subplebbit-client-manager:throwIfGatewayRespondsWithInvalidSubplebbit");
+                        const etag = gatewayRes?.res?.headers?.get("etag");
+                        log.error(
+                            `Gateway ${gatewayUrl} returned subplebbit record with invalid signature. ` +
+                                `Client-computed CID: ${calculatedSubCidFromBody}. ` +
+                                `Etag header (Kubo CID): ${etag}. ` +
+                                `updatedAt: ${subIpfs.updatedAt}. ` +
+                                `Response body: ${gatewayRes.resText}`
+                        );
+                    }
                     throw errorWithinRecord;
                 } else {
                     gatewayFetches[gatewayUrl].subplebbitRecord = subIpfs;

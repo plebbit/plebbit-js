@@ -752,14 +752,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
+        const contentToPublish = deterministicStringify(newSubplebbitRecord);
         const file = await retryKuboIpfsAddAndProvide({
             ipfsClient: kuboRpcClient._client,
             log,
-            content: deterministicStringify(newSubplebbitRecord), // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
+            content: contentToPublish, // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
             addOptions: { pin: true },
             provideOptions: { recursive: true },
             provideInBackground: false
         });
+        log(
+            `Published subplebbit record. Kubo CID: ${file.path}. updatedAt: ${newSubplebbitRecord.updatedAt}. ` +
+                `Content length: ${contentToPublish.length}`
+        );
         if (file.size > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
             throw new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
                 calculatedSizeOfNewSubplebbitRecord: file.size,
