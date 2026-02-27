@@ -12,9 +12,10 @@ const configs = getAvailablePlebbitConfigsToTestAgainst({ includeAllPossibleConf
 
 describe.concurrent("getAvailablePlebbitConfigsToTestAgainst", () => {
     it("returns the expected config codes for the current runtime", () => {
+        // NOTE: "remote-libp2pjs" is temporarily disabled due to stability issues
         const expectedCodes = isRunningInBrowser()
-            ? ["remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"]
-            : ["local-kubo-rpc", "remote-kubo-rpc", "remote-libp2pjs", "remote-ipfs-gateway"];
+            ? ["remote-kubo-rpc", "remote-ipfs-gateway"]
+            : ["local-kubo-rpc", "remote-kubo-rpc", "remote-ipfs-gateway"];
 
         if (isRpcFlagOn()) expectedCodes.push("remote-plebbit-rpc");
 
