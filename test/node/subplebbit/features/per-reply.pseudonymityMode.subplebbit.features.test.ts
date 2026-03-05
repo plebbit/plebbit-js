@@ -1457,6 +1457,84 @@ describeSkipIfRpc('subplebbit.features.pseudonymityMode="per-reply"', () => {
         });
     });
 
+    describe.sequential("duplicate comment regression", () => {
+        let context: PerReplyContext;
+        let duplicateSigner: SignerWithPublicKeyAddress;
+
+        const clonePublication = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+        beforeAll(async () => {
+            context = await createPerReplySubplebbit();
+            duplicateSigner = await context.publisherPlebbit.createSigner();
+        });
+
+        afterAll(async () => {
+            await context.cleanup();
+        });
+
+        it("Spec: rejects duplicate post publication in per-reply pseudonymity mode", async () => {
+            let originalPost: Comment | undefined;
+            let duplicatePost: Comment | undefined;
+
+            try {
+                originalPost = await context.publisherPlebbit.createComment({
+                    subplebbitAddress: context.subplebbit.address,
+                    signer: duplicateSigner,
+                    title: `duplicate-per-reply-title-${Date.now()}`,
+                    content: `duplicate-per-reply-content-${Date.now()}`
+                });
+                const originalPublication = clonePublication(originalPost.toJSONPubsubMessagePublication());
+
+                await publishWithExpectedResult({ publication: originalPost, expectedChallengeSuccess: true });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit as LocalSubplebbit, originalPost);
+
+                duplicatePost = await context.publisherPlebbit.createComment(originalPublication);
+                await publishWithExpectedResult({
+                    publication: duplicatePost,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_DUPLICATE_COMMENT
+                });
+            } finally {
+                await duplicatePost?.stop();
+                await originalPost?.stop();
+            }
+        });
+
+        it("Spec: rejects duplicate reply publication in per-reply pseudonymity mode", async () => {
+            let parentPost: Comment | undefined;
+            let originalReply: Comment | undefined;
+            let duplicateReply: Comment | undefined;
+
+            try {
+                parentPost = await publishRandomPost(context.subplebbit.address, context.publisherPlebbit, { signer: duplicateSigner });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit as LocalSubplebbit, parentPost);
+
+                originalReply = await context.publisherPlebbit.createComment({
+                    subplebbitAddress: context.subplebbit.address,
+                    signer: duplicateSigner,
+                    parentCid: parentPost.cid,
+                    postCid: parentPost.cid,
+                    content: `duplicate-per-reply-reply-${Date.now()}`
+                });
+                const originalReplyPublication = clonePublication(originalReply.toJSONPubsubMessagePublication());
+
+                await publishWithExpectedResult({ publication: originalReply, expectedChallengeSuccess: true });
+                await waitForStoredCommentUpdateWithAssertions(context.subplebbit as LocalSubplebbit, originalReply);
+
+                duplicateReply = await context.publisherPlebbit.createComment(originalReplyPublication);
+                await publishWithExpectedResult({
+                    publication: duplicateReply,
+                    expectedChallengeSuccess: false,
+                    expectedReason: messages.ERR_DUPLICATE_COMMENT
+                });
+            } finally {
+                await duplicateReply?.stop();
+                await originalReply?.stop();
+                await parentPost?.stop();
+            }
+        });
+    });
+
     describe("remote loading with anonymized comments", () => {
         describe("preloaded pages", () => {
             let sharedContext: PerReplyContext;

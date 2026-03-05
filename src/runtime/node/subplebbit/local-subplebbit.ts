@@ -1261,8 +1261,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         commentPubsub: CommentPubsubMessagePublication;
         pendingApproval?: boolean;
         pseudonymityMode?: PseudonymityAliasRow["mode"];
+        originalCommentSignatureEncoded?: string;
     }): Promise<{ comment: CommentIpfsType; cid: CommentUpdateType["cid"] }> {
-        const { commentPubsub, pendingApproval, pseudonymityMode } = opts;
+        const { commentPubsub, pendingApproval, pseudonymityMode, originalCommentSignatureEncoded } = opts;
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storeComment");
 
         const commentIpfs = <CommentIpfsType>{
@@ -1292,7 +1293,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const strippedOutCommentIpfs = CommentIpfsSchema.strip().parse(commentIpfs); // remove unknown props
 
-        const isCommentDuplicate = this._dbHandler.hasCommentWithSignatureEncoded(commentPubsub.signature.signature);
+        const signaturesToCheck = Array.from(
+            new Set(
+                [commentPubsub.signature.signature, originalCommentSignatureEncoded].filter((sig): sig is string => typeof sig === "string")
+            )
+        );
+        const isCommentDuplicate = signaturesToCheck.some((signatureEncoded) =>
+            this._dbHandler.hasCommentWithSignatureEncoded(signatureEncoded)
+        );
         if (isCommentDuplicate) {
             this._cidsToUnPin.add(commentCid);
             throw new PlebbitError("ERR_DUPLICATE_COMMENT", { file, commentIpfs, commentPubsub });
@@ -1316,7 +1324,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
             commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
         }
+        if (originalCommentSignatureEncoded) commentRow.originalCommentSignatureEncoded = originalCommentSignatureEncoded;
 
+        // we may need to query comment and verify its signature
         this._dbHandler.createTransaction();
         try {
             if (!pendingApproval) {
@@ -1344,11 +1354,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             return this.storeCommentEdit(commentEditWithAlias, request.challengeRequestId);
         } else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
         else if (request.comment) {
+            const originalCommentSignatureEncoded = request.comment.signature.signature;
             const { publication, anonymity } = await this._prepareCommentWithAnonymity(request.comment);
             const storedComment = await this.storeComment({
                 commentPubsub: publication,
                 pendingApproval,
-                pseudonymityMode: anonymity?.mode
+                pseudonymityMode: anonymity?.mode,
+                originalCommentSignatureEncoded: anonymity ? originalCommentSignatureEncoded : undefined
             });
 
             if (anonymity)
