@@ -58,9 +58,7 @@ name?: string   // e.g., "memes.eth"
 
 `subplebbit.publicKey` is the IPNS key string (`12D3KooW...`) and should always be available on the instance (derived from `signature.publicKey` when needed). Effective identity is `address = name || publicKey`. If `name` exists, that name is the identity string used by publications.
 
-TODO: finalize whether `publicKey` should also be part of signed SubplebbitIpfs wire format, or remain instance-only derived data.
-
-TODO: if explicit `record.publicKey` is adopted, validation must enforce `record.publicKey === derived(signature.publicKey)` and reject mismatches.
+**Decision: `publicKey` is instance-only, not in wire format.** `publicKey` is always derived from `signature.publicKey` on the instance. It is not included in SubplebbitIpfs or any wire protocol records. This is consistent with how other protocols (nostr, bluesky, activitypub) handle computable properties — they are not included in the protocol to avoid redundancy. Since `signature.publicKey` is already present in every signed record, including a separate `publicKey` field would be redundant.
 
 **Serialization requirement:** `address`, `name`, and `publicKey` must all be **enumerable properties** on the subplebbit class instance. This means they must appear in `JSON.stringify(subplebbit)` output and be accessible via object destructuring (`const { address, name, publicKey } = subplebbit`). Implementation-wise, these properties should be plain instance properties (not getters on the prototype) so that they are own enumerable properties of the object.
 
@@ -68,7 +66,7 @@ TODO: if explicit `record.publicKey` is adopted, validation must enforce `record
 
 **Relationship between `address` and `name`:**
 
-TODO: finalize whether `address` remains in `SubplebbitIpfs` or is instance-only/computed. Current draft behavior (if kept on wire): `address = name || subplebbit.publicKey`. Validation would require `address` to be either `publicKey` or `name` (if set).
+**Decision: `address` is instance-only/computed, not in wire format.** `address` is computed as `name || publicKey` on the instance. It is not included in SubplebbitIpfs wire records. Since `address` is fully derivable from `name` (if present in the record) and `publicKey` (derived from `signature.publicKey`), including it in the protocol would violate the principle of not including computable properties — consistent with nostr, bluesky, activitypub, etc. Old records that have `address` in their `signedPropertyNames` will still verify correctly due to the self-describing signature verification.
 
 If a community has a name, that name is its identity string. Changing the name creates a new identity string, so old comments/publications remain associated with the previous name-based identity.
 
@@ -87,38 +85,43 @@ Sub owners can set the domain name via either:
 | `edit({ address: "12D3KooW..." })`          | If matches `publicKey`: clears `name`, sets `address = publicKey`. Otherwise: throw error |
 | `edit({ name: "a.eth", address: "b.eth" })` | Throw error — conflicting values                                                          |
 
-### 2. Add `publication.subplebbitPublicKey` field
+### 2. Add `communityPublicKey` and `communityName` to publications
 
 Publications (comments, votes, edits, moderations) currently carry only `subplebbitAddress`. This is semantically incomplete for clients that also need cryptographic linkage and resolver-independent loading.
 
-Add `subplebbitPublicKey` as a new field alongside `subplebbitAddress`:
+Add two non-computable wire fields to publications:
 
--   `subplebbitAddress` — kept for backward compatibility, contains domain name if set, otherwise publicKey
--   `subplebbitPublicKey` — the IPNS key string (`12D3KooW...`), matching `subplebbit.publicKey`
+-   `communityPublicKey` — **wire field**, the IPNS key string (`12D3KooW...`), always present
+-   `communityName` — **wire field**, optional, the domain name (e.g., `"memes.eth"`) if the community has one
+-   `communityAddress` — **instance-only**, computed as `communityName || communityPublicKey` (not in wire format)
 
-Both fields are present in publications.
+This follows the same "no computable props" principle: `communityAddress` is derivable from `communityName` and `communityPublicKey`, so it is not included in the protocol.
 
-TODO: unresolved identity decisions:
+Identity decisions (resolved):
 
--   `communityName`
--   `communityPublicKey`
--   `communityAddress`
--   Whether `address` should remain in `SubplebbitIpfs` or be instance-only/computed
--   Whether `subplebbit.publicKey` should be an explicit signed field in `SubplebbitIpfs` or derived on instance from `signature.publicKey`
--   If explicit `record.publicKey` is adopted, enforce strict match with `derived(signature.publicKey)` and decide whether to add `ERR_SUBPLEBBIT_RECORD_PUBLICKEY_MISMATCH`
--   Whether `author.publicKey` should be part of protocol/wire files or computed on instance from signature
--   Whether to keep `author.address` with value `author.name || author.publicKey`
+-   `communityName` — wire field (not computable, it's a claim set by the owner)
+-   `communityPublicKey` — **instance-only**, computed from `signature.publicKey`
+-   `communityAddress` — **instance-only**, computed as `name || publicKey`
+-   ~~Whether `address` should remain in `SubplebbitIpfs` or be instance-only/computed~~ — **Resolved: instance-only** (not in wire format)
+-   ~~Whether `subplebbit.publicKey` should be an explicit signed field in `SubplebbitIpfs` or derived on instance from `signature.publicKey`~~ — **Resolved: instance-only** (derived from `signature.publicKey`)
+-   ~~If explicit `record.publicKey` is adopted~~ — **N/A, not adopted**
+-   ~~Whether `author.publicKey` should be part of protocol/wire files or computed on instance from signature~~ — **Resolved: instance-only** (computed from signature)
+-   ~~Whether to keep `author.address`~~ — **Resolved: yes, instance-only**, computed as `author.name || author.publicKey`
+
+Remaining implementation decisions:
+
 -   Address stability in `{publicKey}`-only flow when record later includes `name` (start with `address = publicKey`; decide whether `address` can switch to `name`)
 -   Subplebbit indexing key strategy for `_updatingSubplebbits` and `_startedSubplebbits`: finalize whether indexing should be by `address` (identity), by `publicKey` (cryptographic key), or dual/composite
--   If `publication.subplebbitPublicKey` and `publication.subplebbitName` are added, add backward-compat tests proving old posts/replies that do not include these fields still load correctly
+-   If `publication.communityPublicKey` and `publication.communityName` are added, add backward-compat tests proving old posts/replies that do not include these fields still load correctly
 
 ### 3. Add `author.name`, `author.publicKey`, and `author.nameResolved`
 
-Add to the Author type embedded in publications (AuthorIpfsType, AuthorPubsubType):
+Add to the Author type:
 
--   `name?: string` — e.g., "vitalik.eth"
--   `publicKey: string` — the author's IPNS key (derived from signature.publicKey via getPlebbitAddressFromPublicKey)
--   `nameResolved: boolean` — whether the name has been verified against publicKey
+-   `name?: string` — e.g., "vitalik.eth" — **wire field** (in AuthorIpfsType, AuthorPubsubType), a claim set by the author
+-   `publicKey: string` — the author's IPNS key — **instance-only** (derived from signature.publicKey via getPlebbitAddressFromPublicKey, not in wire format)
+-   `address: string` — **instance-only** (computed as `name || publicKey`, not in wire format)
+-   `nameResolved: boolean` — **instance-only** (runtime verification flag, not in wire format)
 
 **Verification pattern (conditional on `resolveAuthorAddresses`):**
 
@@ -278,22 +281,23 @@ The `address` property is stable (does not change during verification). The `nam
 -   Add `name: z.string().min(1).optional()` to `SubplebbitIpfsSchema`
 -   Do **not** add `nameResolved` to `SubplebbitIpfsSchema` (instance-only/runtime field)
 -   Add `name: true` to `SubplebbitEditOptionsSchema` (editable by sub owner)
--   TODO: finalize whether `address` exists in `SubplebbitIpfs` schema or is instance-derived only
--   If `address` stays in wire schema: validate `address` is `publicKey` or `name` (if set)
--   TODO: finalize whether `publicKey` exists in `SubplebbitIpfs` schema or is instance-derived only
--   If explicit `record.publicKey` is adopted: add `publicKey: z.string().optional()` and validate it matches `derived(signature.publicKey)`
+-   **Remove** `address` from `SubplebbitIpfsSchema` — it is instance-only, computed as `name || publicKey`
+-   **Do not add** `publicKey` to `SubplebbitIpfsSchema` — it is instance-only, derived from `signature.publicKey`
+-   For backward compatibility: accept old records that include `address` in `signedPropertyNames` (self-describing verification handles this automatically)
 
 ### Publication schema changes (`src/schema/schema.ts`)
 
--   **Keep** `subplebbitAddress` in `CreatePublicationUserOptionsSchema` (value = domain name if exists, otherwise publicKey)
--   **Add** `subplebbitPublicKey` as NEW separate field (always the IPNS key)
--   Both fields are present in publications
+-   **Add** `communityPublicKey` as wire field (always the IPNS key)
+-   **Add** `communityName` as optional wire field (domain name, if set)
+-   `communityAddress` is instance-only, computed as `communityName || communityPublicKey` — not in wire schema
+-   For backward compatibility: accept old publications that have `subplebbitAddress` in `signedPropertyNames`
 
 ### Author schema changes (`src/schema/schema.ts`)
 
--   Add `name: z.string().min(1).optional()` to Author types
--   Add `publicKey: z.string()` to Author types (derived from signature.publicKey)
--   Add `nameResolved: z.boolean()` to Author types
+-   Add `name: z.string().min(1).optional()` to Author wire types
+-   `publicKey` is instance-only (derived from `signature.publicKey`), not added to wire schema
+-   `address` is instance-only (computed as `name || publicKey`), not added to wire schema
+-   `nameResolved` is instance-only (runtime verification flag), not added to wire schema
 -   Same async verification pattern as subplebbit
 
 ### RemoteSubplebbit (`src/subplebbit/remote-subplebbit.ts`)
@@ -313,13 +317,13 @@ The `address` property is stable (does not change during verification). The `nam
 
 ### Database changes (`src/runtime/node/subplebbit/db-handler.ts`)
 
--   Add `subplebbitPublicKey` column to publication tables (keep existing `subplebbitAddress`)
+-   Add `communityPublicKey` and `communityName` columns to publication tables (keep existing `subplebbitAddress` for backward compat)
 -   Bump DB version, add migration logic
 
 ### Backward compatibility
 
 -   **SubplebbitIpfs**: if `address` stays in wire schema, old clients remain non-breaking and new `name` is ignored by old clients using `.loose()` parsing. If `address` is removed from wire schema, backward-compat/migration behavior must be defined.
--   **Publications**: Non-breaking. Old clients continue to use `subplebbitAddress`. New clients also have `subplebbitPublicKey`.
+-   **Publications**: Non-breaking. Old clients continue to use `subplebbitAddress`. New clients use `communityPublicKey` and `communityName`.
 
 ## Edge cases and error handling
 
