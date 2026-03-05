@@ -515,14 +515,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const signature = await signSubplebbit({ subplebbit: newIpns, signer: this.signer });
         const newSubplebbitRecord = { ...newIpns, signature };
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
+        const contentToPublish = deterministicStringify(newSubplebbitRecord);
         const file = await retryKuboIpfsAddAndProvide({
             ipfsClient: kuboRpcClient._client,
             log,
-            content: deterministicStringify(newSubplebbitRecord), // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
+            content: contentToPublish, // you need to do deterministic here or otherwise cids in commentUpdate.replies won't match up correctly
             addOptions: { pin: true },
             provideOptions: { recursive: true },
             provideInBackground: false
         });
+        log(`Published subplebbit record. Kubo CID: ${file.path}. updatedAt: ${newSubplebbitRecord.updatedAt}. ` +
+            `Content length: ${contentToPublish.length}`);
         if (file.size > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
             throw new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
                 calculatedSizeOfNewSubplebbitRecord: file.size,
@@ -2245,7 +2248,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             });
         await this._dbHandler.initDbIfNeeded();
     }
-    _parseRolesToEdit(newRawRoles) {
+    async _parseRolesToEdit(newRawRoles) {
+        for (const [roleAddress, roleValue] of Object.entries(newRawRoles)) {
+            if (roleValue === undefined || roleValue === null)
+                continue; // skip removals
+            if (isStringDomain(roleAddress)) {
+                let resolved;
+                try {
+                    resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(roleAddress);
+                }
+                catch {
+                    resolved = null;
+                }
+                if (!resolved)
+                    throw new PlebbitError("ERR_ROLE_ADDRESS_DOMAIN_COULD_NOT_BE_RESOLVED", { roleAddress });
+            }
+        }
         return remeda.omitBy(newRawRoles, (val, key) => val === undefined || val === null);
     }
     async _parseChallengesToEdit(newChallengeSettings) {
@@ -2361,7 +2379,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         const parsedEditOptions = parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(newSubplebbitOptions);
         const newInternalProps = {
-            ...(parsedEditOptions.roles ? { roles: this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
+            ...(parsedEditOptions.roles ? { roles: await this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
             ...(parsedEditOptions?.settings?.challenges
                 ? await this._parseChallengesToEdit(parsedEditOptions.settings.challenges)
                 : undefined)
