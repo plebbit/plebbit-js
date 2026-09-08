@@ -19,7 +19,10 @@
 // for the first time, later ones overwrite), BENCH_STUB_KUBO=1 (swap the daemon for the immediate stub of
 // page-generation-bench, which is how the IPFS share of the cycle is attributed: same board, same code,
 // only the client differs), BENCH_DATA_PATH (where the community's database goes; the PKC default puts it
-// in the working directory, which is the wrong place for the multi-GB database of a large board).
+// in the working directory, which is the wrong place for the multi-GB database of a large board),
+// BENCH_COMMUNITY_ADDRESS (reuse the community a previous run left under BENCH_DATA_PATH instead of seeding a
+// new one: a large board takes minutes to seed and the crashed run's board is the one worth measuring; the
+// community is stopped but not deleted afterwards).
 import { performance } from "node:perf_hooks";
 import path from "node:path";
 import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
@@ -143,7 +146,11 @@ const stubKuboClient = () => {
     return {
         add: async (content) => {
             await new Promise((resolve) => setImmediate(resolve)); // yield like the real I/O does, so the heap sampler runs
-            return { cid: `Qm${(++added).toString(36).padStart(44, "0")}`, path: `Qm${added.toString(36).padStart(44, "0")}`, size: content.length };
+            return {
+                cid: `Qm${(++added).toString(36).padStart(44, "0")}`,
+                path: `Qm${added.toString(36).padStart(44, "0")}`,
+                size: content.length
+            };
         },
         pin: { rm: noop, add: noop },
         files: {
@@ -161,9 +168,26 @@ const stubKuboClient = () => {
     };
 };
 
+// A line on stderr every 30 s with where the heap is, for runs long enough that the numbers at the end may
+// never come (the 3.1M-comment board of issue #355 used to die of OOM with no output at all).
+const progressStart = performance.now();
+const progress = setInterval(() => {
+    const usage = process.memoryUsage();
+    console.error(
+        JSON.stringify({
+            event: "progress",
+            sec: Math.round((performance.now() - progressStart) / 1000),
+            heapMB: Math.round(usage.heapUsed / 1024 / 1024),
+            rssMB: Math.round(usage.rss / 1024 / 1024)
+        })
+    );
+}, 30_000);
+progress.unref();
+
 async function main() {
     const pkc = await mockPKC(process.env.BENCH_DATA_PATH ? { dataPath: process.env.BENCH_DATA_PATH } : undefined);
-    const community = await pkc.createCommunity();
+    const REUSED_ADDRESS = process.env.BENCH_COMMUNITY_ADDRESS;
+    const community = REUSED_ADDRESS ? await pkc.createCommunity({ address: REUSED_ADDRESS }) : await pkc.createCommunity();
     const iterations = [];
     try {
         if (MODE !== "default") {
@@ -175,10 +199,23 @@ async function main() {
         }
 
         // Start for real (IPNS key import, MFS root, page sorts, pubsub listen), then let the publish loop
-        // exit after its first empty-board cycle so the iterations below are the only thing touching kubo.
+        // exit after its first cycle so the iterations below are the only thing touching kubo. That first
+        // cycle is empty on a fresh community; on a reused board it would be the whole board against the
+        // real daemon before the stub is in place, so the flag query is stubbed out for its duration.
+        const flagQuery = ["queryCidsToBeUpdatedByDepth", "queryCommentsToBeUpdated"].find(
+            (name) => typeof community._dbHandler[name] === "function"
+        );
+        if (REUSED_ADDRESS) {
+            community._dbHandler[flagQuery] = flagQuery === "queryCidsToBeUpdatedByDepth" ? () => new Map() : () => [];
+            // A seeded board's comments were never added to IPFS, so start() finds the newest one unpinned and
+            // would re-add every comment of the board: queryAllCommentsOrderedByIdAsc materializes them all
+            // (2.7 GB of rows at 3.1M comments, an OOM on its own) and none of it is the cycle being measured.
+            community._repinCommentsIPFSIfNeeded = async () => {};
+        }
         await community.start();
         community._stopHasBeenCalled = true;
         await community._publishLoopPromise;
+        if (REUSED_ADDRESS) delete community._dbHandler[flagQuery];
 
         // The record's pre-publish check keeps its size calculation and its schema parse, which are what
         // scale with the board, and loses the two verifyCommunity calls that follow them: those verify
@@ -197,9 +234,9 @@ async function main() {
         instrumentKubo(kuboRpcClient._client);
 
         const seedStart = performance.now();
-        const { replyTotal } = seedBoard(community);
+        const { replyTotal } = REUSED_ADDRESS ? countSeededBoard(community) : seedBoard(community);
         const dbMB = databaseMB(community);
-        const posts = Number(process.env.BENCH_POSTS);
+        const posts = REUSED_ADDRESS ? countSeededBoard(community).posts : Number(process.env.BENCH_POSTS);
         console.log(
             JSON.stringify({
                 event: "seeded",
@@ -336,7 +373,7 @@ async function main() {
                 : STREAMS_UPDATES
                   ? "streams comment updates, collects post rows"
                   : "accumulates every row",
-            posts: Number(process.env.BENCH_POSTS),
+            posts,
             comments: iterations[0]?.comments,
             seededDbMB: dbMB,
             finalDbMB: databaseMB(community),
@@ -358,9 +395,17 @@ async function main() {
         console.log(JSON.stringify({ event: "written", file }));
     } finally {
         await community.stop().catch(() => {});
-        await community.delete().catch(() => {});
+        if (!REUSED_ADDRESS) await community.delete().catch(() => {});
         await pkc.destroy();
     }
+}
+
+// What a reused board holds, in the shape seedBoard reports for a fresh one
+function countSeededBoard(community) {
+    const db = community._dbHandler["_db"];
+    const posts = db.prepare("SELECT count(*) AS n FROM comments WHERE depth = 0").get().n;
+    const replyTotal = db.prepare("SELECT count(*) AS n FROM comments WHERE depth > 0").get().n;
+    return { posts, replyTotal };
 }
 
 // The community's database on disk, its write-ahead log included.
