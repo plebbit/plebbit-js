@@ -1,5 +1,4 @@
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { groupBy, keys } from "remeda";
 import pLimit from "p-limit";
 import Logger from "../../../../logger.js";
 import { timestamp, writeKuboFilesWithTimeout } from "../../../../util.js";
@@ -228,31 +227,37 @@ export async function updateCommentsThatNeedToBeUpdated(
     // param of calculateNewCommentUpdate (issue #209).
     const batchStartTimestamp = timestamp();
 
-    // Get all comments that need to be updated
-    const commentsToUpdate = community._dbHandler.queryCommentsToBeUpdated();
+    // Which comments to update, as one cid per comment grouped by depth and nothing else: at 3.1M comments
+    // the full rows were 2.7 GB of heap before the first CommentUpdate was calculated (issue #355). Each
+    // slice below loads its own rows.
+    const cidsByDepth = community._dbHandler.queryCidsToBeUpdatedByDepth();
+    let commentsToUpdateCount = 0;
+    for (const cids of cidsByDepth.values()) commentsToUpdateCount += cids.length;
 
-    if (commentsToUpdate.length === 0) return onCommentUpdatesWritten ? undefined : [];
+    if (commentsToUpdateCount === 0) return onCommentUpdatesWritten ? undefined : [];
 
     community._communityUpdateTrigger = true;
-    log(`Will update ${commentsToUpdate.length} comments in this update loop for community (${community.address})`);
+    log(`Will update ${commentsToUpdateCount} comments in this update loop for community (${community.address})`);
 
     // Deepest depth first across the whole board: a comment's counts, last reply and reply pages read its children's
     // CommentUpdates, so every child is calculated and written before any parent. Within a depth the fields of every
     // comment are read in one batched pass (issue #352) and the author aggregates are memoised for the cycle, then
     // the reply pages, signing and the depth's single upsert follow.
-    const commentsByDepth = groupBy(commentsToUpdate, (comment) => comment.depth);
-    const depthsDeepestFirst = keys(commentsByDepth).sort((a, b) => Number(b) - Number(a));
+    const depthsDeepestFirst = [...cidsByDepth.keys()].sort((a, b) => b - a);
     const authorMemo: CommunityAuthorMemo = new Map();
     const allCommentUpdateRows: CommentUpdateToWriteToDbAndPublishToIpfs[] | undefined = onCommentUpdatesWritten ? undefined : [];
     const limit = pLimit(50);
-    for (const depthKey of depthsDeepestFirst) {
-        const commentsAtDepth = commentsByDepth[depthKey];
+    for (const depth of depthsDeepestFirst) {
+        const cidsAtDepth = cidsByDepth.get(depth)!;
         // A depth is calculated in slices so a consumer can take each one and let it go: a board's posts
         // are one depth, and holding all of their CommentUpdates at once is what made the cycle's memory
         // grow with the board (issue #355). The slice is large enough that the per-depth batched reads of
         // issue #352 still pay for themselves — at 500 the phase cost 28% more, at 2000 it is unchanged.
-        for (let index = 0; index < commentsAtDepth.length; index += COMMENT_UPDATE_SLICE_SIZE) {
-            const slice = commentsAtDepth.slice(index, index + COMMENT_UPDATE_SLICE_SIZE);
+        for (let index = 0; index < cidsAtDepth.length; index += COMMENT_UPDATE_SLICE_SIZE) {
+            // A comment purged (storeCommentModeration) since the flag query ran has no row any more and
+            // is simply not part of the slice, the same as a purge before the query.
+            const slice = community._dbHandler.queryCommentsByCids(cidsAtDepth.slice(index, index + COMMENT_UPDATE_SLICE_SIZE));
+            if (slice.length === 0) continue;
             const calculated = community._dbHandler.queryCalculatedCommentUpdates({ comments: slice, authorMemo });
             const stored = community._dbHandler.queryCommentUpdateTimestampBucketRepliesByCids(slice.map((comment) => comment.cid));
             const sliceResults = await Promise.all(

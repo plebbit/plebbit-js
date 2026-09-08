@@ -1398,4 +1398,41 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
 
         expect(commentCidsNeedingUpdate()).to.be.empty;
     });
+    // The flag query is the one O(board) read the update cycle still does up front (issue #355): at 3.1M comments
+    // the full rows were 2.7 GB of heap and the query alone took 5.7 minutes. It now names the work (cid and
+    // depth, in rowid order) and each slice loads its own rows through queryCommentsByCids.
+    it("returns only cid and depth, in rowid order (issue #355)", async () => {
+        const post = insertComment();
+        const reply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid });
+        const otherPost = insertComment();
+
+        const rows = dbHandler!.queryCommentsToBeUpdated();
+        expect(rows).to.deep.equal([
+            { cid: post.cid, depth: 0 },
+            { cid: reply.cid, depth: 1 },
+            { cid: otherPost.cid, depth: 0 }
+        ]);
+    });
+
+    it("queryCommentsByCids returns parsed rows in the order the cids were given, skipping unknown cids", async () => {
+        const post = insertComment({ overrides: { author: { address: "author-of-post", displayName: "Parsed" } } });
+        const reply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid });
+        const otherPost = insertComment();
+
+        const rows = dbHandler!.queryCommentsByCids([otherPost.cid, "QmNotInTheDb", post.cid, reply.cid]);
+        expect(rows.map((row) => row.cid)).to.deep.equal([otherPost.cid, post.cid, reply.cid]);
+        expect(rows[1].author).to.deep.equal({ address: "author-of-post", displayName: "Parsed" });
+        expect(rows[1].signature).to.be.an("object");
+        expect(rows[2].depth).to.equal(1);
+        expect(rows[2].parentCid).to.equal(post.cid);
+    });
+
+    it("queryCommentsByCids loads more cids than one statement's variable cap allows", async () => {
+        const cids: string[] = [];
+        for (let i = 0; i < 4200; i++) cids.push(insertComment().cid);
+        cids.reverse();
+
+        const rows = dbHandler!.queryCommentsByCids(cids);
+        expect(rows.map((row) => row.cid)).to.deep.equal(cids);
+    });
 });

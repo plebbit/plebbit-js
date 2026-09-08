@@ -85,6 +85,9 @@ export type CommentUpdateCalculationInput = Pick<CommentsTableRow, "cid" | "auth
 // One cycle's author aggregates, keyed by the address set and domain they were computed for
 export type CommunityAuthorMemo = Map<string, CommunityAuthor | undefined>;
 
+// Per-connection temp table holding the rowids of the comments the update cycle has to recalculate (issue #355)
+const COMMENTS_TO_UPDATE_TEMP_TABLE = "temp.commentsToUpdate";
+
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -1805,11 +1808,11 @@ export class DbHandler {
     // Flat sorts filter the whole flattened subtree and are generated for posts only, so their arm walks
     // descendants up to the depth-0 ancestor. Pinned replies bypass the filter when pinnedFirst is true. Omitted
     // entirely (empty strings) when no reply sort is windowed, so the default config pays nothing.
-    private _buildWindowedReplySortArms(now: number): { ctes: string; unions: string; params: Record<string, number> } {
+    private _buildWindowedReplySortArms(now: number): { ctes: string; selects: string[]; params: Record<string, number> } {
         const windowedSorts = (this._community._pageSorts?.replies ?? []).filter((sort) => typeof sort.maxAgeSeconds === "number");
-        if (windowedSorts.length === 0) return { ctes: "", unions: "", params: {} };
+        if (windowedSorts.length === 0) return { ctes: "", selects: [], params: {} };
         const ctes: string[] = [];
-        const unions: string[] = [];
+        const selects: string[] = [];
         const params: Record<string, number> = { windowNow: now };
         const seen = new Set<string>();
         for (const sort of windowedSorts) {
@@ -1835,7 +1838,7 @@ export class DbHandler {
                 JOIN ${TABLES.COMMENT_UPDATES} cu_anc ON cu_anc.cid = wa.anc_cid
                 LEFT JOIN ${TABLES.COMMENT_UPDATES} rcu ON rcu.cid = wa.reply_cid
                 WHERE ${crossingClause} ${pinnedClause}
-            ),`);
+            )`);
             else
                 ctes.push(`
             windowed_${i} AS (
@@ -1844,134 +1847,193 @@ export class DbHandler {
                 JOIN ${TABLES.COMMENT_UPDATES} cu_anc ON cu_anc.cid = r.parentCid
                 LEFT JOIN ${TABLES.COMMENT_UPDATES} rcu ON rcu.cid = r.cid
                 WHERE ${crossingClause} ${pinnedClause}
-            ),`);
-            unions.push(`UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN windowed_${i} w${i} ON c.cid = w${i}.cid`);
+            )`);
+            selects.push(`SELECT c.rowid FROM ${TABLES.COMMENTS} c JOIN windowed_${i} w${i} ON c.cid = w${i}.cid`);
         }
-        return { ctes: ctes.join(""), unions: unions.join("\n                "), params };
+        return { ctes: ctes.join(","), selects, params };
     }
 
-    queryCommentsToBeUpdated(): CommentsTableRow[] {
-        // TODO optimize this query in the future
-        // Make sure tests in commentsToUpdate.db.community.test.js are passing
+    // The rowids of every comment the update cycle has to recalculate, collected into a temp table (issue #355).
+    //
+    // The flag set used to be one query: recursive CTEs stacked over `SELECT c.*`, whose every UNION and
+    // DISTINCT deduplicated ~900-byte rows on a temp B-tree and whose every level re-copied the board. On a
+    // 3.1M-comment board that was 2.7 GB of heap and 5.7 minutes before the first CommentUpdate. Here the set
+    // is an integer-keyed temp table, each arm of the old query is one INSERT OR IGNORE into it, and the two
+    // cascades (an author's other comments, and the parent chain) read the table they extend. Integer keys are
+    // what make it cheap: the same sequence keyed by cid strings took three times as long. Measured on that
+    // board: 14.5 s for the whole sequence in the SQLite shell.
+    //
+    // The arms, in order, and what each stands for:
+    //   1. no CommentUpdate row yet, or one not yet published to the postUpdates directory;
+    //   2. a vote, edit, moderation or child comment inserted since the row was calculated (issue #209: the
+    //      row's insertedAt is the batch's start timestamp, so nothing inserted during a batch is missed);
+    //   3. childCount no longer matches the counted children (a child removed, deleted or purged);
+    //   4. lastChildCid no longer matches the newest counted child;
+    //   5. a child listed in the stored replies pages has a newer CommentUpdate than the parent's;
+    //   6. windowed reply sorts, one arm per distinct window (see _buildWindowedReplySortArms);
+    //   7. every other comment by an author of a flagged comment (author.community aggregates);
+    //   8. every ancestor of a flagged comment (its counts, last reply and reply pages read the child's row).
+    // Pending-approval comments are never flagged and stop the parent-chain walk.
+    // Make sure the tests in commentsToUpdate.db.community.test.ts are passing after changing any of them.
+    private _collectCommentsToBeUpdated(): void {
         const windowed = this._buildWindowedReplySortArms(timestamp());
-        const query = `
-            WITH RECURSIVE 
-            direct_updates AS (
-                SELECT c.* FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
-                UNION
-                SELECT c.* FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                AND (
-                    EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.insertedAt)
-                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.insertedAt)
-                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.insertedAt)
-                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.insertedAt)
-                  )
-            ),
-            child_counts AS (
-                SELECT 
-                    c.parentCid AS cid,
-                    COUNT(*) AS actual_child_count
+        const notPending = (alias: string) => `(${alias}.pendingApproval IS NULL OR ${alias}.pendingApproval != 1)`;
+        // A child that counts towards its parent's childCount: has a CommentUpdate, not removed, not deleted by its author
+        const countedChild = `
                 FROM ${TABLES.COMMENTS} c
                 JOIN ${TABLES.COMMENT_UPDATES} cu_child ON c.cid = cu_child.cid
-                LEFT JOIN (
-                    SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
-                ) deleted_lookup ON deleted_lookup.cid = c.cid
                 WHERE c.parentCid IS NOT NULL
-                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND ${notPending("c")}
                   AND (cu_child.removed IS NOT 1 AND cu_child.removed IS NOT TRUE)
-                  AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
+                  AND (json_extract(cu_child.edit, '$.deleted') IS NULL OR json_extract(cu_child.edit, '$.deleted') != 1)`;
+        const insert = `INSERT OR IGNORE INTO ${COMMENTS_TO_UPDATE_TEMP_TABLE}`;
+        const arms: string[] = [
+            `${insert}
+            SELECT c.rowid FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+            WHERE ${notPending("c")}
+            AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))`,
+            `${insert}
+            SELECT c.rowid FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+            WHERE ${notPending("c")}
+            AND (
+                EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.insertedAt)
+                OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.insertedAt)
+                OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.insertedAt)
+                OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.insertedAt)
+            )`,
+            `${insert}
+            WITH child_counts AS (
+                SELECT c.parentCid AS cid, COUNT(*) AS actual_child_count
+                ${countedChild}
                 GROUP BY c.parentCid
-            ),
-            filtered_children AS (
-                SELECT
-                    c.parentCid AS cid,
-                    c.cid AS child_cid,
-                    ROW_NUMBER() OVER (PARTITION BY c.parentCid ORDER BY c.rowid DESC) AS child_rank
-                FROM ${TABLES.COMMENTS} c
-                JOIN ${TABLES.COMMENT_UPDATES} cu_child ON c.cid = cu_child.cid
-                LEFT JOIN (
-                    SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
-                ) deleted_lookup ON deleted_lookup.cid = c.cid
-                WHERE c.parentCid IS NOT NULL
-                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                  AND (cu_child.removed IS NOT 1 AND cu_child.removed IS NOT TRUE)
-                  AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
-                  AND COALESCE(cu_child.approved, 1) != 0
-            ),
-            last_child_cids AS (
-                SELECT cid, child_cid AS actual_last_child_cid
-                FROM filtered_children
-                WHERE child_rank = 1
-            ),
-            stale_child_counts AS (
-                SELECT parent.cid
-                FROM ${TABLES.COMMENTS} parent
-                JOIN ${TABLES.COMMENT_UPDATES} cu_parent ON parent.cid = cu_parent.cid
-                LEFT JOIN child_counts cc ON cc.cid = parent.cid
-                WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
-                  AND COALESCE(cc.actual_child_count, 0) != COALESCE(cu_parent.childCount, 0)
-            ),
-            stale_last_child_cids AS (
-                SELECT parent.cid
-                FROM ${TABLES.COMMENTS} parent
-                JOIN ${TABLES.COMMENT_UPDATES} cu_parent ON parent.cid = cu_parent.cid
-                LEFT JOIN last_child_cids lc ON lc.cid = parent.cid
-                WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
-                  AND COALESCE(lc.actual_last_child_cid, '') != COALESCE(cu_parent.lastChildCid, '')
-            ),
-            stale_replies AS (
-                SELECT DISTINCT cu_parent.cid
-                FROM ${TABLES.COMMENT_UPDATES} cu_parent
-                CROSS JOIN json_each(cu_parent.replies) sort_entry
-                CROSS JOIN json_each(json_extract(sort_entry.value, '$.commentCids')) child_ref
-                JOIN ${TABLES.COMMENT_UPDATES} cu_child ON cu_child.cid = child_ref.value
-                WHERE cu_parent.replies IS NOT NULL
-                  AND json_type(sort_entry.value, '$.commentCids') = 'array'
-                  -- Compare against the parent's updatedAt, not its insertedAt (issue #230). insertedAt is
-                  -- the batch's start timestamp, shared by every row the batch writes (issue #209/#211),
-                  -- while updatedAt is stamped when that row is actually calculated. A batch walks a post
-                  -- tree deepest-depth-first, so a child is always calculated before its parent and its
-                  -- updatedAt lands after the batch's start: comparing against insertedAt re-flagged every
-                  -- parent of any batch spanning >= 1 second, which produced another such batch, and the
-                  -- update loop never converged. updatedAt is when the parent's replies page was actually
-                  -- generated, which is the point the child's data could have gone stale relative to.
-                  AND cu_child.updatedAt > cu_parent.updatedAt
-            ),
-            ${windowed.ctes}base_updates AS (
-                SELECT * FROM direct_updates
-                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_child_counts scc ON c.cid = scc.cid
-                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_last_child_cids slc ON c.cid = slc.cid
-                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_replies sr ON c.cid = sr.cid
-                ${windowed.unions}
-            ),
-            authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM base_updates),
-            author_comments AS (
-                SELECT c.* FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-            ),
-            comments_needing_update AS (
-                SELECT * FROM base_updates
-                UNION SELECT * FROM author_comments
-            ),
-            parent_chain AS (
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN comments_needing_update cnu ON p.cid = cnu.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
-                UNION
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
-            ),
-            all_updates AS (
-                SELECT cid FROM comments_needing_update UNION SELECT cid FROM parent_chain
             )
-            SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
+            SELECT parent.rowid
+            FROM ${TABLES.COMMENT_UPDATES} cu_parent
+            JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+            LEFT JOIN child_counts cc ON cc.cid = cu_parent.cid
+            WHERE ${notPending("parent")}
+              AND COALESCE(cc.actual_child_count, 0) != COALESCE(cu_parent.childCount, 0)`,
+            `${insert}
+            WITH last_child_rowids AS (
+                SELECT c.parentCid AS cid, MAX(c.rowid) AS last_child_rowid
+                ${countedChild}
+                  AND COALESCE(cu_child.approved, 1) != 0
+                GROUP BY c.parentCid
+            )
+            SELECT parent.rowid
+            FROM ${TABLES.COMMENT_UPDATES} cu_parent
+            JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+            LEFT JOIN last_child_rowids lc ON lc.cid = cu_parent.cid
+            LEFT JOIN ${TABLES.COMMENTS} last_child ON last_child.rowid = lc.last_child_rowid
+            WHERE ${notPending("parent")}
+              AND COALESCE(last_child.cid, '') != COALESCE(cu_parent.lastChildCid, '')`,
+            `${insert}
+            SELECT DISTINCT parent.rowid
+            FROM ${TABLES.COMMENT_UPDATES} cu_parent
+            JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+            CROSS JOIN json_each(cu_parent.replies) sort_entry
+            CROSS JOIN json_each(json_extract(sort_entry.value, '$.commentCids')) child_ref
+            JOIN ${TABLES.COMMENT_UPDATES} cu_child ON cu_child.cid = child_ref.value
+            WHERE cu_parent.replies IS NOT NULL
+              AND json_type(sort_entry.value, '$.commentCids') = 'array'
+              -- Compare against the parent's updatedAt, not its insertedAt (issue #230). insertedAt is
+              -- the batch's start timestamp, shared by every row the batch writes (issue #209/#211),
+              -- while updatedAt is stamped when that row is actually calculated. A batch walks a post
+              -- tree deepest-depth-first, so a child is always calculated before its parent and its
+              -- updatedAt lands after the batch's start: comparing against insertedAt re-flagged every
+              -- parent of any batch spanning >= 1 second, which produced another such batch, and the
+              -- update loop never converged. updatedAt is when the parent's replies page was actually
+              -- generated, which is the point the child's data could have gone stale relative to.
+              AND cu_child.updatedAt > cu_parent.updatedAt`,
+            ...windowed.selects.map((select) => `${insert} WITH RECURSIVE ${windowed.ctes} ${select}`),
+            `${insert}
+            SELECT c.rowid FROM ${TABLES.COMMENTS} c
+            WHERE ${notPending("c")}
+              AND c.authorSignerAddress IN (
+                SELECT flagged.authorSignerAddress FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE} t
+                JOIN ${TABLES.COMMENTS} flagged ON flagged.rowid = t.id
+              )`,
+            `${insert}
+            WITH RECURSIVE parent_chain(id, parentCid) AS (
+                SELECT p.rowid, p.parentCid FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE} t
+                JOIN ${TABLES.COMMENTS} c ON c.rowid = t.id
+                JOIN ${TABLES.COMMENTS} p ON p.cid = c.parentCid
+                WHERE ${notPending("p")}
+                UNION
+                SELECT p.rowid, p.parentCid FROM parent_chain pc JOIN ${TABLES.COMMENTS} p ON p.cid = pc.parentCid
+                WHERE ${notPending("p")}
+            )
+            SELECT id FROM parent_chain`
+        ];
+        for (const arm of arms) {
+            // Each statement is bound only to the named parameters it mentions (the windowed arms' window bounds)
+            const params = Object.fromEntries(Object.entries(windowed.params).filter(([name]) => arm.includes(`:${name}`)));
+            this._prepareCached(arm).run(params);
+        }
+    }
+
+    // Runs `read` with the temp table of comments to update filled, and empties it afterwards whatever happens.
+    // The table is one per connection: the update loop is the only caller on a community's own connection, and
+    // a test handler is a connection of its own.
+    private _withCommentsToBeUpdated<Result>(read: () => Result): Result {
+        this._db.exec(`CREATE TEMP TABLE IF NOT EXISTS ${COMMENTS_TO_UPDATE_TEMP_TABLE} (id INTEGER PRIMARY KEY)`);
+        this._db.exec(`DELETE FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE}`);
+        try {
+            this._collectCommentsToBeUpdated();
+            return read();
+        } finally {
+            this._db.exec(`DELETE FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE}`);
+        }
+    }
+
+    // Cached, so every caller sets raw() itself: the mode sticks to the statement object
+    private _selectCommentsToBeUpdated(): Statement {
+        return this._prepareCached(`
+            SELECT c.cid, c.depth FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE} t JOIN ${TABLES.COMMENTS} c ON c.rowid = t.id
             WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-            ORDER BY c.rowid
-        `;
-        const results = this._prepareCached(query).all(windowed.params) as CommentsTableRow[];
-        return results.map((r) => this._parseCommentsTableRow(r));
+            ORDER BY t.id
+        `);
+    }
+
+    // Which comments the update cycle has to recalculate, as cid and depth only, in rowid order. Each slice of the
+    // cycle loads its own rows through queryCommentsByCids. See _collectCommentsToBeUpdated for what flags a comment.
+    queryCommentsToBeUpdated(): Pick<CommentsTableRow, "cid" | "depth">[] {
+        return this._withCommentsToBeUpdated(
+            () => this._selectCommentsToBeUpdated().raw(false).all() as Pick<CommentsTableRow, "cid" | "depth">[]
+        );
+    }
+
+    // The same set as queryCommentsToBeUpdated, grouped by depth as plain arrays of cids in rowid order: what the update
+    // cycle holds for the whole board is then one string per comment to update (3.1M comments: 250 MB against 750 MB
+    // of {cid, depth} objects, and 2.7 GB of full rows before issue #355).
+    queryCidsToBeUpdatedByDepth(): Map<number, string[]> {
+        return this._withCommentsToBeUpdated(() => {
+            const cidsByDepth = new Map<number, string[]>();
+            for (const [cid, depth] of this._selectCommentsToBeUpdated().raw(true).iterate() as IterableIterator<[string, number]>) {
+                const cids = cidsByDepth.get(depth);
+                if (cids) cids.push(cid);
+                else cidsByDepth.set(depth, [cid]);
+            }
+            return cidsByDepth;
+        });
+    }
+
+    // The comment rows behind a list of cids, parsed, in the order the cids were given (a cid with no row is
+    // skipped). What each slice of the update cycle loads for itself, since queryCommentsToBeUpdated no longer
+    // materializes the rows for the whole board (issue #355).
+    queryCommentsByCids(cids: string[]): CommentsTableRow[] {
+        const byCid = new Map<string, CommentsTableRow>();
+        this._forEachCidBatch<CommentsTableRow>(
+            cids,
+            (placeholders) => `SELECT * FROM ${TABLES.COMMENTS} WHERE cid IN (${placeholders})`,
+            (row) => byCid.set(row.cid, this._parseCommentsTableRow(row))
+        );
+        const rows: CommentsTableRow[] = [];
+        for (const cid of cids) {
+            const row = byCid.get(cid);
+            if (row) rows.push(row);
+        }
+        return rows;
     }
 
     queryCommunityStats(): CommunityStats {
@@ -2951,9 +3013,7 @@ export class DbHandler {
 
     // Per address: post and reply karma (votes on the author's comments) and the rowids of the author's first and
     // last comments, one GROUP BY per chunk of addresses
-    private _queryAuthorAggregatesByAddresses(
-        addresses: string[]
-    ): Map<
+    private _queryAuthorAggregatesByAddresses(addresses: string[]): Map<
         string,
         {
             postScore: number;
