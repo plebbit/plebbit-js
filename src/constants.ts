@@ -15,3 +15,10 @@ export enum STORAGE_KEYS {
 }
 
 // Configs for LRU storage
+
+// The largest CommentUpdate a client will accept off a gateway. It lives here rather than beside the
+// comment clients manager that enforces it because the node runtime reads it too, and importing a clients
+// manager for one number put a class-extends cycle on the eager import path: base-client-manager pulls in
+// the node util, which pulled in the comment clients manager, which reaches PKCClientsManager extending
+// BaseClientsManager before that module has finished evaluating.
+export const MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE = 1024 * 1024;

@@ -44,7 +44,7 @@ import { DbHandler } from "./community/db-handler.js";
 import Database from "better-sqlite3";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../publications/comment/schema.js";
 import type { PageIpfs } from "../../pages/types.js";
-import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../publications/comment/comment-client-manager.js";
+import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../constants.js";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".pkc");
 

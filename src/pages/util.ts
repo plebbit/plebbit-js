@@ -26,7 +26,7 @@ import {
 } from "../publications/publication-community.js";
 import { sha256 } from "js-sha256";
 import type { LRUCache } from "lru-cache";
-import { BaseClientsManager } from "../clients/base-client-manager.js";
+import type { BaseClientsManager } from "../clients/base-client-manager.js";
 import { parseJsonWithPKCErrorIfFails, parsePageIpfsSchemaWithPKCErrorIfItFails } from "../schema/schema-util.js";
 import type { CommunityIpfsType } from "../community/types.js";
 import { buildRuntimeAuthor } from "../publications/publication-author.js";
