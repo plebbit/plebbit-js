@@ -3139,9 +3139,26 @@ export class DbHandler {
         ).get() as Pick<CommentsTableRow, "cid"> | undefined;
     }
 
-    queryAllCommentsOrderedByIdAsc(): CommentsTableRow[] {
-        const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all() as CommentsTableRow[];
-        return results.map((r) => this._parseCommentsTableRow(r));
+    // Every comment row in rowid order, one batch at a time, so a caller that walks the whole board holds a
+    // batch instead of the board. Reading them all at once (what the repin on start used to do) was 2.7 GB of
+    // rows on a 3.1M-comment board, an OOM before the publish loop had started (issue #359).
+    //
+    // Keyset paging on rowid rather than one held-open cursor: the caller awaits IPFS between batches, and an
+    // open better-sqlite3 iterator would block every other statement on this connection for that whole time.
+    // The rowid selected alongside the row is the cursor only: it is not part of the comments schema, so the
+    // row parser drops it.
+    *iterateAllCommentsOrderedByIdAsc(batchSize: number): Generator<CommentsTableRow[], void> {
+        assert(Number.isInteger(batchSize) && batchSize > 0, `iterateAllCommentsOrderedByIdAsc needs a positive batch size`);
+        let lastRowid = 0;
+        while (true) {
+            const rows = this._prepareCached(`SELECT rowid, * FROM ${TABLES.COMMENTS} WHERE rowid > ? ORDER BY rowid ASC LIMIT ?`).all(
+                lastRowid,
+                batchSize
+            ) as { rowid: number }[];
+            if (rows.length === 0) return;
+            lastRowid = rows[rows.length - 1].rowid;
+            yield rows.map((row) => this._parseCommentsTableRow(row));
+        }
     }
 
     queryAuthorModEdits(opts: {
