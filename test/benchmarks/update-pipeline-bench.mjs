@@ -208,8 +208,8 @@ async function main() {
         if (REUSED_ADDRESS) {
             community._dbHandler[flagQuery] = flagQuery === "queryCidsToBeUpdatedByDepth" ? () => new Map() : () => [];
             // A seeded board's comments were never added to IPFS, so start() finds the newest one unpinned and
-            // would re-add every comment of the board: queryAllCommentsOrderedByIdAsc materializes them all
-            // (2.7 GB of rows at 3.1M comments, an OOM on its own) and none of it is the cycle being measured.
+            // would re-add every comment of the board before the first iteration. That walk is bounded now
+            // (issue #359), but it is still minutes of adds that are not the cycle being measured.
             community._repinCommentsIPFSIfNeeded = async () => {};
         }
         await community.start();
