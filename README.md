@@ -213,6 +213,7 @@ CommunityFeatures { // any boolean that changes the functionality of the communi
   noReplyLinks?: boolean // block all replies that have a link field set
   noSpoilerReplies?: boolean // author can't set spoiler = true on replies
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan. Maximum depth is 1
+  noArchive?: boolean // no archive, like 4chan /b/. Mods can't archive posts that aren't already archived (commentModeration.archived = true)
   safeForWork?: boolean // informational flag indicating this community is safe for work
   pseudonymityMode?: 'per-post' | 'per-reply' | 'per-author'
   authorFlairs?: boolean // authors can choose their own author flairs (otherwise only mods can)
