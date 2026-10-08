@@ -421,7 +421,7 @@ PubsubSignature {
   - [`community.exportCommunityModLogs(opts?)`](#communityexportcommunitymodlogsopts)
   - `community.address`
   - `community.shortAddress`
-  - `community.roles`
+  - [`community.roles`](#community-roles-and-permissions)
   - `community.posts`
   - `community.lastPostCid`
   - `community.pubsubTopic`
@@ -894,7 +894,7 @@ console.log(community.posts.pages.hot.comments[0].content) // prints 'My first p
 
 ### `pkc.createCommunityEdit(createCommunityEditOptions)`
 
-> Create a `CommunityEdit` instance, which can be used by admins to edit a community remotely over pubsub. A `CommunityEdit` is a regular `Publication` and must still be published and go through a challenge handshake.
+> Create a `CommunityEdit` instance, which can be used by owners and admins to edit permitted public community properties remotely over pubsub. A `CommunityEdit` is a regular `Publication` and must still be published and go through a challenge handshake. See [Community roles and permissions](#community-roles-and-permissions) for restrictions.
 
 #### Parameters
 
@@ -912,9 +912,9 @@ An object which may have the following keys:
 | communityPublicKey | `string` or `undefined` | IPNS public key of the community (can identify the community instead of `communityAddress`) |
 | communityName | `string` or `undefined` | Domain name of the community, e.g. `'memes.bso'` (can identify the community instead of `communityAddress`) |
 | timestamp | `number` or `undefined` | Time of publishing in seconds, `Math.round(Date.now() / 1000)` if undefined |
-| author | `Author` | `author.address` of the community edit must have `community.roles` `'admin'` |
-| signer | `Signer` | Signer of the community edit |
-| communityEdit | `CommunityEditOptions` | The community edit options, see [`CommunityEditOptions`](#communityeditoptions) |
+| author | `Author` | Author metadata for the edit. Role checks authenticate the signer; a claimed author address alone does not grant permissions |
+| signer | `Signer` | Signer of the community edit, must match an `owner` or `admin` entry in `community.roles`; owner-exclusive fields require `owner` |
+| communityEdit | `CommunityEditOptions` | The permitted public properties to edit, see [Community roles and permissions](#community-roles-and-permissions). Private `settings` cannot be edited through this publication |
 
 #### Returns
 
@@ -1277,9 +1277,33 @@ The PKC events.
 ## Community API
 The community API for getting community updates, or creating, editing, running a community as an owner.
 
+### Community roles and permissions
+
+`community.roles` maps author identities to roles with different permissions. The following table describes the built-in checks on signed publications in pkc-js 0.0.101:
+
+| Action over pubsub | `moderator` | `admin` | `owner` |
+| --- | --- | --- | --- |
+| Publish `CommentModeration`, such as removing comments, locking posts, or approving pending comments | Yes | Yes | Yes |
+| Publish `CommunityEdit` for public properties such as `title`, `description`, `rules`, and `features` | No | Yes | Yes |
+| Publish `CommunityEdit` containing `roles` | No | No | Yes |
+| Publish `CommunityEdit` containing the legacy `address` field | No | No | Yes |
+| Publish `CommunityEdit` containing private `settings` | No | No | No |
+
+Role keys may be key-derived author addresses or domains. The node matches them against the publication's signer, not a freely claimed `author.address`. A domain role key must match the wire `author.name` and resolve to the signing key. See [Author identity in excludes, roles and address lists](docs/protocol/challenge-flow.md#author-identity-in-excludes-roles-and-address-lists).
+
+These permissions do not bypass the challenge handshake. Operators can configure `settings.challenges[].exclude[].roles` to exempt particular roles from a challenge. All three built-in roles also allow replies and author edits under locked posts, but not votes, and are exempt from community pseudonymization.
+
+#### Role ownership and node control
+
+An `owner` entry in `community.roles` does not itself provide the community's private key or privileged access to its hosting node. `community.edit()` on a `LocalCommunity`, or its privileged RPC equivalent, edits the hosted community directly without authenticating an author against this role table. Private `settings`, including challenge configuration, must be changed through that path; even a role owner cannot publish them through `createCommunityEdit()`. Starting, stopping, and deleting a hosted community are likewise node-management operations, not powers granted by a role entry.
+
+The owner-only check is field-specific, not a general category for destructive changes. In 0.0.101 it checks `roles` and legacy `address`; the newer public `name` field is accepted by the edit schema but is not included in that check. Do not interpret this as an owner-only guarantee for all identity-related edits.
+
+See the [publication validator](src/runtime/node/community/local-community/publication-validation.ts#L490-L542), [edit schema](src/community/schema.ts#L356-L373), and [community-edit tests](test/node-and-browser/publications/community-edit/community.edit.publication.test.ts#L105-L265) for the enforced boundaries.
+
 ### `community.edit(communityEditOptions)`
 
-> Edit the content/information of a community in your local database. Only usable if the community database corresponding to `community.address` exists locally  (ie. you are the community owner).
+> Edit the content/information of a community hosted in your local database, or on the node you control through RPC. This requires access to the hosting node; an `owner` entry in `community.roles` alone is not sufficient. To publish permitted public edits as a role owner or admin, use [`pkc.createCommunityEdit()`](#pkccreatecommunityeditcreatecommunityeditoptions).
 
 #### Parameters
 
@@ -1297,7 +1321,7 @@ An object which may have the following keys:
 | signer | `Signer` or `undefined` | Signer of the community, useful to change the private if the owner gets hacked, but still has his crypto domain
 | title | `string` or `undefined` | Title of the community |
 | description | `string` or `undefined` | Description of the community |
-| roles | `{[authorAddress: string]: CommunityRole}` or `undefined` | Author addresses of the moderators |
+| roles | `{[authorAddress: string]: CommunityRole}` or `undefined` | Author identities assigned `owner`, `admin`, or `moderator`; see [Community roles and permissions](#community-roles-and-permissions) |
 | lastPostCid | `string` or `undefined` | The most recent post in the linked list of posts |
 | posts | `Pages` or `undefined` | Only preload page 1 sorted by 'hot', might preload more later, should include some child comments and vote counts for each post |
 | pubsubTopic | `string` or `undefined` | The string to publish to in the pubsub, a public key of the community owner's choice |
