@@ -32,7 +32,9 @@ export type NameIdentityFailure = {
     error?: unknown;
 };
 
-export type IdentityMatchOutcome = { matched: true } | { matched: false; nameFailure?: NameIdentityFailure };
+// `nameFailure` is declared (as never present) on the matched branch too, so a caller holding two outcomes
+// can read `a.nameFailure ?? b.nameFailure` without first narrowing each one.
+export type IdentityMatchOutcome = { matched: true; nameFailure?: undefined } | { matched: false; nameFailure?: NameIdentityFailure };
 
 export type AuthorIdentityMatcher = {
     signerAddress: string;

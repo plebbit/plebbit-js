@@ -12,6 +12,7 @@ import {
 } from "../../dist/node/test/test-util.js";
 import { itSkipIfRpc, describeSkipIfRpc } from "../helpers/conditional-tests.js";
 import type { PKC } from "../../dist/node/pkc/pkc.js";
+import type { PKCError } from "../../dist/node/pkc-error.js";
 import type { RemoteCommunity } from "../../dist/node/community/remote-community.js";
 import type { Comment } from "../../dist/node/publications/comment/comment.js";
 import { NameResolverSchema } from "../../dist/node/schema.js";
@@ -463,7 +464,8 @@ describeSkipIfRpc(`nameResolver error edge cases`, async () => {
         try {
             await pkc._clientsManager.resolveCommunityNameIfNeeded({ communityName: "test.bso" });
             expect.fail("Should have thrown");
-        } catch (e: any) {
+        } catch (thrown) {
+            const e = thrown as PKCError;
             expect(e.code).to.equal("ERR_ALL_NAME_RESOLVERS_FAILED");
             expect(e.details.address).to.equal("test.bso");
             // keyed by resolverKey, not a flattened string, so a caller can tell which resolver failed and how
