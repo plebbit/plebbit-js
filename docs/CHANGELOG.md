@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.104](https://github.com/pkcprotocol/pkc-js/compare/v0.0.103...v0.0.104) (2026-10-11)
+
+### Bug Fixes
+
+* **community:** report why an author name could not be verified, not a silent non-match ([#358](https://github.com/pkcprotocol/pkc-js/issues/358)) ([f35bff0](https://github.com/pkcprotocol/pkc-js/commit/f35bff09eb3f6c49cb374d160442cd92dc29706a)), closes [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#354](https://github.com/pkcprotocol/pkc-js/issues/354) [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#354](https://github.com/pkcprotocol/pkc-js/issues/354) [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#353](https://github.com/pkcprotocol/pkc-js/issues/353) [#353](https://github.com/pkcprotocol/pkc-js/issues/353)
+
 ## [0.0.103](https://github.com/pkcprotocol/pkc-js/compare/v0.0.102...v0.0.103) (2026-10-11)
 
 ### Bug Fixes
