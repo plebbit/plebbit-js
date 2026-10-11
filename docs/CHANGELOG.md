@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.102](https://github.com/pkcprotocol/pkc-js/compare/v0.0.101...v0.0.102) (2026-10-11)
+
+### Features
+
+* **community:** add features.noArchive to block archiving posts ([#366](https://github.com/pkcprotocol/pkc-js/issues/366)) ([c088cd2](https://github.com/pkcprotocol/pkc-js/commit/c088cd299d947d1c5efc9d456769c5f09db70c1e))
+
 ## [0.0.101](https://github.com/pkcprotocol/pkc-js/compare/v0.0.100...v0.0.101) (2026-09-08)
 
 ### Bug Fixes

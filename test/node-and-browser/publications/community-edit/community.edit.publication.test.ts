@@ -175,6 +175,23 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
             });
         });
 
+        // name is the current wire field for the community domain; address is only the backward-compat
+        // alias that editing.ts rewrites into name. Both must stay owner-only (#373).
+        it(`Admin should not be able to publish CommunityEdit with edit.name`, async () => {
+            const adminSigner = await pkc.createSigner(roles[1].signer);
+            editProps = { description: "Test" + Math.random(), name: "newaddress.eth" };
+            const communityEditPub = await pkc.createCommunityEdit({
+                communityEdit: editProps,
+                communityAddress: communityAddress,
+                signer: adminSigner
+            });
+            await publishWithExpectedResult({
+                publication: communityEditPub,
+                expectedChallengeSuccess: false,
+                expectedReason: messages.ERR_COMMUNITY_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS
+            });
+        });
+
         it(`Admin should not be able to modify settings`, async () => {
             const adminSigner = await pkc.createSigner(roles[1].signer);
             const editProps = { description: "Test" + Math.random(), settings: { fetchThumbnailUrls: true } };

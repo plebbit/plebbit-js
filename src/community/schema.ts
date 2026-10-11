@@ -62,6 +62,7 @@ export const CommunityFeaturesSchema = z.looseObject({
     // Deliberately not bounded by the schema, so a value from a future protocol version doesn't fail the whole record.
     maxCrosspostDepth: z.number().int().nonnegative().optional(),
     noNestedReplies: z.boolean().optional(), // No nested replies, like old school forums and 4chan. Maximum depth is 1
+    noArchive: z.boolean().optional(), // No archive, like 4chan /b/. Mods can't archive posts that aren't already archived (commentModeration.archived = true)
     safeForWork: z.boolean().optional(), // Informational flag indicating this community is safe for work
     authorFlairs: z.boolean().optional(), // Authors can choose their own author flairs (otherwise only mods can)
     requireAuthorFlairs: z.boolean().optional(), // Force authors to choose an author flair before posting
@@ -168,22 +169,21 @@ export const ChallengeExcludeNameSchema = AuthorAddressSchema.refine(
     messages.ERR_CHALLENGE_EXCLUDE_NAMES_MUST_BE_DOMAIN
 );
 
-export const ChallengeExcludeSchema = z
-    .looseObject({
-        community: ChallengeExcludeCommunitySchema.optional(),
-        postScore: z.number().int().optional(),
-        replyScore: z.number().int().optional(),
-        postCount: z.number().nonnegative().int().optional(),
-        replyCount: z.number().nonnegative().int().optional(),
-        firstCommentTimestamp: PKCTimestampSchema.optional(),
-        challenges: z.number().nonnegative().int().array().optional(),
-        roles: CommunityRoleSchema.shape.role.array().nonempty().optional(),
-        publicKeys: ChallengeExcludePublicKeySchema.array().nonempty().optional(),
-        names: ChallengeExcludeNameSchema.array().nonempty().optional(),
-        rateLimit: z.number().nonnegative().int().optional(),
-        rateLimitChallengeSuccess: z.boolean().optional(),
-        publicationType: ChallengeExcludePublicationTypeSchema.optional()
-    });
+export const ChallengeExcludeSchema = z.looseObject({
+    community: ChallengeExcludeCommunitySchema.optional(),
+    postScore: z.number().int().optional(),
+    replyScore: z.number().int().optional(),
+    postCount: z.number().nonnegative().int().optional(),
+    replyCount: z.number().nonnegative().int().optional(),
+    firstCommentTimestamp: PKCTimestampSchema.optional(),
+    challenges: z.number().nonnegative().int().array().optional(),
+    roles: CommunityRoleSchema.shape.role.array().nonempty().optional(),
+    publicKeys: ChallengeExcludePublicKeySchema.array().nonempty().optional(),
+    names: ChallengeExcludeNameSchema.array().nonempty().optional(),
+    rateLimit: z.number().nonnegative().int().optional(),
+    rateLimitChallengeSuccess: z.boolean().optional(),
+    publicationType: ChallengeExcludePublicationTypeSchema.optional()
+});
 
 // Private settings input only (community.settings.challenges[x].exclude[y]). Rejecting the removed fields here, and not on
 // the record schema, keeps old community records loadable while making a stale owner config fail loudly instead of

@@ -539,6 +539,14 @@ async function checkCommentModerationPublication(
 
     if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
         return messages.ERR_COMMUNITY_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
+    // Only newly archiving a post is blocked. A post archived before noArchive was set can still be unarchived,
+    // and clients that resend its current archived: true alongside other mod changes aren't rejected
+    if (
+        community.features?.noArchive &&
+        commentModerationPublication.commentModeration.archived === true &&
+        !community._dbHandler.queryCommentFlagsSetByMod(commentToBeEdited.cid).archived
+    )
+        return messages.ERR_NOT_ALLOWED_TO_ARCHIVE_POSTS;
     if (isAuthorMod && commentModerationPublication.commentModeration.archived && commentToBeEdited.depth !== 0)
         return messages.ERR_COMMUNITY_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY;
     const commentModInDb = community._dbHandler.hasCommentModerationWithSignatureEncoded(commentModerationPublication.signature.signature);
@@ -558,7 +566,9 @@ async function checkCommunityEditPublication(
     if (intersection(CommunityEditPublicationPubsubReservedFields, keys(communityEdit)).length > 0)
         return messages.ERR_COMMUNITY_EDIT_HAS_RESERVED_FIELD;
 
-    if (communityEdit.communityEdit.roles || communityEdit.communityEdit.address) {
+    // name is the current wire field for the community domain; address is only the backward-compat alias that
+    // editing.ts rewrites into name before applying the edit, so both must stay owner-only (#373)
+    if (communityEdit.communityEdit.roles || communityEdit.communityEdit.address || communityEdit.communityEdit.name) {
         const ownerMatch = await matchPublicationAuthorAgainstRoles({ community, rolesToCheckAgainst: ["owner"], authorIdentityMatcher });
         if (!ownerMatch.matched) {
             if (ownerMatch.nameFailure) return ownerMatch.nameFailure.reason;
