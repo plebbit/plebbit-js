@@ -22,6 +22,7 @@ import type { PKC as PKCType } from "../../../dist/node/pkc/pkc.js";
 import type { RpcLocalCommunity } from "../../../dist/node/community/rpc-local-community.js";
 import type { CreatePKCWsServerOptions } from "../../../dist/node/rpc/src/types.js";
 import type { NameResolver } from "../../../dist/node/types.js";
+import type { PKCError } from "../../../dist/node/pkc-error.js";
 import type { CommentIpfsWithCidDefined } from "../../../dist/node/publications/comment/types.js";
 
 const { PKCWsServer: createPKCWsServer } = PKCWsServerModule;
@@ -64,6 +65,7 @@ describeSkipIfRpc("resolver failure surfaces through the RPC server (#353)", () 
     let community: RpcLocalCommunity;
     let post: CommentIpfsWithCidDefined;
     const ownerDomain = `owner-353-${Date.now()}.bso`;
+    const resolverKey = `rpc-353-resolver-${Date.now()}`;
     const resolverShouldThrow = { value: false };
 
     beforeAll(async () => {
@@ -74,7 +76,7 @@ describeSkipIfRpc("resolver failure surfaces through the RPC server (#353)", () 
         // The resolver object lives in this process and is handed to the server's PKC, so the flag below
         // reaches the server side even though the resolution itself happens there.
         const resolver: NameResolver = createMockNameResolver({
-            key: `rpc-353-resolver-${Date.now()}`,
+            key: resolverKey,
             resolveFunction: async ({ name }) => {
                 if (resolverShouldThrow.value) throw new Error("resolver is down");
                 if (name === ownerDomain) return { publicKey: ownerSigner.address };
@@ -122,6 +124,21 @@ describeSkipIfRpc("resolver failure surfaces through the RPC server (#353)", () 
         await expect(clientPkc.resolveAuthorName({ name: ownerDomain, cache: { maxAge: 0 } })).rejects.toMatchObject({
             code: "ERR_ALL_NAME_RESOLVERS_FAILED"
         });
+    });
+
+    // The server forwards a PKCError by JSON-stringifying it, and a plain Error has no enumerable own
+    // properties, so each resolver's error used to arrive as `{}`: the client could see that every resolver
+    // failed but not how, which is the one thing the per-resolver map exists to tell it.
+    it("carries each resolver's own error across the wire, not an empty object", async () => {
+        resolverShouldThrow.value = true;
+        const error = await clientPkc.resolveAuthorName({ name: ownerDomain, cache: { maxAge: 0 } }).then(
+            () => expect.fail("Should have rejected"),
+            (e: unknown) => e as PKCError
+        );
+        expect(error.code).to.equal("ERR_ALL_NAME_RESOLVERS_FAILED");
+        const resolverError = error.details.resolverErrors[resolverKey];
+        expect(resolverError, `resolverErrors should be keyed by the resolver key, got ${JSON.stringify(error.details)}`).to.exist;
+        expect(resolverError.error.message).to.include("resolver is down");
     });
 
     it("resolves normally once the server's resolvers recover", async () => {
