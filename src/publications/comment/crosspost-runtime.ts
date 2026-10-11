@@ -70,7 +70,9 @@ export function collectCrosspostAuthorsToResolve({
     const authors: Array<{ authorName: string; signaturePublicKey: string }> = [];
     const chain = _chainOf(crosspost).slice(0, maxLevels);
     for (const level of chain) {
-        if (typeof level.comment.author?.nameResolved === "boolean") continue;
+        // Not gated on the level's own field, the same rule the comment's own author follows: both verdicts
+        // lapse out of nameResolvedCache and have to be re-earned, nothing else ever requeues an embedded
+        // author, and resolveAuthorNamesInBackground skips every entry the cache still holds (#353).
         const authorName = getAuthorNameFromWire(level.comment.author);
         if (!authorName) continue;
         authors.push({ authorName, signaturePublicKey: level.comment.signature.publicKey });

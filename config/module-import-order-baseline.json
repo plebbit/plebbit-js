@@ -1,0 +1,14 @@
+{
+    "_comment": "Modules under dist/node that are KNOWN to throw when imported standalone because of a top-level circular-import use (pre-existing debt, tracked in issue #295). The verifier fails on any module NOT in this list that throws, and on any entry here that no longer throws, so this list can only shrink. Never add to it to make a PR green: fix the cycle instead (see src/domain-util.ts).",
+    "modules": [
+        "dist/node/clients/rpc-client/rpc-schema-util.js",
+        "dist/node/clients/rpc-client/schema.js",
+        "dist/node/publications/comment-edit/comment-edit.js",
+        "dist/node/publications/comment-moderation/comment-moderation.js",
+        "dist/node/publications/community-edit/community-edit.js",
+        "dist/node/publications/publication.js",
+        "dist/node/publications/vote/vote.js",
+        "dist/node/rpc/src/schema.js",
+        "dist/node/schema.js"
+    ]
+}

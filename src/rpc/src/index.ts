@@ -523,6 +523,12 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
                                 if (seen.has(value)) return undefined;
                                 seen.add(value);
                             }
+                            // A plain Error has no enumerable own properties, so one nested in `details` (a
+                            // resolver's error in ERR_ALL_NAME_RESOLVERS_FAILED, a gateway's in
+                            // gatewayToError) would reach the client as `{}`. PKCError serializes its own
+                            // fields and is left alone.
+                            if (value instanceof Error && !(value instanceof PKCError))
+                                return { name: value.name, message: value.message, ...("code" in value ? { code: value.code } : {}) };
                             return value;
                         })
                     );

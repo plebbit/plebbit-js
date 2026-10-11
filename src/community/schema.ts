@@ -16,9 +16,11 @@ import {
 import { ModQueuePagesIpfsSchema, PostsPagesIpfsSchema } from "../pages/schema.js";
 import type { LocalCommunity } from "../runtime/node/community/local-community.js";
 import type { PageIpfs, PageSortReplyEntry } from "../pages/types.js";
+import type { AuthorIdentityMatcher } from "../runtime/node/community/local-community/author-identity.js";
 import { difference, isEmpty, keys, omit } from "remeda";
 import type { DecryptedChallengeRequestMessageTypeWithCommunityAuthor } from "../pubsub-messages/types.js";
 import { messages } from "../errors.js";
+import { isStringDomain } from "../domain-util.js";
 
 // Other props of Community Ipfs here
 export const CommunityEncryptionSchema = z.looseObject({
@@ -61,6 +63,7 @@ export const CommunityFeaturesSchema = z.looseObject({
     // Deliberately not bounded by the schema, so a value from a future protocol version doesn't fail the whole record.
     maxCrosspostDepth: z.number().int().nonnegative().optional(),
     noNestedReplies: z.boolean().optional(), // No nested replies, like old school forums and 4chan. Maximum depth is 1
+    noArchive: z.boolean().optional(), // No archive, like 4chan /b/. Mods can't archive posts that aren't already archived (commentModeration.archived = true)
     safeForWork: z.boolean().optional(), // Informational flag indicating this community is safe for work
     authorFlairs: z.boolean().optional(), // Authors can choose their own author flairs (otherwise only mods can)
     requireAuthorFlairs: z.boolean().optional(), // Force authors to choose an author flair before posting
@@ -127,7 +130,7 @@ export const ResultOfGetChallengeSchema = ChallengeFromGetChallengeSchema.or(Cha
 
 export const ChallengeExcludeCommunitySchema = z
     .object({
-        addresses: CommunityAddressSchema.array().nonempty(), // list of community addresses that can be used to exclude, plural because not a condition field like 'role'
+        addresses: CommunityAddressSchema.array().nonempty(), // list of community addresses that can be used to exclude
         maxCommentCids: z.number().nonnegative().int(), // maximum amount of comment cids that will be fetched to check
         postScore: z.number().int().optional(),
         replyScore: z.number().int().optional(),
@@ -151,6 +154,22 @@ export const ChallengeExcludePublicationTypeSchema = z
         messages.ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT
     );
 
+// An exclude names the author identity it means explicitly (issue #267):
+// - publicKeys: key-derived author addresses (the runtime author.publicKey), matched against the publication signature
+// - names: domains, resolved at match time (regardless of pkc.resolveAuthorNames) and required to resolve to the signer
+// The former conflated `exclude.address` (matched lexically against `name || signerAddress`) and the pre-v42 `exclude.role`
+// are rejected when an owner writes settings (ChallengeExcludeSettingSchema below). The shared ChallengeExcludeSchema stays
+// loose so a client on this version can still parse records published by communities that have not upgraded yet: there
+// the old fields pass through unused, they never grant anything.
+export const ChallengeExcludePublicKeySchema = AuthorAddressSchema.refine(
+    (address) => !isStringDomain(address),
+    messages.ERR_CHALLENGE_EXCLUDE_PUBLIC_KEYS_MUST_NOT_BE_DOMAIN
+);
+export const ChallengeExcludeNameSchema = AuthorAddressSchema.refine(
+    (name) => isStringDomain(name),
+    messages.ERR_CHALLENGE_EXCLUDE_NAMES_MUST_BE_DOMAIN
+);
+
 export const ChallengeExcludeSchema = z.looseObject({
     community: ChallengeExcludeCommunitySchema.optional(),
     postScore: z.number().int().optional(),
@@ -159,12 +178,21 @@ export const ChallengeExcludeSchema = z.looseObject({
     replyCount: z.number().nonnegative().int().optional(),
     firstCommentTimestamp: PKCTimestampSchema.optional(),
     challenges: z.number().nonnegative().int().array().optional(),
-    role: CommunityRoleSchema.shape.role.array().optional(),
-    address: AuthorAddressSchema.array().optional(),
+    roles: CommunityRoleSchema.shape.role.array().nonempty().optional(),
+    publicKeys: ChallengeExcludePublicKeySchema.array().nonempty().optional(),
+    names: ChallengeExcludeNameSchema.array().nonempty().optional(),
     rateLimit: z.number().nonnegative().int().optional(),
     rateLimitChallengeSuccess: z.boolean().optional(),
     publicationType: ChallengeExcludePublicationTypeSchema.optional()
 });
+
+// Private settings input only (community.settings.challenges[x].exclude[y]). Rejecting the removed fields here, and not on
+// the record schema, keeps old community records loadable while making a stale owner config fail loudly instead of
+// silently becoming an exclude that matches nobody (a pending-approval challenge that no longer exempts moderators).
+export const ChallengeExcludeSettingSchema = ChallengeExcludeSchema.refine(
+    (exclude) => !("address" in exclude),
+    messages.ERR_CHALLENGE_EXCLUDE_ADDRESS_FIELD_REMOVED
+).refine((exclude) => !("role" in exclude), messages.ERR_CHALLENGE_EXCLUDE_ROLE_FIELD_RENAMED);
 
 export const CommunityChallengeSettingSchema = z
     .object({
@@ -176,7 +204,7 @@ export const CommunityChallengeSettingSchema = z
         // the default, so an owner who sets nothing publishes nothing. Only options that are actually set in
         // `options` are emitted. See docs/protocol/challenge-settings.md.
         publicOptions: z.string().array().optional(),
-        exclude: ChallengeExcludeSchema.array().nonempty().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
+        exclude: ChallengeExcludeSettingSchema.array().nonempty().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
         description: z.string().optional(), // describe in the frontend what kind of challenge the user will receive when publishing
         pendingApproval: z.boolean().optional()
     })
@@ -187,7 +215,13 @@ export const GetChallengeArgsSchema = z.object({
     challengeSettings: CommunityChallengeSettingSchema,
     challengeRequestMessage: z.custom<DecryptedChallengeRequestMessageTypeWithCommunityAuthor>(), // no need to validate because extra props may be there
     challengeIndex: z.number().int().nonnegative(),
-    community: z.custom<LocalCommunity>()
+    community: z.custom<LocalCommunity>(),
+    // Decides whether a configured identity string (a listed address, a domain) refers to this publication's
+    // author, binding a domain to the signer rather than to the publisher-controlled author.address. Shared
+    // across the whole challenge request so the author's domain is resolved at most once. Optional so a
+    // challenge package written against an older core still type-checks; built-in challenges always receive
+    // it. See docs/protocol/challenge-authoring.md and issues #267, #353, #354.
+    authorIdentityMatcher: z.custom<AuthorIdentityMatcher>().optional()
 });
 
 // Loose, not strict: an unknown key here would be a parse error, and a parse error takes community

@@ -160,9 +160,14 @@ export enum messages {
     ERR_INVALID_COMMUNITY_EDIT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA = "RPC client sent an invalid schema for challenge request with communityEdit",
     ERR_COMMUNITY_EDIT_OPTIONS_SCHEMA = "User sent a community edit options with invalid schema",
     ERR_INVALID_CHALLENGE_ANSWERS = "User sent challenge answers with invalid schema",
+    ERR_CHALLENGE_ANSWER_ALREADY_PUBLISHED = "publishChallengeAnswers was called again for a challenge exchange whose answer has already been published or is being published. Each challenge is answered once",
     ERR_INVALID_CREATE_PKC_WS_SERVER_OPTIONS_SCHEMA = "Invalid create arguments for PKC WS RPC server",
     ERR_INVALID_CREATE_PKC_ARGS_SCHEMA = "User sent arguments with invalid schema in an attempt to create a PKC instance",
     ERR_INVALID_CREATE_COMMUNITY_WITH_RPC_ARGS_SCHEMA = "User provided invalid schema of arguments for pkc.createCommunity while connected to RPC",
+    ERR_CHALLENGE_EXCLUDE_ADDRESS_FIELD_REMOVED = "community.settings.challenges[x].exclude[y].address has been removed. Use exclude.publicKeys for key-derived author addresses (author.publicKey) and exclude.names for author domains",
+    ERR_CHALLENGE_EXCLUDE_ROLE_FIELD_RENAMED = "community.settings.challenges[x].exclude[y].role has been renamed to exclude.roles",
+    ERR_CHALLENGE_EXCLUDE_PUBLIC_KEYS_MUST_NOT_BE_DOMAIN = "community.settings.challenges[x].exclude[y].publicKeys must contain key-derived author addresses (author.publicKey), not domains. Use exclude.names for domains",
+    ERR_CHALLENGE_EXCLUDE_NAMES_MUST_BE_DOMAIN = "community.settings.challenges[x].exclude[y].names must contain author domains, not key-derived addresses. Use exclude.publicKeys for addresses",
     ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT = "The community has community.settings.challenges[x].exclude[y].publicationType is set to an empty object. You should either choose which publication to exclude or remove exclude.publicationType",
     ERR_COMMUNITY_HAS_NO_INTERNAL_STATE = "The community has no internal state. This should never happen. Please report this bug.",
 
@@ -205,7 +210,12 @@ export enum messages {
     ERR_COMMUNITY_RECORD_ANCHOR_CLAIM_DOES_NOT_MATCH_CHAIN_ANCHOR = "The CommunityIpfs record was resolved through a delegated IPNS chain but its signed anchor claim does not match the chain's anchor",
     ERR_COMMUNITY_RECORD_ANCHOR_CLAIM_IS_NOT_ENDORSED = "The CommunityIpfs record claims an anchor that does not delegate to it: resolving the claimed anchor does not lead to the key that signed this record, so the claim is forged",
     ERR_FAILED_TO_RESOLVE_COMMUNITY_DOMAIN = "Failed to resolve the community domain address to use for verification",
-    ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN = "Failed to resolve the author domain address to use for verification",
+    // Four distinct outcomes that used to collapse into ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN. They are split
+    // because each one asks the publisher to do something different. See issue #353.
+    ERR_AUTHOR_NAME_HAS_NO_RECORD = "The author name has no text record, so it could not be verified against the publication signer",
+    ERR_COMMUNITY_FAILED_TO_RESOLVE_AUTHOR_NAME = "The community could not resolve the author name because every one of its name resolvers failed. This is a problem with the community's node, not with the publication",
+    ERR_COMMUNITY_HAS_NO_RESOLVER_FOR_AUTHOR_NAME_TLD = "The community has no name resolver configured for this author name's TLD, so it can never verify it",
+    ERR_AUTHOR_NAME_RECORD_IS_NOT_A_VALID_KEY = "The author name resolved to a text record that is not a valid public key",
     ERR_AUTHOR_DOMAIN_RESOLVES_TO_DIFFERENT_SIGNER = "The author domain resolved to a public key that does not match the publication signer",
     ERR_COMMUNITY_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "CommunityIpfs record includes a field not included in signature.signedPropertyNames",
     ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "VotePubsubMessagePublication record includes a field that's not included in signature.signedPropertyNames",
@@ -346,6 +356,7 @@ export enum messages {
     // Comment Edit errors
     ERR_COMMUNITY_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_COMMUNITY_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY = "Can't archive replies. Only posts",
+    ERR_NOT_ALLOWED_TO_ARCHIVE_POSTS = "community.features.noArchive is true which means posts can't be archived in this community",
     ERR_COMMUNITY_COMMENT_EDIT_UNAUTHORIZED_FIELD = "CommentEdit includes a field that cannot be used",
     ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS = "CommentEdit can't have both author and mod fields. Please publish a separate request for author and mod",
 
@@ -353,6 +364,7 @@ export enum messages {
     ERR_FAILED_TO_RESOLVE_TEXT_RECORD = "Failed to resolve text record",
     ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER = "no chain provider options set for chain ticker",
     ERR_NO_RESOLVER_FOR_NAME = "No name resolver can handle this address",
+    ERR_ALL_NAME_RESOLVERS_FAILED = "Every name resolver that can handle this address failed, so the name could not be resolved",
     ERR_DOMAIN_TXT_RECORD_NOT_FOUND = "Domain resolver did not find the text record",
     ERR_DOMAIN_COMMUNITY_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "community-address text record of domain is pointing to a different address than community.signer.address",
     ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS = "Resolved the text record value to a string that is non IPNS",

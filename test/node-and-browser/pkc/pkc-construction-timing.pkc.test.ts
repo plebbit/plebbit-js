@@ -4,9 +4,17 @@ import { getAvailablePKCConfigsToTestAgainst } from "../../../dist/node/test/tes
 const configs = getAvailablePKCConfigsToTestAgainst({ includeAllPossibleConfigOnEnv: true });
 
 const DEFAULT_MAX_MS = 100;
+const isFirefox = globalThis["navigator"]?.userAgent?.includes("Firefox") ?? false;
 // remote-libp2pjs constructs a Helia/libp2p node (keypair generation, transports), measured at 40-110ms
-// on Firefox CI runners, so it gets a higher budget than the thin kubo-rpc/gateway clients
-const MAX_MS_PER_CONFIG: Partial<Record<(typeof configs)[number]["testConfigCode"], number>> = { "remote-libp2pjs": 200 };
+// on Firefox CI runners, so it gets a higher budget than the thin kubo-rpc/gateway clients.
+// Firefox gets more again: that keypair generation is CPU-bound and the other test files running
+// concurrently in the same browser contend for it, so the min of 5 still lands at 250-320ms on a
+// loaded runner (master run 38151356512, where kubo-rpc/gateway timed normally in the same job and
+// the same code passed an hour earlier). A real eager-load regression adds hundreds of ms on top,
+// which 400ms still catches
+const MAX_MS_PER_CONFIG: Partial<Record<(typeof configs)[number]["testConfigCode"], number>> = {
+    "remote-libp2pjs": isFirefox ? 400 : 200
+};
 const TIMED_RUNS = 5;
 
 // not describe.concurrent: timing runs must not overlap with the other configs constructing/destroying

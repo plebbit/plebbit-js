@@ -63,6 +63,16 @@ export const MAX_FILE_SIZE_BYTES_FOR_COMMUNITY_IPFS = 1024 * 1024; // 1mb
 // 0.43's default 300s record ttl the way the pre-#311 cache-gated poll did.
 const FORCED_IPNS_NETWORK_REVALIDATION_MIN_INTERVAL_MS = 30_000;
 
+// Gateway poll pacing (issue #328). When the last poll carried no usable max-age countdown
+// (gateway sent no Cache-Control, or every request failed outright), poll at a flat 10s instead
+// of pkc.updateInterval: a no-change poll is a single conditional GET answered with a bodyless
+// 304, so the old 60s default poll was pure self-inflicted staleness, not thrift. The floor
+// guards against a gateway advertising max-age=0 (an uncached or non-caching gateway) turning
+// the loop into a busy poll; both are ceilinged by pkc.updateInterval so a sub-10s test
+// updateInterval keeps its faster cadence.
+const GATEWAY_FALLBACK_POLL_MS = 10_000;
+const GATEWAY_POLL_FLOOR_MS = 1_000;
+
 export class CommunityClientsManager extends PKCClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommunityIpfsGatewayClient };
@@ -76,6 +86,19 @@ export class CommunityClientsManager extends PKCClientsManager {
     private _suppressUpdatingStateForNameResolution = 0;
     _ipnsLoadingOperation?: RetryOperation = undefined;
     _updateCidsAlreadyLoaded: LimitedSet<string> = new LimitedSet<string>(30); // we will keep track of the last 50 community update cids that we loaded
+
+    // Gateway freshness plumbing (issue #328). Entity-tags (quotes preserved, W/ stripped) of
+    // gateway responses whose record we already consumed. Etags are opaque per RFC 9110 —
+    // kubo happens to serve the resolved CID in whatever version it was added as, but a
+    // conformant gateway may suffix or reformat them — so responses are remembered verbatim and
+    // echoed back verbatim, never reconstructed from CIDs alone. Small on purpose: only the
+    // current record's etag can ever produce a 304, older ones just pad the header.
+    private _gatewayEtagsOfLoadedRecords: LimitedSet<string> = new LimitedSet<string>(5);
+    // Smallest remaining Cache-Control max-age (seconds) any gateway reported on the last
+    // gateway poll. Per the path-gateway spec this is the remaining ttl of the IPNS record in
+    // that gateway's cache — an exact countdown to the only moment a re-poll can return a newer
+    // record — so the update loop paces its next gateway poll on it (see _computeGatewayPollMs).
+    private _gatewayMaxAgeSecondsFromLastPoll?: number;
 
     // Event-driven update loop plumbing (issue #308), used only when the default record resolver
     // is a libp2p-js client. Pending arrivals survive an arrival that lands while updateOnce is
@@ -180,6 +203,14 @@ export class CommunityClientsManager extends PKCClientsManager {
 
     override postResolveNameResolverSuccess(opts: PostResolveNameResolverSuccessOptions): void {
         super.postResolveNameResolverSuccess(opts);
+        // Only a COMMUNITY name with no record is an error here, the same way preResolveNameResolver above
+        // only narrates a community name. Author names are resolved on this manager too, by the page sweep,
+        // and for an author "the resolvers answered and there is no record" is an answer rather than a
+        // failure: it is what makes author.nameResolved false instead of undefined. Left ungated, that
+        // verdict arrived as a throw and was read as "we never found out", so a page author could never be
+        // classified at all while every other path classified them. See docs/protocol/names-and-addresses.md
+        // and issue #353.
+        if (opts.resolveType !== "community") return;
         if (!opts.resolvedValue && this._community.state === "updating") {
             throw new PKCError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 name: opts.address
@@ -316,20 +347,25 @@ export class CommunityClientsManager extends PKCClientsManager {
             // addressing the minter, claim recovers the anchor) invalidates any nameResolved verdict
             // computed against the previous identity — the triggers below re-classify against the
             // claimed one.
-            if (publicKeyBeforeApply && this._community.publicKey !== publicKeyBeforeApply) this._community.nameResolved = undefined;
-            // If we just discovered a name, trigger background resolution now (don't wait for next loop)
+            if (publicKeyBeforeApply && this._community.publicKey !== publicKeyBeforeApply) {
+                this._community.nameResolved = undefined;
+                // The retry floors were earned against the previous identity and must not pace the first
+                // classification of the new one.
+                this._nameResolvedFalseAtMs = undefined;
+                this._nameResolveFailedAtMs = undefined;
+            }
+            // If we just discovered a name, trigger background resolution now (don't wait for next loop).
+            // `!== true` rather than "not yet a boolean": a `false` verdict is provisional and must be
+            // re-earned, since the states that produce one are what a domain looks like while its owner is
+            // still configuring it. The retry rate is bounded inside _resolveNameInBackground. Issue #353.
             if (
                 !isStringDomain(this._community.address) &&
                 this._community.name &&
                 this._community.publicKey &&
-                typeof this._community.nameResolved !== "boolean"
+                this._community.nameResolved !== true
             ) {
                 this._resolveNameInBackground(this._community.name);
-            } else if (
-                isStringDomain(this._community.address) &&
-                this._community.publicKey &&
-                typeof this._community.nameResolved !== "boolean"
-            ) {
+            } else if (isStringDomain(this._community.address) && this._community.publicKey && this._community.nameResolved !== true) {
                 // A domain-addressed community classifies its name right after the record lands: a
                 // pre-load domain-vs-publicKey mismatch is deferred inside _resolveNameInBackground,
                 // because only the loaded chain can tell a key migration from a delegated community
@@ -371,8 +407,11 @@ export class CommunityClientsManager extends PKCClientsManager {
         // signal, and the loop only needs a slow jittered safety-net poll for pushes it missed
         // (mesh partition, record published while we had no subscribers). The kubo-RPC resolver
         // keeps the 1s poll: kubo's namesys cache is not observable from here, so pkc has no
-        // push signal for it yet (issue #308 tracks giving it the same treatment); gateways
-        // already poll at pkc.updateInterval.
+        // push signal for it yet (issue #308 tracks giving it the same treatment). Gateways
+        // poll on the max-age countdown their responses advertise (issue #328, see
+        // _computeGatewayPollMs) — polling faster than that countdown cannot return a newer
+        // record, and polling slower (the old flat pkc.updateInterval, 60s in production) was
+        // the dominant term in gateway readers' staleness.
         const defaultLibp2pJsClient = defaultIpfsClient && "_helia" in defaultIpfsClient ? defaultIpfsClient : undefined;
 
         // Arm the arrival subscription BEFORE the first updateOnce: the first cycle spans the
@@ -416,7 +455,9 @@ export class CommunityClientsManager extends PKCClientsManager {
                     const safetyNetMs = this._pkc.updateInterval * (0.75 + Math.random() * 0.5);
                     await this._sleepUntilIpnsArrivalOrTimeoutOrAbort({ ms: safetyNetMs, signal: this._community._getStopAbortSignal() });
                 } else {
-                    const updateInterval = areWeConnectedToKuboOrHelia ? 1000 : this._pkc.updateInterval; // if we're on kubo we should resolve IPNS every second
+                    // kubo-RPC resolves IPNS every second (no observable push signal, issue #308);
+                    // gateways pace on the advertised max-age countdown (issue #328).
+                    const updateInterval = areWeConnectedToKuboOrHelia ? 1000 : this._computeGatewayPollMs();
                     await sleepUntilTimeoutOrAbort(updateInterval, this._community._getStopAbortSignal());
                 }
             }
@@ -430,7 +471,47 @@ export class CommunityClientsManager extends PKCClientsManager {
     async stopUpdatingLoop() {
         this._ipnsLoadingOperation?.stop();
         this._updateCidsAlreadyLoaded.clear();
+        this._gatewayEtagsOfLoadedRecords.clear();
+        this._gatewayMaxAgeSecondsFromLastPoll = undefined;
         this._clearIpnsArrivalSubscriptions();
+    }
+
+    // How long the gateway-backed update loop sleeps before its next poll (issue #328). The
+    // gateways' Cache-Control max-age is the remaining ttl of the record in their cache (see
+    // the path-gateway spec linked in docs/protocol/README.md), verified to be an exact
+    // countdown on kubo: a re-poll before it expires returns the same cached record, a re-poll
+    // just after it gets the freshly re-resolved one. So sleep just past the smallest countdown
+    // any gateway reported, jittered so a directory of communities started together does not
+    // poll in lockstep (issue #307), flat 10s when no countdown is known, and always inside
+    // [floor, pkc.updateInterval] so tests running sub-second updateIntervals keep their
+    // cadence and no configuration polls slower than it did before this pacing existed.
+    private _computeGatewayPollMs(): number {
+        const maxAgeSeconds = this._gatewayMaxAgeSecondsFromLastPoll;
+        const baseMs =
+            typeof maxAgeSeconds === "number"
+                ? maxAgeSeconds * 1000 + 250 + Math.random() * 750
+                : GATEWAY_FALLBACK_POLL_MS * (0.75 + Math.random() * 0.5);
+        const ceilingMs = this._pkc.updateInterval;
+        const floorMs = Math.min(GATEWAY_POLL_FLOOR_MS, ceilingMs);
+        return Math.max(Math.min(baseMs, ceilingMs), floorMs);
+    }
+
+    // Remaining ttl in seconds from a gateway response's Cache-Control header, undefined when
+    // the gateway sent none (the spec says it SHOULD be omitted when the ttl is unknown).
+    private _parseMaxAgeSeconds(cacheControl: string | null | undefined): number | undefined {
+        const maxAgeMatch = cacheControl?.match(/max-age=(\d+)/i);
+        if (!maxAgeMatch?.[1]) return undefined;
+        const maxAgeSeconds = parseInt(maxAgeMatch[1]);
+        return Number.isFinite(maxAgeSeconds) ? maxAgeSeconds : undefined;
+    }
+
+    // Normalized entity-tag (W/ stripped, quotes preserved) of a gateway response, for the
+    // verbatim etag memory behind If-None-Match. If-None-Match uses weak comparison, so
+    // dropping W/ loses nothing and lets a weak and strong form of the same tag dedupe.
+    private _normalizedEtagOfResponse(res: Response | undefined): string | undefined {
+        const etag = res?.headers?.get("etag");
+        if (!etag) return undefined;
+        return etag.replace(/^W\//, "");
     }
 
     // Wake the update loop when a record NEWER than anything already consumed lands in the
@@ -661,9 +742,60 @@ export class CommunityClientsManager extends PKCClientsManager {
         this._community.emit("error", error);
     }
 
+    // When the last `false` verdict was recorded, so it can be re-earned rather than kept forever. Only
+    // `false` is paced: a `true` is settled and its call sites do not ask again. Issue #353.
+    private _nameResolvedFalseAtMs?: number;
+
+    // Set while a background resolve is outstanding. A resolve has no timeout of its own, only the community's
+    // stop signal, so without this a reachable-but-slow resolver would collect one attempt per fetch cycle:
+    // the floor below is measured from when a verdict was recorded, and an attempt that has not answered yet
+    // has recorded nothing. Issue #353.
+    private _nameResolveInFlight = false;
+
+    // When the last attempt finished without learning anything: every resolver that could handle the name
+    // errored, or it never answered. That records no verdict, so `_nameResolvedFalseAtMs` above has nothing
+    // to measure from, and the in-flight guard is already released by the time the next cycle arrives if the
+    // resolvers fail fast, which is what an ECONNREFUSED does. This is the outage issue #353 is about, and it
+    // was the one case with no bound: a resolve per fetch cycle, one second on the kubo-RPC path, for as long
+    // as the outage lasted. Cleared as soon as an answer is obtained. Issue #353.
+    private _nameResolveFailedAtMs?: number;
+
     private _resolveNameInBackground(name: string) {
         const log = Logger("pkc-js:community-client-manager:_resolveNameInBackground");
+        // Everything that bounds the retry lives here rather than at the gates, because every caller funnels
+        // through here and the domain-addressed pinned-name path below calls this on every fetch cycle with no
+        // gate of its own. That cycle is one second on the kubo-RPC path, and a negative resolve persists
+        // nothing, so an unbounded retry reaches the network once per cycle forever. Issue #353.
+        //
+        // One attempt at a time. A resolve has no timeout of its own, only the community's stop signal, and
+        // the floor below cannot help while an attempt is outstanding: it measures from when a verdict was
+        // recorded, and an attempt that has not answered yet has recorded nothing.
+        if (this._nameResolveInFlight) return;
+        // No resolver here can handle this TLD, so we can never find out. Skipped rather than attempted: the
+        // attempt throws ERR_NO_RESOLVER_FOR_NAME before reaching any resolver and records nothing, leaving
+        // the verdict at the undefined it already holds, which is also the marker that lets a later pass
+        // retry. So it would re-run, and re-log, every cycle without ever being able to learn anything.
+        if (!this.canResolveName(name)) return;
+        // An attempt that learned nothing paces the next one. Shorter than the `false` window below, since
+        // nothing was learned and the outage may already be over, but not once per cycle.
+        if (
+            typeof this._nameResolveFailedAtMs === "number" &&
+            Date.now() - this._nameResolveFailedAtMs < this._pkc._nameResolveFailedRetryFloorMs
+        )
+            return;
+        // A `false` is provisional and re-earned, but not faster than once per window.
+        if (
+            this._community.nameResolved === false &&
+            typeof this._nameResolvedFalseAtMs === "number" &&
+            Date.now() - this._nameResolvedFalseAtMs < this._pkc._nameResolvedFalseTtlMs
+        )
+            return;
         const setNameResolvedAndEmitUpdate = (newNameResolved: boolean) => {
+            // Stamped even when the verdict is unchanged, so a repeated `false` still restarts the floor
+            // instead of re-resolving every cycle once the first stamp goes stale.
+            this._nameResolvedFalseAtMs = newNameResolved === false ? Date.now() : undefined;
+            // An answer was obtained, so whatever outage the floor above was pacing is over.
+            this._nameResolveFailedAtMs = undefined;
             if (this._community.nameResolved === newNameResolved) return;
             this._community.nameResolved = newNameResolved;
             // Only emit update if the community has been loaded at least once —
@@ -672,6 +804,7 @@ export class CommunityClientsManager extends PKCClientsManager {
                 this._community.emit("update", this._community);
             }
         };
+        this._nameResolveInFlight = true;
         this._resolveCommunityNameWithoutUpdatingState({
             communityName: name,
             abortSignal: this._community._getStopAbortSignal(),
@@ -706,13 +839,29 @@ export class CommunityClientsManager extends PKCClientsManager {
                 }
             })
             .catch((e) => {
-                if (e instanceof PKCError && (e.code === "ERR_NO_RESOLVER_FOR_NAME" || e.code === "ERR_DOMAIN_TXT_RECORD_NOT_FOUND")) {
-                    // Definitive: either no resolver can handle this TLD, or the domain has no community TXT record.
+                if (
+                    e instanceof PKCError &&
+                    (e.code === "ERR_DOMAIN_TXT_RECORD_NOT_FOUND" || e.code === "ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS")
+                ) {
+                    // The resolvers answered and the answer contradicts the claim: the domain has no
+                    // community TXT record, or it has one that is not a key. Definitive. Issue #353.
                     setNameResolvedAndEmitUpdate(false);
+                } else if (isAbortError(e)) {
+                    // The community's stop signal ended the attempt. That says nothing about the resolvers,
+                    // so it is not recorded: this manager outlives stop() on the caller's instance, and a stamp
+                    // here would pace the next update()'s classification for an attempt that never asked.
+                    // The author side refuses to record an abort for the same reason. Issue #353.
+                    return;
                 } else {
                     log.trace("Background name resolution failed for", name, e);
-                    // Transient failure -- leave nameResolved as undefined
+                    // We never got an answer (every resolver errored, or the resolve timed out). nameResolved
+                    // stays undefined: "we could not find out" is not "false". Stamped so the next fetch
+                    // cycle does not immediately ask again, since undefined is also the retry marker (#353).
+                    this._nameResolveFailedAtMs = Date.now();
                 }
+            })
+            .finally(() => {
+                this._nameResolveInFlight = false;
             });
     }
 
@@ -726,9 +875,11 @@ export class CommunityClientsManager extends PKCClientsManager {
             if (!page) continue;
             for (const comment of page.comments) {
                 const domain = getAuthorNameFromRuntime(comment.author);
-                if (domain && typeof comment.author.nameResolved !== "boolean") {
-                    authors.push({ authorName: domain, signaturePublicKey: comment.signature.publicKey });
-                }
+                // Not gated on the comment's own field: both verdicts lapse out of nameResolvedCache, and a
+                // page object that was never requeued would keep displaying the lapsed one for as long as it
+                // lives. The cache decides, and resolveAuthorNamesInBackground skips every entry it still
+                // holds, so this costs nothing while a verdict stands. Issue #353.
+                if (domain) authors.push({ authorName: domain, signaturePublicKey: comment.signature.publicKey });
             }
         }
 
@@ -786,8 +937,11 @@ export class CommunityClientsManager extends PKCClientsManager {
                 });
             }
 
-            // When loaded by raw IPNS key, verify the record's name claim in background (once)
-            if (!isDomain && this._community.name && this._community.publicKey && typeof this._community.nameResolved !== "boolean") {
+            // When loaded by raw IPNS key, verify the record's name claim in background. `!== true` and not
+            // "not yet a boolean": a `false` is provisional and re-earned. Everything that bounds the retry
+            // (the floor, the in-flight guard, the unsupported-TLD skip) lives in the callee, because the
+            // pinned-name branch above calls it with no gate of its own (#353).
+            if (!isDomain && this._community.name && this._community.publicKey && this._community.nameResolved !== true) {
                 this._resolveNameInBackground(this._community.name);
             }
 
@@ -1119,24 +1273,38 @@ export class CommunityClientsManager extends PKCClientsManager {
                     gatewayFetches[gatewayUrl].communityRecord = communityIpfs;
                     gatewayFetches[gatewayUrl].cid = calculatedCommunityCidFromBody;
 
-                    // Log the TTL from max-age header after successfully setting the community record
-                    const cacheControl = gatewayRes?.res?.headers?.get("cache-control");
-                    if (cacheControl) {
-                        const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
-                        if (maxAgeMatch && maxAgeMatch[1]) {
-                            const ttl = parseInt(maxAgeMatch[1]);
-                            gatewayFetches[gatewayUrl].ttl = ttl;
-                        }
-                    }
+                    // Remaining record ttl in this gateway's cache; feeds next-poll pacing (#328)
+                    gatewayFetches[gatewayUrl].ttl = this._parseMaxAgeSeconds(gatewayRes?.res?.headers?.get("cache-control"));
+
+                    // Remember the served record's entity-tag verbatim so the next poll's
+                    // If-None-Match can be answered with a bodyless 304 (#328)
+                    const etag = this._normalizedEtagOfResponse(gatewayRes?.res);
+                    if (etag) this._gatewayEtagsOfLoadedRecords.add(etag);
                 }
             };
 
             const checkResponseHeadersIfOldCid = async (gatewayRes: Response) => {
+                // Even a to-be-aborted response carries the cache countdown that paces the next poll (#328)
+                gatewayFetches[gatewayUrl].ttl = this._parseMaxAgeSeconds(gatewayRes?.headers?.get("cache-control"));
+
                 const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag")?.toString();
                 // If etag is missing, skip early-abort optimization and let the body be fetched
                 if (!cidOfIpnsFromEtagHeader) {
                     return; // Continue to fetch and validate the body normally
                 }
+                const abortBecauseRecordAlreadyLoaded = () => {
+                    abortController.abort("Aborting community IPNS request because we already loaded this record");
+                    return new PKCError("ERR_GATEWAY_ABORTING_LOADING_COMMUNITY_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
+                        cidOfIpnsFromEtagHeader,
+                        ipnsName,
+                        gatewayRes,
+                        gatewayUrl
+                    });
+                };
+                // Opaque comparison first: a verbatim match needs no CID parsing and covers
+                // etag shapes CID.parse cannot (spec-legal format suffixes and the like).
+                const normalizedEtag = this._normalizedEtagOfResponse(gatewayRes);
+                if (normalizedEtag && this._gatewayEtagsOfLoadedRecords.has(normalizedEtag)) return abortBecauseRecordAlreadyLoaded();
                 let parsedCid: string;
                 try {
                     // clean up W/ prefix and quotes from the etag header
@@ -1145,21 +1313,29 @@ export class CommunityClientsManager extends PKCClientsManager {
                     // Malformed etag header - skip optimization and let body be fetched
                     return; // Continue to fetch and validate the body normally
                 }
-                if (this._updateCidsAlreadyLoaded.has(parsedCid)) {
-                    abortController.abort("Aborting community IPNS request because we already loaded this record");
-                    return new PKCError("ERR_GATEWAY_ABORTING_LOADING_COMMUNITY_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
-                        cidOfIpnsFromEtagHeader,
-                        ipnsName,
-                        gatewayRes,
-                        gatewayUrl
-                    });
+                if (this._updateCidsAlreadyLoaded.has(parsedCid) || this._community.updateCid === parsedCid) {
+                    // This etag names a record we consumed but had never seen the etag of (e.g.
+                    // the record arrived over another transport): remember it verbatim so the
+                    // NEXT poll's If-None-Match can 304 instead of replaying this dance (#328)
+                    if (normalizedEtag) this._gatewayEtagsOfLoadedRecords.add(normalizedEtag);
+                    return abortBecauseRecordAlreadyLoaded();
                 }
             };
 
+            // Tell the gateway which records we already consumed so an unchanged tick is a
+            // bodyless 304. RFC 9110 syntax: a comma-separated list of individually quoted
+            // entity-tags — the old single-quoted comma-joined blob could never match once the
+            // set held more than one CID, so production polls re-sent 200s forever (#328).
+            // Verbatim remembered etags first (opaque, always correct); quoted CID forms as a
+            // fallback for records consumed via another transport whose etag we never saw (kubo
+            // serves the resolved CID as the etag in the version the content was added as, v0
+            // for community records). Only the current record's tag can ever 304, so the list
+            // stays short: the etag memory plus the most recent consumed CIDs.
+            const etagsForConditionalRequest = new Set<string>(this._gatewayEtagsOfLoadedRecords);
+            if (this._community.updateCid) etagsForConditionalRequest.add(`"${this._community.updateCid}"`);
+            for (const cid of Array.from(this._updateCidsAlreadyLoaded.values()).slice(-5)) etagsForConditionalRequest.add(`"${cid}"`);
             const requestHeaders =
-                this._updateCidsAlreadyLoaded.size > 0
-                    ? { "If-None-Match": '"' + Array.from(this._updateCidsAlreadyLoaded.values()).join(",") + '"' } // tell the gateway we already loaded these records
-                    : undefined;
+                etagsForConditionalRequest.size > 0 ? { "If-None-Match": Array.from(etagsForConditionalRequest).join(", ") } : undefined;
             gatewayFetches[gatewayUrl] = {
                 abortController,
                 promise: queueLimit(() =>
@@ -1221,6 +1397,21 @@ export class CommunityClientsManager extends PKCClientsManager {
 
         const promisesToIterate = Object.values(gatewayFetches).map((gatewayFetch) => gatewayFetch.promise);
 
+        // Collect the smallest remaining cache countdown any gateway reported this poll — from
+        // a served body, an etag-aborted 200 (both stored on gatewayFetches[].ttl) or a 304's
+        // own Cache-Control — for the update loop's next-poll pacing (#328). Called on every
+        // exit; a poll where no gateway reported one leaves it undefined and the loop falls
+        // back to its flat interval.
+        const recordGatewayMaxAgeForPacing = () => {
+            const maxAges: number[] = [];
+            for (const gatewayFetch of Object.values(gatewayFetches)) {
+                if (typeof gatewayFetch.ttl === "number") maxAges.push(gatewayFetch.ttl);
+                const maxAgeFrom304 = this._parseMaxAgeSeconds(<string | undefined>gatewayFetch.error?.details?.responseCacheControl);
+                if (typeof maxAgeFrom304 === "number") maxAges.push(maxAgeFrom304);
+            }
+            this._gatewayMaxAgeSecondsFromLastPoll = maxAges.length > 0 ? Math.min(...maxAges) : undefined;
+        };
+
         let suitableCommunity: { community: CommunityIpfsType; cid: string };
         try {
             suitableCommunity = await new Promise<typeof suitableCommunity>((resolve, reject) =>
@@ -1245,6 +1436,7 @@ export class CommunityClientsManager extends PKCClientsManager {
         } catch {
             cleanUp();
             throwIfAbortSignalAborted(stopSignal);
+            recordGatewayMaxAgeForPacing();
             const gatewayToError = mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
             const hasGatewayConfirmingCurrentRecord = Object.keys(gatewayFetches)
                 .map((gatewayUrl) => gatewayFetches[gatewayUrl].error!)
@@ -1253,6 +1445,13 @@ export class CommunityClientsManager extends PKCClientsManager {
                         err.details?.status === 304 ||
                         err.code === "ERR_GATEWAY_ABORTING_LOADING_COMMUNITY_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD"
                 );
+            // A 304 echoes the entity-tag the gateway matched: keep it in the verbatim etag
+            // memory so later polls keep 304ing even after the CID scrolls out of the header (#328)
+            for (const gatewayFetch of Object.values(gatewayFetches)) {
+                if (gatewayFetch.error?.details?.status !== 304) continue;
+                const etagFrom304 = <string | undefined>gatewayFetch.error.details?.responseEtag;
+                if (etagFrom304) this._gatewayEtagsOfLoadedRecords.add(etagFrom304.replace(/^W\//, ""));
+            }
             if (hasGatewayConfirmingCurrentRecord) {
                 // Any gateway confirmed we already have the latest consumed record. The conditional
                 // request (If-None-Match -> 304) aborts before the delegated chain walk, so a
@@ -1319,6 +1518,7 @@ export class CommunityClientsManager extends PKCClientsManager {
             throw combinedError;
         }
 
+        recordGatewayMaxAgeForPacing();
         // TODO add punishment for gateway that returns old ipns record
         // TODO add punishment for gateway that returns invalid community
         return suitableCommunity;

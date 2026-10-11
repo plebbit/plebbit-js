@@ -1,187 +1,34 @@
 import { it, describe, beforeAll, afterAll, expect } from "vitest";
 import env from "../../../dist/node/version.js";
 import { DbHandler } from "../../../dist/node/runtime/node/community/db-handler.js";
+import { STORAGE_KEYS } from "../../../dist/node/constants.js";
 import { describeSkipIfRpc } from "../../helpers/conditional-tests.js";
+import signers from "../../fixtures/signers.js";
 import type { LocalCommunity } from "../../../dist/node/runtime/node/community/local-community.js";
+import type { InternalCommunityRecordBeforeFirstUpdateType } from "../../../dist/node/community/types.js";
 import type Database from "better-sqlite3";
-import { readFileSync } from "node:fs";
-import { getPKCAddressFromPublicKeySync } from "../../../dist/node/signer/util.js";
 
-// v41 tables: the comments table with crosspost, the aliases table before `originalAuthorSignerAddress` (issue #351).
-const V41_CREATE_COMMENTS = `
-    CREATE TABLE IF NOT EXISTS comments (
-        cid TEXT NOT NULL PRIMARY KEY UNIQUE,
-        authorSignerAddress TEXT NOT NULL,
-        author TEXT NULLABLE,
-        link TEXT NULLABLE,
-        linkWidth INTEGER NULLABLE,
-        linkHeight INTEGER NULLABLE,
-        thumbnailUrl TEXT NULLABLE,
-        thumbnailUrlWidth INTEGER NULLABLE,
-        thumbnailUrlHeight INTEGER NULLABLE,
-        parentCid TEXT NULLABLE REFERENCES comments(cid),
-        postCid TEXT NOT NULL REFERENCES comments(cid),
-        previousCid TEXT NULLABLE,
-        communityPublicKey TEXT,
-        communityName TEXT,
-        content TEXT NULLABLE,
-        timestamp INTEGER NOT NULL,
-        signature TEXT NOT NULL,
-        originalCommentSignatureEncoded TEXT NULLABLE,
-        title TEXT NULLABLE,
-        depth INTEGER NOT NULL,
-        linkHtmlTagName TEXT NULLABLE,
-        flairs TEXT NULLABLE,
-        spoiler INTEGER NULLABLE,
-        pendingApproval INTEGER NULLABLE,
-        number INTEGER NULLABLE,
-        postNumber INTEGER NULLABLE,
-        nsfw INTEGER NULLABLE,
-        pseudonymityMode TEXT NULLABLE,
-        quotedCids TEXT NULLABLE,
-        crosspost TEXT NULLABLE,
-        extraProps TEXT NULLABLE,
-        challengeCommentUpdate TEXT NULLABLE,
-        protocolVersion TEXT NOT NULL,
-        insertedAt INTEGER NOT NULL
-    )
-`;
+// v41 -> v42 changes no table schema. It migrates the private challenge settings: the conflated
+// `exclude.address` array is split into `exclude.publicKeys` (key-derived addresses, matched
+// against the publication signature) and `exclude.names` (domains, resolved and compared to the
+// signer at match time). See issue #267.
 
-const V41_CREATE_COMMENT_UPDATES = `
-    CREATE TABLE IF NOT EXISTS commentUpdates (
-        cid TEXT NOT NULL PRIMARY KEY UNIQUE REFERENCES comments(cid),
-        edit TEXT NULLABLE,
-        upvoteCount INTEGER NOT NULL,
-        downvoteCount INTEGER NOT NULL,
-        replyCount INTEGER NOT NULL,
-        childCount INTEGER NOT NULL,
-        number INTEGER NULLABLE,
-        postNumber INTEGER NULLABLE,
-        flairs TEXT NULLABLE,
-        spoiler INTEGER NULLABLE,
-        nsfw INTEGER NULLABLE,
-        pinned INTEGER NULLABLE,
-        locked INTEGER NULLABLE,
-        archived INTEGER NULLABLE,
-        removed INTEGER NULLABLE,
-        approved INTEGER NULLABLE,
-        reason TEXT NULLABLE,
-        updatedAt INTEGER NOT NULL CHECK(updatedAt > 0),
-        protocolVersion TEXT NOT NULL,
-        signature TEXT NOT NULL,
-        author TEXT NULLABLE,
-        replies TEXT NULLABLE,
-        lastChildCid TEXT NULLABLE,
-        lastReplyTimestamp INTEGER NULLABLE,
-        postUpdatesBucket INTEGER NULLABLE,
-        publishedToPostUpdatesMFS INTEGER NOT NULL,
-        insertedAt INTEGER NOT NULL
-    )
-`;
-
-const V41_CREATE_VOTES = `
-    CREATE TABLE IF NOT EXISTS votes (
-        commentCid TEXT NOT NULL REFERENCES comments(cid),
-        authorSignerAddress TEXT NOT NULL,
-        timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
-        vote INTEGER CHECK(vote BETWEEN -1 AND 1) NOT NULL,
-        protocolVersion TEXT NOT NULL,
-        insertedAt INTEGER NOT NULL,
-        extraProps TEXT NULLABLE,
-        PRIMARY KEY (commentCid, authorSignerAddress)
-    )
-`;
-
-const V41_CREATE_COMMENT_EDITS = `
-    CREATE TABLE IF NOT EXISTS commentEdits (
-        commentCid TEXT NOT NULL REFERENCES comments(cid),
-        authorSignerAddress TEXT NOT NULL,
-        author TEXT NULLABLE,
-        signature TEXT NOT NULL,
-        protocolVersion TEXT NOT NULL,
-        communityPublicKey TEXT,
-        communityName TEXT,
-        timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
-        content TEXT NULLABLE,
-        reason TEXT NULLABLE,
-        deleted INTEGER NULLABLE,
-        spoiler INTEGER NULLABLE,
-        nsfw INTEGER NULLABLE,
-        flairs TEXT NULLABLE,
-        isAuthorEdit INTEGER NOT NULL,
-        insertedAt INTEGER NOT NULL,
-        extraProps TEXT NULLABLE
-    )
-`;
-
-const V41_CREATE_COMMENT_MODERATIONS = `
-    CREATE TABLE IF NOT EXISTS commentModerations (
-        commentCid TEXT NOT NULL REFERENCES comments(cid),
-        author TEXT NULLABLE,
-        signature TEXT NOT NULL,
-        modSignerAddress TEXT NOT NULL,
-        protocolVersion TEXT NOT NULL,
-        communityPublicKey TEXT,
-        communityName TEXT,
-        timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
-        commentModeration TEXT NOT NULL,
-        insertedAt INTEGER NOT NULL,
-        extraProps TEXT NULLABLE,
-        targetAuthorSignerAddress TEXT NULLABLE,
-        targetAuthorDomain TEXT NULLABLE
-    )
-`;
-
-const V41_CREATE_PSEUDONYMITY_ALIASES = `
-    CREATE TABLE IF NOT EXISTS pseudonymityAliases (
-        commentCid TEXT NOT NULL PRIMARY KEY UNIQUE REFERENCES comments(cid) ON DELETE CASCADE,
-        aliasPrivateKey TEXT NOT NULL,
-        originalAuthorPublicKey TEXT NOT NULL,
-        originalAuthorName TEXT NULLABLE,
-        mode TEXT NOT NULL CHECK(mode IN ('per-post', 'per-reply', 'per-author')),
-        insertedAt INTEGER NOT NULL
-    )
-`;
-
-const COMMUNITY_ADDRESS = "12D3KooWTestCommunityAddress";
-const LEGACY_ALIAS_PUBLIC_KEY = (
-    JSON.parse(
-        readFileSync(new URL("../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json", import.meta.url), "utf8")
-    ) as {
-        signature: { publicKey: string };
-    }
-).signature.publicKey;
+const COMMUNITY_ADDRESS = "12D3KooWTestCommunityAddressV42";
 const now = Math.floor(Date.now() / 1000);
-
-function fakeSignatureJson(signatureValue: string): string {
-    return JSON.stringify({
-        type: "ed25519",
-        signature: signatureValue,
-        publicKey: `pk-${signatureValue}`,
-        signedPropertyNames: [
-            "communityPublicKey",
-            "communityName",
-            "content",
-            "author",
-            "timestamp",
-            "title",
-            "link",
-            "parentCid",
-            "postCid",
-            "flairs",
-            "spoiler",
-            "nsfw",
-            "linkWidth",
-            "linkHeight",
-            "linkHtmlTagName",
-            "quotedCids"
-        ]
-    });
-}
+const OWNER_DOMAIN = "owner-v42.bso";
+const MOD_DOMAIN = "mod-v42.bso";
+const RAW_ADDRESS = signers[3].address;
+const OTHER_RAW_ADDRESS = signers[4].address;
 
 interface FakeCommunity {
     address: string;
-    _pkc: { noData: boolean };
+    _pkc: { noData: boolean; dataPath: undefined };
+    _dbHandler?: DbHandler;
+    // updateDbInternalState (run by the settings migration) reads the current state and mirrors it into raw
+    _getDbInternalState: (lock: boolean) => Promise<unknown>;
+    raw: { communityIpfs?: unknown; localCommunity?: unknown };
+    settings?: unknown;
+    updateCid?: string;
     _cidsToUnPin: Set<string>;
     _blocksToRm: string[];
     _mfsPathsToRemove: Set<string>;
@@ -192,9 +39,11 @@ interface FakeCommunity {
 }
 
 function createFakeCommunity(address: string): FakeCommunity {
-    return {
+    const fake: FakeCommunity = {
         address,
-        _pkc: { noData: true },
+        _pkc: { noData: true, dataPath: undefined },
+        _getDbInternalState: async () => fake._dbHandler!.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_COMMUNITY]),
+        raw: {},
         _cidsToUnPin: new Set<string>(),
         _blocksToRm: [],
         _mfsPathsToRemove: new Set<string>(),
@@ -203,22 +52,70 @@ function createFakeCommunity(address: string): FakeCommunity {
         _addOldPageCidsToCidsToUnpin: async () => {},
         _addAllCidsUnderPurgedCommentToBeRemoved: () => {}
     };
+    return fake;
 }
 
 interface DbHandlerPrivate {
     _db: Database.Database;
+    _createdTables: boolean;
     _purgeCommentsWithInvalidSchemaOrSignature: () => Promise<void>;
     _purgeCommentEditsWithInvalidSchemaOrSignature: () => Promise<void>;
     _purgePublicationTablesWithDuplicateSignatures: () => Promise<void>;
+    lockCommunityState: () => Promise<void>;
+    unlockCommunityState: () => Promise<void>;
 }
 
 function getPrivate(handler: DbHandler): DbHandlerPrivate {
     return handler as unknown as DbHandlerPrivate;
 }
 
-// Uses DbHandler directly (Node-only) — cannot run under RPC.
-describeSkipIfRpc("v41 → v42 DB migration (alias reverse-lookup column, comment tree and author indexes)", function () {
+// The pre-v42 shape of an exclude, as stored by older clients.
+type LegacyExclude = { address?: string[]; challenges?: number[]; role?: string[] };
+type MigratedExclude = {
+    address?: string[];
+    publicKeys?: string[];
+    names?: string[];
+    challenges?: number[];
+    role?: string[];
+    roles?: string[];
+};
+type MigratedInternalState = {
+    settings: { challenges?: Array<{ name?: string; exclude?: MigratedExclude[] }> };
+    challenges?: Array<{ exclude?: MigratedExclude[] }>;
+};
+
+const legacyChallenges: Array<{ name: string; exclude?: LegacyExclude[]; options?: Record<string, string> }> = [
+    {
+        // owner-only posting: fail challenge with a mixed domain + raw address exclude
+        name: "fail",
+        exclude: [{ address: [OWNER_DOMAIN, RAW_ADDRESS] }, { role: ["moderator"] }]
+    },
+    {
+        // domain-only exclude, plus an exclude with no author identity at all
+        name: "question",
+        options: { question: "1+1?", answer: "2" },
+        exclude: [{ address: [MOD_DOMAIN] }, { challenges: [0] }]
+    },
+    {
+        // raw-address-only exclude
+        name: "fail",
+        exclude: [{ address: [OTHER_RAW_ADDRESS] }]
+    },
+    {
+        // no exclude at all
+        name: "fail"
+    },
+    {
+        // role rename, alone and combined with an address split
+        name: "fail",
+        exclude: [{ role: ["moderator", "admin"] }, { role: ["owner"], address: [OWNER_DOMAIN, RAW_ADDRESS] }]
+    }
+];
+
+// Uses DbHandler directly (Node-only) and seeds the private internal state; cannot run under RPC.
+describeSkipIfRpc("v41 -> v42 DB migration (exclude.address split into publicKeys and names)", () => {
     let dbHandler: DbHandler | undefined;
+    let migrated: MigratedInternalState;
 
     afterAll(() => {
         if (dbHandler) {
@@ -230,107 +127,110 @@ describeSkipIfRpc("v41 → v42 DB migration (alias reverse-lookup column, commen
     beforeAll(async () => {
         const fakeCommunity = createFakeCommunity(COMMUNITY_ADDRESS);
         dbHandler = new DbHandler(fakeCommunity as unknown as LocalCommunity);
+        fakeCommunity._dbHandler = dbHandler;
         await dbHandler.initDbIfNeeded({ filename: ":memory:", fileMustExist: false });
+        // Tables did not change between v41 and v42, so create them at the current schema first.
+        await dbHandler.createOrMigrateTablesIfNeeded();
 
         const priv = getPrivate(dbHandler);
-        const db = priv._db;
-
-        db.exec(V41_CREATE_COMMENTS);
-        db.exec(V41_CREATE_COMMENT_UPDATES);
-        db.exec(V41_CREATE_VOTES);
-        db.exec(V41_CREATE_COMMENT_EDITS);
-        db.exec(V41_CREATE_COMMENT_MODERATIONS);
-        db.exec(V41_CREATE_PSEUDONYMITY_ALIASES);
-
-        // Insert a representative pre-migration post (no challengeCommentUpdate column exists yet).
-        db.prepare(
-            `
-            INSERT INTO comments (cid, authorSignerAddress, author, postCid, communityPublicKey,
-                content, timestamp, signature, depth, protocolVersion, insertedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `
-        ).run(
-            "QmLegacyPost",
-            "12D3KooWLegacy",
-            JSON.stringify({ address: "12D3KooWLegacy" }),
-            "QmLegacyPost",
-            COMMUNITY_ADDRESS,
-            "pre-v42 content",
-            now,
-            fakeSignatureJson("sig-legacy"),
-            0,
-            "1.0.0",
-            now
-        );
-
-        // A pre-migration alias row: the column the reverse lookup indexes did not exist yet
-        db.prepare(
-            `INSERT INTO pseudonymityAliases (commentCid, aliasPrivateKey, originalAuthorPublicKey, originalAuthorName, mode, insertedAt)
-             VALUES (?, ?, ?, ?, ?, ?)`
-        ).run("QmLegacyPost", "alias-private-key", LEGACY_ALIAS_PUBLIC_KEY, null, "per-post", now);
-
-        db.pragma("user_version = 41");
-
         priv._purgeCommentsWithInvalidSchemaOrSignature = async () => {};
         priv._purgeCommentEditsWithInvalidSchemaOrSignature = async () => {};
         priv._purgePublicationTablesWithDuplicateSignatures = async () => {};
+        // updateDbInternalState takes a file lock under dataPath; an in-memory DB has none.
+        priv.lockCommunityState = async () => {};
+        priv.unlockCommunityState = async () => {};
 
-        await dbHandler.createOrMigrateTablesIfNeeded();
-    });
-
-    it("comments table carries the parentCid, postCid and authorSignerAddress indexes", () => {
-        const priv = getPrivate(dbHandler!);
-        const indexes = (priv._db.pragma("index_list(comments)") as { name: string }[]).map((i) => i.name);
-        expect(indexes).to.include("idx_comments_parentCid");
-        expect(indexes).to.include("idx_comments_postCid");
-        expect(indexes).to.include("idx_comments_authorSignerAddress");
-    });
-
-    it("legacy alias rows get originalAuthorSignerAddress derived from their public key, and the column is indexed", () => {
-        const priv = getPrivate(dbHandler!);
-        const row = priv._db
-            .prepare("SELECT originalAuthorPublicKey, originalAuthorSignerAddress, mode FROM pseudonymityAliases WHERE commentCid = ?")
-            .get("QmLegacyPost") as { originalAuthorPublicKey: string; originalAuthorSignerAddress: string | null; mode: string };
-        expect(row.originalAuthorPublicKey).to.equal(LEGACY_ALIAS_PUBLIC_KEY);
-        expect(row.originalAuthorSignerAddress).to.equal(getPKCAddressFromPublicKeySync(LEGACY_ALIAS_PUBLIC_KEY));
-        expect(row.mode).to.equal("per-post");
-        const indexes = (priv._db.pragma("index_list(pseudonymityAliases)") as { name: string }[]).map((i) => i.name);
-        expect(indexes).to.include("idx_pseudonymityAliases_originalAuthorSignerAddress");
-    });
-
-    it("commentEdits and commentModerations are indexed by commentCid", () => {
-        const priv = getPrivate(dbHandler!);
-        const names = (table: string) => (priv._db.pragma(`index_list(${table})`) as { name: string }[]).map((i) => i.name);
-        expect(names("commentEdits")).to.include("idx_commentEdits_commentCid");
-        expect(names("commentModerations")).to.include("idx_commentModerations_commentCid");
-    });
-
-    it("queryCommunityAuthor reaches an author's alias comments through the derived column", () => {
-        const priv = getPrivate(dbHandler!);
-        // The legacy post is signed by the alias (its authorSignerAddress); the original author owns it through the alias row
-        const originalAddress = getPKCAddressFromPublicKeySync(LEGACY_ALIAS_PUBLIC_KEY);
-        priv._db.prepare("UPDATE comments SET authorSignerAddress = ? WHERE cid = ?").run("12D3KooWAliasSigner", "QmLegacyPost");
-        const author = dbHandler!.queryCommunityAuthor(originalAddress);
-        expect(author?.lastCommentCid).to.equal("QmLegacyPost");
-    });
-
-    it("legacy row content is preserved through the migration", () => {
-        const priv = getPrivate(dbHandler!);
-        const row = priv._db.prepare("SELECT content, depth, timestamp, crosspost FROM comments WHERE cid = ?").get("QmLegacyPost") as {
-            content: string;
-            depth: number;
-            timestamp: number;
-            crosspost: unknown;
+        const legacyInternalState: Omit<InternalCommunityRecordBeforeFirstUpdateType, "settings" | "challenges"> & {
+            settings: { challenges: typeof legacyChallenges };
+        } = {
+            address: COMMUNITY_ADDRESS,
+            createdAt: now,
+            protocolVersion: "1.0.0",
+            encryption: { type: "ed25519-aes-gcm", publicKey: signers[0].publicKey },
+            signer: {
+                type: "ed25519",
+                publicKey: signers[0].publicKey,
+                privateKey: signers[0].privateKey,
+                address: signers[0].address,
+                shortAddress: signers[0].address.slice(8).slice(0, 12)
+            },
+            settings: { challenges: legacyChallenges },
+            _usingDefaultChallenge: false,
+            _internalStateUpdateId: "legacy-uuid",
+            _pendingEditProps: [],
+            _cidsToUnPin: [],
+            _blocksToRm: [],
+            _mfsPathsToRemove: [],
+            _pendingUpdatesFromRemoteMirror: [],
+            signature: undefined,
+            updateCid: "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"
+        } as unknown as Omit<InternalCommunityRecordBeforeFirstUpdateType, "settings" | "challenges"> & {
+            settings: { challenges: typeof legacyChallenges };
         };
-        expect(row.content).to.equal("pre-v42 content");
-        expect(row.depth).to.equal(0);
-        expect(row.timestamp).to.equal(now);
-        expect(row.crosspost).to.be.null;
+        await dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_COMMUNITY], legacyInternalState);
+
+        priv._db.pragma("user_version = 41");
+        priv._createdTables = false;
+        await dbHandler.createOrMigrateTablesIfNeeded();
+
+        migrated = (await dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_COMMUNITY])) as MigratedInternalState;
     });
 
     it("DB version was bumped to the latest", () => {
         const priv = getPrivate(dbHandler!);
-        const userVersion = priv._db.pragma("user_version", { simple: true }) as number;
-        expect(userVersion).to.equal(env.DB_VERSION);
+        expect(priv._db.pragma("user_version", { simple: true })).to.equal(env.DB_VERSION);
+        expect(env.DB_VERSION).to.be.greaterThanOrEqual(42);
+    });
+
+    it("splits a mixed exclude.address into publicKeys and names", () => {
+        const exclude = migrated.settings.challenges![0].exclude!;
+        expect(exclude[0]).to.not.have.property("address");
+        expect(exclude[0].publicKeys).to.deep.equal([RAW_ADDRESS]);
+        expect(exclude[0].names).to.deep.equal([OWNER_DOMAIN]);
+        // sibling exclude without an address only gets the role rename
+        expect(exclude[1]).to.deep.equal({ roles: ["moderator"] });
+    });
+
+    it("migrates a domain-only exclude.address into names only", () => {
+        const exclude = migrated.settings.challenges![1].exclude!;
+        expect(exclude[0]).to.not.have.property("address");
+        expect(exclude[0]).to.not.have.property("publicKeys");
+        expect(exclude[0].names).to.deep.equal([MOD_DOMAIN]);
+        expect(exclude[1]).to.deep.equal({ challenges: [0] });
+    });
+
+    it("migrates a raw-address-only exclude.address into publicKeys only", () => {
+        const exclude = migrated.settings.challenges![2].exclude!;
+        expect(exclude[0]).to.not.have.property("address");
+        expect(exclude[0]).to.not.have.property("names");
+        expect(exclude[0].publicKeys).to.deep.equal([OTHER_RAW_ADDRESS]);
+    });
+
+    it("leaves challenges without excludes alone", () => {
+        expect(migrated.settings.challenges![3]).to.not.have.property("exclude");
+    });
+
+    it("renames exclude.role to exclude.roles, alone and alongside an address split", () => {
+        const exclude = migrated.settings.challenges![4].exclude!;
+        expect(exclude[0]).to.deep.equal({ roles: ["moderator", "admin"] });
+        expect(exclude[1]).to.not.have.property("role");
+        expect(exclude[1]).to.not.have.property("address");
+        expect(exclude[1].roles).to.deep.equal(["owner"]);
+        expect(exclude[1].names).to.deep.equal([OWNER_DOMAIN]);
+        expect(exclude[1].publicKeys).to.deep.equal([RAW_ADDRESS]);
+        for (const challenge of migrated.settings.challenges!)
+            for (const e of challenge.exclude || []) expect(e).to.not.have.property("role");
+    });
+
+    it("re-derives the public challenges from the migrated settings", () => {
+        expect(migrated.challenges).to.have.length(5);
+        for (let i = 0; i < 5; i++) expect(migrated.challenges![i].exclude).to.deep.equal(migrated.settings.challenges![i].exclude);
+        for (const challenge of migrated.challenges!)
+            for (const exclude of challenge.exclude || []) expect(exclude).to.not.have.property("address");
+    });
+
+    it("no legacy field survives anywhere in the migrated state", () => {
+        expect(JSON.stringify(migrated)).to.not.match(/"address":\s*\[/);
+        expect(JSON.stringify(migrated)).to.not.match(/"role":\s*\[/);
     });
 });

@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.0.103](https://github.com/pkcprotocol/pkc-js/compare/v0.0.102...v0.0.103) (2026-10-11)
+
+### Bug Fixes
+
+* **community:** make CommunityEdit.name owner-only like the legacy address field ([#374](https://github.com/pkcprotocol/pkc-js/issues/374)) ([2855535](https://github.com/pkcprotocol/pkc-js/commit/2855535028dcd02ab48ff944d6402ea0c5921c8d)), closes [#373](https://github.com/pkcprotocol/pkc-js/issues/373) [#373](https://github.com/pkcprotocol/pkc-js/issues/373)
+
+## [0.0.102](https://github.com/pkcprotocol/pkc-js/compare/v0.0.101...v0.0.102) (2026-10-11)
+
+### Features
+
+* **community:** add features.noArchive to block archiving posts ([#366](https://github.com/pkcprotocol/pkc-js/issues/366)) ([c088cd2](https://github.com/pkcprotocol/pkc-js/commit/c088cd299d947d1c5efc9d456769c5f09db70c1e))
+
+## [0.0.101](https://github.com/pkcprotocol/pkc-js/compare/v0.0.100...v0.0.101) (2026-09-08)
+
+### Bug Fixes
+
+* **community:** bind excludes, roles and address lists to the signer and drop exclude.address ([#294](https://github.com/pkcprotocol/pkc-js/issues/294)) ([1c8fb8e](https://github.com/pkcprotocol/pkc-js/commit/1c8fb8e09e05b1429b6411641b3bbf00ed44c371)), closes [#295](https://github.com/pkcprotocol/pkc-js/issues/295) [#333](https://github.com/pkcprotocol/pkc-js/issues/333)
+
+## [0.0.100](https://github.com/pkcprotocol/pkc-js/compare/v0.0.99...v0.0.100) (2026-09-07)
+
+### Bug Fixes
+
+* **publication:** drop duplicate challenge deliveries and reject a second challenge answer ([#349](https://github.com/pkcprotocol/pkc-js/issues/349)) ([#350](https://github.com/pkcprotocol/pkc-js/issues/350)) ([2522fae](https://github.com/pkcprotocol/pkc-js/commit/2522fae41550c5bc7508f995d5d0893bfe727b64)), closes [#340](https://github.com/pkcprotocol/pkc-js/issues/340)
+
+### Performance
+
+* **community:** pace gateway polls on max-age, fix If-None-Match, publish 20s record ttl ([#338](https://github.com/pkcprotocol/pkc-js/issues/338)) ([bdec5c3](https://github.com/pkcprotocol/pkc-js/commit/bdec5c3f1d079afda8cb402505b70276d1cda096)), closes [#328](https://github.com/pkcprotocol/pkc-js/issues/328) [#328](https://github.com/pkcprotocol/pkc-js/issues/328) [#328](https://github.com/pkcprotocol/pkc-js/issues/328) [#328](https://github.com/pkcprotocol/pkc-js/issues/328)
+
 ## [0.0.99](https://github.com/pkcprotocol/pkc-js/compare/v0.0.98...v0.0.99) (2026-09-06)
 
 ### Bug Fixes
