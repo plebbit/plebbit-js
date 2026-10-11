@@ -531,7 +531,9 @@ async function checkCommunityEditPublication(
     if (intersection(CommunityEditPublicationPubsubReservedFields, keys(communityEdit)).length > 0)
         return messages.ERR_COMMUNITY_EDIT_HAS_RESERVED_FIELD;
 
-    if (communityEdit.communityEdit.roles || communityEdit.communityEdit.address) {
+    // name is the current wire field for the community domain; address is only the backward-compat alias that
+    // editing.ts rewrites into name before applying the edit, so both must stay owner-only (#373)
+    if (communityEdit.communityEdit.roles || communityEdit.communityEdit.address || communityEdit.communityEdit.name) {
         const isAuthorOwner = await isPublicationAuthorPartOfRoles(community, communityEdit, ["owner"]);
         if (!isAuthorOwner) return messages.ERR_COMMUNITY_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS;
     }
