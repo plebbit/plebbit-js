@@ -1108,7 +1108,7 @@ export class BaseClientsManager {
         // cache's own ttl, which matches the persistent name cache's window above. Issue #353.
         const setVerdict = (cacheKey: string, verdict: boolean) =>
             verdict
-                ? verificationCache.set(cacheKey, true)
+                ? verificationCache.set(cacheKey, true, { ttl: this._pkc._nameResolvedTrueTtlMs })
                 : verificationCache.set(cacheKey, false, { ttl: this._pkc._nameResolvedFalseTtlMs });
 
         const limit = pLimit(MAX_CONCURRENT_AUTHOR_NAME_RESOLUTIONS);

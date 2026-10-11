@@ -35,7 +35,9 @@ export const NAME_RESOLVED_FALSE_TTL_MS = 60_000;
 
 // How long an author-side `nameResolved: true` verdict is trusted. Matches the `maxAge: 3600` that
 // `resolveAuthorNamesInBackground` passes to the persistent cache, so the in-memory verdict never claims
-// more freshness than the layer underneath it and a domain transferred away stops reading as verified.
+// more freshness than the layer underneath it and a domain transferred away stops reading as verified,
+// on live objects too: no consumer gates the re-ask on its own field, so a lapsed `true` is re-earned by
+// whatever holds it on its next update cycle. Mirrored per instance as `PKC._nameResolvedTrueTtlMs`.
 export const NAME_RESOLVED_TRUE_TTL_MS = 3600_000;
 
 // How long to wait before asking again after a background name resolve finished without learning anything:

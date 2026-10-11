@@ -281,14 +281,14 @@ export class Comment
     _resolveAuthorNamesInBackground() {
         if (!this._pkc.resolveAuthorNames) return;
 
-        // Collect comment's own author unless the name is already verified. `!== true` and not "not yet a
-        // boolean", the same rule community.nameResolved follows: a `false` is provisional and lapses out of
-        // nameResolvedCache, and this instance holds its verdict for as long as it lives, so a verdict that
-        // was never requeued would outlive the evidence for it. Requeuing costs nothing while the verdict
-        // stands, since resolveAuthorNamesInBackground skips every entry the cache still holds. Issue #353.
+        // Collect comment's own author whatever this instance currently holds. Not gated on the field: this
+        // instance keeps its verdict for as long as it lives, and both verdicts lapse out of nameResolvedCache
+        // (a `false` quickly, a `true` after the hour its persistent record is trusted for), so a gate on the
+        // field would keep a lapsed verdict out of the cache's reach forever. The cache is what decides:
+        // resolveAuthorNamesInBackground skips every entry it still holds, so asking costs nothing while a
+        // verdict stands. Issue #353.
         const domain = getAuthorNameFromRuntime(this.author);
-        const ownAuthor =
-            domain && this.author.nameResolved !== true ? [{ authorName: domain, signaturePublicKey: this.signature.publicKey }] : [];
+        const ownAuthor = domain ? [{ authorName: domain, signaturePublicKey: this.signature.publicKey }] : [];
 
         // Collect page comment authors from replies that still need resolution
         const replyAuthors: Array<{ authorName: string; signaturePublicKey: string }> = [];
@@ -297,9 +297,7 @@ export class Comment
                 if (!page) continue;
                 for (const comment of page.comments) {
                     const commentDomain = getAuthorNameFromRuntime(comment.author);
-                    if (commentDomain && comment.author.nameResolved !== true) {
-                        replyAuthors.push({ authorName: commentDomain, signaturePublicKey: comment.signature.publicKey });
-                    }
+                    if (commentDomain) replyAuthors.push({ authorName: commentDomain, signaturePublicKey: comment.signature.publicKey });
                 }
             }
         }

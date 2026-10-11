@@ -875,14 +875,11 @@ export class CommunityClientsManager extends PKCClientsManager {
             if (!page) continue;
             for (const comment of page.comments) {
                 const domain = getAuthorNameFromRuntime(comment.author);
-                // `!== true` and not "not yet a boolean", the same rule community.nameResolved follows: a
-                // `false` is provisional and lapses out of nameResolvedCache, and a comment that was never
-                // requeued would keep displaying the lapsed verdict for as long as this page object lives.
-                // Requeuing costs nothing while the verdict stands, since resolveAuthorNamesInBackground
-                // skips every entry the cache still holds. Issue #353.
-                if (domain && comment.author.nameResolved !== true) {
-                    authors.push({ authorName: domain, signaturePublicKey: comment.signature.publicKey });
-                }
+                // Not gated on the comment's own field: both verdicts lapse out of nameResolvedCache, and a
+                // page object that was never requeued would keep displaying the lapsed one for as long as it
+                // lives. The cache decides, and resolveAuthorNamesInBackground skips every entry it still
+                // holds, so this costs nothing while a verdict stands. Issue #353.
+                if (domain) authors.push({ authorName: domain, signaturePublicKey: comment.signature.publicKey });
             }
         }
 

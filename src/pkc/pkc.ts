@@ -220,6 +220,11 @@ export class PKC extends PKCTypedEmitter<PKCEvents> implements ParsedPKCOptions 
     // shorten it without leaking the change into every other suite sharing the worker. See issue #353.
     _nameResolvedFalseTtlMs: number = NAME_RESOLVED_FALSE_TTL_MS;
 
+    // How long a `nameResolved: true` author verdict is trusted before it is re-earned (the ttl on that entry
+    // in nameResolvedCache). Per instance for the same reason as above: a test that drives a `true` lapsing
+    // cannot wait out the hour. See issue #353.
+    _nameResolvedTrueTtlMs: number = NAME_RESOLVED_TRUE_TTL_MS;
+
     // How long a background name resolve that learned nothing paces the next attempt for the same name, on
     // both sides. Distinct from the verdict ttl above because it holds no verdict: nothing was learned, so
     // this only decides how often we are willing to ask again while the resolvers are down. Per instance for
@@ -355,8 +360,9 @@ export class PKC extends PKCTypedEmitter<PKCEvents> implements ParsedPKCOptions 
             pagesMaxSize: new LRUCache<string, number>({ max: 50000 }),
             // A verdict here is terminal for as long as it lives: resolveAuthorNamesInBackground skips any
             // entry that is already a boolean, so expiry is the only thing that ever causes a re-resolve.
-            // Hence the ttl. `true` rides the persistent cache's window; `false` entries are written with the
-            // much shorter NAME_RESOLVED_FALSE_TTL_MS at the call site. See issue #353.
+            // Hence the ttl. Both verdicts are written with a per-instance ttl at the call site: `true` with
+            // _nameResolvedTrueTtlMs (the persistent cache's window), `false` with the much shorter
+            // _nameResolvedFalseTtlMs. See issue #353.
             nameResolvedCache: new LRUCache<string, boolean>({ max: 5000, ttl: NAME_RESOLVED_TRUE_TTL_MS }),
             // Constructed with a ttl so per-entry ttls are honoured at all: lru-cache only tracks them when
             // the cache was built with one, and the call site overrides it with the per-instance floor.
