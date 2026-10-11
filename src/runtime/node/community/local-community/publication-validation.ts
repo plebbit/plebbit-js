@@ -27,7 +27,7 @@ import {
 } from "../../../../signer/signatures.js";
 import { getPKCAddressFromPublicKey } from "../../../../signer/util.js";
 import { getAuthorNameFromWire } from "../../../../publications/publication-author.js";
-import { authorIdentityMatcherForRequest } from "./author-identity.js";
+import { authorIdentityMatcherForRequest, authorNameResolveFailureReason } from "./author-identity.js";
 import type { AuthorIdentityMatcher, IdentityMatchOutcome } from "./author-identity.js";
 import { getCommunityNameFromWire, getCommunityPublicKeyFromWire } from "../../../../publications/publication-community.js";
 import { CommentEditReservedFields } from "../../../../publications/comment-edit/schema.js";
@@ -185,17 +185,12 @@ async function checkAuthorIdentity(
         } catch (e) {
             // Four outcomes, four remedies for the publisher: fix your TXT value, use a name this community can
             // resolve, or retry once the node's resolvers recover. They used to collapse into one message. #353
-            const code = e instanceof PKCError ? e.code : undefined;
-            log("Rejecting publication with unresolvable author name", authorName, code, e);
-            if (code === "ERR_NO_RESOLVER_FOR_NAME") return messages.ERR_COMMUNITY_HAS_NO_RESOLVER_FOR_AUTHOR_NAME_TLD;
-            if (code === "ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS") return messages.ERR_AUTHOR_NAME_RECORD_IS_NOT_A_VALID_KEY;
-            // ERR_ALL_NAME_RESOLVERS_FAILED, an abort/timeout, or anything unexpected: we never got an answer.
-            return messages.ERR_COMMUNITY_FAILED_TO_RESOLVE_AUTHOR_NAME;
+            log("Rejecting publication with unresolvable author name", authorName, e instanceof PKCError ? e.code : undefined, e);
+            return authorNameResolveFailureReason({ error: e });
         }
         if (resolvedAddress === null) {
-            // The resolvers answered and there is no record. Definitive, and the publisher's to fix.
             log("Rejecting publication: author name has no record", authorName);
-            return messages.ERR_AUTHOR_NAME_HAS_NO_RECORD;
+            return authorNameResolveFailureReason({ error: null });
         }
         const signerAddress = await getPKCAddressFromPublicKey(publication.signature.publicKey);
         if (resolvedAddress !== signerAddress) {

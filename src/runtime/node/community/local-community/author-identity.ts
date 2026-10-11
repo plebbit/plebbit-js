@@ -49,6 +49,22 @@ const NO_MATCH: IdentityMatchOutcome = { matched: false };
 const MATCH: IdentityMatchOutcome = { matched: true };
 
 /**
+ * The message a publisher is owed when their author name could not be verified: one remedy per outcome, and
+ * one table for both places that classify a resolve, the identity matcher here and `checkAuthorIdentity`, so
+ * the two can never disagree about the same failure. `error: null` is the resolvers answering "no record";
+ * anything else is whatever the resolve threw. Issue #353.
+ */
+export function authorNameResolveFailureReason({ error }: { error: unknown }): messages {
+    // The resolvers answered and there is no record. Definitive, and the publisher's to fix.
+    if (error === null) return messages.ERR_AUTHOR_NAME_HAS_NO_RECORD;
+    const code = error instanceof PKCError ? error.code : undefined;
+    if (code === "ERR_NO_RESOLVER_FOR_NAME") return messages.ERR_COMMUNITY_HAS_NO_RESOLVER_FOR_AUTHOR_NAME_TLD;
+    if (code === "ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS") return messages.ERR_AUTHOR_NAME_RECORD_IS_NOT_A_VALID_KEY;
+    // ERR_ALL_NAME_RESOLVERS_FAILED, an abort/timeout, or anything unexpected: we never got an answer.
+    return messages.ERR_COMMUNITY_FAILED_TO_RESOLVE_AUTHOR_NAME;
+}
+
+/**
  * The matcher for an author nothing can refer to: no signature to derive an identity from, so every configured
  * identity string is a non-match, and a non-match with no `nameFailure` because no name was ever consulted.
  * Answering "no match" beats throwing from deep inside validation or the challenge runner.
@@ -108,22 +124,14 @@ export function createAuthorIdentityMatcher({
                     });
                     if (resolvedAuthorName === signerAddress) return MATCH;
                     if (resolvedAuthorName === null) {
-                        // The resolvers answered and there is no record. Definitive, and the publisher's to fix.
                         log("Author name has no record while matching identity", wireName);
-                        return { matched: false, nameFailure: { reason: messages.ERR_AUTHOR_NAME_HAS_NO_RECORD } };
+                        return { matched: false, nameFailure: { reason: authorNameResolveFailureReason({ error: null }) } };
                     }
                     // Resolved to somebody else: an impostor claiming a listed domain. No explanation is owed.
                     return NO_MATCH;
                 } catch (e) {
-                    const code = e instanceof PKCError ? e.code : undefined;
-                    log("Failed to resolve author name while matching identity", wireName, code, e);
-                    const reason =
-                        code === "ERR_NO_RESOLVER_FOR_NAME"
-                            ? messages.ERR_COMMUNITY_HAS_NO_RESOLVER_FOR_AUTHOR_NAME_TLD
-                            : code === "ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS"
-                              ? messages.ERR_AUTHOR_NAME_RECORD_IS_NOT_A_VALID_KEY
-                              : messages.ERR_COMMUNITY_FAILED_TO_RESOLVE_AUTHOR_NAME;
-                    return { matched: false, nameFailure: { reason, error: e } };
+                    log("Failed to resolve author name while matching identity", wireName, e instanceof PKCError ? e.code : undefined, e);
+                    return { matched: false, nameFailure: { reason: authorNameResolveFailureReason({ error: e }), error: e } };
                 }
             })();
         return nameOutcomePromise;
