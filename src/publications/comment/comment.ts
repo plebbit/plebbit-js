@@ -281,12 +281,14 @@ export class Comment
     _resolveAuthorNamesInBackground() {
         if (!this._pkc.resolveAuthorNames) return;
 
-        // Collect comment's own author if nameResolved is not yet set
+        // Collect comment's own author whatever this instance currently holds. Not gated on the field: this
+        // instance keeps its verdict for as long as it lives, and both verdicts lapse out of nameResolvedCache
+        // (a `false` quickly, a `true` after the hour its persistent record is trusted for), so a gate on the
+        // field would keep a lapsed verdict out of the cache's reach forever. The cache is what decides:
+        // resolveAuthorNamesInBackground skips every entry it still holds, so asking costs nothing while a
+        // verdict stands. Issue #353.
         const domain = getAuthorNameFromRuntime(this.author);
-        const ownAuthor =
-            domain && typeof this.author.nameResolved !== "boolean"
-                ? [{ authorName: domain, signaturePublicKey: this.signature.publicKey }]
-                : [];
+        const ownAuthor = domain ? [{ authorName: domain, signaturePublicKey: this.signature.publicKey }] : [];
 
         // Collect page comment authors from replies that still need resolution
         const replyAuthors: Array<{ authorName: string; signaturePublicKey: string }> = [];
@@ -295,9 +297,7 @@ export class Comment
                 if (!page) continue;
                 for (const comment of page.comments) {
                     const commentDomain = getAuthorNameFromRuntime(comment.author);
-                    if (commentDomain && typeof comment.author.nameResolved !== "boolean") {
-                        replyAuthors.push({ authorName: commentDomain, signaturePublicKey: comment.signature.publicKey });
-                    }
+                    if (commentDomain) replyAuthors.push({ authorName: commentDomain, signaturePublicKey: comment.signature.publicKey });
                 }
             }
         }
