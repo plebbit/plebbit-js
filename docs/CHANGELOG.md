@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.103](https://github.com/pkcprotocol/pkc-js/compare/v0.0.102...v0.0.103) (2026-10-11)
+
+### Bug Fixes
+
+* **community:** make CommunityEdit.name owner-only like the legacy address field ([#374](https://github.com/pkcprotocol/pkc-js/issues/374)) ([2855535](https://github.com/pkcprotocol/pkc-js/commit/2855535028dcd02ab48ff944d6402ea0c5921c8d)), closes [#373](https://github.com/pkcprotocol/pkc-js/issues/373) [#373](https://github.com/pkcprotocol/pkc-js/issues/373)
+
 ## [0.0.102](https://github.com/pkcprotocol/pkc-js/compare/v0.0.101...v0.0.102) (2026-10-11)
 
 ### Features
