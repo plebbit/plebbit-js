@@ -351,6 +351,7 @@ export enum messages {
     // Comment Edit errors
     ERR_COMMUNITY_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_COMMUNITY_COMMENT_MOD_CAN_NOT_ARCHIVE_REPLY = "Can't archive replies. Only posts",
+    ERR_NOT_ALLOWED_TO_ARCHIVE_POSTS = "community.features.noArchive is true which means posts can't be archived in this community",
     ERR_COMMUNITY_COMMENT_EDIT_UNAUTHORIZED_FIELD = "CommentEdit includes a field that cannot be used",
     ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS = "CommentEdit can't have both author and mod fields. Please publish a separate request for author and mod",
 
