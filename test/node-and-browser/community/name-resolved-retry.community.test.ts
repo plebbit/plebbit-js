@@ -189,21 +189,25 @@ describeSkipIfRpc("community.nameResolved re-earns a false verdict (#353)", () =
         try {
             const community = await pkc.createCommunity({ name, publicKey: communityPublicKey });
             communities.push(community);
-            const countBeforeUpdate = resolveCount;
+            // Counted per name, not with the suite-wide counter: the community from the false-floor case
+            // above is still updating and re-resolves its own name every FALSE_TTL_MS, and the held resolver
+            // catches that attempt too. On a slow runner it lands inside the window below and reads as a
+            // second attempt by this community.
+            const attempts = () => resolveCountByName[name] ?? 0;
             await community.update();
 
             // The first attempt starts and then hangs inside the resolver. A second one is expected here and
             // is not what this case is about: the guard is per instance, and a community the caller holds
             // mirrors an internal updating instance, so each of the two classifies the name once.
-            await waitUntil(() => resolveCount > countBeforeUpdate, 10000);
+            await waitUntil(() => attempts() > 0, 10000);
             await new Promise((resolve) => setTimeout(resolve, 1000));
-            const countWhileHeld = resolveCount;
+            const countWhileHeld = attempts();
 
             // Several more fetch cycles at the 500ms updateInterval these test instances use. Every one of
             // them reaches the pinned-name branch, and not one may start another attempt while the attempt
             // before it is still unanswered.
             await new Promise((resolve) => setTimeout(resolve, 2000));
-            expect(resolveCount).to.equal(countWhileHeld);
+            expect(attempts()).to.equal(countWhileHeld);
         } finally {
             heldResolves?.release();
             heldResolves = undefined;
