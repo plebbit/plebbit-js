@@ -347,7 +347,13 @@ export class CommunityClientsManager extends PKCClientsManager {
             // addressing the minter, claim recovers the anchor) invalidates any nameResolved verdict
             // computed against the previous identity — the triggers below re-classify against the
             // claimed one.
-            if (publicKeyBeforeApply && this._community.publicKey !== publicKeyBeforeApply) this._community.nameResolved = undefined;
+            if (publicKeyBeforeApply && this._community.publicKey !== publicKeyBeforeApply) {
+                this._community.nameResolved = undefined;
+                // The retry floors were earned against the previous identity and must not pace the first
+                // classification of the new one.
+                this._nameResolvedFalseAtMs = undefined;
+                this._nameResolveFailedAtMs = undefined;
+            }
             // If we just discovered a name, trigger background resolution now (don't wait for next loop).
             // `!== true` rather than "not yet a boolean": a `false` verdict is provisional and must be
             // re-earned, since the states that produce one are what a domain looks like while its owner is
@@ -840,6 +846,12 @@ export class CommunityClientsManager extends PKCClientsManager {
                     // The resolvers answered and the answer contradicts the claim: the domain has no
                     // community TXT record, or it has one that is not a key. Definitive. Issue #353.
                     setNameResolvedAndEmitUpdate(false);
+                } else if (isAbortError(e)) {
+                    // The community's stop signal ended the attempt. That says nothing about the resolvers,
+                    // so it is not recorded: this manager outlives stop() on the caller's instance, and a stamp
+                    // here would pace the next update()'s classification for an attempt that never asked.
+                    // The author side refuses to record an abort for the same reason. Issue #353.
+                    return;
                 } else {
                     log.trace("Background name resolution failed for", name, e);
                     // We never got an answer (every resolver errored, or the resolve timed out). nameResolved
