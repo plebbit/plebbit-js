@@ -34,9 +34,12 @@ jobs:
       # move pkc-js back to working dir in a sub folder
       - run: mv ../pkc-js-tmp pkc-js
       # build the latest pkc-js dist folder
-      # Retry: the kubo postinstall downloads its binary from dist.ipfs.tech,
-      # which intermittently returns 5xx and aborts the install with no retry
-      # of its own. This affects every npm install step below.
+      # Retry: the kubo postinstall downloads its binary (from GitHub releases
+      # since kubo@0.43.0; dist.ipfs.tech before that, and that host has been
+      # unreachable since 2026-10-02, see #371) and aborts the install with no
+      # retry of its own on a transient failure. This affects every npm install
+      # step below. Any kubo pin below 0.43.0 anywhere in the installed tree,
+      # including the pkc-protocol-test repo's own pins, cannot install at all.
       - name: cd pkc-js && npm ci (with retry)
         shell: bash
         run: |
