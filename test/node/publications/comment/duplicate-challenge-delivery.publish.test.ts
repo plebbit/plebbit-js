@@ -50,9 +50,15 @@ const makeGate = (): Gate => {
     return { waitForRelease, release };
 };
 
-// Publication state changes synchronously inside the pubsub handlers; poll instead of listening.
-const waitFor = async (predicate: () => boolean): Promise<void> => {
-    while (!predicate()) await new Promise((resolve) => setTimeout(resolve, 20));
+// Publication state changes synchronously inside the pubsub handlers; poll instead of listening. Bounded so a
+// predicate that never turns true fails the test here and its `finally` cleanup still runs, instead of the
+// runner's timeout leaving the subscription and the publication behind.
+const waitFor = async (predicate: () => boolean, timeoutMs = 30_000): Promise<void> => {
+    const deadline = Date.now() + timeoutMs;
+    while (!predicate()) {
+        if (Date.now() >= deadline) throw new Error("waitFor: predicate did not turn true in time");
+        await new Promise((resolve) => setTimeout(resolve, 20));
+    }
 };
 
 // The duplicate copy finishes its verification and decryption within milliseconds of the original.
