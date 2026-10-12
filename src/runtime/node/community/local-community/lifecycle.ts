@@ -36,10 +36,17 @@ import type { RemoteCommunity } from "../../../../community/remote-community.js"
 
 export async function publishLoop(community: LocalCommunity, syncIntervalMs: number) {
     const log = Logger("pkc-js:local-community:_publishLoop");
-    // we need to continue the loop if there's at least one pending edit
+    // After stop() the loop runs on while an edit is pending so the record carrying it goes out before the community
+    // goes down. Pending edits drain only on a successful publish, so a cycle that fails after stop() ends the loop
+    // instead of retrying forever (the edit is in the DB and ships on the next start): otherwise an all-throwing page
+    // sort configuration, or an unreachable Kubo, would make stop() hang.
+    let syncFailedSinceStop = false;
 
     const shouldStopPublishLoop = () => {
-        return community.state !== "started" || (community._stopHasBeenCalled && community._pendingEditProps.length === 0);
+        return (
+            community.state !== "started" ||
+            (community._stopHasBeenCalled && (community._pendingEditProps.length === 0 || syncFailedSinceStop))
+        );
     };
 
     const waitUntilNextSync = async () => {
@@ -70,6 +77,7 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
             // must not break publishing either.
             await reprovideAnchorRecordIfDue(community).catch((e) => log.error("Failed to re-provide the anchor record", e));
         } catch (e) {
+            if (community._stopHasBeenCalled) syncFailedSinceStop = true;
             community.emit("error", e as Error);
         } finally {
             await waitUntilNextSync();

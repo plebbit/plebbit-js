@@ -348,3 +348,26 @@ export function reportFailedPageSorts(community: LocalCommunity, failedSorts: Fa
         community.emit("error", error);
     }
 }
+
+// Run one scope's page generation and report the sorts that failed, whether the rest published (the result carries
+// failedSorts) or none did (ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE carries them and is rethrown so the cycle aborts).
+export async function generatePagesReportingFailedSorts<T extends { failedSorts: FailedPageSorts } | undefined>({
+    community,
+    log,
+    generate
+}: {
+    community: LocalCommunity;
+    log: Logger;
+    generate: () => Promise<T>;
+}): Promise<T> {
+    let generated: T;
+    try {
+        generated = await generate();
+    } catch (e) {
+        if (e instanceof PKCError && e.code === "ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE")
+            reportFailedPageSorts(community, (e.details as { failedSorts: FailedPageSorts }).failedSorts, log);
+        throw e;
+    }
+    if (generated) reportFailedPageSorts(community, generated.failedSorts, log);
+    return generated;
+}

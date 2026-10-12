@@ -4,6 +4,7 @@ import {
     mockPKC,
     mockPKCNoDataPathWithOnlyKuboClient,
     createSubWithNoChallenge,
+    generateMockComment,
     generateMockPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
@@ -25,6 +26,7 @@ import type { PKC as PKCType } from "../../../../dist/node/pkc/pkc.js";
 import type { LocalCommunity } from "../../../../dist/node/runtime/node/community/local-community.js";
 import type { RemoteCommunity } from "../../../../dist/node/community/remote-community.js";
 import type { CommunitySettings } from "../../../../dist/node/community/types.js";
+import type { CommentIpfsWithCidDefined } from "../../../../dist/node/publications/comment/types.js";
 
 type PagesSettings = NonNullable<CommunitySettings["pages"]>;
 
@@ -408,6 +410,73 @@ describeSkipIfRpc.concurrent("settings.pages: published record", () => {
             const post2 = await generateMockPost({ communityAddress: community.address, pkc });
             await publishWithExpectedResult({ publication: post2, expectedChallengeSuccess: true });
             await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => errors.length >= 2 });
+        } finally {
+            await community.stop();
+        }
+    });
+
+    it("when every post sort throws the cycle aborts, the last record's posts stay published and each sort is reported", async () => {
+        const community = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+        await community.edit({ settings: { ...community.settings, pages: { posts: [{ name: "new", preloaded: true }] } } });
+        const errors: PKCError[] = [];
+        community.on("error", (error) => errors.push(error as PKCError));
+        await community.start();
+        try {
+            const post1 = await generateMockPost({ communityAddress: community.address, pkc });
+            await publishWithExpectedResult({ publication: post1, expectedChallengeSuccess: true });
+            await resolveWhenConditionIsTrue({
+                toUpdate: community,
+                predicate: async () => community.posts?.pages?.new?.comments?.[0]?.cid === post1.cid
+            });
+            const publishedPosts = community.raw.communityIpfs!.posts;
+
+            // Only the throwing sort remains: nothing can be generated for the posts scope
+            await community.edit({
+                settings: { ...community.settings, pages: { posts: [{ path: THROWING_SORT_PATH, preloaded: true }] } }
+            });
+            const codesOf = (errs: PKCError[]) => errs.map((e) => e.code);
+            // An aborted cycle publishes nothing, so no "update" fires: wait on the error event itself
+            await resolveWhenConditionIsTrue({
+                toUpdate: community,
+                eventName: "error",
+                predicate: async () => codesOf(errors).includes("ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE")
+            });
+            const perSort = errors.find((e) => e.code === "ERR_PAGE_SORT_FAILED_TO_GENERATE");
+            expect(perSort?.details).to.include({ sortName: "throwing", scope: "posts" });
+            const all = errors.find((e) => e.code === "ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE");
+            expect(all?.details).to.include({ scope: "posts" });
+            expect(Object.keys((all?.details as { failedSorts: Record<string, unknown> }).failedSorts)).to.deep.equal(["throwing"]);
+
+            // The cycle aborted before publishing: the previous feed is what remote clients still load
+            expect(community.raw.communityIpfs!.posts).to.deep.equal(publishedPosts);
+            expect(community.posts?.pages?.new?.comments?.[0]?.cid).to.equal(post1.cid);
+        } finally {
+            // The settings edit stays pending (no record carried it out): stop() must still return while every cycle aborts
+            await community.stop();
+        }
+    });
+
+    it("when every reply sort throws the cycle aborts and each sort is reported with the replies scope", async () => {
+        const community = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+        await community.edit({ settings: { ...community.settings, pages: { replies: [{ path: THROWING_SORT_PATH, preloaded: true }] } } });
+        const errors: PKCError[] = [];
+        community.on("error", (error) => errors.push(error as PKCError));
+        await community.start();
+        try {
+            const post = await generateMockPost({ communityAddress: community.address, pkc });
+            await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
+            const reply = await generateMockComment(post as CommentIpfsWithCidDefined, pkc, false);
+            await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
+            // An aborted cycle publishes nothing, so no "update" fires: wait on the error event itself
+            await resolveWhenConditionIsTrue({
+                toUpdate: community,
+                eventName: "error",
+                predicate: async () => errors.some((e) => e.code === "ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE")
+            });
+            const perSort = errors.find((e) => e.code === "ERR_PAGE_SORT_FAILED_TO_GENERATE");
+            expect(perSort?.details).to.include({ sortName: "throwing", scope: "replies" });
+            const all = errors.find((e) => e.code === "ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE");
+            expect(all?.details).to.include({ scope: "replies", parentCid: post.cid });
         } finally {
             await community.stop();
         }

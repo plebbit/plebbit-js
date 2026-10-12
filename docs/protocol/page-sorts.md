@@ -158,10 +158,12 @@ with one `failures[]` entry per bad sort; a file that does not load at all
 At generation time a sort whose file throws is skipped: the remaining sorts publish, and every cycle that
 generates pages emits `ERR_PAGE_SORT_FAILED_TO_GENERATE` on the community's `error` event for each such
 sort (with `sortName` and `scope` in `details`). A throwing preloaded sort drops out of `pages`; if none
-survive the record ships `pages: {}`, and if every configured sort throws the record ships without that
-scope's pages, with one error event per sort telling the host why. Only the sort file's own code is
-treated this way: an error while pkc-js loads the comment set (a busy sqlite, a malformed row) aborts the
-cycle, the last good record stays published and the next cycle retries.
+survive the record ships `pages: {}`. If every configured sort throws there is nothing left to publish for
+that scope, and a sort file's bug is no verdict on the feed, so the cycle aborts instead of shipping the
+scope empty: the per-sort events fire, `ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE` follows (`scope`,
+`parentCid` and the per-sort errors under `failedSorts` in `details`), the last good record stays
+published and the next cycle retries. An error while pkc-js loads the comment set (a busy sqlite, a
+malformed row) aborts the cycle the same way.
 
 ## Writing a page sort file
 

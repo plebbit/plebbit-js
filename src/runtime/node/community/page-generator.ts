@@ -578,9 +578,12 @@ export class PageGenerator {
 
     // Generic generation for one scope (community posts, or one comment's replies) from its configured sorts.
     //
-    // 1. Every sort is applied to its comment set; a sort whose file throws is recorded in failedSorts and skipped.
-    //    Loading the comment set is pkc-js's own code, so an error there (a busy sqlite, a malformed row) propagates
-    //    and aborts the cycle, leaving the last good record published; the sync loop retries next cycle.
+    // 1. Every sort is applied to its comment set; a sort whose file throws is recorded in failedSorts and skipped so
+    //    the remaining sorts still publish. When that leaves no pages at all the generation throws
+    //    ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE (failedSorts in its details) instead of returning "nothing to
+    //    paginate": publishing an empty scope would replace a live feed on a sort file's bug. Loading the comment
+    //    set is pkc-js's own code, so an error there (a busy sqlite, a malformed row) propagates as well. Either
+    //    way the cycle aborts, the last good record stays published and the sync loop retries next cycle.
     // 2. Preloaded sorts split preloadedPageSizeBytes equally. One whose first chunk does not fit its share drops to
     //    pageCids (it is generated like a non-preloaded sort) while the others still embed.
     // 3. If every preloaded sort fits in a single chunk, the single-page shortcut applies: only those pages are returned
@@ -691,7 +694,13 @@ export class PageGenerator {
                     holdsWholeSet: chunks.length === 1 && chunks[0].length === comments.length
                 });
         }
-        if (preloaded.length === 0 && nonPreloaded.length === 0) return undefined;
+        if (preloaded.length === 0 && nonPreloaded.length === 0) {
+            // Nothing to publish for this scope. With a sort file to blame that is not a verdict on the feed (the sort may
+            // throw on every comment), so the cycle aborts and the last published pages stay up (see 1. above).
+            if (Object.keys(failedSorts).length > 0)
+                throw new PKCError("ERR_ALL_PAGE_SORTS_FAILED_TO_GENERATE", { scope, parentCid, failedSorts });
+            return undefined;
+        }
 
         const everyPreloadedIsSingleChunk = preloaded.length > 0 && preloaded.every(({ chunks }) => chunks.length === 1);
         const skippingOtherSortsIsSound = nonPreloaded.length === 0 || preloaded.every(({ holdsWholeSet }) => holdsWholeSet);

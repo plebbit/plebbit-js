@@ -20,7 +20,7 @@ import type { CalculatedCommentUpdate, CommunityAuthorMemo } from "../db-handler
 import type { CommentUpdateToWriteToDbAndPublishToIpfs } from "./defaults.js";
 import { rmUnneededMfsPaths } from "./cleanup.js";
 import { wirePagesFromGeneration } from "../page-generator.js";
-import { reportFailedPageSorts } from "../page-sorts/index.js";
+import { generatePagesReportingFailedSorts } from "../page-sorts/index.js";
 
 // A cycle that recalculated any comment must have recalculated at least one post: a reply's update
 // dirties its whole ancestry, and only a post has a postUpdates file. A cycle that ends with no post
@@ -115,11 +115,14 @@ export async function calculateNewCommentUpdate(opts: {
     const adjustedPreloadedRepliesPageSizeBytes = Math.max(inlineRepliesBudget, 1);
 
     // Which reply sorts are generated and which embed is settings.pages' call (issue #73)
-    const generatedRepliesPages =
-        comment.depth === 0
-            ? await community._pageGenerator.generatePostPages(comment, adjustedPreloadedRepliesPageSizeBytes)
-            : await community._pageGenerator.generateReplyPages(comment, adjustedPreloadedRepliesPageSizeBytes);
-    if (generatedRepliesPages) reportFailedPageSorts(community, generatedRepliesPages.failedSorts, log);
+    const generatedRepliesPages = await generatePagesReportingFailedSorts({
+        community,
+        log,
+        generate: () =>
+            comment.depth === 0
+                ? community._pageGenerator.generatePostPages(comment, adjustedPreloadedRepliesPageSizeBytes)
+                : community._pageGenerator.generateReplyPages(comment, adjustedPreloadedRepliesPageSizeBytes)
+    });
 
     // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
     if (generatedRepliesPages) commentUpdatePriorToSigning.replies = wirePagesFromGeneration(generatedRepliesPages);
