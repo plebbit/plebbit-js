@@ -127,43 +127,51 @@ export type PageEntrySource = {
     resolve: (entries: PageComment[]) => PageComment[];
 };
 
-// Serialized entries kept across generations, by cid, valid while the CommentUpdate's updatedAt is unchanged: a
-// CommentUpdate is recalculated (new updatedAt) whenever anything under the comment changes, so the same
-// (cid, updatedAt) serializes to the same bytes. Bounded by a byte budget; a changed entry replaces its old bytes,
-// a new entry is kept only while the budget allows, and entries a generation did not see are dropped after it, so
-// a steady board costs a serialization per changed post and the budget's worth of memory (issue #351).
+// Serialized entries kept across generations, by cid and shape, valid while the CommentUpdate's updatedAt is
+// unchanged: a CommentUpdate is recalculated (new updatedAt) whenever anything under the comment changes, so the
+// same (cid, updatedAt) serializes to the same bytes. The shape is whether the entry carries `replies`: one
+// generation loads the same reply twice when a post has nested and flat sorts, with its reply tree for the nested
+// sorts and without `replies` for the flat ones (queryFlattenedPageReplies excludes the column), and the two must
+// not share bytes, or a flat page would embed the nested JSON. Bounded by a byte budget; a changed entry replaces
+// its old bytes, a new entry is kept only while the budget allows, and entries a generation did not see are
+// dropped after it, so a steady board costs a serialization per changed post and the budget's worth of memory
+// (issue #351).
 class EntryJsonCache {
-    private _byCid = new Map<string, { updatedAt: number; json: string; bytes: number }>();
+    private _byKey = new Map<string, { cid: string; updatedAt: number; json: string; bytes: number }>();
     private _bytes = 0;
 
     constructor(private readonly _budgetBytes: number) {}
 
+    private static _key(entry: PageComment): string {
+        return entry.commentUpdate.replies === undefined ? entry.commentUpdate.cid : `${entry.commentUpdate.cid}+replies`;
+    }
+
     get(entry: PageComment): { json: string; bytes: number } | undefined {
-        const cached = this._byCid.get(entry.commentUpdate.cid);
+        const cached = this._byKey.get(EntryJsonCache._key(entry));
         return cached && cached.updatedAt === entry.commentUpdate.updatedAt ? cached : undefined;
     }
 
     offer(entry: PageComment, json: string, bytes: number): void {
-        const cid = entry.commentUpdate.cid;
-        const previous = this._byCid.get(cid);
+        const key = EntryJsonCache._key(entry);
+        const previous = this._byKey.get(key);
         const budgetAfter = this._bytes - (previous?.bytes ?? 0) + bytes;
         if (budgetAfter > this._budgetBytes) {
-            if (previous) this._drop(cid);
+            if (previous) this._drop(key);
             return;
         }
-        this._byCid.set(cid, { updatedAt: entry.commentUpdate.updatedAt, json, bytes });
+        this._byKey.set(key, { cid: entry.commentUpdate.cid, updatedAt: entry.commentUpdate.updatedAt, json, bytes });
         this._bytes = budgetAfter;
     }
 
     // Keep only the cids a generation listed (a purged or excluded post frees its bytes)
     retainOnly(cids: Set<string>): void {
-        for (const cid of [...this._byCid.keys()]) if (!cids.has(cid)) this._drop(cid);
+        for (const [key, cached] of [...this._byKey.entries()]) if (!cids.has(cached.cid)) this._drop(key);
     }
 
-    private _drop(cid: string): void {
-        const cached = this._byCid.get(cid);
+    private _drop(key: string): void {
+        const cached = this._byKey.get(key);
         if (!cached) return;
-        this._byCid.delete(cid);
+        this._byKey.delete(key);
         this._bytes -= cached.bytes;
     }
 }
