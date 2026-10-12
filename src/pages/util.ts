@@ -98,14 +98,14 @@ export function bestScore(comment: CommentToSort) {
     assert(typeof comment.commentUpdate.downvoteCount === "number" && typeof comment.commentUpdate.upvoteCount === "number");
 
     const originalUpvoteCount = comment.commentUpdate.upvoteCount; // can be 0
-    const upvoteCount = comment.commentUpdate.upvoteCount + 1; // reddit initial upvotes is 1, pkc is 0
     const downvoteCount = comment.commentUpdate.downvoteCount;
+    if (originalUpvoteCount + downvoteCount === 0) return 0; // no votes, no evidence
 
+    // reddit's initial upvote is 1, pkc's is 0: the implicit upvote counts in both the positives and the total, or
+    // p exceeds 1 whenever a comment has upvotes and no downvotes and the square root below is NaN
+    const upvoteCount = originalUpvoteCount + 1;
     // n is the total number of ratings
-    const n = originalUpvoteCount + downvoteCount;
-    if (n === 0) {
-        return 0;
-    }
+    const n = upvoteCount + downvoteCount;
 
     // zα/2 is the (1-α/2) quantile of the standard normal distribution
     const z = 1.281551565545;
