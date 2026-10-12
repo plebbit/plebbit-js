@@ -881,14 +881,6 @@ export class DbHandler {
                     delete srcRecord["subplebbitAddress"];
                 }
 
-                // The alias reverse-lookup column (v42 → v43, issue #351)
-                if (
-                    currentDbVersion < 43 &&
-                    srcTable === TABLES.PSEUDONYMITY_ALIASES &&
-                    typeof srcRecord["originalAuthorPublicKey"] === "string"
-                )
-                    srcRecord["originalAuthorSignerAddress"] = deriveAliasOriginalAuthorSignerAddress(srcRecord["originalAuthorPublicKey"]);
-
                 // Rename pseudonymityAliases columns (v38 → v39)
                 if (currentDbVersion < 39 && srcTable === TABLES.PSEUDONYMITY_ALIASES) {
                     if (srcRecord["originalAuthorSignerPublicKey"] !== undefined) {
@@ -900,6 +892,15 @@ export class DbHandler {
                         delete srcRecord["originalAuthorDomain"];
                     }
                 }
+
+                // The alias reverse-lookup column (v42 → v43, issue #351). After the v39 rename above, so a pre-v39 row's key
+                // is already under originalAuthorPublicKey when it is derived.
+                if (
+                    currentDbVersion < 43 &&
+                    srcTable === TABLES.PSEUDONYMITY_ALIASES &&
+                    typeof srcRecord["originalAuthorPublicKey"] === "string"
+                )
+                    srcRecord["originalAuthorSignerAddress"] = deriveAliasOriginalAuthorSignerAddress(srcRecord["originalAuthorPublicKey"]);
 
                 // Prepare record for insertion (stringify JSONs, convert booleans)
                 const processedRecord = this._processRecordsForDbBeforeInsert([srcRecord])[0];

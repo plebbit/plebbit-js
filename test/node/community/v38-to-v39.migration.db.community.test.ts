@@ -3,6 +3,8 @@ import { DbHandler } from "../../../dist/node/runtime/node/community/db-handler.
 import { describeSkipIfRpc } from "../../helpers/conditional-tests.js";
 import type { LocalCommunity } from "../../../dist/node/runtime/node/community/local-community.js";
 import type Database from "better-sqlite3";
+import { readFileSync } from "node:fs";
+import { getPKCAddressFromPublicKeySync } from "../../../dist/node/signer/util.js";
 
 // ──────────────────────────────────────────────────────────────
 // v38 table schemas (old column names for pseudonymityAliases)
@@ -148,6 +150,13 @@ const V38_CREATE_PSEUDONYMITY_ALIASES = `
 
 const COMMUNITY_ADDRESS = "12D3KooWTestCommunityAddress";
 const now = Math.floor(Date.now() / 1000);
+// A real ed25519 public key: the v43 backfill derives `originalAuthorSignerAddress` from it, and the derivation yields null for
+// a fake key, so the ordering of that backfill against the v39 column rename is only observable with a real one
+const REAL_ORIGINAL_AUTHOR_PUBLIC_KEY = (
+    JSON.parse(
+        readFileSync(new URL("../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json", import.meta.url), "utf8")
+    ) as { signature: { publicKey: string } }
+).signature.publicKey;
 
 function fakeSignatureJson(signatureValue: string): string {
     return JSON.stringify({
@@ -301,6 +310,33 @@ describeSkipIfRpc("v38 → v39 DB migration (pseudonymityAliases column renames)
         `
         ).run("QmPost2", "alias-private-key-2", "original-public-key-2", "author.bso", "per-author", now);
 
+        // A third post whose alias row carries a real public key (signed by the alias, owned by the original author)
+        db.prepare(
+            `
+            INSERT INTO comments (cid, authorSignerAddress, author, postCid, communityPublicKey,
+                content, timestamp, signature, depth, protocolVersion, insertedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `
+        ).run(
+            "QmPost3",
+            "12D3KooWAliasSigner3",
+            JSON.stringify({ address: "12D3KooWAliasSigner3" }),
+            "QmPost3",
+            COMMUNITY_ADDRESS,
+            "post content 3",
+            now,
+            fakeSignatureJson("sig-post3"),
+            0,
+            "1.0.0",
+            now
+        );
+        db.prepare(
+            `
+            INSERT INTO pseudonymityAliases (commentCid, aliasPrivateKey, originalAuthorSignerPublicKey, originalAuthorDomain, mode, insertedAt)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `
+        ).run("QmPost3", "alias-private-key-3", REAL_ORIGINAL_AUTHOR_PUBLIC_KEY, null, "per-post", now);
+
         // Set the DB version to v38 to trigger migration
         db.pragma("user_version = 38");
 
@@ -321,6 +357,22 @@ describeSkipIfRpc("v38 → v39 DB migration (pseudonymityAliases column renames)
         expect(columns).to.include("originalAuthorName");
         expect(columns).not.to.include("originalAuthorSignerPublicKey");
         expect(columns).not.to.include("originalAuthorDomain");
+    });
+
+    // The v43 backfill (`originalAuthorSignerAddress`, issue #351) reads `originalAuthorPublicKey`, which a pre-v39 row only has
+    // after the v39 rename. Run from v38 both must apply to the same row.
+    it("a pre-v39 alias row gets originalAuthorSignerAddress derived from its renamed public key", () => {
+        const priv = getPrivate(dbHandler!);
+        const row = priv._db
+            .prepare("SELECT originalAuthorPublicKey, originalAuthorSignerAddress FROM pseudonymityAliases WHERE commentCid = ?")
+            .get("QmPost3") as { originalAuthorPublicKey: string; originalAuthorSignerAddress: string | null };
+        expect(row.originalAuthorPublicKey).to.equal(REAL_ORIGINAL_AUTHOR_PUBLIC_KEY);
+        expect(row.originalAuthorSignerAddress).to.equal(getPKCAddressFromPublicKeySync(REAL_ORIGINAL_AUTHOR_PUBLIC_KEY));
+    });
+
+    it("queryCommunityAuthor reaches a pre-v39 alias comment through the derived column", () => {
+        const author = dbHandler!.queryCommunityAuthor(getPKCAddressFromPublicKeySync(REAL_ORIGINAL_AUTHOR_PUBLIC_KEY));
+        expect(author?.lastCommentCid).to.equal("QmPost3");
     });
 
     it("alias without domain is migrated correctly", () => {
