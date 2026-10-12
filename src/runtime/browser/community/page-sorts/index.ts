@@ -1,7 +1,5 @@
-// Browser build of src/runtime/node/community/page-sorts/index.ts. Page generation is community-side and needs sqlite,
-// so the registry is empty here, same as the challenges stub. A browser client that wants to re-sort a page installs
-// the package itself and calls its `score` (docs/protocol/page-sorts.md, "Client side"), it does not go through here.
-import type { PageSortFileFactoryInput } from "../../../../community/types.js";
-
-const pkcJsPageSorts: Record<string, PageSortFileFactoryInput> = {};
-export { pkcJsPageSorts };
+// Browser build of src/runtime/node/community/page-sorts/index.ts. Resolving a sort by `path` and generating pages are
+// community-side and need the database, so none of that exists here; the built-in registry is shared, since the
+// scorers are pure, so a browser client re-sorting a page (docs/protocol/page-sorts.md, "Client side") finds the same
+// built-ins under `pageSorts` that a community generates with.
+export { pkcJsPageSorts } from "../../../../pages/pkc-js-page-sorts/index.js";

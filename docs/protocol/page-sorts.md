@@ -317,7 +317,9 @@ const ordered =
   the `maxAge` window), so a client re-applies nothing but the pinned placement. Pass the `publicOptions`
   of the sort you want to reproduce; to apply a different sort, pass that sort's options (or the
   community's for a same-scope built-in) and its file.
-- To re-sort with a built-in, instantiate it from `PKC.pageSorts` (`hot`, `new`, `active`, `topDay`, ...).
+- To re-sort with a built-in, instantiate it from `PKC.pageSorts` (`hot`, `new`, `active`, `topDay`, ...), the
+  same registry on every runtime: the scorers are pure (`src/pages/pkc-js-page-sorts/`), so the browser build
+  ships them too; only resolving a sort by `path` is Node-only.
   `top*` windows come from the file's `defaultOptions`, so passing `{}` as options applies them; a community
   that changed a window publishes the change in `publicOptions`. No built-in requires replies: `active`
   reads `commentUpdate.lastReplyTimestamp`, so a bump-order feed on a board that publishes only `hot` is a

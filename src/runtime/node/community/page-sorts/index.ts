@@ -8,21 +8,7 @@ import {
     RESERVED_PAGE_SORT_OPTION_NAMES,
     type ParsedReservedPageSortOptions
 } from "../../../../pages/page-sort-options.js";
-import hot from "./pkc-js-page-sorts/hot.js";
-import newSort from "./pkc-js-page-sorts/new.js";
-import old from "./pkc-js-page-sorts/old.js";
-import best from "./pkc-js-page-sorts/best.js";
-import top from "./pkc-js-page-sorts/top.js";
-import topHour from "./pkc-js-page-sorts/top-hour.js";
-import topDay from "./pkc-js-page-sorts/top-day.js";
-import topWeek from "./pkc-js-page-sorts/top-week.js";
-import topMonth from "./pkc-js-page-sorts/top-month.js";
-import topYear from "./pkc-js-page-sorts/top-year.js";
-import topAll from "./pkc-js-page-sorts/top-all.js";
-import active from "./pkc-js-page-sorts/active.js";
-import controversial from "./pkc-js-page-sorts/controversial.js";
-import newFlat from "./pkc-js-page-sorts/new-flat.js";
-import oldFlat from "./pkc-js-page-sorts/old-flat.js";
+import { pkcJsPageSorts } from "../../../../pages/pkc-js-page-sorts/index.js";
 import type {
     CommunityPageSort,
     CommunityPageSortSetting,
@@ -47,24 +33,8 @@ export type PKCWithSettingsPageSorts = {
     settings?: { pageSorts?: Record<string, PageSortFileFactoryInput> };
 };
 
-// all page sorts included with pkc-js, in PKC.pageSorts
-export const pkcJsPageSorts: Record<string, PageSortFileFactoryInput> = {
-    hot,
-    new: newSort,
-    old,
-    best,
-    top,
-    topHour,
-    topDay,
-    topWeek,
-    topMonth,
-    topYear,
-    topAll,
-    active,
-    controversial,
-    newFlat,
-    oldFlat
-};
+// The built-in registry lives with the pure scorers in src/pages/pkc-js-page-sorts so the browser runtime exports it too
+export { pkcJsPageSorts };
 
 // What an unset settings.pages generates: today's sort sets, in today's key order, with today's preloaded sorts.
 export const DEFAULT_POST_SORT_SETTINGS: readonly CommunityPageSortSetting[] = Object.freeze([
