@@ -51,7 +51,9 @@ Rules:
   preloaded, and `new, best, old, newFlat, oldFlat` with `best` preloaded.
 - `posts: []` and `replies: []` are legal (a feed-only profile takes no replies).
 - The wire key is the file's `sortName`, so `{ name: "top", options: { maxAge: "2w" } }` publishes `top`.
-  Two entries resolving to the same `sortName` are rejected.
+  Two entries resolving to the same `sortName` are rejected. A `sortName` of `__proto__`, `constructor` or
+  `prototype` is rejected everywhere it appears (the file, `community.pageSorts`, `pages`/`pageCids` keys):
+  clients index plain objects by sort name, and a client skips such a key if a record carries one anyway.
 - No entry `preloaded` means nothing is embedded: `pages: {}` and every sort in `pageCids`. Several
   preloaded entries share the preload size budget equally, and one whose first page does not fit its share
   degrades to `pageCids` while the others still embed. The first preloaded entry in list order is the

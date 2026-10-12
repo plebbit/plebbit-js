@@ -1,4 +1,5 @@
 import { BaseClientsManager, OptionsToLoadFromGateway } from "../clients/base-client-manager.js";
+import { isReservedObjectKey } from "../object-key-util.js";
 import type { ModQueuePageIpfs, ModQueueSortName, PageIpfs } from "./types.js";
 import { isEmpty, keys, unique } from "remeda";
 import Logger from "../logger.js";
@@ -40,9 +41,17 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     // Init functions here
+
+    // The per-sort client maps are plain objects keyed by whatever sort names a record carries, and the record is kept
+    // as parsed JSON (zod drops an own `__proto__` key without rejecting it). A reserved key would write through
+    // Object.prototype or an inherited value, so it is skipped: no page is ever fetched under such a name.
+    private _indexableSortTypes(sortTypes: string[]): string[] {
+        return sortTypes.filter((sortType) => !isReservedObjectKey(sortType));
+    }
+
     protected _updateIpfsGatewayClientStates(sortTypes: string[]) {
         if (!this.clients.ipfsGateways) this.clients.ipfsGateways = {};
-        for (const sortType of sortTypes) {
+        for (const sortType of this._indexableSortTypes(sortTypes)) {
             if (!this.clients.ipfsGateways[sortType]) this.clients.ipfsGateways[sortType] = {};
             for (const gatewayUrl of keys(this._pkc.clients.ipfsGateways))
                 if (!this.clients.ipfsGateways[sortType][gatewayUrl])
@@ -52,7 +61,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     protected _updateKuboRpcClientStates(sortTypes: string[]) {
         if (this._pkc.clients.kuboRpcClients && !this.clients.kuboRpcClients) this.clients.kuboRpcClients = {};
-        for (const sortType of sortTypes) {
+        for (const sortType of this._indexableSortTypes(sortTypes)) {
             if (!this.clients.kuboRpcClients[sortType]) this.clients.kuboRpcClients[sortType] = {};
             for (const kuboRpcUrl of keys(this._pkc.clients.kuboRpcClients))
                 if (!this.clients.kuboRpcClients[sortType][kuboRpcUrl])
@@ -62,7 +71,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     protected _updateLibp2pJsClientStates(sortTypes: string[]) {
         if (this._pkc.clients.libp2pJsClients && !this.clients.libp2pJsClients) this.clients.libp2pJsClients = {};
-        for (const sortType of sortTypes) {
+        for (const sortType of this._indexableSortTypes(sortTypes)) {
             if (!this.clients.libp2pJsClients[sortType]) this.clients.libp2pJsClients[sortType] = {};
             for (const libp2pJsClientKey of keys(this._pkc.clients.libp2pJsClients))
                 if (!this.clients.libp2pJsClients[sortType][libp2pJsClientKey])
@@ -72,7 +81,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     protected _updatePKCRpcClientStates(sortTypes: string[]) {
         if (this._pkc.clients.pkcRpcClients && !this.clients.pkcRpcClients) this.clients.pkcRpcClients = {};
-        for (const sortType of sortTypes) {
+        for (const sortType of this._indexableSortTypes(sortTypes)) {
             if (!this.clients.pkcRpcClients[sortType]) this.clients.pkcRpcClients[sortType] = {};
             for (const rpcUrl of keys(this._pkc.clients.pkcRpcClients))
                 if (!this.clients.pkcRpcClients[sortType][rpcUrl])
@@ -116,6 +125,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]) {
         for (const [sortType, pageCid] of Object.entries(newPageCids)) {
+            if (isReservedObjectKey(sortType)) continue;
             this._updatePageCidsSortCache(pageCid, [sortType]);
         }
         // A community may publish pageCids under any sort name its page-sort packages declare (settings.pages, #73),

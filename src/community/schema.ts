@@ -13,7 +13,7 @@ import {
     isIpnsName,
     nonNegativeIntStringSchema
 } from "../schema/schema.js";
-import { ModQueuePagesIpfsSchema, PostsPagesIpfsSchema } from "../pages/schema.js";
+import { ModQueuePagesIpfsSchema, PostsPagesIpfsSchema, SortNameStringSchema } from "../pages/schema.js";
 import type { LocalCommunity } from "../runtime/node/community/local-community.js";
 import type { PageIpfs, PageSortReplyEntry } from "../pages/types.js";
 import type { AuthorIdentityMatcher } from "../runtime/node/community/local-community/author-identity.js";
@@ -299,7 +299,7 @@ export const PageSortScopeSchema = z.enum(["posts", "replies"]);
 
 export const PageSortFileSchema = z.looseObject({
     // the result of the function exported by the page sort file
-    sortName: z.string().min(1), // the key under posts.pages / posts.pageCids (or replies.*); public API of the package
+    sortName: SortNameStringSchema, // the key under posts.pages / posts.pageCids (or replies.*); public API of the package
     description: z.string().optional(), // describe what the sort does, published in community.pageSorts
     optionInputs: ChallengeOptionInputSchema.array().optional(), // same shape as challenges: string options only
     scope: PageSortScopeSchema.optional(), // undefined = usable under both posts and replies
@@ -353,8 +353,8 @@ export const CommunityPageSortSchema = z.looseObject({
 
 export const CommunityPageSortsSchema = z
     .object({
-        posts: z.record(z.string().min(1), CommunityPageSortSchema).optional(),
-        replies: z.record(z.string().min(1), CommunityPageSortSchema).optional()
+        posts: z.record(SortNameStringSchema, CommunityPageSortSchema).optional(),
+        replies: z.record(SortNameStringSchema, CommunityPageSortSchema).optional()
     })
     .strict();
 
