@@ -1457,3 +1457,28 @@ export function extractNetworkErrorDetails(err: unknown, depth = 0): NetworkErro
     if (nested.length > 0) details.causes = nested;
     return details;
 }
+
+// Socket-level codes that mean "the peer/daemon could not be reached right now", as opposed to the
+// request itself being bad. Node's net codes plus undici's own wrappers (a connect timeout is
+// UND_ERR_CONNECT_TIMEOUT with ETIMEDOUT nested one level below it).
+export const TRANSIENT_NETWORK_ERROR_CODES: ReadonlySet<string> = new Set([
+    "ETIMEDOUT",
+    "ECONNREFUSED",
+    "ECONNRESET",
+    "EPIPE",
+    "EHOSTUNREACH",
+    "ENETUNREACH",
+    "EAI_AGAIN",
+    "UND_ERR_CONNECT_TIMEOUT",
+    "UND_ERR_SOCKET",
+    "UND_ERR_HEADERS_TIMEOUT",
+    "UND_ERR_BODY_TIMEOUT"
+]);
+
+// True when any node of an extractNetworkErrorDetails() tree carries a transient socket-level code.
+// Use this rather than reading `error.cause.code`: undici nests the meaningful code at different
+// depths depending on which stage of the request failed (#384).
+export function hasTransientNetworkErrorCode(details: NetworkErrorDetails): boolean {
+    if (details.code && TRANSIENT_NETWORK_ERROR_CODES.has(details.code)) return true;
+    return details.causes?.some(hasTransientNetworkErrorCode) ?? false;
+}

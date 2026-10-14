@@ -1,5 +1,6 @@
 import { describe, it, beforeAll, afterAll } from "vitest";
 import {
+    fetchCidWithTransientRetry,
     createSubWithNoChallenge,
     getAvailablePKCConfigsToTestAgainst,
     mockPKC,
@@ -1851,7 +1852,7 @@ describeSkipIfRpc('community.features.pseudonymityMode="per-author"', () => {
 });
 
 async function expectCommentCidToUseAlias(pkc: PKC, cid: string, aliasSigner: SignerWithPublicKeyAddress) {
-    const fetched = JSON.parse((await pkc.fetchCid({ cid })).content) as {
+    const fetched = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid })).content) as {
         author?: { address?: string };
         signature?: { publicKey?: string };
         pseudonymityMode?: string;
