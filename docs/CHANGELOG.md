@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.105](https://github.com/pkcprotocol/pkc-js/compare/v0.0.104...v0.0.105) (2026-10-14)
+
+### Bug Fixes
+
+* **community:** retry IPNS resolve on undici connect timeout instead of stopping updates ([#384](https://github.com/pkcprotocol/pkc-js/issues/384)) ([#385](https://github.com/pkcprotocol/pkc-js/issues/385)) ([bc7fd42](https://github.com/pkcprotocol/pkc-js/commit/bc7fd4254e92fa561ef921cd42e9c62bbf39c81c)), closes [#265](https://github.com/pkcprotocol/pkc-js/issues/265) [#383](https://github.com/pkcprotocol/pkc-js/issues/383) [#346](https://github.com/pkcprotocol/pkc-js/issues/346) [#383](https://github.com/pkcprotocol/pkc-js/issues/383) [#265](https://github.com/pkcprotocol/pkc-js/issues/265) [#265](https://github.com/pkcprotocol/pkc-js/issues/265)
+* **node:** stop listCommunitiesSync leaking an fd per directory under communities/ ([#382](https://github.com/pkcprotocol/pkc-js/issues/382)) ([ab2f3be](https://github.com/pkcprotocol/pkc-js/commit/ab2f3be3ca6011251d51f4c1da165c3df55943c1)), closes [#380](https://github.com/pkcprotocol/pkc-js/issues/380) [#380](https://github.com/pkcprotocol/pkc-js/issues/380)
+
 ## [0.0.104](https://github.com/pkcprotocol/pkc-js/compare/v0.0.103...v0.0.104) (2026-10-11)
 
 ### Bug Fixes
