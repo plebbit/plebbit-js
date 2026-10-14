@@ -17,6 +17,22 @@ import type { PKCError } from "../../../../dist/node/pkc-error.js";
 type CommentWithInternals = { updateOnce: () => Promise<void>; _setUpdatingState: () => Promise<void> };
 type LegacyRawAuthor = { address?: string; name?: string; publicKey?: string };
 
+// comment.crosspost is a runtime copy of the signed chain, and the one runtime field written onto it
+// is each level's author.nameResolved once the name cache holds a verdict for that author (see
+// src/publications/comment/crosspost-runtime.ts). The raw wire record never carries it, so the loaded
+// verdicts are copied onto the expected chain before comparing, exactly as is done for the comment's
+// own author above. Whether a verdict is present when getComment returns depends on which test file
+// resolved the name first, so without this the comparison flakes whenever the community's last post
+// happens to be a crosspost chain with a resolvable author name.
+type CrosspostChainLevel = { comment: { author?: { nameResolved?: boolean }; crosspost?: CrosspostChainLevel } };
+function copyCrosspostNameResolvedVerdicts(expected: CrosspostChainLevel | undefined, loaded: CrosspostChainLevel | undefined): void {
+    for (; expected && loaded; expected = expected.comment.crosspost, loaded = loaded.comment.crosspost) {
+        const verdict = loaded.comment.author?.nameResolved;
+        if (verdict === undefined) continue;
+        expected.comment.author = { ...(expected.comment.author || {}), nameResolved: verdict };
+    }
+}
+
 const communitySigner = signers[0];
 
 getAvailablePKCConfigsToTestAgainst().map((config) => {
@@ -107,6 +123,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 ...(loadedPost.author.nameResolved !== undefined ? { nameResolved: loadedPost.author.nameResolved } : {})
             };
             expectedPostProps.cid = loadedPost.cid;
+            copyCrosspostNameResolvedVerdicts(expectedPostProps.crosspost, loadedPost.crosspost);
 
             for (const key of Object.keys(expectedPostProps))
                 expect(deterministicStringify(expectedPostProps[key])).to.equal(
@@ -144,6 +161,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 ...(loadedReply.author.nameResolved !== undefined ? { nameResolved: loadedReply.author.nameResolved } : {})
             };
             if (loadedReply.author.community) delete loadedReply.author.community; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
+            copyCrosspostNameResolvedVerdicts(expectedReplyProps.crosspost, loadedReply.crosspost);
             for (const key of Object.keys(expectedReplyProps))
                 expect(deterministicStringify(expectedReplyProps[key])).to.equal(
                     deterministicStringify((loadedReply as unknown as Record<string, unknown>)[key])
