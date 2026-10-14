@@ -98,7 +98,7 @@ async function loadWholeChain({
 }): Promise<PageTypeJson["comments"]> {
     let page: PageTypeJson | undefined = replies.pages[sortName];
     if (!page) {
-        const firstCid = replies.pageCids[sortName];
+        const firstCid = replies.pageCids?.[sortName];
         if (!firstCid) return [];
         page = await getPage(firstCid);
     }
@@ -124,10 +124,10 @@ export async function walkRepliesOfPageComment({
         return instance.replies.getPage({ cid });
     };
 
-    const flatSort = FLAT_SORTS.find((sortName) => replies.pages[sortName] || replies.pageCids[sortName]);
+    const flatSort = FLAT_SORTS.find((sortName) => replies.pages[sortName] || replies.pageCids?.[sortName]);
     if (flatSort) return (await loadWholeChain({ replies, sortName: flatSort, getPage })).map((entry) => entry.raw);
 
-    const nestedSort = Object.keys(replies.pages)[0] ?? Object.keys(replies.pageCids)[0];
+    const nestedSort = Object.keys(replies.pages)[0] ?? Object.keys(replies.pageCids ?? {})[0];
     if (!nestedSort) return [];
     const direct = await loadWholeChain({ replies, sortName: nestedSort, getPage });
     const collected: WireEntry[] = [];
