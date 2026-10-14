@@ -4,7 +4,13 @@
 // live challengeverification, but it must ALSO appear in the stored pending-approval mod-queue page
 // that mods fetch from community.modQueue.pageCids.pendingApproval. See issue #110.
 
-import { mockPKC, mockGatewayPKC, publishCommentToModQueue, resolveWhenConditionIsTrue } from "../../../../dist/node/test/test-util.js";
+import {
+    fetchCidWithTransientRetry,
+    mockPKC,
+    mockGatewayPKC,
+    publishCommentToModQueue,
+    resolveWhenConditionIsTrue
+} from "../../../../dist/node/test/test-util.js";
 import { describeSkipIfRpc } from "../../../helpers/conditional-tests.js";
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import type { PKC as PKCType } from "../../../../dist/node/pkc/pkc.js";
@@ -85,7 +91,9 @@ describeSkipIfRpc("commentUpdate.reason from a challenge in the pending-approval
             toUpdate: community,
             predicate: async () => Boolean(community.modQueue.pageCids?.pendingApproval)
         });
-        const rawPage = JSON.parse((await pkc.fetchCid({ cid: community.modQueue.pageCids!.pendingApproval! })).content) as {
+        const rawPage = JSON.parse(
+            (await fetchCidWithTransientRetry({ pkc, cid: community.modQueue.pageCids!.pendingApproval! })).content
+        ) as {
             comments: { comment: { cid?: string }; commentUpdate: { reason?: string; signature: { signedPropertyNames: string[] } } }[];
         };
 

@@ -1,5 +1,6 @@
 import signers from "../../../../fixtures/signers.js";
 import {
+    fetchCidWithTransientRetry,
     generateMockPost,
     generateMockComment,
     publishWithExpectedResult,
@@ -58,7 +59,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 // Verify quotedCids exists in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
                 // Fetch the comment from IPFS and verify quotedCids
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: reply.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid! })).content);
                 expect(fetchedComment.quotedCids).to.deep.equal(quotedCids);
             });
 
@@ -76,7 +77,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 // Verify quotedCids exists in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
                 // Fetch the comment from IPFS and verify quotedCids
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: reply.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid! })).content);
                 expect(fetchedComment.quotedCids).to.deep.equal(quotedCids);
             });
 
@@ -91,7 +92,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 // Verify quotedCids exists in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
                 // Fetch the comment from IPFS and verify quotedCids
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: reply.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid! })).content);
                 expect(fetchedComment.quotedCids).to.deep.equal(quotedCids);
             });
 
@@ -107,7 +108,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 // Verify quotedCids is undefined in CommentIpfs after publishing
                 expect(reply.raw.comment?.quotedCids).to.be.undefined;
                 // Fetch the comment from IPFS and verify quotedCids is undefined
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: reply.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid! })).content);
                 expect(fetchedComment.quotedCids).to.be.undefined;
             });
 
@@ -121,7 +122,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 // Empty array should be stored as empty array in CommentIpfs
                 expect(reply.raw.comment?.quotedCids).to.deep.equal([]);
                 // Fetch the comment from IPFS and verify quotedCids is empty array
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: reply.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid! })).content);
                 expect(fetchedComment.quotedCids).to.deep.equal([]);
             });
         });
@@ -217,7 +218,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
 
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: reply.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid! })).content);
                 expect(fetchedComment.quotedCids).to.deep.equal(quotedCids);
             });
 
@@ -242,7 +243,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 await publishWithExpectedResult({ publication: deepReply3, expectedChallengeSuccess: true });
                 expect(deepReply3.raw.comment?.quotedCids).to.deep.equal(quotedCids);
 
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: deepReply3.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: deepReply3.cid! })).content);
                 expect(fetchedComment.quotedCids).to.deep.equal(quotedCids);
             });
 
@@ -263,7 +264,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 await publishWithExpectedResult({ publication: reply, expectedChallengeSuccess: true });
                 expect(reply.raw.comment?.quotedCids).to.deep.equal(quotedCids);
 
-                const fetchedComment = JSON.parse((await pkc.fetchCid({ cid: reply.cid! })).content);
+                const fetchedComment = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid! })).content);
                 expect(fetchedComment.quotedCids).to.deep.equal(quotedCids);
             });
         });

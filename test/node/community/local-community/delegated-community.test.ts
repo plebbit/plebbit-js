@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
 import Logger from "@pkcprotocol/pkc-logger";
 import {
+    fetchCidWithTransientRetry,
     createMockNameResolver,
     createSubWithNoChallenge,
     disableValidationOfSignatureBeforePublishing,
@@ -371,7 +372,7 @@ describeSkipIfRpc.sequential("delegated LocalCommunity: identity is the anchor, 
         });
 
         it("comments published to the delegated community load with the anchor as communityPublicKey", async () => {
-            const { content } = await readerPkc.fetchCid({ cid: post.cid! });
+            const { content } = await fetchCidWithTransientRetry({ pkc: readerPkc, cid: post.cid! });
             const commentIpfs = JSON.parse(content) as { communityPublicKey?: string; communityName?: string };
             expect(commentIpfs.communityPublicKey).to.equal(anchorSigner.address);
             expect(commentIpfs.communityPublicKey).to.not.equal(minterAddress);
@@ -464,7 +465,7 @@ describeSkipIfRpc.sequential("delegated LocalCommunity: identity is the anchor, 
         });
 
         it("previously stored content still resolves and verifies, with no rewrite", async () => {
-            const { content } = await rotationPkc.fetchCid({ cid: post.cid! });
+            const { content } = await fetchCidWithTransientRetry({ pkc: rotationPkc, cid: post.cid! });
             const commentIpfs = JSON.parse(content) as { communityPublicKey?: string };
             // Labelled with the anchor when the OLD minter stored it, and still naming the community's
             // identity now. Had it been labelled with signer.address it would name a key that no longer

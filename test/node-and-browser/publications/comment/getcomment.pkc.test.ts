@@ -1,5 +1,10 @@
 import signers from "../../../fixtures/signers.js";
-import { getAvailablePKCConfigsToTestAgainst, addStringToIpfs, isPKCFetchingUsingGateways } from "../../../../dist/node/test/test-util.js";
+import {
+    fetchCidWithTransientRetry,
+    getAvailablePKCConfigsToTestAgainst,
+    addStringToIpfs,
+    isPKCFetchingUsingGateways
+} from "../../../../dist/node/test/test-util.js";
 import { itSkipIfRpc } from "../../../helpers/conditional-tests.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { describe, it, beforeAll, afterAll, vi, expect } from "vitest";
@@ -109,7 +114,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
         it("post props are loaded correctly", async () => {
             const community = await pkc.getCommunity({ address: communitySigner.address });
             expect(community.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
-            const expectedPostProps = JSON.parse((await pkc.fetchCid({ cid: community.lastPostCid })).content);
+            const expectedPostProps = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: community.lastPostCid })).content);
             const loadedPost = await pkc.getComment({ cid: community.lastPostCid });
             expect(loadedPost.author.community).to.be.undefined;
             expect(loadedPost.author.publicKey).to.be.a("string");
@@ -135,7 +140,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
             const community = await pkc.getCommunity({ address: communitySigner.address });
             const reply = community.posts.pages.hot.comments.find((comment) => comment.replies).replies.pages.best.comments[0];
             expect(reply).to.exist;
-            const expectedReplyProps = JSON.parse((await pkc.fetchCid({ cid: reply.cid })).content);
+            const expectedReplyProps = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: reply.cid })).content);
             expect(expectedReplyProps.postCid).to.be.a("string");
             expect(expectedReplyProps.postCid).to.equal(expectedReplyProps.parentCid);
             expect(expectedReplyProps.protocolVersion).to.be.a("string");

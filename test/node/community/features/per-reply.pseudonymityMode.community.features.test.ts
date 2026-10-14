@@ -1,5 +1,6 @@
 import { describe, it, beforeAll, afterAll } from "vitest";
 import {
+    fetchCidWithTransientRetry,
     createSubWithNoChallenge,
     getAvailablePKCConfigsToTestAgainst,
     mockPKC,
@@ -2429,7 +2430,7 @@ describeSkipIfRpc('community.features.pseudonymityMode="per-reply"', () => {
 });
 
 async function expectCommentCidToUseAlias(pkc: PKC, cid: string, aliasSigner: { address: string; publicKey: string }): Promise<void> {
-    const fetched = JSON.parse((await pkc.fetchCid({ cid })).content) as {
+    const fetched = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid })).content) as {
         author?: { address?: string };
         signature?: { publicKey?: string };
         pseudonymityMode?: string;
