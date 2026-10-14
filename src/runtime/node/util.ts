@@ -240,9 +240,13 @@ export function listCommunitiesSync(pkc: PKC) {
     // We'll skip the deleted persistent subs handling for now since it's async
     // and would need separate handling
 
-    // Get files synchronously
-    const files = readdirSync(communitiesPath, { recursive: false, withFileTypes: false })
-        .map((file) => file.toString()) // Ensure all entries are strings
+    // Only regular files can be community DBs. Subdirectories live here too (`deleted/` from the
+    // delete flow, `.backup_before_migration/` from db-handler) and must never be opened: openSync()
+    // succeeds on a directory, readSync() then throws EISDIR, and before #380 the fd was leaked on
+    // every call until the process hit EMFILE.
+    const files = readdirSync(communitiesPath, { recursive: false, withFileTypes: true })
+        .filter((dirent) => dirent.isFile())
+        .map((dirent) => dirent.name)
         .filter((file) => !file.includes(".lock") && !file.endsWith("-journal") && !file.endsWith("-shm") && !file.endsWith("-wal"));
 
     const communityFilesWeDontNeedToCheck = pkc.communities ? files.filter((address) => pkc.communities.includes(address)) : [];
@@ -250,20 +254,25 @@ export function listCommunitiesSync(pkc: PKC) {
     // For the remaining files, check if they're SQLite files synchronously
     const filesToCheckIfSqlite = files.filter((address) => !communityFilesWeDontNeedToCheck.includes(address));
     const sqliteFiles = filesToCheckIfSqlite.filter((address) => {
+        const filePath = path.join(communitiesPath, address);
         try {
             // Simple synchronous check for SQLite files
             // Look for the SQLite file header "SQLite format 3\0"
-            const filePath = path.join(communitiesPath, address);
-            if (!existsSync(filePath)) return false;
-
             const fd = openSync(filePath, "r");
             const buffer = Buffer.alloc(16);
-            readSync(fd, buffer, 0, 16, 0);
-            closeSync(fd);
+            try {
+                readSync(fd, buffer, 0, 16, 0);
+            } finally {
+                closeSync(fd); // must run whatever readSync throws, or the fd leaks (#380)
+            }
 
             // Check for SQLite header
             return buffer.toString().startsWith("SQLite format 3");
         } catch (e) {
+            // ENOENT is expected: the file can be removed between readdirSync and openSync (community delete).
+            // Anything else was silently swallowed before #380 and stayed hidden until the daemon ran out of fds.
+            if (!(e instanceof Error && "code" in e && e.code === "ENOENT"))
+                log.error(`Failed to check whether ${filePath} is a SQLite file, skipping it`, e);
             return false;
         }
     });
