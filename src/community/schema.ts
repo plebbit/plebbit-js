@@ -378,7 +378,7 @@ export const CommunityIpfsSchema = z
         challenges: CommunityChallengeSchema.array(),
         signature: JsonSignatureSchema,
         encryption: CommunityEncryptionSchema,
-        name: z.string().min(1).optional(), // domain name of the community (e.g. "memes.eth"); address is now instance-only
+        name: z.string().min(1).optional(), // domain name of the community (e.g. "memes.bso"); address is now instance-only
         // The community's signed anchor claim (#257): present exactly when the community is delegated.
         // The record is signed by the minter, but the identity readers address is the anchor — this
         // field is what lets a reader who reached the record through the minter (or any non-anchor

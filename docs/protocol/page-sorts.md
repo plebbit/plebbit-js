@@ -230,7 +230,7 @@ The contract:
   20k posts with 10 to 100 replies each (1.1M replies), every post embedding its preloaded reply tree the way
   production does, and times post page generation with IPFS stubbed. Nothing holds the board's replies at
   once: the nine default sorts stream each post's subtree from the reply rows as pages are built and take
-  about a minute inside a 2 GB heap while writing 6.7 GB of pages (the output, nine copies of the board, is
+  about 70 s inside a 2 GB heap while writing 7 GB of pages (the output, nine copies of the board, is
   the cost; a board whose serialized entries fit the entry cache, a few thousand posts, publishes again in a
   fraction of a second, see "How an entry is built" in `pages.md`). A `requireReplies` post sort streams
   the same way: `score` still receives each post's whole subtree, loaded one batch of posts at a time, so
