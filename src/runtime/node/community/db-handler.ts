@@ -3627,31 +3627,39 @@ export class DbHandler {
         run();
     }
 
-    queryAllCommentCidsAndTheirReplies(): { cid: string; allPageCids: string[] }[] {
-        const log = Logger("pkc-js:local-community:db-handler:queryAllCidsUnderThisCommunity");
-
-        const rows = this._db
-            .prepare(
-                `SELECT c.cid AS cid, cu.replies AS replies
-                 FROM ${TABLES.COMMENTS} c
-                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid`
-            )
-            .all() as { cid: string; replies?: string | null }[];
-
-        return rows.map((row) => {
-            const allPageCids: string[] = [];
-            if (typeof row.replies === "string" && row.replies.length > 0) {
-                try {
-                    const parsed = JSON.parse(row.replies) as Record<string, DbRepliesSortEntry>;
-                    for (const sortEntry of Object.values(parsed)) {
-                        if (sortEntry?.allPageCids) allPageCids.push(...sortEntry.allPageCids);
+    // Every comment's cid and the cids of its reply pages, in rowid slices: what delete() unpins. One slice is
+    // held at a time, so deleting a board of a million comments costs a slice of memory, not the board
+    // (issue #389: the all-at-once array and Set ran a 4 GB heap out at 1M).
+    *iterateCommentCidsAndTheirPageCids(sliceSize: number): Generator<{ cid: string; allPageCids: string[] }[]> {
+        const log = Logger("pkc-js:local-community:db-handler:iterateCommentCidsAndTheirPageCids");
+        const statement = this._db.prepare(
+            `SELECT c.rowid AS rowid, c.cid AS cid, cu.replies AS replies
+             FROM ${TABLES.COMMENTS} c
+             LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+             WHERE c.rowid > ?
+             ORDER BY c.rowid ASC
+             LIMIT ?`
+        );
+        let afterRowid = 0;
+        while (true) {
+            const rows = statement.all(afterRowid, sliceSize) as { rowid: number; cid: string; replies?: string | null }[];
+            if (rows.length === 0) return;
+            afterRowid = rows[rows.length - 1].rowid;
+            yield rows.map((row) => {
+                const allPageCids: string[] = [];
+                if (typeof row.replies === "string" && row.replies.length > 0) {
+                    try {
+                        const parsed = JSON.parse(row.replies) as Record<string, DbRepliesSortEntry>;
+                        for (const sortEntry of Object.values(parsed)) {
+                            if (sortEntry?.allPageCids) allPageCids.push(...sortEntry.allPageCids);
+                        }
+                    } catch (e) {
+                        log.error(`Failed to parse replies JSON for comment ${row.cid} when collecting cids`, e);
                     }
-                } catch (e) {
-                    log.error(`Failed to parse replies JSON for comment ${row.cid} when collecting cids`, e);
                 }
-            }
-            return { cid: row.cid, allPageCids };
-        });
+                return { cid: row.cid, allPageCids };
+            });
+        }
     }
 
     // Every post (depth 0) that survives the exclusion options, with its DB-format replies (CID refs) still attached;

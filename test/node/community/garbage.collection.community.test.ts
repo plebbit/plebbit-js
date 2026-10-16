@@ -404,10 +404,12 @@ describe("local community garbage collection", () => {
             initDbHandlerIfNeeded: vi.fn(),
             _dbHandler: {
                 initDbIfNeeded: vi.fn(),
-                queryAllCommentCidsAndTheirReplies: vi.fn().mockReturnValue([
-                    { cid: "QmComment1", allPageCids: ["QmReplyPage"] },
-                    { cid: "QmComment2", allPageCids: [] }
-                ]),
+                iterateCommentCidsAndTheirPageCids: vi.fn(function* () {
+                    yield [
+                        { cid: "QmComment1", allPageCids: ["QmReplyPage"] },
+                        { cid: "QmComment2", allPageCids: [] }
+                    ];
+                }),
                 destoryConnection: vi.fn()
             },
             _addOldPageCidsToCidsToUnpin: vi.fn(async function (this: TestLocalCommunity, pages: CommunityIpfsType["posts"]) {

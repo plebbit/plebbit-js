@@ -507,6 +507,9 @@ export async function stop(community: LocalCommunity) {
     }
 }
 
+// How many comments delete() reads, queues and unpins at a time (issue #389). 5,000 cids is a few hundred KB.
+export const DELETE_UNPIN_SLICE_SIZE = 5000;
+
 export async function deleteCommunity(community: LocalCommunity) {
     const log = Logger("pkc-js:local-community:delete");
     log.trace(`Attempting to stop the community (${community.address}) before deleting, if needed`);
@@ -556,25 +559,28 @@ export async function deleteCommunity(community: LocalCommunity) {
     const configuredChallengeTopic = communityChallengePubsubTopic(community);
     if (configuredChallengeTopic) community._cidsToUnPin.add(pubsubTopicToDhtKey(configuredChallengeTopic));
     if (community.pubsubTopicRoutingCid) community._cidsToUnPin.add(community.pubsubTopicRoutingCid);
-    try {
-        await community.initDbHandlerIfNeeded();
-        await community._dbHandler.initDbIfNeeded();
-        const cidsAndReplies = community._dbHandler.queryAllCommentCidsAndTheirReplies();
-        for (const comment of cidsAndReplies) {
-            community._cidsToUnPin.add(comment.cid);
-            for (const pageCid of comment.allPageCids) {
-                community._cidsToUnPin.add(pageCid);
-            }
-        }
-    } catch (e) {
-        log.error("Failed to query all cids under this community to delete them", e);
-    }
     if (community.updateCid) community._cidsToUnPin.add(community.updateCid);
     if (community.statsCid) community._cidsToUnPin.add(community.statsCid);
 
+    // Every comment and every reply page of the board, unpinned one slice at a time. The grace period is
+    // bypassed throughout: the community is being deleted, nothing will ever run a later unpin pass for
+    // it. A slice is queued, unpinned and gone before the next one is read, so a board of a million
+    // comments costs a slice of memory, not the board (issue #389); a cid whose pin.rm failed stays
+    // queued for the next pass and is logged by unpinStaleCids.
     try {
-        // Bypass the unpin grace period: the community is being deleted, nothing will ever run a
-        // later unpin pass for it.
+        await community.initDbHandlerIfNeeded();
+        await community._dbHandler.initDbIfNeeded();
+        for (const slice of community._dbHandler.iterateCommentCidsAndTheirPageCids(DELETE_UNPIN_SLICE_SIZE)) {
+            for (const comment of slice) {
+                community._cidsToUnPin.add(comment.cid);
+                for (const pageCid of comment.allPageCids) community._cidsToUnPin.add(pageCid);
+            }
+            await unpinStaleCids(community, { bypassGracePeriod: true });
+        }
+    } catch (e) {
+        log.error("Failed to unpin the comments of this community before deleting it", e);
+    }
+    try {
         await unpinStaleCids(community, { bypassGracePeriod: true });
     } catch (e) {
         log.error("Failed to unpin stale cids before deleting", e);

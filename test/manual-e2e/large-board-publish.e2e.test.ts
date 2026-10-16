@@ -34,9 +34,8 @@ import type { PageTypeJson } from "../../dist/node/pages/types.js";
 //   E2E_PAGES = default | single   (single: posts [active, preloaded], replies [old, preloaded], the 5chan shape)
 //   E2E_DATA_PATH (.tmp/large-board-e2e)   where the community's database goes; a 1M board is GBs of SQLite
 //   E2E_COMMUNITY_ADDRESS   reuse the board a previous run left under E2E_DATA_PATH instead of seeding
-//   E2E_KEEP_BOARD=1   do not delete the community afterwards (so the next run can reuse it). A board of 500k+
-//                      comments is kept regardless unless E2E_KEEP_BOARD=0: delete() loads every comment's cid and
-//                      page cids at once and runs out of heap at 1M (issue #389)
+//   E2E_KEEP_BOARD=1   do not delete the community afterwards (so the next run can reuse it); the default deletes it
+//                      and reports how long that took (`deleted` event; delete() unpins the board in slices, #389)
 //   E2E_SKIP_REPIN=1   stub the start-time repin walk (every comment re-added to kubo) when only the publish
 //                      cycle is under study; the default runs it and reports its time on its own
 //   E2E_MAX_RSS_MB (8192)   the pkc-js process budget asserted on the first publish
@@ -86,8 +85,7 @@ const SEED = envInt("E2E_SEED", 1);
 const PAGES_MODE = process.env.E2E_PAGES === "single" ? "single" : "default";
 const DATA_PATH = path.resolve(process.cwd(), process.env.E2E_DATA_PATH || ".tmp/large-board-e2e");
 const REUSED_ADDRESS = process.env.E2E_COMMUNITY_ADDRESS;
-const KEEP_BOARD_ENV = process.env.E2E_KEEP_BOARD;
-const KEEP_BOARD_ABOVE_COMMENTS = 500_000;
+const KEEP_BOARD = process.env.E2E_KEEP_BOARD === "1";
 const SKIP_REPIN = process.env.E2E_SKIP_REPIN === "1";
 const MAX_RSS_MB = envInt("E2E_MAX_RSS_MB", 8192);
 const FIRST_PUBLISH_TIMEOUT_MS = envInt("E2E_FIRST_PUBLISH_TIMEOUT_MS", 30 * 60_000);
@@ -219,10 +217,15 @@ describe(`large board publish e2e (issue #386): ${POSTS} posts, ${MIN_REPLIES}-$
     afterAll(async () => {
         if (community) {
             if (community.state === "started") await community.stop();
-            const keep = KEEP_BOARD_ENV === "1" || (KEEP_BOARD_ENV !== "0" && comments >= KEEP_BOARD_ABOVE_COMMENTS);
-            if (keep)
-                log("kept", { address: community.address, comments, reason: KEEP_BOARD_ENV === "1" ? "E2E_KEEP_BOARD" : "issue #389" });
-            else await community.delete();
+            if (KEEP_BOARD) log("kept", { address: community.address, comments });
+            else {
+                const deleteStart = performance.now();
+                const heapBeforeDeleteMB = Math.round(process.memoryUsage().heapUsed / MB);
+                await community.delete();
+                const deleteMs = Math.round(performance.now() - deleteStart);
+                Object.assign(results, { deleteMs, heapBeforeDeleteMB });
+                log("deleted", { deleteMs, comments, heapBeforeDeleteMB });
+            }
         }
         if (pkc) await pkc.destroy();
         if (!existsSync(".tmp")) mkdirSync(".tmp");
