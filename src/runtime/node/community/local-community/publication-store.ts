@@ -4,10 +4,10 @@ import { default as lodashDeepMerge } from "lodash.merge";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { calculateIpfsCidV0, getErrorCodeFromMessage, isStringDomain, retryKuboIpfsAddAndProvide, timestamp } from "../../../../util.js";
 import { PKCError } from "../../../../pkc-error.js";
-import { signComment, signCommentEdit } from "../../../../signer/signatures.js";
+import { _validateSignatureOfPKCRecord, signComment, signCommentEdit, verifyCommentIpfs } from "../../../../signer/signatures.js";
 import { getPKCAddressFromPublicKey } from "../../../../signer/util.js";
 import { cleanWireAuthor, getAuthorNameFromWire } from "../../../../publications/publication-author.js";
-import { getThumbnailPropsOfLink } from "../../util.js";
+import { deriveCommentIpfsFromCommentTableRow, getThumbnailPropsOfLink } from "../../util.js";
 import {
     CommentEditPubsubMessagePublicationSchema,
     CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema
@@ -199,6 +199,61 @@ export async function prepareCommentEditWithAlias(community: LocalCommunity, ori
     return commentEditSignedByAlias;
 }
 
+// Issue #387. The community verifies an incoming publication as sent, then stores a row and later
+// rebuilds the record from that row for the pages and the CommentUpdate. Anything that changes the
+// signed bytes in between (an author object that cleanWireAuthor empties, a string SQLite cannot keep
+// verbatim, a future normalisation) is only discovered when the community verifies its own next record
+// before publishing it, and from then on every publish cycle fails: the board stops publishing. Known
+// cases are rejected at validation with their own reason; these two gates run inside the insert
+// transaction so any case nobody has named yet rejects that one publication instead of freezing the
+// board. They run exactly what the readers run: the row rebuilt the way the pages rebuild it, hashed
+// and verified the way a page is verified.
+async function assertStoredCommentIsVerbatim(opts: { community: LocalCommunity; commentCid: string; log: Logger }): Promise<void> {
+    const { community, commentCid, log } = opts;
+    const storedRow = community._dbHandler.queryComment(commentCid);
+    if (!storedRow) throw Error(`Comment ${commentCid} is missing from the DB inside the transaction that inserted it`);
+    const storedComment = deriveCommentIpfsFromCommentTableRow(storedRow);
+    const storedCid = await calculateIpfsCidV0(deterministicStringify(storedComment)!);
+    const storedValidity = await verifyCommentIpfs({
+        comment: storedComment,
+        calculatedCommentCid: commentCid,
+        resolveAuthorNames: false,
+        clientsManager: community._clientsManager
+    });
+    if (storedCid === commentCid && storedValidity.valid) return;
+    community._cidsToUnPin.add(commentCid);
+    const error = new PKCError("ERR_COMMUNITY_CANNOT_STORE_PUBLICATION_VERBATIM", {
+        cid: commentCid,
+        storedCid,
+        storedValidity,
+        storedComment
+    });
+    log.error(`Rejecting comment ${commentCid}: its stored copy hashes to ${storedCid} and verifies as`, storedValidity, error);
+    throw error;
+}
+
+async function assertStoredAuthorEditIsVerbatim(opts: {
+    community: LocalCommunity;
+    commentEditRaw: CommentEditPubsubMessagePublication;
+    authorSignerAddress: string;
+    log: Logger;
+}): Promise<void> {
+    const { community, commentEditRaw, authorSignerAddress, log } = opts;
+    const storedEdit = community._dbHandler.queryLatestAuthorEdit(commentEditRaw.commentCid, authorSignerAddress);
+    if (!storedEdit || storedEdit.signature.signature !== commentEditRaw.signature.signature)
+        throw Error(`Edit of comment ${commentEditRaw.commentCid} is missing from the DB inside the transaction that inserted it`);
+    // what verifyCommentUpdate runs on commentUpdate.edit
+    const storedValidity = await _validateSignatureOfPKCRecord(storedEdit);
+    if (storedValidity.valid) return;
+    const error = new PKCError("ERR_COMMUNITY_CANNOT_STORE_PUBLICATION_VERBATIM", {
+        commentCid: commentEditRaw.commentCid,
+        storedValidity,
+        storedEdit
+    });
+    log.error(`Rejecting edit of comment ${commentEditRaw.commentCid}: its stored copy verifies as`, storedValidity, error);
+    throw error;
+}
+
 export async function storeCommentEdit(
     community: LocalCommunity,
     commentEditRaw: CommentEditPubsubMessagePublication,
@@ -240,7 +295,15 @@ export async function storeCommentEdit(
         throw new PKCError("ERR_DUPLICATE_COMMENT_EDIT", { editTableRow });
     }
 
-    community._dbHandler.insertCommentEdits([editTableRow]);
+    community._dbHandler.createTransaction();
+    try {
+        community._dbHandler.insertCommentEdits([editTableRow]);
+        if (editSignedByOriginalAuthor) await assertStoredAuthorEditIsVerbatim({ community, commentEditRaw, authorSignerAddress, log });
+        community._dbHandler.commitTransaction();
+    } catch (e) {
+        community._dbHandler.rollbackTransaction();
+        throw e;
+    }
 
     // If author is deleting a pending or disapproved comment, purge it immediately from the database
     if (commentEditRaw.deleted === true) {
@@ -524,6 +587,7 @@ export async function storeComment(
             if (typeof postNumber === "number") commentRow.postNumber = postNumber;
         }
         community._dbHandler.insertComments([commentRow]);
+        await assertStoredCommentIsVerbatim({ community, commentCid, log });
         if (typeof community.settings?.maxPendingApprovalCount === "number")
             community._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(community.settings.maxPendingApprovalCount);
         community._dbHandler.commitTransaction();

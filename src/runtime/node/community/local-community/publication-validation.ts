@@ -12,6 +12,7 @@ import {
     isLinkOfVideo,
     isLinkValid,
     isStringDomain,
+    findMalformedUnicodeString,
     timestamp
 } from "../../../../util.js";
 import { PKCError } from "../../../../pkc-error.js";
@@ -121,12 +122,22 @@ export async function respondWithErrorIfSignatureOfPublicationIsInvalid(
 async function checkWireFormatAndCommunityAuthor(
     community: LocalCommunity,
     publication: PublicationFromDecryptedChallengeRequest,
+    log: Logger,
     authorCommunity?: PublicationWithCommunityAuthorFromDecryptedChallengeRequest["author"]["community"]
 ): Promise<messages | undefined> {
     // Reject deprecated old wire format fields
     if ("subplebbitAddress" in publication) return messages.ERR_PUBLICATION_USES_DEPRECATED_SUBPLEBBIT_ADDRESS;
     // reject run time field
     if ("communityAddress" in publication) return messages.ERR_PUBLICATION_USES_DEPRECATED_COMMUNITY_ADDRESS;
+
+    // A string with a lone surrogate verifies on receipt (cborg substitutes U+FFFD while signing and while
+    // verifying) but SQLite stores it as something else, so the record the pages carry would no longer
+    // hash to its cid or verify, and the community could never sign another record (issue #387).
+    const malformedString = findMalformedUnicodeString(publication);
+    if (malformedString !== undefined) {
+        log("Rejecting publication: it contains a string that is not well-formed Unicode", JSON.stringify(malformedString));
+        return messages.ERR_PUBLICATION_HAS_MALFORMED_UNICODE_STRING;
+    }
 
     // communityPublicKey must be present and match the key this community is addressed by. A publisher
     // sets it from the address it resolved, which on a delegated community is the anchor and never the
@@ -161,6 +172,11 @@ async function checkAuthorIdentity(
     publication: PublicationFromDecryptedChallengeRequest,
     log: Logger
 ): Promise<messages | undefined> {
+    // An author object with no fields is signed as `{}` but stored as "no author" (cleanWireAuthor), and
+    // cborg encodes the two differently, so the stored record would no longer verify. pkc-js itself
+    // never signs one; the wire rule is "omit author when it has no fields" (issue #387).
+    if (publication.author && Object.keys(publication.author).length === 0) return messages.ERR_PUBLICATION_AUTHOR_IS_AN_EMPTY_OBJECT;
+
     if (publication.author && intersection(keys(publication.author), AuthorReservedFields).length > 0)
         return messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD;
 
@@ -683,7 +699,7 @@ export async function checkPublicationValidity({
     const authorIdentityMatcher = sharedAuthorIdentityMatcher ?? authorIdentityMatcherForRequest({ community, request });
     const log = Logger("pkc-js:local-community:handleChallengeRequest:checkPublicationValidity");
 
-    const wireResult = await checkWireFormatAndCommunityAuthor(community, publication, authorCommunity);
+    const wireResult = await checkWireFormatAndCommunityAuthor(community, publication, log, authorCommunity);
     if (wireResult) return wireResult;
 
     const authorResult = await checkAuthorIdentity(community, publication, log);

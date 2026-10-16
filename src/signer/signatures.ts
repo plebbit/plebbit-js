@@ -809,7 +809,7 @@ export async function verifyCommunity({
     return { valid: true };
 }
 
-async function _validateSignatureOfPKCRecord(publication: PKCRecordToVerify): Promise<ValidationResult> {
+export async function _validateSignatureOfPKCRecord(publication: PKCRecordToVerify): Promise<ValidationResult> {
     if (typeof publication.signature.publicKey !== "string") return { valid: false, reason: messages.ERR_SIGNATURE_HAS_NO_PUBLIC_KEY };
     const signatureValidity = await _verifyJsonSignature(publication);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };

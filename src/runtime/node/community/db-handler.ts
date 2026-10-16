@@ -2315,7 +2315,7 @@ export class DbHandler {
         }[];
     }
 
-    private _queryLatestAuthorEdit(cid: string, authorSignerAddress: string): CommentEditPubsubMessagePublication | undefined {
+    queryLatestAuthorEdit(cid: string, authorSignerAddress: string): CommentEditPubsubMessagePublication | undefined {
         const row = this._db
             .prepare(
                 `
@@ -2654,7 +2654,7 @@ export class DbHandler {
             commentCid: comment.cid,
             authorDomain
         });
-        const authorEdit = this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress);
+        const authorEdit = this.queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress);
         const commentUpdateCounts = this._queryCommentCounts(comment.cid);
         const moderatorReason = this._queryLatestModeratorReason(comment);
         const commentFlags = this.queryCommentFlagsSetByMod(comment.cid);

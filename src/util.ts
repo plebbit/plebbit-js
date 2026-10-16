@@ -171,6 +171,32 @@ export function removeUndefinedValuesRecursively<T>(obj: T): T {
     return cleanedObj;
 }
 
+// A lone surrogate has no single byte representation: JSON.stringify escapes it, cborg (CBOR text must
+// be valid UTF-8) and SQLite each substitute U+FFFD, and not the same way. A signature over such a
+// string therefore never covers the bytes the community stores and republishes (issue #387).
+const loneSurrogateRegex = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+// Walks a JSON value (strings, arrays, plain objects and their keys) and returns the first string that
+// is not well-formed Unicode, or undefined when every string is.
+export function findMalformedUnicodeString(value: unknown): string | undefined {
+    if (typeof value === "string") return loneSurrogateRegex.test(value) ? value : undefined;
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const malformed = findMalformedUnicodeString(item);
+            if (malformed !== undefined) return malformed;
+        }
+        return undefined;
+    }
+    if (isPlainObject(value)) {
+        for (const key of Object.keys(value)) {
+            if (loneSurrogateRegex.test(key)) return key;
+            const malformed = findMalformedUnicodeString((value as Record<string, unknown>)[key]);
+            if (malformed !== undefined) return malformed;
+        }
+    }
+    return undefined;
+}
+
 export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
     if (Array.isArray(obj)) return <T>obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
     if (!isPlainObject(obj)) return obj;

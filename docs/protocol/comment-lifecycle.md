@@ -16,6 +16,7 @@ A comment goes through three distinct representations during its lifecycle. The 
 ## Invariants
 
 - `CommentIpfs` is **immutable** once stored on IPFS. It gets a CID that never changes.
+- The community stores a comment only if the record rebuilt from its DB row (`deriveCommentIpfsFromCommentTableRow`, what the pages carry) still hashes to that CID and verifies; otherwise the publication is rejected with `ERR_COMMUNITY_CANNOT_STORE_PUBLICATION_VERBATIM`. The same holds for an author edit and `CommentUpdate.edit`. A row that failed this would make every later record unsignable and stop the board publishing (issue #387).
 - `CommentUpdate` is the **only** way to add mutable state (votes, mod actions, edit merges) to a comment.
 - `CommentUpdate` is signed by the **community owner**, not the author.
 - A comment's bytes size during publication is limited to **40kb**.
