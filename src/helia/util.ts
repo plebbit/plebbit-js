@@ -923,7 +923,10 @@ export interface IpnsPubsubLocalStore {
 // datastore empty or stale: offline/fallback resolves and handleRecord's ipnsSelector comparison
 // would then act on older state than the freshest record we just validated. Mirrors
 // handleRecord's newer-only semantics (minus the gossipsub re-publish): an identical or older
-// record than the cached one is never written. The caller must have validated the record.
+// record than the cached one is never written. The check here is only an early exit: it is not
+// atomic with the put, so two concurrent writers can both pass it, and the localStore.put
+// wrapper in helia-for-pkc.ts re-checks under a per-name lock (issue #321). The caller must have
+// validated the record.
 export async function cacheIpnsRecordInPubsubLocalStore({
     localStore,
     routingKey,

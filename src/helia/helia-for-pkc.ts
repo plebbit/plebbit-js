@@ -3,6 +3,8 @@ import { libp2pDefaults, withLibp2p } from "@helia/libp2p";
 import { withBitswap } from "@helia/bitswap";
 import { ipns } from "@helia/ipns";
 import { unmarshalIPNSRecord, multihashToIPNSRoutingKey } from "ipns";
+import { ipnsSelector } from "ipns/selector";
+import { equals as uint8ArrayEquals } from "uint8arrays/equals";
 import type { IPNSRecord } from "ipns";
 import { ipnsValidator } from "ipns/validator";
 import { gossipsub } from "@libp2p/gossipsub";
@@ -505,9 +507,14 @@ export async function createLibp2pJsClientOrUseExistingOne(
         // Push signal for IPNS names (issue #308): every accepted-newer record converges on the
         // pubsub router's localStore.put — gossipsub delivery (handleRecord), the direct-fetch
         // cache write (cacheIpnsRecordInPubsubLocalStore), and the fallback router.get() fetch
-        // all write through it, and none of them writes a record older than the cached one.
-        // Wrapping put therefore yields exactly "a newer record for this name is now held
-        // locally", with none of the ordering hazards of listening to raw pubsub messages
+        // all write through it. Each of those writers checks "newer than cached" before calling
+        // put, but with awaits between the read and the write and no lock, so two concurrent
+        // writers can both pass the check against the same stale record and the older one can
+        // land last (issue #321). handleRecord is private to @helia/ipns and cannot be locked from
+        // outside, so put itself re-checks under a per-name lock: it writes and dispatches only
+        // when the record is strictly newer than what is held at that moment (identical or older
+        // is a silent no-op). Wrapping put therefore yields exactly "a newer record for this name
+        // is now held locally", with none of the ordering hazards of listening to raw pubsub messages
         // (which fire before handleRecord has validated and cached the record). The topic key is
         // derivable from the routing key alone: routingKey = '/ipns/' + multihash bytes and the
         // gossip topic is binaryKeyToPubsubTopic(routingKey) — the same encoding the subscriber
@@ -516,9 +523,34 @@ export async function createLibp2pJsClientOrUseExistingOne(
         // itself.
         const ipnsRecordArrivalListeners = new Map<string, Set<IpnsRecordArrivalListener>>();
         const originalLocalStorePut = ipnsPubsubLocalStore.put.bind(ipnsPubsubLocalStore);
+        const originalLocalStoreHas = ipnsPubsubLocalStore.has.bind(ipnsPubsubLocalStore);
+        const originalLocalStoreGet = ipnsPubsubLocalStore.get.bind(ipnsPubsubLocalStore);
+        // Tail of each name's write chain; an entry is removed once its last queued write settles.
+        const localStoreWriteTailByTopic = new Map<string, Promise<void>>();
         ipnsPubsubLocalStore.put = async (routingKey, marshalledRecord, options) => {
-            await originalLocalStorePut(routingKey, marshalledRecord, options);
             const pubsubTopic = binaryKeyToPubsubTopic(routingKey);
+            const previousWrite = localStoreWriteTailByTopic.get(pubsubTopic) ?? Promise.resolve();
+            let releaseWrite!: () => void;
+            const thisWriteDone = new Promise<void>((resolve) => (releaseWrite = resolve));
+            // Never rejects: every link resolves through the finally below.
+            const thisWrite = previousWrite.then(() => thisWriteDone);
+            localStoreWriteTailByTopic.set(pubsubTopic, thisWrite);
+            let wroteNewerRecord = false;
+            try {
+                await previousWrite;
+                if (await originalLocalStoreHas(routingKey, options)) {
+                    const { record: heldRecord } = await originalLocalStoreGet(routingKey, options);
+                    if (uint8ArrayEquals(heldRecord, marshalledRecord)) return;
+                    // ipnsSelector returns the index of the best record: 0 means the held one wins
+                    if (ipnsSelector(routingKey, [heldRecord, marshalledRecord]) === 0) return;
+                }
+                await originalLocalStorePut(routingKey, marshalledRecord, options);
+                wroteNewerRecord = true;
+            } finally {
+                releaseWrite();
+                if (localStoreWriteTailByTopic.get(pubsubTopic) === thisWrite) localStoreWriteTailByTopic.delete(pubsubTopic);
+            }
+            if (!wroteNewerRecord) return;
             let record: IPNSRecord;
             try {
                 record = unmarshalIPNSRecord(marshalledRecord);
