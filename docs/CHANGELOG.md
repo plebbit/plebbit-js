@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.106](https://github.com/pkcprotocol/pkc-js/compare/v0.0.105...v0.0.106) (2026-10-16)
+
+### Bug Fixes
+
+* **community:** reject publications it cannot store verbatim instead of freezing the board ([#387](https://github.com/pkcprotocol/pkc-js/issues/387)) ([#388](https://github.com/pkcprotocol/pkc-js/issues/388)) ([a679a36](https://github.com/pkcprotocol/pkc-js/commit/a679a36f0fb3f0012f9035c54c9cd55675ed8d49))
+
 ## [0.0.105](https://github.com/pkcprotocol/pkc-js/compare/v0.0.104...v0.0.105) (2026-10-14)
 
 ### Bug Fixes
