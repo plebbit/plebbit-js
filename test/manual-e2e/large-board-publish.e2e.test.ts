@@ -1,10 +1,11 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import v8 from "node:v8";
 import { mockPKC, mockRemotePKC, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util.js";
 import { buildSeededCommentRow, seedLargeBoard } from "./large-board-seeder.js";
+import { attachCycleProfiler, type CycleProfile, type RepoGcProfile } from "./cycle-profiler.js";
 import { createSigner } from "../../dist/node/signer/index.js";
 import type { PKC } from "../../dist/node/pkc/pkc.js";
 import type { LocalCommunity } from "../../dist/node/runtime/node/community/local-community.js";
@@ -33,7 +34,9 @@ import type { PageTypeJson } from "../../dist/node/pages/types.js";
 //   E2E_PAGES = default | single   (single: posts [active, preloaded], replies [old, preloaded], the 5chan shape)
 //   E2E_DATA_PATH (.tmp/large-board-e2e)   where the community's database goes; a 1M board is GBs of SQLite
 //   E2E_COMMUNITY_ADDRESS   reuse the board a previous run left under E2E_DATA_PATH instead of seeding
-//   E2E_KEEP_BOARD=1   do not delete the community afterwards (so the next run can reuse it)
+//   E2E_KEEP_BOARD=1   do not delete the community afterwards (so the next run can reuse it). A board of 500k+
+//                      comments is kept regardless unless E2E_KEEP_BOARD=0: delete() loads every comment's cid and
+//                      page cids at once and runs out of heap at 1M (issue #389)
 //   E2E_SKIP_REPIN=1   stub the start-time repin walk (every comment re-added to kubo) when only the publish
 //                      cycle is under study; the default runs it and reports its time on its own
 //   E2E_MAX_RSS_MB (8192)   the pkc-js process budget asserted on the first publish
@@ -42,7 +45,10 @@ import type { PageTypeJson } from "../../dist/node/pages/types.js";
 //   VITEST_TIMEOUT   the runner's per-test and per-hook timeout; seeding and publishing a 1M board take longer
 //                    than its default, so set it to the E2E_FIRST_PUBLISH_TIMEOUT_MS you chose
 //
-// Results are printed as JSON lines and written to .tmp/large-board-e2e-<timestamp>.json.
+// Results are printed as JSON lines and written to .tmp/large-board-e2e-<timestamp>.json. Every publish cycle is
+// profiled step by step (`cycle` events, see cycle-profiler.ts): CommentUpdates, record preparation, posts pages,
+// sign and publish, with a per-method kubo table, memory peaks and the kubo repo size before and after; `repo-gc`
+// events report the hourly GC the cycle runs after publishing.
 //
 // Measured 2026-10-15 on the PR #346 branch, default env (2,000 posts / 62,298 comments, nine default sorts), real
 // kubo 0.43.1, Node 22 default heap (4,144 MB limit): seeding 16 s; the start-time repin walk re-added all 62k
@@ -57,6 +63,19 @@ import type { PageTypeJson } from "../../dist/node/pages/types.js";
 // 8.85 GB); published hot, new, active, topDay, topWeek, topMonth, topYear, topAll; the remote client walked 3 pages
 // of `hot`; the second cycle after one appended post took 295 s. A million comments fits a 16 GB machine; the
 // steady-state cost (every page re-added each cycle, the flag scan of #361) is what is left (issue #386).
+//
+// Where the time goes, same board profiled step by step 2026-10-16 with the repin skipped (cycle-profiler.ts):
+//   first cycle 1,093 s: CommentUpdates 974 s, of which the SQL calculation (queryCalculatedCommentUpdates) 653 s,
+//     reply pages 133 s (summed over concurrent slices), upserts 25 s, flag query 6 s, and 33,000 postUpdates files
+//     (1,454 MB) written to MFS; record preparation 12 s; posts pages 107 s (90 adds, 9,371 MB); sign and publish
+//     0.5 s. Kubo had a call in flight for 225 s of the cycle. Heap peak 2,831 MB, RSS 6,400 MB, daemon 510 MB.
+//     Kubo repo 7.5 GB -> 15.5 GB, SQLite 1,940 MB. The hourly repo GC after it took 144 s and freed 1.6 GB.
+//   second cycle, one post appended 20 min later, 238 s: 16,364 CommentUpdates (flag query 17 s, calculation 5 s,
+//     reply pages 18 s, 6,203 postUpdates files, 296 MB), posts pages 106 s (every page regenerated and re-added,
+//     9,370 MB, 3 GB of it new blocks), kubo in flight 192 s. Heap peak 3,079 MB, RSS 6,744 MB. The 16k updates
+//     are the flag query's author and ancestor arms: 12 authors had one comment flagged (windowed reply sorts moving
+//     with the clock is the likely seed), every other comment of theirs followed (8,504), then every ancestor of
+//     those (7,860, among them 6,203 posts whose postUpdates file was rewritten).
 
 const envInt = (name: string, fallback: number) => (Number(process.env[name]) > 0 ? Number(process.env[name]) : fallback);
 const POSTS = envInt("E2E_POSTS", 2000);
@@ -67,7 +86,8 @@ const SEED = envInt("E2E_SEED", 1);
 const PAGES_MODE = process.env.E2E_PAGES === "single" ? "single" : "default";
 const DATA_PATH = path.resolve(process.cwd(), process.env.E2E_DATA_PATH || ".tmp/large-board-e2e");
 const REUSED_ADDRESS = process.env.E2E_COMMUNITY_ADDRESS;
-const KEEP_BOARD = process.env.E2E_KEEP_BOARD === "1";
+const KEEP_BOARD_ENV = process.env.E2E_KEEP_BOARD;
+const KEEP_BOARD_ABOVE_COMMENTS = 500_000;
 const SKIP_REPIN = process.env.E2E_SKIP_REPIN === "1";
 const MAX_RSS_MB = envInt("E2E_MAX_RSS_MB", 8192);
 const FIRST_PUBLISH_TIMEOUT_MS = envInt("E2E_FIRST_PUBLISH_TIMEOUT_MS", 30 * 60_000);
@@ -134,11 +154,29 @@ describe(`large board publish e2e (issue #386): ${POSTS} posts, ${MIN_REPLIES}-$
     let nextTimestamp = 0;
     let firstCycleMs = 0;
     const kuboPid = findKuboPid();
+    const cycles: CycleProfile[] = [];
+    const repoGcs: RepoGcProfile[] = [];
+    // Cycle profiles arrive a little after the state change that ends the cycle (two repo size reads), so a test that
+    // asserts on one waits for it.
+    const waitForCycles = async (count: number) => {
+        const deadline = Date.now() + 30_000;
+        while (cycles.length < count && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(cycles.length, `${count} cycle profiles captured`).toBeGreaterThanOrEqual(count);
+    };
+    const dbSizeMB = () => {
+        try {
+            return Math.round(statSync(path.join(DATA_PATH, "communities", community.address)).size / MB);
+        } catch {
+            return undefined;
+        }
+    };
     const results: Record<string, unknown> = {
         posts: POSTS,
         pagesMode: PAGES_MODE,
         heapLimitMB: Math.round(v8.getHeapStatistics().heap_size_limit / MB),
-        kuboPid
+        kuboPid,
+        cycles,
+        repoGcs
     };
 
     beforeAll(async () => {
@@ -181,7 +219,10 @@ describe(`large board publish e2e (issue #386): ${POSTS} posts, ${MIN_REPLIES}-$
     afterAll(async () => {
         if (community) {
             if (community.state === "started") await community.stop();
-            if (!KEEP_BOARD) await community.delete();
+            const keep = KEEP_BOARD_ENV === "1" || (KEEP_BOARD_ENV !== "0" && comments >= KEEP_BOARD_ABOVE_COMMENTS);
+            if (keep)
+                log("kept", { address: community.address, comments, reason: KEEP_BOARD_ENV === "1" ? "E2E_KEEP_BOARD" : "issue #389" });
+            else await community.delete();
         }
         if (pkc) await pkc.destroy();
         if (!existsSync(".tmp")) mkdirSync(".tmp");
@@ -206,6 +247,18 @@ describe(`large board publish e2e (issue #386): ${POSTS} posts, ${MIN_REPLIES}-$
             community.on("error", (error) =>
                 log("community-error", { message: error.message, details: (<{ details?: unknown }>error).details })
             );
+            attachCycleProfiler({
+                community,
+                kuboPid,
+                onCycle: (profile) => {
+                    cycles.push(profile);
+                    log("cycle", { ...profile, dbSizeMB: dbSizeMB() });
+                },
+                onRepoGc: (profile) => {
+                    repoGcs.push(profile);
+                    log("repo-gc", profile);
+                }
+            });
             try {
                 await community.start();
                 const startMs = Math.round(performance.now() - t0);
@@ -220,9 +273,10 @@ describe(`large board publish e2e (issue #386): ${POSTS} posts, ${MIN_REPLIES}-$
                 sampler.stop();
             }
             const memory = sampler.snapshot();
+            await waitForCycles(1);
             const postSorts = Object.keys({ ...community.posts.pages, ...community.posts.pageCids });
-            Object.assign(results, { firstCycleMs, startedStates, firstPublish: memory, postSorts });
-            log("published", { firstCycleMs, comments, ...memory, postSorts, startedStates });
+            Object.assign(results, { firstCycleMs, startedStates, firstPublish: memory, postSorts, dbSizeMB: dbSizeMB() });
+            log("published", { firstCycleMs, comments, ...memory, postSorts, startedStates, dbSizeMB: dbSizeMB() });
 
             expect(typeof community.updatedAt).toBe("number");
             // When every preloaded sort fits one chunk and holds the whole board, nothing else is generated (the
@@ -296,10 +350,22 @@ describe(`large board publish e2e (issue #386): ${POSTS} posts, ${MIN_REPLIES}-$
                 toUpdate: community,
                 predicate: async () => typeof community.updatedAt === "number" && community.updatedAt > before
             });
-            const secondCycleMs = Math.round(performance.now() - t0);
-            Object.assign(results, { secondCycleMs });
-            log("second-cycle", { secondCycleMs, firstCycleMs });
-            expect(secondCycleMs).toBeLessThan(firstCycleMs);
+            // Wall time from the insert to the new record includes waiting for the loop's next pass and, once an hour,
+            // the repo GC the previous cycle runs after publishing (tens of seconds on a repo of a million blocks). The
+            // cycle itself is the profile of the cycle that published the post.
+            const secondCycleWallMs = Math.round(performance.now() - t0);
+            const cyclesBefore = cycles.length;
+            await waitForCycles(cyclesBefore + 1);
+            const secondCycle = cycles[cycles.length - 1];
+            const firstCycle = cycles[0];
+            Object.assign(results, { secondCycleWallMs, secondCycleMs: secondCycle.cycleMs, repoGcs });
+            log("second-cycle", { secondCycleWallMs, secondCycleMs: secondCycle.cycleMs, firstCycleMs: firstCycle.cycleMs, repoGcs });
+            // Not asserted to be exactly one: the flag query also picks up windowed reply sorts whose window moved and
+            // every other comment by a flagged comment's author (author.community aggregates), so a cycle twenty minutes
+            // after a full recalculation of a 1M board re-updated 16k comments for one new post. That number is part
+            // of what this test measures (issue #386), not a failure.
+            expect(secondCycle.commentsUpdated).toBeGreaterThanOrEqual(1);
+            expect(secondCycle.cycleMs).toBeLessThan(firstCycle.cycleMs);
         },
         FIRST_PUBLISH_TIMEOUT_MS
     );

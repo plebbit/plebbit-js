@@ -242,8 +242,11 @@ The contract:
   on a real kubo: 33k posts / 1.02M comments with the nine default sorts, under Node's default 4 GB heap,
   started, published, loaded by a remote client and published again after one new post. Measured 2026-10-16:
   the start-time repin walk 40 min, the first cycle 18.9 min at a 2.75 GB heap peak and 6.4 GB RSS while
-  writing 7.9 GB of pages, and the next cycle 295 s for a single new post, which is the re-add of every page
-  rather than generation.
+  writing 7.9 GB of pages, and the next cycle 238 s for a single new post. Profiled step by step (the e2e's
+  `cycle-profiler.ts`): 60% of the first cycle is the SQL CommentUpdate calculation and 10% posts page
+  generation; the second cycle is the regeneration and re-add of all 90 posts pages (106 s, 9.4 GB, a third of
+  it new blocks) plus 16k CommentUpdates the flag query's author and ancestor arms fan out from a dozen flagged
+  comments. The hourly repo GC the cycle runs afterwards took 144 s on that daemon.
 
 - **Sync only.** Generation runs per comment per cycle; an async signature would invite a network call in
   the community's hot loop. This is a deliberate divergence from `ChallengeFile.getChallenge`.
