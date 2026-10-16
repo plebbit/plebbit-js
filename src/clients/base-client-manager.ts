@@ -413,7 +413,7 @@ export class BaseClientsManager {
             if (sizeHeader && Number(sizeHeader) > options.maxFileSizeBytes)
                 throw new PKCError("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
 
-            // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
+            // A body without getReader comes from a fetch polyfill that enforces options.size itself (node-fetch)
             if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
         } catch (e) {
             handleError(<Error>e);
@@ -431,13 +431,17 @@ export class BaseClientsManager {
 
                 while (true) {
                     const { done, value } = await reader.read();
+                    // Chunk boundaries fall anywhere, including inside a multi-byte UTF-8 character.
+                    // `stream: true` carries the partial character over to the next read instead of
+                    // emitting U+FFFD, which would make the text hash to a different CID than the bytes.
                     //@ts-ignore
-                    if (value) resText += decoder.decode(value);
+                    if (value) resText += decoder.decode(value, { stream: true });
                     if (done || !value) break;
                     if (value.length + totalBytesRead > options.maxFileSizeBytes)
                         throw new PKCError("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
                     totalBytesRead += value.length;
                 }
+                resText += decoder.decode(); // flush a trailing incomplete sequence, if any
                 return { resText, res };
             } catch (e) {
                 handleError(<Error>e);
