@@ -256,6 +256,10 @@ const craftedCases: CraftedCase[] = [
 describeSkipIfRpc("Issue #387: crafted publications are rejected or stored verbatim, and the board keeps publishing", () => {
     let pkc: PKC;
     let remotePkc: PKC;
+    // Each case stops its community and parks it here; afterAll deletes them all at once. On Windows
+    // every delete() sleeps 10s before removing the DB directory, so deleting per case inside the single
+    // `it` costs 16 x 10s and blows the 160s test timeout; one parallel sweep costs 10s total.
+    const communitiesToDelete: LocalCommunity[] = [];
 
     beforeAll(async () => {
         pkc = await mockPKC();
@@ -263,6 +267,7 @@ describeSkipIfRpc("Issue #387: crafted publications are rejected or stored verba
     });
 
     afterAll(async () => {
+        await Promise.all(communitiesToDelete.map((community) => community.delete()));
         await remotePkc.destroy();
         await pkc.destroy();
     });
@@ -518,7 +523,8 @@ describeSkipIfRpc("Issue #387: crafted publications are rejected or stored verba
                 }
             } finally {
                 await remoteCommunity?.stop();
-                await community.delete();
+                await community.stop();
+                communitiesToDelete.push(community);
             }
         }
     });
