@@ -1,5 +1,6 @@
 import { describe, it, beforeAll, afterAll } from "vitest";
 import {
+    fetchCidWithTransientRetry,
     createSubWithNoChallenge,
     getAvailablePKCConfigsToTestAgainst,
     mockPKC,
@@ -2429,7 +2430,7 @@ describeSkipIfRpc('community.features.pseudonymityMode="per-reply"', () => {
 });
 
 async function expectCommentCidToUseAlias(pkc: PKC, cid: string, aliasSigner: { address: string; publicKey: string }): Promise<void> {
-    const fetched = JSON.parse((await pkc.fetchCid({ cid })).content) as {
+    const fetched = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid })).content) as {
         author?: { address?: string };
         signature?: { publicKey?: string };
         pseudonymityMode?: string;
@@ -2526,6 +2527,7 @@ async function buildSignedReplyPublication({
     const base = {
         signer,
         communityAddress: communityAddress,
+        communityPublicKey: communityAddress, // see buildSignedPostPublication
         timestamp: timestamp(),
         protocolVersion: PROTOCOL_VERSION,
         content: `transition-reply-${Date.now()}`,
@@ -2548,6 +2550,9 @@ async function buildSignedPostPublication({
     const base = {
         signer,
         communityAddress: communityAddress,
+        // A fresh community's address is its public key. Validation requires communityPublicKey signed, and
+        // the store gate (issue #387) refuses a record whose backfilled communityPublicKey is unsigned.
+        communityPublicKey: communityAddress,
         timestamp: timestamp(),
         protocolVersion: PROTOCOL_VERSION,
         title: `transition-post-${Date.now()}`,

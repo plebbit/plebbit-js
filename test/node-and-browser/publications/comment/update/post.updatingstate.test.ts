@@ -255,13 +255,21 @@ getAvailablePKCConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc",
                 ];
                 expect(cleanupStateArray(updatingStates).slice(0, expectedUpdateStates.length)).to.deep.equal(expectedUpdateStates);
 
+                // Every later attempt to load the invalid CommentUpdate is another
+                // fetching-community-ipns, fetching-community-ipfs, fetching-update-ipfs, failed cycle. The
+                // comment is attached to the shared live community, whose update loop is arrival-driven,
+                // so a cycle can begin between the second error and stop() and be cut off by it at any
+                // point (#383). A truncated trailing cycle is legitimate: whatever it got to must still be
+                // the next steps of that cycle, and the very next state after the cut is "stopped".
                 const restOfUpdatingStates = updatingStates.slice(expectedUpdateStates.length, updatingStates.length);
                 for (let i = 0; i < restOfUpdatingStates.length; i += 2) {
                     if (
                         restOfUpdatingStates[i] === "fetching-community-ipns" &&
                         restOfUpdatingStates[i + 1] === "fetching-community-ipfs"
                     ) {
+                        if (restOfUpdatingStates[i + 2] === "stopped") break; // cut off by stop() before the update fetch
                         expect(restOfUpdatingStates[i + 2]).to.equal("fetching-update-ipfs"); // second attempt to load invalid CommentUpdate
+                        if (restOfUpdatingStates[i + 3] === "stopped") break; // cut off by stop() mid update fetch
                         expect(restOfUpdatingStates[i + 3]).to.equal("failed");
                     }
                 }

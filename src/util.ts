@@ -190,6 +190,32 @@ export function removeUndefinedValuesRecursively<T>(obj: T): T {
     return cleanedObj;
 }
 
+// A lone surrogate has no single byte representation: JSON.stringify escapes it, cborg (CBOR text must
+// be valid UTF-8) and SQLite each substitute U+FFFD, and not the same way. A signature over such a
+// string therefore never covers the bytes the community stores and republishes (issue #387).
+const loneSurrogateRegex = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+// Walks a JSON value (strings, arrays, plain objects and their keys) and returns the first string that
+// is not well-formed Unicode, or undefined when every string is.
+export function findMalformedUnicodeString(value: unknown): string | undefined {
+    if (typeof value === "string") return loneSurrogateRegex.test(value) ? value : undefined;
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const malformed = findMalformedUnicodeString(item);
+            if (malformed !== undefined) return malformed;
+        }
+        return undefined;
+    }
+    if (isPlainObject(value)) {
+        for (const key of Object.keys(value)) {
+            if (loneSurrogateRegex.test(key)) return key;
+            const malformed = findMalformedUnicodeString((value as Record<string, unknown>)[key]);
+            if (malformed !== undefined) return malformed;
+        }
+    }
+    return undefined;
+}
+
 export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
     if (Array.isArray(obj)) return <T>obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
     if (!isPlainObject(obj)) return obj;
@@ -732,7 +758,12 @@ export async function waitForUpdateInCommunityInstanceWithErrorAndTimeout(opts: 
     const errorListener = (err: PKCError | Error) => {
         errors.push(err);
         const isRetriable = "details" in err && (err as any).details?.retriableError === true;
-        if (!isRetriable) {
+        // Issue #377: retriable for the update loop (a seeder or a direct addr can show up later)
+        // but definitive for THIS wait: nothing within the timeout window changes which addrs the
+        // providers announce, so waiting the full community-ipns timeout (5 minutes by default)
+        // only delays the same answer. Surface it now so publish()/getCommunity() fail fast.
+        const failsFast = "code" in err && err.code === "ERR_COMMUNITY_UNREACHABLE_FROM_THIS_CLIENT";
+        if (!isRetriable || failsFast) {
             criticalError = err;
             nonRetriableErrorResolve?.();
         }
@@ -1549,4 +1580,29 @@ export function extractNetworkErrorDetails(err: unknown, depth = 0): NetworkErro
     }
     if (nested.length > 0) details.causes = nested;
     return details;
+}
+
+// Socket-level codes that mean "the peer/daemon could not be reached right now", as opposed to the
+// request itself being bad. Node's net codes plus undici's own wrappers (a connect timeout is
+// UND_ERR_CONNECT_TIMEOUT with ETIMEDOUT nested one level below it).
+export const TRANSIENT_NETWORK_ERROR_CODES: ReadonlySet<string> = new Set([
+    "ETIMEDOUT",
+    "ECONNREFUSED",
+    "ECONNRESET",
+    "EPIPE",
+    "EHOSTUNREACH",
+    "ENETUNREACH",
+    "EAI_AGAIN",
+    "UND_ERR_CONNECT_TIMEOUT",
+    "UND_ERR_SOCKET",
+    "UND_ERR_HEADERS_TIMEOUT",
+    "UND_ERR_BODY_TIMEOUT"
+]);
+
+// True when any node of an extractNetworkErrorDetails() tree carries a transient socket-level code.
+// Use this rather than reading `error.cause.code`: undici nests the meaningful code at different
+// depths depending on which stage of the request failed (#384).
+export function hasTransientNetworkErrorCode(details: NetworkErrorDetails): boolean {
+    if (details.code && TRANSIENT_NETWORK_ERROR_CODES.has(details.code)) return true;
+    return details.causes?.some(hasTransientNetworkErrorCode) ?? false;
 }

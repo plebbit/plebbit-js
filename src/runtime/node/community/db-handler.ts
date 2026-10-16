@@ -2376,6 +2376,27 @@ export class DbHandler {
         }[];
     }
 
+    queryLatestAuthorEdit(cid: string, authorSignerAddress: string): CommentEditPubsubMessagePublication | undefined {
+        const row = this._db
+            .prepare(
+                `
+            SELECT * FROM ${TABLES.COMMENT_EDITS}
+            WHERE commentCid = ? AND authorSignerAddress = ? AND (isAuthorEdit = 1)
+            ORDER BY rowid DESC LIMIT 1
+        `
+            )
+            .get(cid, authorSignerAddress) as CommentEditsTableRow | undefined;
+        if (!row) return undefined;
+
+        const parsed = this._spreadExtraProps(this._parseCommentEditsRow(row));
+
+        const signedKeys = parsed.signature.signedPropertyNames as CommentEditSignature["signedPropertyNames"];
+
+        const commentEditFields = keys(CommentEditPubsubMessagePublicationSchema.shape);
+
+        return pick(parsed, ["signature", ...signedKeys, ...commentEditFields]) as CommentEditPubsubMessagePublication;
+    }
+
     removeCommentFromPendingApproval(comment: Pick<CommentsTableRow, "cid">): void {
         const log = Logger("pkc-js:local-community:db-handler:removeCommentFromPendingApproval");
         const stmt = this._db.prepare(`UPDATE ${TABLES.COMMENTS} SET pendingApproval = 0 WHERE cid = ?`);

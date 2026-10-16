@@ -3,6 +3,7 @@ import assert from "assert";
 import {
     calculateIpfsCidV0,
     extractNetworkErrorDetails,
+    hasTransientNetworkErrorCode,
     hideClassPrivateProps,
     isAbortError,
     isIpns,
@@ -748,15 +749,24 @@ export class BaseClientsManager {
                 : undefined;
             //@ts-expect-error attaching extra context to whatever propagated (PKCError or raw resolver error)
             error.details = { ...error.details, ipnsName, ipnsResolveOpts, ...(p2pValidationNote ? { note: p2pValidationNote } : {}) };
-            // Wrap ETIMEDOUT in PKCError so _isRetriableErrorWhenLoading recognizes it as retriable
-            if (error instanceof Error && "cause" in error && (error.cause as { code?: string })?.code === "ETIMEDOUT") {
-                log.error(`Failed to resolve IPNS ${ipnsName}: ${error.message} (ETIMEDOUT)`);
+            // A transient socket-level failure (the daemon could not be reached right now) must surface
+            // as ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P so _isRetriableErrorWhenLoading recognizes it as
+            // retriable; a raw TypeError("fetch failed") is classified non-retriable and permanently stops
+            // the community update loop and every comment updating under it. undici buries the real code
+            // at varying depths of the cause chain: ETIMEDOUT/ECONNREFUSED directly on an AggregateError
+            // cause, but a connect timeout is a ConnectTimeoutError (UND_ERR_CONNECT_TIMEOUT) whose OWN
+            // cause carries ETIMEDOUT, so checking only error.cause.code missed it (#384, triggered by the
+            // kubo API saturation in #265). Walk the whole chain instead.
+            const networkErrorDetails = isOpaqueResolverError ? extractNetworkErrorDetails(error) : undefined;
+            if (error instanceof Error && networkErrorDetails && hasTransientNetworkErrorCode(networkErrorDetails)) {
+                log.error(`Failed to resolve IPNS ${ipnsName}: ${error.message} (${error.name})`, networkErrorDetails);
                 throw new PKCError("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", {
                     ipnsName,
                     ipnsResolveOpts,
                     error,
                     errorMessage: error.message,
                     errorName: error.name,
+                    networkErrorDetails,
                     note: p2pValidationNote
                 });
             }

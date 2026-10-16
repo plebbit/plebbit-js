@@ -1,5 +1,6 @@
 import signers from "../../../fixtures/signers.js";
 import {
+    fetchCidWithTransientRetry,
     getAvailablePKCConfigsToTestAgainst,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
@@ -208,7 +209,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 log
             );
 
-            const pageIpfs = JSON.parse((await pkc.fetchCid({ cid: community.posts.pageCids.new })).content);
+            const pageIpfs = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: community.posts.pageCids.new })).content);
 
             pageIpfs.comments.push({
                 comment: post.raw.comment,

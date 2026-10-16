@@ -1,5 +1,12 @@
 import PKCIndex from "../index.js";
-import { calculateStringSizeSameAsIpfsAddCidV0, removeUndefinedValuesRecursively, retryKuboIpfsAdd, timestamp } from "../util.js";
+import {
+    calculateStringSizeSameAsIpfsAddCidV0,
+    hasTransientNetworkErrorCode,
+    removeUndefinedValuesRecursively,
+    retryKuboIpfsAdd,
+    timestamp
+} from "../util.js";
+import type { NetworkErrorDetails } from "../util.js";
 import retry from "retry";
 import { getCommunityAddressFromRecord } from "../publications/publication-community.js";
 import { Comment } from "../publications/comment/comment.js";
@@ -2897,4 +2904,48 @@ export function processAllCommentsRecursively(
 
     for (const comment of comments)
         if (comment.replies?.pages?.best?.comments) processAllCommentsRecursively(comment.replies.pages.best.comments, processor);
+}
+
+// pkc.fetchCid is a one-shot call and deliberately fails on the first error: the caller is awaiting
+// it and decides what to do. In the test suites that caller is us, and on node-local every vitest
+// worker hammers the single kubo daemon at startup (250+ API requests/s, issue #265), so a TCP
+// connect to it can time out during that burst. That surfaces as
+// ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P with a transient socket code in its cause chain, in
+// whichever test happens to be fetching at that moment. Use this instead of pkc.fetchCid when a
+// test only wants the raw bytes of a cid it knows exists; keep calling pkc.fetchCid directly when
+// the test asserts on fetchCid's own failure behavior.
+//
+// Only that one transient shape is retried (same classification the library's own retry helper
+// and the IPNS resolve wrapper use); content-level and timeout errors still fail on the first call.
+export async function fetchCidWithTransientRetry({
+    pkc,
+    cid,
+    attempts = 4,
+    minTimeoutMs = 1000
+}: {
+    pkc: PKC;
+    cid: string;
+    attempts?: number;
+    minTimeoutMs?: number;
+}): Promise<Awaited<ReturnType<PKC["fetchCid"]>>> {
+    const log = Logger("pkc-js:test-util:fetchCidWithTransientRetry");
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await pkc.fetchCid({ cid });
+        } catch (e) {
+            const networkErrorDetails =
+                e instanceof PKCError && e.code === "ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P"
+                    ? (e.details as { networkErrorDetails?: NetworkErrorDetails }).networkErrorDetails
+                    : undefined;
+            const isTransient = networkErrorDetails !== undefined && hasTransientNetworkErrorCode(networkErrorDetails);
+            if (!isTransient || attempt >= attempts) throw e;
+            // 1s, 2s, 4s by default, mirroring BaseClientsManager._retryTransientP2PFetch.
+            const delayMs = minTimeoutMs * 2 ** (attempt - 1);
+            log(
+                `Transient P2P fetch failure for cid ${cid} on attempt ${attempt}/${attempts}, retrying in ${delayMs}ms`,
+                networkErrorDetails
+            );
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
 }

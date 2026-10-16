@@ -167,6 +167,22 @@ class InMemoryDbHandlerMock {
         edits.forEach((edit) => this.commentEdits.push(edit));
     }
 
+    // The rebuild the store gate (issue #387) and CommentUpdate.edit run on the edits table
+    queryLatestAuthorEdit(cid: string, authorSignerAddress: string): CommentEditPubsubMessagePublication | undefined {
+        const row = [...this.commentEdits]
+            .reverse()
+            .find((edit) => edit.commentCid === cid && edit.authorSignerAddress === authorSignerAddress && edit.isAuthorEdit);
+        if (!row) return undefined;
+        const {
+            isAuthorEdit: _isAuthorEdit,
+            authorSignerAddress: _authorSignerAddress,
+            insertedAt: _insertedAt,
+            extraProps,
+            ...edit
+        } = row;
+        return { ...edit, ...extraProps } as CommentEditPubsubMessagePublication;
+    }
+
     // comment moderation helpers
     hasCommentModerationWithSignatureEncoded(signatureEncoded: string): boolean {
         return this.commentModerations.some((mod) => mod.signature?.signature === signatureEncoded);

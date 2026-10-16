@@ -5,6 +5,7 @@
 // acceptance never depends on a third party's uptime. See docs/protocol/crossposts.md.
 import signers from "../../../../fixtures/signers.js";
 import {
+    fetchCidWithTransientRetry,
     generateMockPost,
     generateMockComment,
     publishWithExpectedResult,
@@ -82,7 +83,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 const post = await generateMockPost({ communityAddress, pkc, postProps: { crosspost } });
                 await publishWithExpectedResult({ publication: post, expectedChallengeSuccess: true });
 
-                const fetched = JSON.parse((await pkc.fetchCid({ cid: post.cid! })).content);
+                const fetched = JSON.parse((await fetchCidWithTransientRetry({ pkc, cid: post.cid! })).content);
                 expect(deterministicStringify(fetched.crosspost)).to.equal(deterministicStringify(crosspost));
                 expect(await calculateIpfsHash(deterministicStringify(fetched.crosspost.comment)!)).to.equal(crosspost.cid);
             });
