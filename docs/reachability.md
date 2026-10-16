@@ -45,7 +45,7 @@ Pick whichever side you control.
 **You run the community.**
 
 -   Give the node a public address: forward the libp2p port on your router, enable UPnP, or host it on a VPS. Once Kubo's AutoNAT reports `Public`, it announces direct addresses and browsers can connect.
--   Browsers need a WebSocket Secure (`/wss`) or WebRTC-direct address on top of that. Kubo's AutoTLS provides `/wss` automatically on a publicly reachable node.
+-   Browsers need a WebSocket Secure (`/wss`) or WebRTC-direct address as well. Kubo's AutoTLS provides `/wss` automatically on a publicly reachable node.
 -   Or have a publicly reachable node seed the community with [bitsocial-seeder](https://github.com/bitsocialnet/bitsocial-seeder). Seeders announce themselves as providers, so clients load the community from them even while the owner's node stays behind NAT.
 
 **You are trying to load or post to the community.**
