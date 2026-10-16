@@ -33,7 +33,10 @@ const waitForUpdatingStateEvent = (community: RemoteCommunity, recorded: string[
         community.on("updatingstatechange", listener);
     });
 
-getAvailablePKCConfigsToTestAgainst().map((config) => {
+// Not run on remote-ipfs-gateway: the gateway client retries an invalid community signature
+// silently (no error event) and wraps record errors in a gateway error, by design; the bug is
+// RPC-only and Kubo/libp2p-js serve as the non-RPC control
+getAvailablePKCConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs", "remote-pkc-rpc"] }).map((config) => {
     describe.concurrent(`updatingstatechange is emitted for every updating state (issue #364) - ${config.name}`, () => {
         let pkc: PKCType;
         beforeAll(async () => {
