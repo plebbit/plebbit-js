@@ -96,11 +96,18 @@ export class RpcRemoteCommunity extends RemoteCommunity {
         if (Array.isArray(updateRecord.runtimeFields.ipnsHops)) this._ipnsHops = updateRecord.runtimeFields.ipnsHops;
         this.initCommunityIpfsPropsNoMerge(updateRecord.community!);
         this.updateCid = updateRecord.runtimeFields.updateCid!;
-        this._setUpdatingStateNoEmission(updateRecord.runtimeFields.updatingState || "succeeded");
-        this.raw.runtimeFieldsFromRpc = updateRecord.runtimeFields;
-        deepMergeRuntimeFields(this, updateRecord.runtimeFields);
+        // updatingState is kept out of the merge (which would write _updatingState silently) and out of
+        // runtimeFieldsFromRpc (which mirrors merge too): the server's updatingstatechange notification
+        // for this state follows and is dropped as a duplicate, so a silent set loses the event (#364)
+        const { updatingState: newUpdatingState, ...runtimeFieldsWithoutUpdatingState } = updateRecord.runtimeFields;
+        this.raw.runtimeFieldsFromRpc = runtimeFieldsWithoutUpdatingState;
+        deepMergeRuntimeFields(this, runtimeFieldsWithoutUpdatingState);
 
-        this.emit("update", this);
+        // Emit "update" then updatingstatechange, in the order the non-RPC loop does
+        this._changeStateEmitEventEmitStateChangeEvent({
+            event: { name: "update", args: [this] },
+            newUpdatingState: newUpdatingState || "succeeded"
+        });
     }
 
     private _handleUpdatingStateChangeFromRpcUpdate(args: any) {
@@ -207,14 +214,20 @@ export class RpcRemoteCommunity extends RemoteCommunity {
 
     protected _handleRpcErrorEvent(args: any) {
         const error: CommunityRpcErrorToTransmit = args.params.result;
-        if (error.details?.newUpdatingState) this._setUpdatingStateNoEmission(error.details.newUpdatingState);
+        // startedstatechange stays silent here: _handleRpcStartedStateChangeEvent re-emits the server's
+        // notification even when the state already matches
         if (error.details?.newStartedState) this._setStartedStateNoEmission(error.details.newStartedState);
         if ("code" in error && error.code === "ERR_COMMUNITY_NAME_RESOLVES_TO_DIFFERENT_PUBLIC_KEY" && error.details?.newPublicKey) {
             this._clearDataForKeyMigration(error.details.newPublicKey);
             this.nameResolved = true;
             this.emit("update", this);
         }
-        this.emit("error", error);
+        // Emit "error" then updatingstatechange, like the non-RPC loop; the server's notification for
+        // this state follows and is dropped as a duplicate (#364)
+        this._changeStateEmitEventEmitStateChangeEvent({
+            event: { name: "error", args: [error] },
+            newUpdatingState: error.details?.newUpdatingState
+        });
     }
 
     async _initRpcUpdateSubscription() {
