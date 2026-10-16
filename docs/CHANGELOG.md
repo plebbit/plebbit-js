@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.108](https://github.com/pkcprotocol/pkc-js/compare/v0.0.107...v0.0.108) (2026-10-16)
+
+### Features
+
+* **community:** configurable page sorts via settings.pages ([#73](https://github.com/pkcprotocol/pkc-js/issues/73)) ([#346](https://github.com/pkcprotocol/pkc-js/issues/346)) ([6882fa2](https://github.com/pkcprotocol/pkc-js/commit/6882fa286c1eeb71bd1ac3d8f93ff2e56ad641fe)), closes [#348](https://github.com/pkcprotocol/pkc-js/issues/348) [#351](https://github.com/pkcprotocol/pkc-js/issues/351) [#351](https://github.com/pkcprotocol/pkc-js/issues/351) [#352](https://github.com/pkcprotocol/pkc-js/issues/352) [#352](https://github.com/pkcprotocol/pkc-js/issues/352) [#355](https://github.com/pkcprotocol/pkc-js/issues/355) [#355](https://github.com/pkcprotocol/pkc-js/issues/355) [#355](https://github.com/pkcprotocol/pkc-js/issues/355) [#142](https://github.com/pkcprotocol/pkc-js/issues/142) [#304](https://github.com/pkcprotocol/pkc-js/issues/304) [#355](https://github.com/pkcprotocol/pkc-js/issues/355) [#355](https://github.com/pkcprotocol/pkc-js/issues/355) [#355](https://github.com/pkcprotocol/pkc-js/issues/355) [#359](https://github.com/pkcprotocol/pkc-js/issues/359) [#359](https://github.com/pkcprotocol/pkc-js/issues/359) [#351](https://github.com/pkcprotocol/pkc-js/issues/351) [#386](https://github.com/pkcprotocol/pkc-js/issues/386) [#387](https://github.com/pkcprotocol/pkc-js/issues/387) [#386](https://github.com/pkcprotocol/pkc-js/issues/386) [#386](https://github.com/pkcprotocol/pkc-js/issues/386) [#389](https://github.com/pkcprotocol/pkc-js/issues/389) [#389](https://github.com/pkcprotocol/pkc-js/issues/389) [#389](https://github.com/pkcprotocol/pkc-js/issues/389) [#352](https://github.com/pkcprotocol/pkc-js/issues/352) [#352](https://github.com/pkcprotocol/pkc-js/issues/352)
+
+### Bug Fixes
+
+* **helia:** keep the newest IPNS record under concurrent local store writes ([#321](https://github.com/pkcprotocol/pkc-js/issues/321)) ([#394](https://github.com/pkcprotocol/pkc-js/issues/394)) ([2f5aa9f](https://github.com/pkcprotocol/pkc-js/commit/2f5aa9fdae5051c6a50a984774d62d18159860e9))
+
 ## [0.0.107](https://github.com/pkcprotocol/pkc-js/compare/v0.0.106...v0.0.107) (2026-10-16)
 
 ### Features
