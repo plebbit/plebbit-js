@@ -12,6 +12,7 @@
 - IPNS signature: https://github.com/ipfs/notes/issues/249
 - PKC signature types: https://github.com/pkcprotocol/pkc-js/blob/master/docs/signatures.md
 - PKC encryption types: https://github.com/pkcprotocol/pkc-js/blob/master/docs/encryption.md
+- Reachability (NAT-hosted communities, `ERR_COMMUNITY_UNREACHABLE_FROM_THIS_CLIENT`): https://github.com/pkcprotocol/pkc-js/blob/master/docs/reachability.md
 
 Note: IPFS files are immutable, fetched by their CID, which is a hash of their content. IPNS records are mutable, fetched by their IPNS name, which is the hash of a public key. The private key's owner can update the content. Always use IPFS files over IPNS records when possible because they are much faster to fetch.
 

@@ -739,7 +739,12 @@ export async function waitForUpdateInCommunityInstanceWithErrorAndTimeout(opts: 
     const errorListener = (err: PKCError | Error) => {
         errors.push(err);
         const isRetriable = "details" in err && (err as any).details?.retriableError === true;
-        if (!isRetriable) {
+        // Issue #377: retriable for the update loop (a seeder or a direct addr can show up later)
+        // but definitive for THIS wait: nothing within the timeout window changes which addrs the
+        // providers announce, so waiting the full community-ipns timeout (5 minutes by default)
+        // only delays the same answer. Surface it now so publish()/getCommunity() fail fast.
+        const failsFast = "code" in err && err.code === "ERR_COMMUNITY_UNREACHABLE_FROM_THIS_CLIENT";
+        if (!isRetriable || failsFast) {
             criticalError = err;
             nonRetriableErrorResolve?.();
         }
