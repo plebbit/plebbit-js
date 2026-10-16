@@ -6,6 +6,8 @@ import { describeSkipIfRpc } from "../../helpers/conditional-tests.js";
 import { seedLargeBoard } from "../../manual-e2e/large-board-seeder.js";
 import type { PKC } from "../../../dist/node/pkc/pkc.js";
 import type { LocalCommunity } from "../../../dist/node/runtime/node/community/local-community.js";
+import type { CommunityIpfsType } from "../../../dist/node/community/types.js";
+import { calculateIpfsCidV0 } from "../../../dist/node/util.js";
 
 // Issue #389: community.delete() on a board of a million comments ran Node's default 4 GB heap out. It collected
 // every comment's cid and page cids with one query into one array and one Set, then unpinned the Set. Deleting
@@ -92,5 +94,49 @@ describeSkipIfRpc("community.delete() of a board larger than one unpin slice (is
         for (const cid of seededCids) expect(unpinned.has(cid), `comment ${cid} was unpinned`).toBe(true);
         expect(community._cidsToUnPin.size).toBe(0);
         expect(fs.existsSync(path.join(pkc.dataPath!, "communities", "deleted", community.address))).toBe(true);
+    }, 120_000);
+});
+
+// The second half of issue #389: before unpinning a single comment, delete() collected the previous record's page cids
+// by fetching every posts page from kubo and following the nextCid chains (9.4 GB of JSON for a million-comment
+// board, which ran the heap out on its own). The community already records every posts page cid it published
+// (_postsAllPageCids, what the publish cycle uses to unpin superseded pages), so delete() must unpin from that and
+// never fetch a page.
+describeSkipIfRpc("community.delete() of a community that has published pages (issue #389)", () => {
+    let pkc: PKC;
+    let community: LocalCommunity;
+    beforeAll(async () => {
+        pkc = await mockPKCV2({ forceMockPubsub: true, stubStorage: false });
+        community = <LocalCommunity>await pkc.createCommunity();
+        await community._dbHandler.initDbIfNeeded();
+        await community._dbHandler.createOrMigrateTablesIfNeeded();
+    });
+    afterAll(async () => {
+        await pkc.destroy();
+    });
+
+    it("unpins every recorded posts page cid without fetching any page", async () => {
+        const pageCids = await Promise.all(["hot-1", "hot-2", "hot-3", "new-1", "new-2"].map((name) => calculateIpfsCidV0(`page ${name}`)));
+        const [hot1, hot2, hot3, new1, new2] = pageCids;
+        community._postsAllPageCids = { hot: [hot1, hot2, hot3], new: [new1, new2] };
+        // What the last published record carried: the first page of each sort, the rest reachable only by walking.
+        community.raw.communityIpfs = <CommunityIpfsType>(<unknown>{ posts: { pages: {}, pageCids: { hot: hot1, new: new1 } } });
+        const fetched: string[] = [];
+        vi.spyOn(community._clientsManager, "_fetchCidP2P").mockImplementation(async (cid) => {
+            fetched.push(String(cid));
+            throw new Error("delete() must not fetch pages");
+        });
+        const kuboClient = community._clientsManager.getDefaultKuboRpcClient()._client;
+        const unpinned = new Set<string>();
+        const originalPinRm = kuboClient.pin.rm.bind(kuboClient.pin);
+        vi.spyOn(kuboClient.pin, "rm").mockImplementation((cid, options) => {
+            unpinned.add(String(cid));
+            return originalPinRm(cid, options);
+        });
+
+        await community.delete();
+
+        expect(fetched, "pages fetched during delete()").toEqual([]);
+        for (const cid of pageCids) expect(unpinned.has(cid), `page ${cid} was unpinned`).toBe(true);
     }, 120_000);
 });

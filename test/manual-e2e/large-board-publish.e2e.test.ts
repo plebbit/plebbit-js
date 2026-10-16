@@ -219,9 +219,34 @@ describe(`large board publish e2e (issue #386): ${POSTS} posts, ${MIN_REPLIES}-$
             if (community.state === "started") await community.stop();
             if (KEEP_BOARD) log("kept", { address: community.address, comments });
             else {
-                const deleteStart = performance.now();
+                // Live heap the cycles left behind, which is what delete() has to fit under (issue #389). Exact only with
+                // NODE_OPTIONS=--expose-gc (the forks inherit it), a lower bound otherwise.
+                const forceGc = (<{ gc?: () => void }>globalThis).gc;
+                forceGc?.();
                 const heapBeforeDeleteMB = Math.round(process.memoryUsage().heapUsed / MB);
-                await community.delete();
+                log("before-delete", { heapBeforeDeleteMB, gcForced: Boolean(forceGc), rssMB: Math.round(process.memoryUsage().rss / MB) });
+                if (process.env.E2E_HEAP_SNAPSHOT_BEFORE_DELETE === "1") {
+                    // What the cycles left live, for issue #389 / #386 diagnosis. A snapshot of a multi-GB heap takes minutes
+                    // and about twice its size on disk under .tmp/heap.
+                    if (!existsSync(".tmp/heap")) mkdirSync(".tmp/heap", { recursive: true });
+                    const file = v8.writeHeapSnapshot(path.resolve(".tmp/heap", `before-delete-${Date.now()}.heapsnapshot`));
+                    log("heap-snapshot", { file });
+                }
+                const deleteStart = performance.now();
+                const progress = setInterval(() => {
+                    const usage = process.memoryUsage();
+                    log("delete-progress", {
+                        elapsedMs: Math.round(performance.now() - deleteStart),
+                        heapUsedMB: Math.round(usage.heapUsed / MB),
+                        rssMB: Math.round(usage.rss / MB),
+                        cidsToUnPin: community._cidsToUnPin.size
+                    });
+                }, 15_000);
+                try {
+                    await community.delete();
+                } finally {
+                    clearInterval(progress);
+                }
                 const deleteMs = Math.round(performance.now() - deleteStart);
                 Object.assign(results, { deleteMs, heapBeforeDeleteMB });
                 log("deleted", { deleteMs, comments, heapBeforeDeleteMB });

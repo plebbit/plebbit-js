@@ -547,10 +547,22 @@ export async function deleteCommunity(community: LocalCommunity) {
     // scenario 3: we call delete() on a community that is started
     // scenario 4: we call delete() on a community that is not started, but the same community is started in pkc._startedCommunities[address]
 
-    try {
-        await community._addOldPageCidsToCidsToUnpin(community.raw?.communityIpfs?.posts, undefined);
-    } catch (e) {
-        log.error("Failed to add old page cids from community.posts to be unpinned", e);
+    // The posts pages of the last record, from what the community recorded when it published them
+    // (_postsAllPageCids, the same list the publish cycle unpins superseded pages from) plus the first
+    // page of each sort the record names. Not by walking the pages: following the nextCid chains means
+    // fetching and parsing every page of the board, 9.4 GB of JSON for a million comments, which ran the
+    // heap out before a single comment was unpinned (issue #389). The walk stays only for a board whose
+    // internal state predates the recorded list.
+    const lastPosts = community.raw?.communityIpfs?.posts;
+    if (community._postsAllPageCids) {
+        for (const cid of Object.values(community._postsAllPageCids).flat()) community._cidsToUnPin.add(cid);
+        for (const cid of Object.values(lastPosts?.pageCids ?? {})) community._cidsToUnPin.add(cid);
+    } else if (lastPosts) {
+        try {
+            await community._addOldPageCidsToCidsToUnpin(lastPosts, undefined);
+        } catch (e) {
+            log.error("Failed to add old page cids from community.posts to be unpinned", e);
+        }
     }
     if (community.ipnsPubsubTopicRoutingCid) community._cidsToUnPin.add(community.ipnsPubsubTopicRoutingCid);
     // pubsubTopicRoutingCid only reflects the topic of the last published record, so derive the
