@@ -34,9 +34,11 @@ import {
     directFetchIpnsRecordFromProviders,
     fetchBlockWithStalledSessionFailover,
     getHeliaDebugContext,
-    selectBitswapSessionSeedPeers
+    REACHABILITY_DOCS_URL,
+    selectBitswapSessionSeedPeers,
+    summarizeProviderReachability
 } from "./util.js";
-import type { IpnsPubsubLocalStore } from "./util.js";
+import type { IpnsPubsubLocalStore, ProviderReachability } from "./util.js";
 import { createDefaultDialTransportGater } from "./dial-transport-filter.js";
 import { binaryKeyToPubsubTopic, ipnsNameToIpnsOverPubsubTopic } from "../util.js";
 
@@ -649,7 +651,15 @@ export async function createLibp2pJsClientOrUseExistingOne(
                         type DirectFetchOutcome =
                             | { attempted: false }
                             | { attempted: true; hit: true; durationMs: number; source: string; peerId: string }
-                            | { attempted: true; hit: false; durationMs: number; error?: Error };
+                            | {
+                                  attempted: true;
+                                  hit: false;
+                                  durationMs: number;
+                                  error?: Error;
+                                  // Per-provider verdicts from the miss (issue #377); absent when the path errored.
+                                  providers?: ProviderReachability[];
+                                  subscribersTried?: number;
+                              };
                         let directFetchOutcome: DirectFetchOutcome = { attempted: false };
                         {
                             // Subscribe so pushed record updates keep arriving (the legacy router.get() did
@@ -683,7 +693,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
                                     options,
                                     log: Logger("pkc-js:helia:ipns:direct-fetch")
                                 });
-                                if (direct) {
+                                if (direct.recordBytes) {
                                     directFetchOutcome = {
                                         attempted: true,
                                         hit: true,
@@ -729,7 +739,13 @@ export async function createLibp2pJsClientOrUseExistingOne(
                                     yield record.value;
                                     return;
                                 }
-                                directFetchOutcome = { attempted: true, hit: false, durationMs: Date.now() - directStart };
+                                directFetchOutcome = {
+                                    attempted: true,
+                                    hit: false,
+                                    durationMs: Date.now() - directStart,
+                                    providers: direct.providers,
+                                    subscribersTried: direct.subscribersTried
+                                };
                             } catch (directErr) {
                                 // A caller-initiated abort should surface as-is, not be masked by the
                                 // fallback path as ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED.
@@ -821,19 +837,45 @@ export async function createLibp2pJsClientOrUseExistingOne(
                             }
                         }
 
-                        if (!recordBytes)
-                            throw new PKCError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", {
+                        if (!recordBytes) {
+                            const subscribersAtResolveTime = helia.libp2p.services.pubsub.getSubscribers(ipnsPubsubTopic).length;
+                            const providers =
+                                directFetchOutcome.attempted && !directFetchOutcome.hit ? directFetchOutcome.providers : undefined;
+                            const failureDetails = {
                                 ipnsName,
                                 currentName,
                                 ipnsPubsubTopic,
                                 ipnsResolveOptions: options,
+                                providersFound: providers?.length,
                                 directFetchOutcome,
                                 warmupOutcome,
                                 routerErrors,
-                                subscribersAtResolveTime: helia.libp2p.services.pubsub.getSubscribers(ipnsPubsubTopic).length,
+                                subscribersAtResolveTime,
                                 httpRouters: pkcOptions.httpRoutersOptions,
                                 ...getHeliaDebugContext(helia)
-                            });
+                            };
+                            // Issue #377: providers were found but every one of them failed a LOCAL check
+                            // (relay-only, or no addr this runtime can dial), and the fallback never got a
+                            // subscriber either. That is a NAT-hosted/unseeded community, not a missing
+                            // name, so say so. Strict: any provider that got as far as a dial, or any
+                            // subscriber, keeps the generic error.
+                            const unreachableReason =
+                                providers && subscribersAtResolveTime === 0
+                                    ? summarizeProviderReachability({
+                                          providers,
+                                          subscribersTried: (directFetchOutcome as { subscribersTried?: number }).subscribersTried ?? 0
+                                      })
+                                    : undefined;
+                            if (unreachableReason)
+                                throw new PKCError("ERR_COMMUNITY_UNREACHABLE_FROM_THIS_CLIENT", {
+                                    reason: unreachableReason,
+                                    providerPeerIds: providers!.map((provider) => provider.peerId),
+                                    providers,
+                                    docsUrl: REACHABILITY_DOCS_URL,
+                                    ...failureDetails
+                                });
+                            throw new PKCError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", failureDetails);
+                        }
 
                         // Validate the record's signature against its routing key before trusting its value.
                         await ipnsValidator(routingKey, recordBytes);

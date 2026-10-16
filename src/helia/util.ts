@@ -618,6 +618,53 @@ export interface DirectFetchResult {
     durationMs: number;
 }
 
+// Issue #377: why the direct-fetch path could or could not use a provider it discovered. Decided by
+// LOCAL checks only (the router record's addrs against our transports and gater), never by a dial
+// outcome: a dial that reached a real address and failed is "dialed", because the peer was
+// reachable in principle and the failure may be transient. The aggregate over all providers is what
+// tells a NAT-hosted community apart from a non-existent one.
+export type ProviderReachabilityVerdict =
+    | "relay-only" // every announced addr is /p2p-circuit: never dialed here (issue #215), the host is behind NAT
+    | "no-dialable-addrs" // no announced addr, or none passes isDialable (no transport for it in this runtime, or gater-denied)
+    | "dialed"; // a dial ran against a real addr (it may still have failed, or the peer may have had no record)
+export interface ProviderReachability {
+    peerId: string;
+    verdict: ProviderReachabilityVerdict;
+    announcedAddrs: string[];
+}
+// The value of ERR_COMMUNITY_UNREACHABLE_FROM_THIS_CLIENT's `details.reason`, documented in
+// docs/reachability.md. Apps key on these strings, so they are part of the public surface.
+export type ProviderUnreachableReason =
+    | "relay-only-providers" // every provider is relay-only: the host is behind NAT, nobody public seeds it
+    | "no-dialable-provider-addrs"; // no provider announced an addr this runtime can dial (e.g. tcp/quic-only records in a browser)
+export const REACHABILITY_DOCS_URL = "https://github.com/pkcprotocol/pkc-js/blob/master/docs/reachability.md";
+
+// Strict on purpose: the specific error must be TRUE whenever it is shown. It fires only when
+// providers were found and every one of them failed a local check. A subscriber we fetched from, or
+// any provider that got as far as a dial, means the name is reachable from here and the miss has
+// some other cause (no record yet, transient dial failure), which stays on the generic error.
+export function summarizeProviderReachability({
+    providers,
+    subscribersTried
+}: {
+    providers: ProviderReachability[];
+    subscribersTried: number;
+}): ProviderUnreachableReason | undefined {
+    if (subscribersTried > 0 || providers.length === 0) return undefined;
+    if (providers.some((provider) => provider.verdict === "dialed")) return undefined;
+    return providers.every((provider) => provider.verdict === "relay-only") ? "relay-only-providers" : "no-dialable-provider-addrs";
+}
+
+// Both branches exhausted without a valid record. `recordBytes` is absent so a caller can narrow on
+// it; `providers` carries the per-provider verdicts so the caller can explain the miss (issue #377).
+export interface DirectFetchMiss {
+    recordBytes?: undefined;
+    providers: ProviderReachability[];
+    subscribersTried: number;
+    peerToError: Record<string, { errorName: string; errorMessage: string }>;
+    durationMs: number;
+}
+
 // Fetch an IPNS record over the libp2p fetch protocol (`/libp2p/fetch/0.0.1`) directly and in
 // parallel from BOTH (a) peers already subscribed to the topic on our gossipsub
 // (getSubscribers) and (b) providers freshly discovered from the HTTP routers (findProviders).
@@ -630,9 +677,9 @@ export interface DirectFetchResult {
 // helia via registerLookupFunction) answers a fetch request with the current record regardless
 // of subscription state, so we can fetch the moment a provider connection opens.
 //
-// Returns undefined (not throw) when both branches exhaust without a valid record, so the
-// caller can fall back to the legacy router.get() path. Throws only when the caller's signal
-// aborts with no winner.
+// Returns a DirectFetchMiss (not throw) when both branches exhaust without a valid record, so the
+// caller can fall back to the legacy router.get() path and, if that fails too, report WHY the
+// providers were unusable. Throws only when the caller's signal aborts with no winner.
 export async function directFetchIpnsRecordFromProviders({
     helia,
     pubsubTopic,
@@ -649,7 +696,7 @@ export async function directFetchIpnsRecordFromProviders({
     validate: (routingKey: Uint8Array, bytes: Uint8Array) => Promise<void>; // inject ipnsValidator
     log: Logger;
     options?: { signal?: AbortSignal; timeoutMs?: number };
-}): Promise<DirectFetchResult | undefined> {
+}): Promise<DirectFetchResult | DirectFetchMiss> {
     if (options?.signal?.aborted) throw new PKCError("ERR_IPNS_DIRECT_FETCH_ABORTED", { pubsubTopic, ...getHeliaDebugContext(helia) });
 
     const start = Date.now();
@@ -662,6 +709,13 @@ export async function directFetchIpnsRecordFromProviders({
     const resultController = new AbortController();
     let winner: DirectFetchResult | undefined;
     const peerToError: Record<string, { errorName: string; errorMessage: string }> = {};
+    // Per-provider verdicts (issue #377), keyed by peer id. Set from local checks when the
+    // provider is discovered and upgraded to "dialed" the moment a dial runs against a real addr.
+    const providerReachability = new Map<string, ProviderReachability>();
+    const markProviderDialed = (peerId: PeerId) => {
+        const entry = providerReachability.get(peerId.toString());
+        if (entry) entry.verdict = "dialed";
+    };
 
     const recordErr = (peerId: PeerId, e: unknown) => {
         const err = e as Error;
@@ -725,6 +779,7 @@ export async function directFetchIpnsRecordFromProviders({
                     .filter((addr) => !multiaddrIsCircuitRelay(addr));
                 // No fetch-usable addr yet: release the slot so a later qualifying merge retries.
                 if (directAddrs.length === 0 || !(await helia.libp2p.isDialable(directAddrs))) return "not-ready";
+                markProviderDialed(peerId); // a direct addr surfaced after all: the peer is reachable in principle
                 try {
                     const dialSignal = options?.signal
                         ? AbortSignal.any([options.signal, resultController.signal])
@@ -764,12 +819,25 @@ export async function directFetchIpnsRecordFromProviders({
                 // Does not consume a maxPeers slot for the same reason gater-denied providers
                 // don't (issue #188).
                 if (announcedAddrs.length > 0 && announcedAddrs.every(multiaddrIsCircuitRelay)) {
+                    providerReachability.set(peer.id.toString(), {
+                        peerId: peer.id.toString(),
+                        verdict: "relay-only",
+                        announcedAddrs: announcedAddrs.map(String)
+                    });
                     await helia.libp2p.peerStore.merge(peer.id, { multiaddrs: announcedAddrs }).catch(() => undefined);
                     log.trace("Skipping dial to circuit-only provider", peer.id.toString(), "for topic", pubsubTopic);
                     retryScheduler.markRetryable(peer.id);
                     continue;
                 }
                 const hasDialableAddr = announcedAddrs.length > 0 && (await helia.libp2p.isDialable(announcedAddrs));
+                // A provider with a dialable announced addr gets a real dial, so it is "dialed" whatever
+                // that dial's outcome. One without is "no-dialable-addrs" until the dial-by-id below
+                // proves the peerstore knew a usable addr the record lacked (issue #377).
+                providerReachability.set(peer.id.toString(), {
+                    peerId: peer.id.toString(),
+                    verdict: hasDialableAddr ? "dialed" : "no-dialable-addrs",
+                    announcedAddrs: announcedAddrs.map(String)
+                });
                 dialFetchTasks.push(
                     (async () => {
                         try {
@@ -784,9 +852,13 @@ export async function directFetchIpnsRecordFromProviders({
                                 ? AbortSignal.any([options.signal, resultController.signal])
                                 : resultController.signal;
                             await helia.libp2p.dial(peer.id, { signal: dialSignal }); // no-op if already connected
+                            markProviderDialed(peer.id); // the dial reached a real addr (peerstore knew one)
                             await tryFetchFromPeer(peer.id, "provider");
                         } catch (e) {
+                            // DialDeniedError / NoValidAddressesError mean no real addr was ever tried, so
+                            // the local verdict stands; any other failure happened on the wire.
                             if (isDialRetryableAfterAddrMerge(e)) retryScheduler.markRetryable(peer.id);
+                            else markProviderDialed(peer.id);
                             recordErr(peer.id, e);
                         }
                     })()
@@ -828,7 +900,12 @@ export async function directFetchIpnsRecordFromProviders({
     if (options?.signal?.aborted)
         throw new PKCError("ERR_IPNS_DIRECT_FETCH_ABORTED", { pubsubTopic, peerToError, ...getHeliaDebugContext(helia) });
 
-    return undefined;
+    return {
+        providers: [...providerReachability.values()],
+        subscribersTried: subscriberTasks.length,
+        peerToError,
+        durationMs: Date.now() - start
+    };
 }
 
 // The subset of @helia/ipns's internal localStore (local-store.js) the direct-fetch path needs.

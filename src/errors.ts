@@ -88,6 +88,7 @@ export enum messages {
     ERR_INVALID_KUBO_STYLE_TIMEOUT = 'The timeout option is not a number of milliseconds or a kubo-style duration string (e.g. "30s", "2m")',
     ERR_FETCH_CID_P2P_TIMEOUT_AFTER_RETRIES = "Fetching CID via Kubo-rpc-client/helia P2P has timed out after all retry attempts",
     ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED = "Resolved IPNS name to undefined. Does this IPNS name exist?",
+    ERR_COMMUNITY_UNREACHABLE_FROM_THIS_CLIENT = "This client found the community's providers but cannot connect to any of them: none announced an address this client can dial directly, which usually means the host is behind NAT and no publicly reachable node is seeding the community. See https://github.com/pkcprotocol/pkc-js/blob/master/docs/reachability.md for the cause and the fixes",
     ERR_IPNS_RESOLUTION_P2P_TIMEOUT = "IPNS resolution P2P timed out",
     ERR_IPNS_MAX_HOPS_EXCEEDED = "IPNS record resolution followed more than the maximum allowed /ipns/ -> /ipns/ delegation hops",
     ERR_RESOLVED_IPNS_TO_UNSUPPORTED_VALUE = "Resolved IPNS record to a value that is neither an /ipfs/ path nor an /ipns/ path",

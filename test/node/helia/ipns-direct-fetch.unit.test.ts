@@ -2,7 +2,8 @@ import net from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { circuitRelayServer } from "@libp2p/circuit-relay-v2";
 import { createLibp2pJsClientOrUseExistingOne } from "../../../dist/node/helia/helia-for-pkc.js";
-import { directFetchIpnsRecordFromProviders } from "../../../dist/node/helia/util.js";
+import { directFetchIpnsRecordFromProviders, summarizeProviderReachability } from "../../../dist/node/helia/util.js";
+import type { DirectFetchMiss, DirectFetchResult } from "../../../dist/node/helia/util.js";
 import { MockHttpRouter } from "../../../dist/node/runtime/node/test/mock-http-router.js";
 import { ipnsNameToIpnsOverPubsubTopic, pubsubTopicToDhtKeyCid } from "../../../dist/node/util.js";
 import Logger from "../../../dist/node/logger.js";
@@ -34,6 +35,11 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
     const FAST_FETCH_MAX_MS = 7_000;
 
     const log = Logger("pkc-js:test:direct-fetch");
+    // Narrow a direct-fetch result to a hit (issue #377 made the miss a value, not undefined).
+    const asHit = (result: DirectFetchResult | DirectFetchMiss): DirectFetchResult => {
+        expect(result.recordBytes, "expected a direct-fetch hit").to.not.equal(undefined);
+        return result as DirectFetchResult;
+    };
     const clientsToStop: Libp2pJsClient[] = [];
     const startedRouters: MockHttpRouter[] = [];
     let keyCounter = 0;
@@ -169,10 +175,10 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
         });
         const elapsed = Date.now() - start;
 
-        expect(result, "should have fetched a record from the provider").to.not.equal(undefined);
-        expect(result!.source).to.equal("provider");
-        expect(result!.peerId).to.equal(publisher.ID);
-        expect(uint8ArrayEquals(result!.recordBytes, marshalled), "served record bytes must match").to.equal(true);
+        expect(result.recordBytes, "should have fetched a record from the provider").to.not.equal(undefined);
+        expect(asHit(result).source).to.equal("provider");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
+        expect(uint8ArrayEquals(asHit(result).recordBytes, marshalled), "served record bytes must match").to.equal(true);
         expect(elapsed, `direct fetch took ${elapsed}ms, expected well under the 10s floor`).to.be.lessThan(FAST_FETCH_MAX_MS);
     });
 
@@ -229,9 +235,9 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
             result,
             "the dialable publisher must still be fetched from even when maxPeers undialable providers are yielded first"
         ).to.not.equal(undefined);
-        expect(result!.source).to.equal("provider");
-        expect(result!.peerId).to.equal(publisher.ID);
-        expect(uint8ArrayEquals(result!.recordBytes, marshalled), "served record bytes must match").to.equal(true);
+        expect(asHit(result).source).to.equal("provider");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
+        expect(uint8ArrayEquals(asHit(result).recordBytes, marshalled), "served record bytes must match").to.equal(true);
         expect(elapsed, `direct fetch took ${elapsed}ms, expected well under the 10s floor`).to.be.lessThan(FAST_FETCH_MAX_MS);
     });
 
@@ -289,9 +295,9 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
             result,
             "the record must be fetched via a retry dial once the slower router's dialable addrs are in the peerstore"
         ).to.not.equal(undefined);
-        expect(result!.source).to.equal("provider");
-        expect(result!.peerId).to.equal(publisher.ID);
-        expect(uint8ArrayEquals(result!.recordBytes, marshalled), "served record bytes must match").to.equal(true);
+        expect(asHit(result).source).to.equal("provider");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
+        expect(uint8ArrayEquals(asHit(result).recordBytes, marshalled), "served record bytes must match").to.equal(true);
         expect(elapsed, `direct fetch took ${elapsed}ms, expected well under the 10s floor`).to.be.lessThan(FAST_FETCH_MAX_MS);
     });
 
@@ -351,10 +357,12 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
         });
         const elapsed = Date.now() - start;
 
-        expect(result, "the record must be fetched via the retry dial despite the tarpit dial still hanging").to.not.equal(undefined);
-        expect(result!.source).to.equal("provider");
-        expect(result!.peerId).to.equal(publisher.ID);
-        expect(uint8ArrayEquals(result!.recordBytes, marshalled), "served record bytes must match").to.equal(true);
+        expect(result.recordBytes, "the record must be fetched via the retry dial despite the tarpit dial still hanging").to.not.equal(
+            undefined
+        );
+        expect(asHit(result).source).to.equal("provider");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
+        expect(uint8ArrayEquals(asHit(result).recordBytes, marshalled), "served record bytes must match").to.equal(true);
         expect(
             elapsed,
             `direct fetch took ${elapsed}ms: the retry needs only the completed provider stream (~${SLOW_ROUTER_DELAY_MS}ms), so ` +
@@ -395,8 +403,8 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
             log
         });
 
-        expect(result, "the dialable publisher must still be fetched from").to.not.equal(undefined);
-        expect(result!.peerId).to.equal(publisher.ID);
+        expect(result.recordBytes, "the dialable publisher must still be fetched from").to.not.equal(undefined);
+        expect(asHit(result).peerId).to.equal(publisher.ID);
 
         const dialedTargets = dialSpy.mock.calls.flatMap(([target]) => (Array.isArray(target) ? target : [target])).map(String);
         expect(
@@ -447,10 +455,10 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
         });
         const elapsed = Date.now() - start;
 
-        expect(result, "the record must be fetched once the direct addr lands in the peerstore").to.not.equal(undefined);
-        expect(result!.source).to.equal("provider");
-        expect(result!.peerId).to.equal(publisher.ID);
-        expect(uint8ArrayEquals(result!.recordBytes, marshalled), "served record bytes must match").to.equal(true);
+        expect(result.recordBytes, "the record must be fetched once the direct addr lands in the peerstore").to.not.equal(undefined);
+        expect(asHit(result).source).to.equal("provider");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
+        expect(uint8ArrayEquals(asHit(result).recordBytes, marshalled), "served record bytes must match").to.equal(true);
         expect(elapsed, `direct fetch took ${elapsed}ms, expected well under the 10s floor`).to.be.lessThan(FAST_FETCH_MAX_MS);
 
         // The dial that connected must have used the direct addr only — the circuit addr must
@@ -506,10 +514,12 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
         });
         const elapsed = Date.now() - start;
 
-        expect(result, "the record must be fetched via a retry once the slower router's addrs are merged").to.not.equal(undefined);
-        expect(result!.source).to.equal("provider");
-        expect(result!.peerId).to.equal(publisher.ID);
-        expect(uint8ArrayEquals(result!.recordBytes, marshalled), "served record bytes must match").to.equal(true);
+        expect(result.recordBytes, "the record must be fetched via a retry once the slower router's addrs are merged").to.not.equal(
+            undefined
+        );
+        expect(asHit(result).source).to.equal("provider");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
+        expect(uint8ArrayEquals(asHit(result).recordBytes, marshalled), "served record bytes must match").to.equal(true);
         expect(elapsed, `direct fetch took ${elapsed}ms, expected well under the 10s floor`).to.be.lessThan(FAST_FETCH_MAX_MS);
 
         const publisherDialTargets = dialSpy.mock.calls
@@ -568,9 +578,11 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
         });
         const elapsed = Date.now() - start;
 
-        expect(result, "the record must be fetched despite the black-hole router keeping the stream open").to.not.equal(undefined);
-        expect(result!.source).to.equal("provider");
-        expect(result!.peerId).to.equal(publisher.ID);
+        expect(result.recordBytes, "the record must be fetched despite the black-hole router keeping the stream open").to.not.equal(
+            undefined
+        );
+        expect(asHit(result).source).to.equal("provider");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
         expect(elapsed, `direct fetch took ${elapsed}ms, expected well under the 10s floor`).to.be.lessThan(3_500);
     });
 
@@ -660,10 +672,10 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
             log
         });
 
-        expect(result, "should have fetched a record from the subscriber").to.not.equal(undefined);
-        expect(result!.source).to.equal("subscriber");
-        expect(result!.peerId).to.equal(publisher.ID);
-        expect(uint8ArrayEquals(result!.recordBytes, marshalled)).to.equal(true);
+        expect(result.recordBytes, "should have fetched a record from the subscriber").to.not.equal(undefined);
+        expect(asHit(result).source).to.equal("subscriber");
+        expect(asHit(result).peerId).to.equal(publisher.ID);
+        expect(uint8ArrayEquals(asHit(result).recordBytes, marshalled)).to.equal(true);
     });
 
     // A provider that serves a record whose signature does NOT match the requested routing key must
@@ -685,12 +697,12 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
             log
         });
 
-        expect(result, "a bad-signature record must not win").to.equal(undefined);
+        expect(result.recordBytes, "a bad-signature record must not win").to.equal(undefined);
     });
 
     // When no source has the record (provider dials but its fetch returns undefined), the helper
-    // returns undefined so the caller can fall back to the legacy router.get() path.
-    it("returns undefined when the discovered provider does not have the record", async () => {
+    // returns a miss (no recordBytes) so the caller can fall back to the legacy router.get() path.
+    it("returns a miss when the discovered provider does not have the record", async () => {
         const { routingKey, topic, cid } = await makeRecord();
         const publisher = await startPublisherNode({ routingKey, recordToServe: undefined }); // lookup always misses
         const routerUrl = await startRouterServing(cid, publisher);
@@ -705,7 +717,112 @@ describeSkipIfRpc("directFetchIpnsRecordFromProviders (issue #185)", () => {
             log
         });
 
-        expect(result).to.equal(undefined);
+        expect(result.recordBytes).to.equal(undefined);
+        // The provider was dialed and answered, so this miss is NOT an unreachable verdict (issue #377).
+        const miss = result as DirectFetchMiss;
+        expect(miss.providers.map((provider) => provider.verdict)).to.deep.equal(["dialed"]);
+        expect(summarizeProviderReachability(miss)).to.equal(undefined);
+    });
+
+    // Issue #377: a miss must say WHY every discovered provider was unusable, from local checks
+    // only, so the resolve path can tell a NAT-hosted (unseeded) community apart from a name that
+    // does not exist. Every provider here announces nothing but a (dead) relay addr, which the
+    // #215 rule never dials.
+    it("reports a relay-only-providers verdict when every provider announces only p2p-circuit addrs (issue #377)", async () => {
+        const { routingKey, topic, cid } = await makeRecord();
+        const router = new MockHttpRouter();
+        await router.start();
+        startedRouters.push(router);
+        const relayPeerId = peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString();
+        const circuitOnlyPeerIds = [
+            peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString(),
+            peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString()
+        ];
+        for (const peerId of circuitOnlyPeerIds)
+            router.addProviderForTesting(cid, { ID: peerId, Addrs: [`/ip4/127.0.0.1/tcp/1/ws/p2p/${relayPeerId}/p2p-circuit`] });
+
+        const node = await createNode({ routers: [router.url] });
+        const result = await directFetchIpnsRecordFromProviders({
+            helia: node._helia,
+            pubsubTopic: topic,
+            routingKey,
+            maxPeers: 4,
+            validate: ipnsValidator,
+            log
+        });
+
+        expect(result.recordBytes).to.equal(undefined);
+        const miss = result as DirectFetchMiss;
+        expect(miss.subscribersTried).to.equal(0);
+        expect(miss.providers.map((provider) => provider.peerId).sort()).to.deep.equal([...circuitOnlyPeerIds].sort());
+        for (const provider of miss.providers) {
+            expect(provider.verdict).to.equal("relay-only");
+            expect(provider.announcedAddrs).to.have.lengthOf(1);
+        }
+        expect(summarizeProviderReachability(miss)).to.equal("relay-only-providers");
+    });
+
+    // Issue #377: the other local-check failure. A quic-v1 addr has no transport in js-libp2p
+    // (the browser analogue is a tcp-only record behind a WSS-only gater, issue #188), so
+    // isDialable rejects it and the dial-by-id fails with NoValidAddressesError. Mixed with a
+    // relay-only provider the aggregate is the broader no-dialable-provider-addrs reason.
+    it("reports a no-dialable-provider-addrs verdict when no provider announces an addr this runtime can dial (issue #377)", async () => {
+        const { routingKey, topic, cid } = await makeRecord();
+        const router = new MockHttpRouter();
+        await router.start();
+        startedRouters.push(router);
+        const relayPeerId = peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString();
+        const quicOnlyPeerId = peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString();
+        const circuitOnlyPeerId = peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString();
+        router.addProviderForTesting(cid, { ID: quicOnlyPeerId, Addrs: ["/ip4/127.0.0.1/udp/4001/quic-v1"] });
+        router.addProviderForTesting(cid, { ID: circuitOnlyPeerId, Addrs: [`/ip4/127.0.0.1/tcp/1/ws/p2p/${relayPeerId}/p2p-circuit`] });
+
+        const node = await createNode({ routers: [router.url] });
+        const result = await directFetchIpnsRecordFromProviders({
+            helia: node._helia,
+            pubsubTopic: topic,
+            routingKey,
+            maxPeers: 4,
+            validate: ipnsValidator,
+            log
+        });
+
+        expect(result.recordBytes).to.equal(undefined);
+        const miss = result as DirectFetchMiss;
+        const verdictByPeer = Object.fromEntries(miss.providers.map((provider) => [provider.peerId, provider.verdict]));
+        expect(verdictByPeer).to.deep.equal({ [quicOnlyPeerId]: "no-dialable-addrs", [circuitOnlyPeerId]: "relay-only" });
+        expect(summarizeProviderReachability(miss)).to.equal("no-dialable-provider-addrs");
+    });
+
+    // Issue #377, strictness: one provider that got as far as a real dial (here it answered, but
+    // had no record) means the name IS reachable from this client, so the miss carries no
+    // unreachable verdict even though the other provider is relay-only.
+    it("reports no unreachable verdict when at least one provider was dialed (issue #377)", async () => {
+        const { routingKey, topic, cid } = await makeRecord();
+        const publisher = await startPublisherNode({ routingKey, recordToServe: undefined }); // dialable, lookup misses
+        const router = new MockHttpRouter();
+        await router.start();
+        startedRouters.push(router);
+        router.addProviderForTesting(cid, publisher);
+        const relayPeerId = peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString();
+        const circuitOnlyPeerId = peerIdFromPrivateKey(await generateKeyPair("Ed25519")).toString();
+        router.addProviderForTesting(cid, { ID: circuitOnlyPeerId, Addrs: [`/ip4/127.0.0.1/tcp/1/ws/p2p/${relayPeerId}/p2p-circuit`] });
+
+        const node = await createNode({ routers: [router.url] });
+        const result = await directFetchIpnsRecordFromProviders({
+            helia: node._helia,
+            pubsubTopic: topic,
+            routingKey,
+            maxPeers: 4,
+            validate: ipnsValidator,
+            log
+        });
+
+        expect(result.recordBytes).to.equal(undefined);
+        const miss = result as DirectFetchMiss;
+        const verdictByPeer = Object.fromEntries(miss.providers.map((provider) => [provider.peerId, provider.verdict]));
+        expect(verdictByPeer).to.deep.equal({ [publisher.ID]: "dialed", [circuitOnlyPeerId]: "relay-only" });
+        expect(summarizeProviderReachability(miss)).to.equal(undefined);
     });
 
     // A pre-aborted caller signal must surface promptly as ERR_IPNS_DIRECT_FETCH_ABORTED, not hang.
