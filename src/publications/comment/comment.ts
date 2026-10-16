@@ -981,7 +981,8 @@ export class Comment
         const log = Logger("pkc-js:comment:update:_handleErrorEventFromRpc");
         const err = <CommentRpcErrorToTransmit>args.params.result;
         log("Received 'error' event from RPC", err);
-        if (err.details?.newUpdatingState) this._setUpdatingStateNoEmission(err.details.newUpdatingState);
+        // Never set err.details.newUpdatingState silently: the server's updatingstatechange notification
+        // for that state follows and is dropped as a duplicate, so the event would be lost (#364)
         if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
             this._changeCommentStateEmitEventEmitStateChangeEvent({
@@ -990,7 +991,11 @@ export class Comment
                 event: { name: "error", args: [err] }
             });
             await this._stopUpdateLoop();
-        } else this.emit("error", err);
+        } else
+            this._changeCommentStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: err.details?.newUpdatingState,
+                event: { name: "error", args: [err] }
+            });
     }
 
     private async _updateViaRpc() {
