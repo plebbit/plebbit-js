@@ -89,7 +89,8 @@ export async function buildSeededCommentRow({
     fields: Pick<CommentOptionsToSign, "content" | "title" | "parentCid" | "postCid" | "timestamp">;
 }): Promise<{ cid: string; row: CommentsTableRowInsert }> {
     // A wire author with no fields is dropped by cleanWireAuthor, which would leave the stored comment without the
-    // `author` its signature names; production comments carry a displayName, so these do too.
+    // `author` its signature names; production comments carry a displayName, so these do too. Whether a real
+    // community does the same to a pubsub comment signed with `author: {}` is being investigated in issue #387.
     const toSign: CommentOptionsToSign = {
         ...fields,
         author: { displayName: `seeded ${signer.address.slice(-6)}` },
