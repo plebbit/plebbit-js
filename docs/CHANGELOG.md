@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.109](https://github.com/pkcprotocol/pkc-js/compare/v0.0.108...v0.0.109) (2026-10-16)
+
+### Bug Fixes
+
+* **clients:** decode streamed gateway bodies with stream:true to keep split multi-byte chars ([#395](https://github.com/pkcprotocol/pkc-js/issues/395)) ([#396](https://github.com/pkcprotocol/pkc-js/issues/396)) ([fba1c51](https://github.com/pkcprotocol/pkc-js/commit/fba1c5143a4aa25f9f1939094671a4fe8df7f54b)), closes [#321](https://github.com/pkcprotocol/pkc-js/issues/321)
+
 ## [0.0.108](https://github.com/pkcprotocol/pkc-js/compare/v0.0.107...v0.0.108) (2026-10-16)
 
 ### Features
