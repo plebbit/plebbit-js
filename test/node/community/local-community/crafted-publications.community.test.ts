@@ -98,10 +98,20 @@ type Expected =
 
 type CraftedCase = {
     name: string;
-    kind: "comment" | "commentEdit" | "commentModeration";
+    kind: "comment" | "commentEdit" | "commentModeration" | "vote" | "communityEdit";
     // Mutates the pkc-js-signed wire publication in place; it is re-signed verbatim afterwards
     craft: (publication: WirePublication) => void;
     expected: Expected;
+    // Community configuration the case needs, applied before the community starts
+    setup?: (community: LocalCommunity) => Promise<void>;
+};
+
+// FlairSchema is a looseObject, so an unknown key inside a flair must survive the store's .strip() parse.
+// Post flairs have to be enabled and allowlisted, and the allowlist match is a deep equality, so the
+// allowlist carries the same unknown key.
+const flairWithUnknownKey = { text: "crafted", unknownKey: { nested: true } };
+const allowPostFlairs = async (community: LocalCommunity) => {
+    await community.edit({ features: { postFlairs: true }, flairs: { post: [flairWithUnknownKey] } });
 };
 
 const craftedCases: CraftedCase[] = [
@@ -187,6 +197,59 @@ const craftedCases: CraftedCase[] = [
             p.author = {};
         },
         expected: { outcome: "rejected", reason: messages.ERR_PUBLICATION_AUTHOR_IS_AN_EMPTY_OBJECT }
+    },
+    {
+        // A vote is never republished under the author's signature, so a changed byte could not have
+        // frozen the board; the rule still applies uniformly through the shared validation.
+        name: "vote with author: {}",
+        kind: "vote",
+        craft: (p) => {
+            p.author = {};
+        },
+        expected: { outcome: "rejected", reason: messages.ERR_PUBLICATION_AUTHOR_IS_AN_EMPTY_OBJECT }
+    },
+    {
+        name: "vote with a lone surrogate in author.displayName",
+        kind: "vote",
+        craft: (p) => {
+            p.author = { displayName: `voter ${LONE_SURROGATE}` };
+        },
+        expected: { outcome: "rejected", reason: messages.ERR_PUBLICATION_HAS_MALFORMED_UNICODE_STRING }
+    },
+    {
+        // Same for a community edit: its fields land in the record the community signs itself
+        name: "community edit with author: {}",
+        kind: "communityEdit",
+        craft: (p) => {
+            p.author = {};
+        },
+        expected: { outcome: "rejected", reason: messages.ERR_PUBLICATION_AUTHOR_IS_AN_EMPTY_OBJECT }
+    },
+    {
+        name: "community edit with a lone surrogate in the description",
+        kind: "communityEdit",
+        craft: (p) => {
+            p.communityEdit = { description: `described ${LONE_SURROGATE}` };
+        },
+        expected: { outcome: "rejected", reason: messages.ERR_PUBLICATION_HAS_MALFORMED_UNICODE_STRING }
+    },
+    {
+        name: "comment with a flair carrying an unknown key",
+        kind: "comment",
+        craft: (p) => {
+            p.flairs = [flairWithUnknownKey];
+        },
+        expected: { outcome: "accepted" },
+        setup: allowPostFlairs
+    },
+    {
+        name: "comment edit with a flair carrying an unknown key",
+        kind: "commentEdit",
+        craft: (p) => {
+            p.flairs = [flairWithUnknownKey];
+        },
+        expected: { outcome: "accepted" },
+        setup: allowPostFlairs
     }
 ];
 
@@ -217,12 +280,13 @@ describeSkipIfRpc("Issue #387: crafted publications are rejected or stored verba
                 const moderatorSigner = await pkc.createSigner();
                 if (crafted.kind === "commentModeration")
                     await community.edit({ roles: { [moderatorSigner.address]: { role: "moderator" } } });
+                if (crafted.setup) await crafted.setup(community);
                 await community.start();
                 await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
 
                 // A valid post for the edit and moderation cases to target; its record is published before they go out
                 let targetPost: Comment | undefined;
-                if (crafted.kind !== "comment") {
+                if (crafted.kind !== "comment" && crafted.kind !== "communityEdit") {
                     const updatedAtBeforePost = community.updatedAt!;
                     targetPost = await publishRandomPost({ communityAddress: community.address, pkc });
                     await resolveWhenConditionIsTrue({
@@ -233,22 +297,41 @@ describeSkipIfRpc("Issue #387: crafted publications are rejected or stored verba
 
                 // Build the publication the way pkc-js would, then craft and re-sign it verbatim
                 const editContent = `edited ${Date.now()}`;
-                const publication: Publication =
-                    crafted.kind === "comment"
-                        ? await generateMockPost({ communityAddress: community.address, pkc })
-                        : crafted.kind === "commentEdit"
-                          ? await pkc.createCommentEdit({
+                const newDescription = `described ${Date.now()}`;
+                const createPublication = async (): Promise<Publication> => {
+                    switch (crafted.kind) {
+                        case "comment":
+                            return generateMockPost({ communityAddress: community.address, pkc });
+                        case "commentEdit":
+                            return pkc.createCommentEdit({
                                 commentCid: targetPost!.cid!,
                                 communityAddress: community.address,
                                 content: editContent,
                                 signer: targetPost!.signer!
-                            })
-                          : await pkc.createCommentModeration({
+                            });
+                        case "commentModeration":
+                            return pkc.createCommentModeration({
                                 commentCid: targetPost!.cid!,
                                 communityAddress: community.address,
                                 commentModeration: { pinned: true },
                                 signer: moderatorSigner
                             });
+                        case "vote":
+                            return pkc.createVote({
+                                commentCid: targetPost!.cid!,
+                                communityAddress: community.address,
+                                vote: 1,
+                                signer: moderatorSigner
+                            });
+                        case "communityEdit":
+                            return pkc.createCommunityEdit({
+                                communityAddress: community.address,
+                                communityEdit: { description: newDescription },
+                                signer: community.signer
+                            });
+                    }
+                };
+                const publication = await createPublication();
                 if (!publication.raw.pubsubMessageToPublish) {
                     await publication._initCommunity();
                     await publication._signPublicationWithCommunityFields();
@@ -356,7 +439,23 @@ describeSkipIfRpc("Issue #387: crafted publications are rejected or stored verba
                 const readerErrors: Error[] = [];
                 remoteCommunity.on("error", (e) => readerErrors.push(e));
                 await remoteCommunity.update();
-                if (crafted.kind === "comment") {
+                if (crafted.kind === "communityEdit") {
+                    try {
+                        await withTimeout(
+                            resolveWhenConditionIsTrue({
+                                toUpdate: remoteCommunity,
+                                predicate: async () => remoteCommunity!.description === newDescription
+                            }),
+                            20_000,
+                            "the reader to see the community edit applied"
+                        );
+                    } catch (e) {
+                        log(crafted.name, (e as Error).message);
+                    }
+                    expect
+                        .soft(remoteCommunity.description, tag("reader must see the accepted community edit applied"))
+                        .toBe(newDescription);
+                } else if (crafted.kind === "comment") {
                     const cid = verification.commentUpdate!.cid;
                     let postInReaderPages: unknown;
                     try {
@@ -391,7 +490,11 @@ describeSkipIfRpc("Issue #387: crafted publications are rejected or stored verba
                     const readerCommentErrors: Error[] = [];
                     readerComment.on("error", (e) => readerCommentErrors.push(e));
                     const applied = () =>
-                        crafted.kind === "commentEdit" ? readerComment.content === editContent : readerComment.pinned === true;
+                        crafted.kind === "commentEdit"
+                            ? readerComment.content === editContent
+                            : crafted.kind === "vote"
+                              ? readerComment.upvoteCount === 1
+                              : readerComment.pinned === true;
                     await readerComment.update();
                     try {
                         await withTimeout(
