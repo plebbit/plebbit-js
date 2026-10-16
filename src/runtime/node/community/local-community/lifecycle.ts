@@ -36,10 +36,17 @@ import type { RemoteCommunity } from "../../../../community/remote-community.js"
 
 export async function publishLoop(community: LocalCommunity, syncIntervalMs: number) {
     const log = Logger("pkc-js:local-community:_publishLoop");
-    // we need to continue the loop if there's at least one pending edit
+    // After stop() the loop runs on while an edit is pending so the record carrying it goes out before the community
+    // goes down. Pending edits drain only on a successful publish, so a cycle that fails after stop() ends the loop
+    // instead of retrying forever (the edit is in the DB and ships on the next start): otherwise an all-throwing page
+    // sort configuration, or an unreachable Kubo, would make stop() hang.
+    let syncFailedSinceStop = false;
 
     const shouldStopPublishLoop = () => {
-        return community.state !== "started" || (community._stopHasBeenCalled && community._pendingEditProps.length === 0);
+        return (
+            community.state !== "started" ||
+            (community._stopHasBeenCalled && (community._pendingEditProps.length === 0 || syncFailedSinceStop))
+        );
     };
 
     const waitUntilNextSync = async () => {
@@ -70,6 +77,7 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
             // must not break publishing either.
             await reprovideAnchorRecordIfDue(community).catch((e) => log.error("Failed to re-provide the anchor record", e));
         } catch (e) {
+            if (community._stopHasBeenCalled) syncFailedSinceStop = true;
             community.emit("error", e as Error);
         } finally {
             await waitUntilNextSync();
@@ -202,6 +210,9 @@ export async function start(community: LocalCommunity) {
         // on every start until the owner fixes it, because a suppressed error is how a misconfiguration
         // gets forgotten.
         await emitChallengeSettingsValidationErrors(community, log);
+        // Resolve settings.pages against the sort files now, once, so page generation reuses the instances; each
+        // invalid entry is its own error event and is skipped, the rest of the config still publishes (issue #73)
+        await community._loadPageSorts();
     } catch (e) {
         await community.stop(); // Make sure to reset the community state
         //@ts-expect-error
@@ -496,6 +507,9 @@ export async function stop(community: LocalCommunity) {
     }
 }
 
+// How many comments delete() reads, queues and unpins at a time (issue #389). 5,000 cids is a few hundred KB.
+export const DELETE_UNPIN_SLICE_SIZE = 5000;
+
 export async function deleteCommunity(community: LocalCommunity) {
     const log = Logger("pkc-js:local-community:delete");
     log.trace(`Attempting to stop the community (${community.address}) before deleting, if needed`);
@@ -533,10 +547,22 @@ export async function deleteCommunity(community: LocalCommunity) {
     // scenario 3: we call delete() on a community that is started
     // scenario 4: we call delete() on a community that is not started, but the same community is started in pkc._startedCommunities[address]
 
-    try {
-        await community._addOldPageCidsToCidsToUnpin(community.raw?.communityIpfs?.posts, undefined);
-    } catch (e) {
-        log.error("Failed to add old page cids from community.posts to be unpinned", e);
+    // The posts pages of the last record, from what the community recorded when it published them
+    // (_postsAllPageCids, the same list the publish cycle unpins superseded pages from) plus the first
+    // page of each sort the record names. Not by walking the pages: following the nextCid chains means
+    // fetching and parsing every page of the board, 9.4 GB of JSON for a million comments, which ran the
+    // heap out before a single comment was unpinned (issue #389). The walk stays only for a board whose
+    // internal state predates the recorded list.
+    const lastPosts = community.raw?.communityIpfs?.posts;
+    if (community._postsAllPageCids) {
+        for (const cid of Object.values(community._postsAllPageCids).flat()) community._cidsToUnPin.add(cid);
+        for (const cid of Object.values(lastPosts?.pageCids ?? {})) community._cidsToUnPin.add(cid);
+    } else if (lastPosts) {
+        try {
+            await community._addOldPageCidsToCidsToUnpin(lastPosts, undefined);
+        } catch (e) {
+            log.error("Failed to add old page cids from community.posts to be unpinned", e);
+        }
     }
     if (community.ipnsPubsubTopicRoutingCid) community._cidsToUnPin.add(community.ipnsPubsubTopicRoutingCid);
     // pubsubTopicRoutingCid only reflects the topic of the last published record, so derive the
@@ -545,25 +571,28 @@ export async function deleteCommunity(community: LocalCommunity) {
     const configuredChallengeTopic = communityChallengePubsubTopic(community);
     if (configuredChallengeTopic) community._cidsToUnPin.add(pubsubTopicToDhtKey(configuredChallengeTopic));
     if (community.pubsubTopicRoutingCid) community._cidsToUnPin.add(community.pubsubTopicRoutingCid);
-    try {
-        await community.initDbHandlerIfNeeded();
-        await community._dbHandler.initDbIfNeeded();
-        const cidsAndReplies = community._dbHandler.queryAllCommentCidsAndTheirReplies();
-        for (const comment of cidsAndReplies) {
-            community._cidsToUnPin.add(comment.cid);
-            for (const pageCid of comment.allPageCids) {
-                community._cidsToUnPin.add(pageCid);
-            }
-        }
-    } catch (e) {
-        log.error("Failed to query all cids under this community to delete them", e);
-    }
     if (community.updateCid) community._cidsToUnPin.add(community.updateCid);
     if (community.statsCid) community._cidsToUnPin.add(community.statsCid);
 
+    // Every comment and every reply page of the board, unpinned one slice at a time. The grace period is
+    // bypassed throughout: the community is being deleted, nothing will ever run a later unpin pass for
+    // it. A slice is queued, unpinned and gone before the next one is read, so a board of a million
+    // comments costs a slice of memory, not the board (issue #389); a cid whose pin.rm failed stays
+    // queued for the next pass and is logged by unpinStaleCids.
     try {
-        // Bypass the unpin grace period: the community is being deleted, nothing will ever run a
-        // later unpin pass for it.
+        await community.initDbHandlerIfNeeded();
+        await community._dbHandler.initDbIfNeeded();
+        for (const slice of community._dbHandler.iterateCommentCidsAndTheirPageCids(DELETE_UNPIN_SLICE_SIZE)) {
+            for (const comment of slice) {
+                community._cidsToUnPin.add(comment.cid);
+                for (const pageCid of comment.allPageCids) community._cidsToUnPin.add(pageCid);
+            }
+            await unpinStaleCids(community, { bypassGracePeriod: true });
+        }
+    } catch (e) {
+        log.error("Failed to unpin the comments of this community before deleting it", e);
+    }
+    try {
         await unpinStaleCids(community, { bypassGracePeriod: true });
     } catch (e) {
         log.error("Failed to unpin stale cids before deleting", e);

@@ -50,6 +50,7 @@ import { NAME_RESOLVED_FALSE_TTL_MS, NAME_RESOLVED_TRUE_TTL_MS, NAME_RESOLVE_FAI
 import { InflightFetchManager } from "../util/inflight-fetch-manager.js";
 import type {
     ChallengeFileFactoryInput,
+    PageSortFileFactoryInput,
     CreateInstanceOfLocalOrRemoteCommunityOptions,
     CreateNewLocalCommunityParsedOptions,
     CreateNewLocalCommunityUserOptions,
@@ -183,6 +184,7 @@ export class PKC extends PKCTypedEmitter<PKCEvents> implements ParsedPKCOptions 
 
     settings: {
         challenges?: Record<string, ChallengeFileFactoryInput>;
+        pageSorts?: Record<string, PageSortFileFactoryInput>; // PKC.pageSorts: page sorts a consumer registered or shadowed, by name (issue #73)
     };
 
     // private props
@@ -311,7 +313,8 @@ export class PKC extends PKCTypedEmitter<PKCEvents> implements ParsedPKCOptions 
         this.userAgent = this.parsedPKCOptions.userAgent;
         this.httpRoutersOptions = this.parsedPKCOptions.httpRoutersOptions;
         this.settings = {
-            challenges: this.parsedPKCOptions.challenges
+            challenges: this.parsedPKCOptions.challenges,
+            pageSorts: this.parsedPKCOptions.pageSorts
         };
         // nameResolvers contains functions that can't be serialized over RPC, so skip for RPC clients
         this.nameResolvers = this.pkcRpcClientsOptions ? undefined : this.parsedPKCOptions.nameResolvers;

@@ -112,10 +112,10 @@ describe("comment-updates: adjustPostUpdatesBucketsIfNeeded", () => {
 
 describe("comment-updates: updateCommentsThatNeedToBeUpdated", () => {
     it("returns an empty array when there are no comments to update", async () => {
-        const queryCommentsToBeUpdated = vi.fn().mockReturnValue([]);
+        const queryCidsToBeUpdatedByDepth = vi.fn().mockReturnValue(new Map());
         const community = {
             address: "community.bso",
-            _dbHandler: { queryCommentsToBeUpdated },
+            _dbHandler: { queryCidsToBeUpdatedByDepth },
             _communityUpdateTrigger: false
         } as unknown as LocalCommunity;
 

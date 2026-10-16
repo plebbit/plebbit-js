@@ -111,11 +111,56 @@ export const signBufferEd25519 = async (bufferToSign: Uint8Array, privateKeyBase
     if (privateKeyBuffer.length !== 32)
         throw Error(`verifyBufferEd25519 publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`);
     // do not use to sign strings, it doesn't encode properly in the browser
+    const webCryptoSignature = await _signWithWebCryptoEd25519(bufferToSign, privateKeyBuffer, privateKeyBase64);
+    if (webCryptoSignature) return webCryptoSignature;
     const signature = ed25519.sign(bufferToSign, privateKeyBuffer);
     return signature;
 };
 
 let webCryptoEd25519Supported: boolean | undefined;
+
+// Signing keys imported into WebCrypto, by private key: a community signs every CommentUpdate with one key, and the
+// import is the expensive part. Ed25519 signatures are deterministic, so WebCrypto and noble produce the same bytes;
+// the native path (about 10x faster than noble in Node, issue #351) is taken when available and noble is the fallback
+// for any environment or error. Bounded: the few signers a process holds.
+type WebCryptoKey = Awaited<ReturnType<typeof globalThis.crypto.subtle.importKey>>;
+const webCryptoSigningKeys = new Map<string, Promise<WebCryptoKey | undefined>>();
+const MAX_WEB_CRYPTO_SIGNING_KEYS = 64;
+
+const _signWithWebCryptoEd25519 = async (
+    bufferToSign: Uint8Array,
+    privateKeyBuffer: Uint8Array,
+    privateKeyBase64: string
+): Promise<Uint8Array | undefined> => {
+    if (!(await _isWebCryptoEd25519Supported())) return undefined;
+    // the key as JWK: the only import format WebCrypto takes for a raw Ed25519 seed
+    let keyPromise = webCryptoSigningKeys.get(privateKeyBase64);
+    if (!keyPromise) {
+        keyPromise = (async () => {
+            try {
+                const jwk = {
+                    kty: "OKP",
+                    crv: "Ed25519",
+                    d: uint8ArrayToString(privateKeyBuffer, "base64url"),
+                    x: uint8ArrayToString(ed25519.getPublicKey(privateKeyBuffer), "base64url")
+                };
+                return await globalThis.crypto.subtle.importKey("jwk", jwk, { name: "Ed25519" }, false, ["sign"]);
+            } catch {
+                return undefined;
+            }
+        })();
+        if (webCryptoSigningKeys.size >= MAX_WEB_CRYPTO_SIGNING_KEYS)
+            webCryptoSigningKeys.delete(webCryptoSigningKeys.keys().next().value!);
+        webCryptoSigningKeys.set(privateKeyBase64, keyPromise);
+    }
+    const cryptoKey = await keyPromise;
+    if (!cryptoKey) return undefined;
+    try {
+        return new Uint8Array(await globalThis.crypto.subtle.sign("Ed25519", cryptoKey, bufferToSign));
+    } catch {
+        return undefined;
+    }
+};
 
 const _isWebCryptoEd25519Supported = async (): Promise<boolean> => {
     if (webCryptoEd25519Supported === undefined) {
@@ -886,6 +931,11 @@ export async function verifyCommentUpdate({
             const pageCid: string | undefined = update.replies.pageCids?.[replySortName];
             const page = update.replies.pages[replySortName];
             if (!page) throw Error("Failed to find page to verify within comment update");
+            // A preloaded flat sort (settings.pages, #73) embeds the post's flattened descendant subtree, so its comments
+            // are not all direct replies; verify those against the post only, the rule RepliesPages applies to fetched
+            // flat pages. Flat sorts exist for posts only, so a reply's pages are always verified as its direct replies.
+            const isDirectRepliesPage = page.comments.every((pageComment) => pageComment.comment.depth === comment.depth + 1);
+            const parentComment = isDirectRepliesPage || comment.depth !== 0 ? comment : { postCid: comment.cid };
             const validity = await verifyPage({
                 pageCid,
                 page,
@@ -893,7 +943,7 @@ export async function verifyCommentUpdate({
                 resolveAuthorNames,
                 clientsManager,
                 community,
-                parentComment: comment,
+                parentComment,
                 validatePages,
                 validateUpdateSignature,
                 abortSignal

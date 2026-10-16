@@ -162,11 +162,11 @@ describe("cleanup: repinCommentsIPFSIfNeeded", () => {
             .mockImplementationOnce(async function* () {
                 yield { cid: "QmLatestComment", type: "recursive" };
             });
-        const queryAllCommentsOrderedByIdAsc = vi.fn();
+        const iterateAllCommentsOrderedByIdAsc = vi.fn();
         const community = {
             address: "community.bso",
             _clientsManager: { getDefaultKuboRpcClient: () => ({ _client: { pin: { ls: pinLsSpy } } }) },
-            _dbHandler: { queryLatestCommentCid: () => ({ cid: "QmLatestComment" }), queryAllCommentsOrderedByIdAsc }
+            _dbHandler: { queryLatestCommentCid: () => ({ cid: "QmLatestComment" }), iterateAllCommentsOrderedByIdAsc }
         } as unknown as LocalCommunity;
 
         vi.useFakeTimers();
@@ -180,7 +180,7 @@ describe("cleanup: repinCommentsIPFSIfNeeded", () => {
 
         // pin.ls was retried (2 calls), the pin was found on the 2nd attempt, so nothing was repinned.
         expect(pinLsSpy).toHaveBeenCalledTimes(2);
-        expect(queryAllCommentsOrderedByIdAsc).not.toHaveBeenCalled();
+        expect(iterateAllCommentsOrderedByIdAsc).not.toHaveBeenCalled();
     });
 
     it("does NOT retry an 'is not pinned' pin.ls (it is the legitimate repin signal)", async () => {
@@ -194,7 +194,7 @@ describe("cleanup: repinCommentsIPFSIfNeeded", () => {
             _clientsManager: { getDefaultKuboRpcClient: () => ({ _client: { pin: { ls: pinLsSpy } } }) },
             _dbHandler: {
                 queryLatestCommentCid: () => ({ cid: "QmLatestComment" }),
-                queryAllCommentsOrderedByIdAsc: (): never[] => [],
+                iterateAllCommentsOrderedByIdAsc: (): never[] => [],
                 forceUpdateOnAllComments
             }
         } as unknown as LocalCommunity;
@@ -203,6 +203,101 @@ describe("cleanup: repinCommentsIPFSIfNeeded", () => {
 
         expect(pinLsSpy).toHaveBeenCalledTimes(1); // not retried
         expect(forceUpdateOnAllComments).toHaveBeenCalledTimes(1); // went down the repin path instead
+    });
+
+    // The walk used to read the whole board up front: `queryAllCommentsOrderedByIdAsc()` plus one promise
+    // per comment built before the first pin ran, which on a 3.1M-comment board was 2.7 GB of rows and an
+    // OOM before the publish loop started (issue #359). These tests hand the walk a batching reader and
+    // nothing else, so a code state that reads every row at once finds no method to call.
+    const pinLsSaysNotPinned = () =>
+        vi.fn().mockImplementation(() => {
+            throw new Error("path 'QmLatestComment' is not pinned");
+        });
+
+    it("pins the board one batch at a time, in order, finishing each batch before reading the next", async () => {
+        const pinnedCids: string[] = [];
+        // How many comments were already pinned when each batch was asked for. A walk that reads the board
+        // up front asks for every batch before pinning anything, so this would be [0, 0, 0].
+        const pinsDoneWhenBatchRequested: number[] = [];
+        const batches = [[{ cid: "QmA" }, { cid: "QmB" }], [{ cid: "QmC" }, { cid: "QmD" }], [{ cid: "QmLatestComment" }]];
+        const forceUpdateOnAllComments = vi.fn();
+        const community = {
+            address: "community.bso",
+            _clientsManager: { getDefaultKuboRpcClient: () => ({ _client: { pin: { ls: pinLsSaysNotPinned() } } }) },
+            _dbHandler: {
+                queryLatestCommentCid: () => ({ cid: "QmLatestComment" }),
+                *iterateAllCommentsOrderedByIdAsc() {
+                    for (const batch of batches) {
+                        pinsDoneWhenBatchRequested.push(pinnedCids.length);
+                        yield batch;
+                    }
+                },
+                forceUpdateOnAllComments
+            },
+            _addCommentRowToIPFS: async (row: { cid: string }) => {
+                pinnedCids.push(row.cid);
+            }
+        } as unknown as LocalCommunity;
+
+        await repinCommentsIPFSIfNeeded(community);
+
+        expect(pinnedCids).to.deep.equal(["QmA", "QmB", "QmC", "QmD", "QmLatestComment"]);
+        expect(pinsDoneWhenBatchRequested).to.deep.equal([0, 2, 4]);
+        expect(forceUpdateOnAllComments).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not pin comments waiting for approval", async () => {
+        const pinnedCids: string[] = [];
+        const community = {
+            address: "community.bso",
+            _clientsManager: { getDefaultKuboRpcClient: () => ({ _client: { pin: { ls: pinLsSaysNotPinned() } } }) },
+            _dbHandler: {
+                queryLatestCommentCid: () => ({ cid: "QmLatestComment" }),
+                iterateAllCommentsOrderedByIdAsc: () => [[{ cid: "QmPending", pendingApproval: true }, { cid: "QmLatestComment" }]],
+                forceUpdateOnAllComments: vi.fn()
+            },
+            _addCommentRowToIPFS: async (row: { cid: string }) => {
+                pinnedCids.push(row.cid);
+            }
+        } as unknown as LocalCommunity;
+
+        await repinCommentsIPFSIfNeeded(community);
+
+        expect(pinnedCids).to.deep.equal(["QmLatestComment"]);
+    });
+
+    // The pin.ls probe above treats the newest comment as standing for the whole board, so a failed repin
+    // must never leave that comment pinned: the next start would take the probe as "the board is pinned"
+    // and never retry. Batching is what makes that hold: the batch carrying it is never even read.
+    it("stops the walk at the first failing batch, so the newest comment stays unpinned", async () => {
+        const pinnedCids: string[] = [];
+        const batches = [[{ cid: "QmA" }], [{ cid: "QmBoom" }], [{ cid: "QmLatestComment" }]];
+        const batchesRead: number[] = [];
+        const forceUpdateOnAllComments = vi.fn();
+        const community = {
+            address: "community.bso",
+            _clientsManager: { getDefaultKuboRpcClient: () => ({ _client: { pin: { ls: pinLsSaysNotPinned() } } }) },
+            _dbHandler: {
+                queryLatestCommentCid: () => ({ cid: "QmLatestComment" }),
+                *iterateAllCommentsOrderedByIdAsc() {
+                    for (let i = 0; i < batches.length; i++) {
+                        batchesRead.push(i);
+                        yield batches[i];
+                    }
+                },
+                forceUpdateOnAllComments
+            },
+            _addCommentRowToIPFS: async (row: { cid: string }) => {
+                if (row.cid === "QmBoom") throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+                pinnedCids.push(row.cid);
+            }
+        } as unknown as LocalCommunity;
+
+        await expect(repinCommentsIPFSIfNeeded(community)).rejects.toThrow("Unable to recreate the CommentIpfs");
+
+        expect(batchesRead).to.deep.equal([0, 1]); // the batch holding the newest comment was never read
+        expect(pinnedCids).to.deep.equal(["QmA"]);
+        expect(forceUpdateOnAllComments).not.toHaveBeenCalled();
     });
 });
 

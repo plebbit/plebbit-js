@@ -44,7 +44,9 @@ describe("ChallengeExclude identity fields", () => {
         // A stale owner config must fail loudly: silently accepting `role` would yield an exclude with no conditions,
         // i.e. a pending-approval challenge that no longer exempts moderators
         expect(() => parseSetting({ role: ["moderator"] })).to.throw(messages.ERR_CHALLENGE_EXCLUDE_ROLE_FIELD_RENAMED);
-        expect(() => parseSetting({ role: ["moderator"], roles: ["moderator"] })).to.throw(messages.ERR_CHALLENGE_EXCLUDE_ROLE_FIELD_RENAMED);
+        expect(() => parseSetting({ role: ["moderator"], roles: ["moderator"] })).to.throw(
+            messages.ERR_CHALLENGE_EXCLUDE_ROLE_FIELD_RENAMED
+        );
         expect(parseSetting({ roles: ["moderator"] }).roles).to.deep.equal(["moderator"]);
     });
 

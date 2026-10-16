@@ -1,4 +1,4 @@
-import { PKC } from "../pkc/pkc.js";
+import type { PKC } from "../pkc/pkc.js";
 import assert from "assert";
 import {
     calculateIpfsCidV0,

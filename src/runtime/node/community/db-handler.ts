@@ -3,7 +3,8 @@ import {
     hideClassPrivateProps,
     isStringDomain,
     removeNullUndefinedValues,
-    timestamp
+    timestamp,
+    withSortedKeys
 } from "../../../util.js";
 import { PKCError } from "../../../pkc-error.js";
 import path from "path";
@@ -13,7 +14,7 @@ import os from "os";
 import Logger from "../../../logger.js";
 import { deleteOldCommunityInWindows, deriveCommentIpfsFromCommentTableRow, getDefaultCommunityDbConfig } from "../util.js";
 import env from "../../../version.js";
-import Database, { type Database as BetterSqlite3Database } from "better-sqlite3";
+import Database, { type Database as BetterSqlite3Database, type Statement } from "better-sqlite3";
 import { sha256 } from "js-sha256";
 
 import lockfile from "@pkcprotocol/proper-lock-file";
@@ -64,15 +65,32 @@ import {
     parseCommentEditsRow,
     parseCommentUpdateRow,
     parseCommentsTableRow,
-    parsePrefixedComment,
     parseVoteRow,
     parseCommentModerationRow,
-    type PrefixedCommentRow
+    createPositionalCommentRowMapper,
+    type PositionalCommentRowMapper
 } from "./db-row-parser.js";
 import { ZodError } from "zod";
 import { messages } from "../../../errors.js";
 import type { PseudonymityAliasRow, PurgedCommentTableRows } from "./db-handler-types.js";
 import { getAuthorNameFromWire } from "../../../publications/publication-author.js";
+import type { PageSortReplyEntry } from "../../../pages/types.js";
+
+// What the update cycle calculates per comment (issue #352): everything of a CommentUpdate but the signature, the
+// timestamp, the reply pages and the protocol version
+export type CalculatedCommentUpdate = Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">;
+export type CommentUpdateCalculationInput = Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp"> & {
+    challengeCommentUpdate?: Record<string, unknown>;
+};
+// One cycle's author aggregates, keyed by the address set and domain they were computed for, together with the
+// publication write generation they were read at (DbHandler._publicationWriteGeneration). A vote, comment, edit or
+// moderation stored between two slices of the cycle advances the generation and the next slice starts the memo over,
+// so a comment's author.community is never older than the vote counts read in the same slice.
+export type CommunityAuthorMemo = { writeGeneration: number; authors: Map<string, CommunityAuthor | undefined> };
+export const createCommunityAuthorMemo = (): CommunityAuthorMemo => ({ writeGeneration: -1, authors: new Map() });
+
+// Per-connection temp table holding the rowids of the comments the update cycle has to recalculate (issue #355)
+const COMMENTS_TO_UPDATE_TEMP_TABLE = "temp.commentsToUpdate";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -83,6 +101,15 @@ const TABLES = Object.freeze({
     PSEUDONYMITY_ALIASES: "pseudonymityAliases"
 });
 
+// The address an alias row's original public key derives to, or null when the key is malformed (kept, never looked up)
+function deriveAliasOriginalAuthorSignerAddress(originalAuthorPublicKey: string): string | null {
+    try {
+        return getPKCAddressFromPublicKeySync(originalAuthorPublicKey);
+    } catch {
+        return null;
+    }
+}
+
 export class DbHandler {
     _db!: BetterSqlite3Database;
     private _community!: LocalCommunity;
@@ -91,26 +118,32 @@ export class DbHandler {
     private _keyv!: KeyvBetterSqlite3;
     private _createdTables: boolean;
     private _columnNamesByTable: Record<string, string[]>;
+    private _positionalMappers: Map<string, PositionalCommentRowMapper>;
+    // Advanced by every write to the publication tables (comments, votes, edits, moderations, aliases, purges). The
+    // update cycle's author memo (CommunityAuthorMemo) is only reused while it stays the same.
+    private _publicationWriteGeneration = 0;
+    private _preparedStatements: Map<string, Statement>;
 
     constructor(community: DbHandler["_community"]) {
         this._community = community;
         this._transactionDepth = 0;
         this._createdTables = false;
         this._columnNamesByTable = {};
+        this._positionalMappers = new Map();
+        this._preparedStatements = new Map();
         hideClassPrivateProps(this);
     }
 
-    private _parsePrefixedComment(row: PrefixedCommentRow) {
-        const parsed = parsePrefixedComment(row);
-
-        const comment = removeNullUndefinedValues(this._spreadExtraProps(parsed.comment)) as CommentIpfsType;
-        const commentUpdate = removeNullUndefinedValues(this._spreadExtraProps(parsed.commentUpdate)) as CommentUpdateType;
-
-        return {
-            comment,
-            commentUpdate,
-            extras: parsed.extras
-        };
+    // Statements the update cycle runs per comment, compiled once per connection: preparing the SQL again on every
+    // call cost more than running some of them (issue #351). A cached statement keeps the mode (raw, pluck) its call
+    // site sets, so one SQL string belongs to one call site.
+    private _prepareCached(sql: string): Statement {
+        let statement = this._preparedStatements.get(sql);
+        if (!statement) {
+            statement = this._db.prepare(sql);
+            this._preparedStatements.set(sql, statement);
+        }
+        return statement;
     }
 
     private _parseCommentsTableRow(row: unknown): CommentsTableRow {
@@ -171,6 +204,7 @@ export class DbHandler {
         const dbFilePath = this._dbConfig.filename;
         if (!this._db || !this._db.open) {
             this._columnNamesByTable = {}; // a reopened file may have been migrated by another process
+            this._preparedStatements.clear();
             this._db = new Database(dbFilePath, { ...this._dbConfig, ...dbConfigOptions });
             if (!this._db.readonly) {
                 this._db.pragma("journal_mode = WAL");
@@ -232,6 +266,7 @@ export class DbHandler {
 
     destoryConnection() {
         const log = Logger("pkc-js:local-community:dbHandler:destroyConnection");
+        this._preparedStatements.clear(); // statements belong to the connection
         if (this._db && this._db.open) {
             if (!this._db.readonly) {
                 this._db.exec("PRAGMA wal_checkpoint"); // write all wal to disk
@@ -362,7 +397,7 @@ export class DbHandler {
                 protocolVersion TEXT NOT NULL,
                 signature TEXT NOT NULL, -- JSON
                 author TEXT NULLABLE, -- JSON
-                replies TEXT NULLABLE, -- JSON
+                replies TEXT NULLABLE, -- JSON: CID refs per sort (DbRepliesSchema)
                 lastChildCid TEXT NULLABLE,
                 lastReplyTimestamp INTEGER NULLABLE, 
                 postUpdatesBucket INTEGER NULLABLE,
@@ -370,6 +405,13 @@ export class DbHandler {
                 insertedAt INTEGER NOT NULL 
             )
         `);
+    }
+
+    // The comment tree lookups every page and update cycle runs: children of a comment (reply pages, stale_replies),
+    // every reply under a post (requireReplies sorts). Without them each is a full scan of the comments table.
+    private _createCommentsIndexes() {
+        this._db.exec(`CREATE INDEX IF NOT EXISTS idx_comments_parentCid ON ${TABLES.COMMENTS}(parentCid)`);
+        this._db.exec(`CREATE INDEX IF NOT EXISTS idx_comments_postCid ON ${TABLES.COMMENTS}(postCid)`);
     }
 
     private _createVotesTable(tableName: string) {
@@ -437,11 +479,24 @@ export class DbHandler {
                 commentCid TEXT NOT NULL PRIMARY KEY UNIQUE REFERENCES ${TABLES.COMMENTS}(cid) ON DELETE CASCADE,
                 aliasPrivateKey TEXT NOT NULL,
                 originalAuthorPublicKey TEXT NOT NULL,
+                originalAuthorSignerAddress TEXT NULLABLE, -- derived from originalAuthorPublicKey at insert, so an author's aliases are an indexed lookup (issue #351)
                 originalAuthorName TEXT NULLABLE, -- the original author's name (e.g., user.eth) if they used one
                 mode TEXT NOT NULL CHECK(mode IN ('per-post', 'per-reply', 'per-author')),
                 insertedAt INTEGER NOT NULL
             )
         `);
+    }
+
+    // The lookups the update cycle runs per comment: an author's comments (author.community karma), an author's
+    // aliases, and a comment's edits and moderations (flags, reason, flairs, approval, the author's latest edit).
+    // Without them each is a full scan of its table (issue #351).
+    private _createAuthorIndexes() {
+        this._db.exec(`CREATE INDEX IF NOT EXISTS idx_comments_authorSignerAddress ON ${TABLES.COMMENTS}(authorSignerAddress)`);
+        this._db.exec(
+            `CREATE INDEX IF NOT EXISTS idx_pseudonymityAliases_originalAuthorSignerAddress ON ${TABLES.PSEUDONYMITY_ALIASES}(originalAuthorSignerAddress)`
+        );
+        this._db.exec(`CREATE INDEX IF NOT EXISTS idx_commentEdits_commentCid ON ${TABLES.COMMENT_EDITS}(commentCid)`);
+        this._db.exec(`CREATE INDEX IF NOT EXISTS idx_commentModerations_commentCid ON ${TABLES.COMMENT_MODERATIONS}(commentCid)`);
     }
 
     getDbVersion(): number {
@@ -521,6 +576,7 @@ export class DbHandler {
         }
 
         this._columnNamesByTable = {}; // the loop below rewrites every table's schema
+        this._preparedStatements.clear();
         const createTableFunctions = [
             this._createCommentsTable.bind(this),
             this._createCommentUpdatesTable.bind(this),
@@ -547,6 +603,9 @@ export class DbHandler {
                 this._db.exec(`ALTER TABLE ${tempTableName} RENAME TO ${tableName}`);
             }
         }
+
+        this._createCommentsIndexes(); // idempotent; the migration loop above recreates the tables without them
+        this._createAuthorIndexes();
 
         if (needToMigrate) {
             await this._purgeCommentsWithInvalidSchemaOrSignature();
@@ -606,6 +665,7 @@ export class DbHandler {
         assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
         this._columnNamesByTable = {}; // every table now carries the latest schema
+        this._preparedStatements.clear();
         if (needToMigrate)
             log(`Created/migrated the tables to the latest (${newDbVersion}) version and saved to path`, this._dbConfig.filename);
         if (backupDbPath) await fs.promises.rm(backupDbPath);
@@ -840,6 +900,15 @@ export class DbHandler {
                     }
                 }
 
+                // The alias reverse-lookup column (v42 → v43, issue #351). After the v39 rename above, so a pre-v39 row's key
+                // is already under originalAuthorPublicKey when it is derived.
+                if (
+                    currentDbVersion < 43 &&
+                    srcTable === TABLES.PSEUDONYMITY_ALIASES &&
+                    typeof srcRecord["originalAuthorPublicKey"] === "string"
+                )
+                    srcRecord["originalAuthorSignerAddress"] = deriveAliasOriginalAuthorSignerAddress(srcRecord["originalAuthorPublicKey"]);
+
                 // Prepare record for insertion (stringify JSONs, convert booleans)
                 const processedRecord = this._processRecordsForDbBeforeInsert([srcRecord])[0];
 
@@ -1032,17 +1101,20 @@ export class DbHandler {
     }
 
     deleteVote(authorSignerAddress: VotesTableRow["authorSignerAddress"], commentCid: VotesTableRow["commentCid"]): void {
+        this._publicationWriteGeneration++;
         this._db
             .prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ? AND authorSignerAddress = ?`)
             .run(commentCid, authorSignerAddress);
     }
 
     private _deleteCommentEditRow(rowid: number): boolean {
+        this._publicationWriteGeneration++;
         const deleteResult = this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid = ?`).run(rowid);
         return deleteResult.changes > 0;
     }
 
     insertVotes(votes: VotesTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (votes.length === 0) return;
         const processedVotes = this._processRecordsForDbBeforeInsert(votes);
 
@@ -1075,6 +1147,7 @@ export class DbHandler {
     }
 
     insertComments(comments: CommentsTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (comments.length === 0) return;
         const processedComments = this._processRecordsForDbBeforeInsert(comments);
 
@@ -1104,12 +1177,16 @@ export class DbHandler {
     }
 
     insertPseudonymityAliases(aliases: PseudonymityAliasRow[]): void {
+        this._publicationWriteGeneration++;
         if (aliases.length === 0) return;
-        const processedAliases = this._processRecordsForDbBeforeInsert(aliases);
+        const processedAliases = this._processRecordsForDbBeforeInsert(aliases).map((alias) => ({
+            ...alias,
+            originalAuthorSignerAddress: deriveAliasOriginalAuthorSignerAddress(alias.originalAuthorPublicKey)
+        }));
         const stmt = this._db.prepare(`
             INSERT OR REPLACE INTO ${TABLES.PSEUDONYMITY_ALIASES}
-            (commentCid, aliasPrivateKey, originalAuthorPublicKey, originalAuthorName, mode, insertedAt)
-            VALUES (@commentCid, @aliasPrivateKey, @originalAuthorPublicKey, @originalAuthorName, @mode, @insertedAt)
+            (commentCid, aliasPrivateKey, originalAuthorPublicKey, originalAuthorSignerAddress, originalAuthorName, mode, insertedAt)
+            VALUES (@commentCid, @aliasPrivateKey, @originalAuthorPublicKey, @originalAuthorSignerAddress, @originalAuthorName, @mode, @insertedAt)
         `);
 
         const insertMany = this._db.transaction((items: PseudonymityAliasRow[]) => {
@@ -1125,7 +1202,7 @@ export class DbHandler {
         // Get all column names from the comment_updates table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENT_UPDATES) as (keyof CommentUpdatesRow)[];
 
-        const stmt = this._db.prepare(`
+        const stmt = this._prepareCached(`
             INSERT INTO ${TABLES.COMMENT_UPDATES} 
             (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, number, postNumber, flairs, spoiler, nsfw, pinned, locked, archived, removed, approved, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt)
             VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @number, @postNumber, @flairs, @spoiler, @nsfw, @pinned, @locked, @archived, @removed, @approved, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
@@ -1157,6 +1234,7 @@ export class DbHandler {
     }
 
     insertCommentModerations(moderations: CommentModerationsTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (moderations.length === 0) return;
         const processedModerations = this._processRecordsForDbBeforeInsert(moderations);
 
@@ -1184,6 +1262,7 @@ export class DbHandler {
     }
 
     insertCommentEdits(edits: CommentEditsTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (edits.length === 0) return;
         const processedEdits = this._processRecordsForDbBeforeInsert(edits);
 
@@ -1304,341 +1383,267 @@ export class DbHandler {
         return { whereClauses, params };
     }
 
-    queryMaximumTimestampUnderComment(comment: Pick<CommentsTableRow, "cid">): number | undefined {
-        const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
-        const query = `
-            WITH RECURSIVE descendants AS (
-                SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
-                LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
-                WHERE c.parentCid = ?
-                  AND COALESCE(cu.approved, 1) != 0
-                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                UNION ALL
-                SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
-                INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
-                WHERE ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
-                  AND COALESCE(cu.approved, 1) != 0
-                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-            )
-            SELECT MAX(timestamp) AS max_timestamp FROM descendants
-        `;
-        const result = this._db.prepare(query).get(comment.cid, ...addrParams) as { max_timestamp: number | null };
-
-        if (result.max_timestamp === null) return undefined;
-        return result.max_timestamp;
-    }
-
-    queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"] {
+    // The column set of a page entry: every CommentIpfs column plus extraProps, and every CommentUpdate column
+    // unless the caller excludes some (a flat page drops `replies`). Compiled mappers are cached per column set.
+    private _pageEntryMapper(commentUpdateFieldsToExclude?: (keyof CommentUpdateType)[], existingOnly = false): PositionalCommentRowMapper {
         const commentUpdateCols = keys(
-            options.commentUpdateFieldsToExclude
-                ? omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
-                : CommentUpdateSchema.shape
+            commentUpdateFieldsToExclude ? omit(CommentUpdateSchema.shape, commentUpdateFieldsToExclude) : CommentUpdateSchema.shape
         );
-        const commentUpdateSelects = commentUpdateCols.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
         const commentIpfsCols = [...keys(CommentIpfsSchema.shape), "extraProps"];
-        const commentIpfsSelects = commentIpfsCols.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
-
-        const { whereClauses, params } = this._buildPageQueryParts(options);
-        const queryStr = `
-            SELECT ${commentIpfsSelects.join(", ")}, ${commentUpdateSelects.join(", ")}
-            FROM ${TABLES.COMMENTS} INNER JOIN ${TABLES.COMMENT_UPDATES} ON ${TABLES.COMMENTS}.cid = ${TABLES.COMMENT_UPDATES}.cid
-            WHERE ${whereClauses.join(" AND ")}
-        `;
-
-        const commentsRaw = this._db.prepare(queryStr).all(...params) as PrefixedCommentRow[];
-
-        return commentsRaw.map((commentRaw) => {
-            const { comment, commentUpdate } = this._parsePrefixedComment(commentRaw);
-            return { comment, commentUpdate };
+        return this._positionalMapperFor({
+            commentIpfsCols: existingOnly ? this._existingColumns(TABLES.COMMENTS, commentIpfsCols) : commentIpfsCols,
+            commentUpdateCols: existingOnly ? this._existingColumns(TABLES.COMMENT_UPDATES, commentUpdateCols) : commentUpdateCols
         });
     }
 
-    queryPageCommentsWithResolvedReplies(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"] {
-        // Fetch ALL descendants by following CID-ref lists stored in the DB `replies` column.
-        // Base case: direct children of parentCid.
-        // Recursive case: follow $.best.commentCids from each node's replies JSON.
-        // Returns flat rows with tree_parent for JS tree assembly.
-
-        const commentUpdateCols = keys(CommentUpdateSchema.shape);
-        const commentIpfsCols = [...keys(CommentIpfsSchema.shape), "extraProps"];
-
-        // Base case uses full table names (not aliases) to match _buildPageQueryParts WHERE clauses
-        const baseCommentUpdateSelects = commentUpdateCols.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
-        const baseCommentIpfsSelects = commentIpfsCols.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
-
-        // Recursive part uses aliases since it joins fresh tables
-        const recCommentUpdateSelects = commentUpdateCols.map((col) => `cu2.${col} AS commentUpdate_${col}`);
-        const recCommentIpfsSelects = commentIpfsCols.map((col) => `c2.${col} AS commentIpfs_${col}`);
-
-        const { whereClauses, params } = this._buildPageQueryParts(options);
-
-        // Build recursive filter clauses (same pattern as queryFlattenedPageReplies)
-        const recursiveFilterClauses: string[] = [];
-        if (options.excludeCommentsWithDifferentCommunityAddress) {
-            const { clause, params: addrParams } = this._communityAddressClause("c2");
-            recursiveFilterClauses.push(clause);
-            params.push(...addrParams);
+    private _positionalMapperFor(cols: { commentIpfsCols: string[]; commentUpdateCols: string[] }): PositionalCommentRowMapper {
+        const key = `${cols.commentIpfsCols.join(",")}|${cols.commentUpdateCols.join(",")}`;
+        let mapper = this._positionalMappers.get(key);
+        if (!mapper) {
+            mapper = createPositionalCommentRowMapper(cols);
+            this._positionalMappers.set(key, mapper);
         }
-        if (options.excludeCommentPendingApproval) recursiveFilterClauses.push(this._pendingApprovalClause("c2"));
-        if (options.excludeRemovedComments) recursiveFilterClauses.push(this._removedClause("cu2"));
-        if (options.excludeDeletedComments) recursiveFilterClauses.push(this._deletedFromLookupClause("d2"));
-        if (options.excludeCommentWithApprovedFalse) recursiveFilterClauses.push(this._approvedClause("cu2"));
-        const recursiveWhereExtra = recursiveFilterClauses.length > 0 ? `AND ${recursiveFilterClauses.join(" AND ")}` : "";
-
-        const deletedLookupJoin = options.excludeDeletedComments
-            ? `LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d2 ON c2.cid = d2.cid`
-            : "";
-
-        const queryStr = `
-            WITH RECURSIVE reply_tree AS (
-                -- Base: direct children of the target comment
-                SELECT ${baseCommentIpfsSelects.join(", ")}, ${baseCommentUpdateSelects.join(", ")},
-                       ${TABLES.COMMENTS}.parentCid AS tree_parent
-                FROM ${TABLES.COMMENTS}
-                INNER JOIN ${TABLES.COMMENT_UPDATES} ON ${TABLES.COMMENTS}.cid = ${TABLES.COMMENT_UPDATES}.cid
-                WHERE ${whereClauses.join(" AND ")}
-
-                UNION ALL
-
-                -- Recursive: follow commentCids from each parent's replies
-                SELECT ${recCommentIpfsSelects.join(", ")}, ${recCommentUpdateSelects.join(", ")},
-                       rt.commentUpdate_cid AS tree_parent
-                FROM reply_tree rt
-                CROSS JOIN json_each(
-                    json_extract(rt.commentUpdate_replies, '$.best.commentCids')
-                ) child_ref
-                JOIN ${TABLES.COMMENTS} c2 ON c2.cid = child_ref.value
-                JOIN ${TABLES.COMMENT_UPDATES} cu2 ON c2.cid = cu2.cid
-                ${deletedLookupJoin}
-                WHERE rt.commentUpdate_replies IS NOT NULL
-                  AND json_type(rt.commentUpdate_replies, '$.best.commentCids') = 'array'
-                  ${recursiveWhereExtra}
-            )
-            SELECT * FROM reply_tree
-        `;
-
-        const rowsRaw = this._db.prepare(queryStr).all(...params) as (PrefixedCommentRow & { tree_parent: string })[];
-
-        // Group by tree_parent to reconstruct the hierarchy
-        const parsedByCid = new Map<string, { comment: CommentIpfsType; commentUpdate: CommentUpdateType }>();
-        const childrenByParent = new Map<string, { comment: CommentIpfsType; commentUpdate: CommentUpdateType }[]>();
-        for (const row of rowsRaw) {
-            const { comment, commentUpdate } = this._parsePrefixedComment(row);
-            parsedByCid.set(commentUpdate.cid, { comment, commentUpdate });
-            const parent = row.tree_parent;
-            if (!childrenByParent.has(parent)) childrenByParent.set(parent, []);
-            childrenByParent.get(parent)!.push({ comment, commentUpdate });
-        }
-
-        // Build a commentUpdate for wire format: strip DB replies, only add resolved replies if present
-        const buildWireCommentUpdate = (
-            commentUpdate: CommentUpdateType,
-            resolvedReplies: CommentUpdateType["replies"] | undefined
-        ): CommentUpdateType => {
-            const { replies: dbReplies, ...rest } = commentUpdate;
-            if (resolvedReplies) return { ...rest, replies: resolvedReplies } as CommentUpdateType;
-            // If no resolved inline replies but DB has allPageCids, reconstruct pageCids so clients can fetch pages
-            if (dbReplies) {
-                const dbEntries = dbReplies as Record<string, DbRepliesSortEntry>;
-                const pageCids: Record<string, string> = {};
-                for (const [sortName, sortEntry] of Object.entries(dbEntries)) {
-                    if (sortEntry?.allPageCids?.[0]) pageCids[sortName] = sortEntry.allPageCids[0];
-                }
-                if (Object.keys(pageCids).length > 0) return { ...rest, replies: { pages: {}, pageCids } } as CommentUpdateType;
-            }
-            return rest as CommentUpdateType;
-        };
-
-        // Recursively attach nested replies
-        const attachReplies = (cid: string): CommentUpdateType["replies"] | undefined => {
-            const children = childrenByParent.get(cid);
-            if (!children?.length) return undefined;
-
-            // Sort children by the parent's commentCids order.
-            // SQLite's recursive CTE does not guarantee row order matches json_each array order
-            // when additional JOINs are involved, so we must explicitly reorder.
-            const parent = parsedByCid.get(cid);
-            const parentDbReplies = parent?.commentUpdate?.replies as Record<string, DbRepliesSortEntry> | undefined;
-            const cidOrder = parentDbReplies?.best?.commentCids;
-            const orderedChildren = cidOrder
-                ? (cidOrder.map((childCid) => children.find((c) => c.commentUpdate.cid === childCid)).filter(Boolean) as typeof children)
-                : children;
-
-            return {
-                pages: {
-                    best: {
-                        comments: orderedChildren.map((child) => ({
-                            comment: child.comment,
-                            commentUpdate: buildWireCommentUpdate(child.commentUpdate, attachReplies(child.commentUpdate.cid))
-                        }))
-                    }
-                }
-            };
-        };
-
-        // Direct children with nested replies attached
-        const directChildren = childrenByParent.get(options.parentCid!) ?? [];
-        return directChildren.map((child) => ({
-            comment: child.comment,
-            commentUpdate: buildWireCommentUpdate(child.commentUpdate, attachReplies(child.commentUpdate.cid))
-        }));
+        return mapper;
     }
 
-    resolveRepliesCidRefsForEntries(entries: PageIpfs["comments"]): PageIpfs["comments"] {
-        // For entries whose replies are in CID-ref format, resolve them by fetching descendants.
-        // Collects all root CIDs from all entries, runs a single recursive query, then distributes results.
-        const commentUpdateCols = this._existingColumns(TABLES.COMMENT_UPDATES, keys(CommentUpdateSchema.shape));
-        const commentIpfsCols = this._existingColumns(TABLES.COMMENTS, [...keys(CommentIpfsSchema.shape), "extraProps"]);
+    queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"] {
+        const mapper = this._pageEntryMapper(options.commentUpdateFieldsToExclude);
+        const { whereClauses, params } = this._buildPageQueryParts(options);
+        const queryStr = `
+            SELECT ${mapper.selectList(
+                (col) => `${TABLES.COMMENTS}.${col}`,
+                (col) => `${TABLES.COMMENT_UPDATES}.${col}`
+            )}
+            FROM ${TABLES.COMMENTS} INNER JOIN ${TABLES.COMMENT_UPDATES} ON ${TABLES.COMMENTS}.cid = ${TABLES.COMMENT_UPDATES}.cid
+            WHERE ${whereClauses.join(" AND ")}
+        `;
+        const rows = this._prepareCached(queryStr)
+            .raw(true)
+            .all(...params) as unknown[][];
+        return rows.map(mapper.map);
+    }
 
-        // Gather all CIDs from CID-ref replies across all entries
-        const allCids: string[] = [];
-        for (const entry of entries) {
-            const replies = entry.commentUpdate.replies as Record<string, DbRepliesSortEntry> | undefined;
-            if (!replies) continue;
-            for (const sortEntry of Object.values(replies)) {
-                if (sortEntry?.commentCids) allCids.push(...sortEntry.commentCids);
-            }
+    // Nested reply trees out of page entries and the parent each was reached through (its own parentCid, whether
+    // it came from a flat subtree read or from the level walk).
+    // A child listed under two preloaded sorts of the same parent comes back twice and is kept once. `attachReplies`
+    // rebuilds one page per preloaded sort of a parent, in that sort's commentCids order (the CTE's row order is not
+    // the json_each order once the JOINs are involved), and `buildWireCommentUpdate` swaps the DB-format `replies`
+    // for the resolved pages, or for `pageCids` alone when nothing is embedded but pages exist.
+    private _assembleReplyTrees(items: { entry: PageIpfs["comments"][number]; parent: string }[]) {
+        type Entry = PageIpfs["comments"][number];
+        const parsedByCid = new Map<string, Entry>();
+        const childrenByParent = new Map<string, Map<string, Entry>>();
+        for (const { entry, parent } of items) {
+            const cid = entry.commentUpdate.cid;
+            if (parsedByCid.has(cid)) continue;
+            parsedByCid.set(cid, entry);
+            let siblings = childrenByParent.get(parent);
+            if (!siblings) childrenByParent.set(parent, (siblings = new Map()));
+            siblings.set(cid, entry);
         }
 
-        // Build lookup maps from recursive query (only if we have CIDs to resolve)
-        const parsedByCid = new Map<string, { comment: CommentIpfsType; commentUpdate: CommentUpdateType }>();
-        const childrenByParent = new Map<string, { comment: CommentIpfsType; commentUpdate: CommentUpdateType }[]>();
-
-        if (allCids.length > 0) {
-            // Fetch all descendant trees starting from these CIDs using a recursive CTE
-            const placeholders = allCids.map(() => "?").join(",");
-            const commentUpdateSelects = commentUpdateCols.map((col) => `cu.${col} AS commentUpdate_${col}`);
-            const commentIpfsSelects = commentIpfsCols.map((col) => `c.${col} AS commentIpfs_${col}`);
-            const recCommentUpdateSelects = commentUpdateCols.map((col) => `cu2.${col} AS commentUpdate_${col}`);
-            const recCommentIpfsSelects = commentIpfsCols.map((col) => `c2.${col} AS commentIpfs_${col}`);
-
-            const queryStr = `
-                WITH RECURSIVE reply_tree AS (
-                    SELECT ${commentIpfsSelects.join(", ")}, ${commentUpdateSelects.join(", ")},
-                           c.parentCid AS tree_parent
-                    FROM ${TABLES.COMMENTS} c
-                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                    WHERE c.cid IN (${placeholders})
-
-                    UNION ALL
-
-                    SELECT ${recCommentIpfsSelects.join(", ")}, ${recCommentUpdateSelects.join(", ")},
-                           rt.commentUpdate_cid AS tree_parent
-                    FROM reply_tree rt
-                    CROSS JOIN json_each(
-                        json_extract(rt.commentUpdate_replies, '$.best.commentCids')
-                    ) child_ref
-                    JOIN ${TABLES.COMMENTS} c2 ON c2.cid = child_ref.value
-                    JOIN ${TABLES.COMMENT_UPDATES} cu2 ON c2.cid = cu2.cid
-                    WHERE rt.commentUpdate_replies IS NOT NULL
-                      AND json_type(rt.commentUpdate_replies, '$.best.commentCids') = 'array'
-                )
-                SELECT * FROM reply_tree
-            `;
-
-            const rowsRaw = this._db.prepare(queryStr).all(...allCids) as (PrefixedCommentRow & { tree_parent: string })[];
-
-            // Build lookup: cid -> parsed entry
-            for (const row of rowsRaw) {
-                const { comment, commentUpdate } = this._parsePrefixedComment(row);
-                parsedByCid.set(commentUpdate.cid, { comment, commentUpdate });
-                const parent = row.tree_parent;
-                if (!childrenByParent.has(parent)) childrenByParent.set(parent, []);
-                childrenByParent.get(parent)!.push({ comment, commentUpdate });
-            }
-        }
-
-        // Build a commentUpdate for wire format: strip DB replies, attach resolved replies or reconstruct pageCids
+        // Keys stay sorted (see createPositionalCommentRowMapper): `replies` is re-inserted in order, and
+        // `pageCids` sorts before `pages`
         const buildWireCommentUpdate = (
             commentUpdate: CommentUpdateType,
             resolvedReplies: CommentUpdateType["replies"] | undefined
         ): CommentUpdateType => {
             const { replies: dbReplies, ...rest } = commentUpdate;
-            if (resolvedReplies) return { ...rest, replies: resolvedReplies } as CommentUpdateType;
-            // If no resolved inline replies but DB has allPageCids, reconstruct pageCids so clients can fetch pages
+            if (resolvedReplies) return withSortedKeys({ ...rest, replies: resolvedReplies }) as CommentUpdateType;
             if (dbReplies) {
-                const dbEntries = dbReplies as Record<string, DbRepliesSortEntry>;
                 const pageCids: Record<string, string> = {};
-                for (const [sortName, sortEntry] of Object.entries(dbEntries)) {
+                for (const sortName of Object.keys(dbReplies as Record<string, DbRepliesSortEntry>).sort()) {
+                    const sortEntry = (dbReplies as Record<string, DbRepliesSortEntry>)[sortName];
                     if (sortEntry?.allPageCids?.[0]) pageCids[sortName] = sortEntry.allPageCids[0];
                 }
-                if (Object.keys(pageCids).length > 0) return { ...rest, replies: { pages: {}, pageCids } } as CommentUpdateType;
+                if (Object.keys(pageCids).length > 0)
+                    return withSortedKeys({ ...rest, replies: { pageCids, pages: {} } }) as CommentUpdateType;
             }
             return rest as CommentUpdateType;
         };
 
         const attachReplies = (cid: string): CommentUpdateType["replies"] | undefined => {
             const children = childrenByParent.get(cid);
-            if (!children?.length) return undefined;
-
-            // Sort children by the parent's commentCids order.
-            // SQLite's recursive CTE does not guarantee row order matches json_each array order
-            // when additional JOINs are involved, so we must explicitly reorder.
-            const parent = parsedByCid.get(cid);
-            const parentDbReplies = parent?.commentUpdate?.replies as Record<string, DbRepliesSortEntry> | undefined;
-            const cidOrder = parentDbReplies?.best?.commentCids;
-            const orderedChildren = cidOrder
-                ? (cidOrder.map((childCid) => children.find((c) => c.commentUpdate.cid === childCid)).filter(Boolean) as typeof children)
-                : children;
-
-            return {
-                pages: {
-                    best: {
-                        comments: orderedChildren.map((child) => ({
+            if (!children?.size) return undefined;
+            const parentDbReplies = parsedByCid.get(cid)?.commentUpdate.replies as Record<string, DbRepliesSortEntry> | undefined;
+            const pages: Record<string, PageIpfs> = {};
+            for (const sortName of Object.keys(parentDbReplies ?? {}).sort()) {
+                const sortEntry = parentDbReplies![sortName];
+                if (!sortEntry?.commentCids) continue;
+                const comments: Entry[] = [];
+                for (const childCid of sortEntry.commentCids) {
+                    const child = children.get(childCid);
+                    if (child)
+                        comments.push({
                             comment: child.comment,
-                            commentUpdate: buildWireCommentUpdate(child.commentUpdate, attachReplies(child.commentUpdate.cid))
-                        }))
-                    }
+                            commentUpdate: buildWireCommentUpdate(child.commentUpdate, attachReplies(childCid))
+                        });
                 }
-            };
+                pages[sortName] = { comments };
+            }
+            if (Object.keys(pages).length === 0) return undefined;
+            return { pages };
         };
 
-        // Resolve each entry's CID-ref replies into full nested data
+        return { parsedByCid, childrenByParent, buildWireCommentUpdate, attachReplies };
+    }
+
+    // The page entries under one comment: its direct children that pass the page's exclusions, each carrying the
+    // reply pages its own CommentUpdate was signed with (resolveRepliesCidRefsForEntries). The exclusions apply to
+    // the children only: what a child embeds was fixed when the child was signed, and a change below it re-flags the
+    // child before its parent (stale_replies), so re-filtering the nested tree here could only disagree with the
+    // child's signature. The recursive CTE this replaced cost a scan of the board per call (issue #351).
+    queryPageCommentsWithResolvedReplies(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"] {
+        return this.resolveRepliesCidRefsForEntries(this.queryPageComments(options));
+    }
+
+    // Whether a loaded entry's CommentUpdate has replies to embed: its DB-format `replies` names a preloaded page or
+    // a page CID (deriveDbReplies never stores an empty object)
+    private _entryHasDbReplies(entry: PageIpfs["comments"][number]): boolean {
+        const replies = entry.commentUpdate.replies as Record<string, DbRepliesSortEntry> | undefined;
+        if (!replies) return false;
+        return Object.values(replies).some((sortEntry) => sortEntry?.commentCids || sortEntry?.allPageCids);
+    }
+
+    // Run one statement per batch of cids, under the SQLite variable cap, collecting every row
+    private _forEachCidBatch<Row>(
+        cids: string[],
+        queryFor: (placeholders: string) => string,
+        onRow: (row: Row) => void,
+        raw = false
+    ): void {
+        for (const { placeholders, params } of this._cidChunks(cids)) {
+            const statement = this._prepareCached(queryFor(placeholders));
+            if (raw) statement.raw(true);
+            for (const row of statement.all(...params) as Row[]) onRow(row);
+        }
+    }
+
+    // Every reply under the given posts (depth > 0, by postCid, indexed), as page entries with their DB-format reply
+    // refs, in one flat read per batch of posts: what the page generator streams through, one batch of posts at a
+    // time, to build those posts' nested reply pages (issue #351). Reads a post's whole subtree, listed or not; the
+    // assembly keeps what the CID refs list.
+    queryRepliesUnderPosts(postCids: string[]): PageIpfs["comments"] {
+        const mapper = this._pageEntryMapper(undefined, true);
+        const entries: PageIpfs["comments"] = [];
+        this._forEachCidBatch<unknown[]>(
+            postCids,
+            (placeholders) => `
+            SELECT ${mapper.selectList(
+                (col) => `c.${col}`,
+                (col) => `cu.${col}`
+            )}
+            FROM ${TABLES.COMMENTS} c
+            INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+            WHERE c.depth > 0 AND c.postCid IN (${placeholders})
+        `,
+            (row) => entries.push(mapper.map(row)),
+            true
+        );
+        return entries;
+    }
+
+    // Resolve each entry's CID-ref replies into the wire form its CommentUpdate was signed with: one page per preloaded
+    // sort in that sort's commentCids order, nested recursively, `pageCids` from allPageCids. Entries without replies
+    // come back untouched. Posts are resolved from one flat read of their subtrees (queryRepliesUnderPosts); a set
+    // that includes replies walks the listed CID refs level by level. The page generator calls this per bounded
+    // batch of posts (issue #351), never for a whole board at once.
+    resolveRepliesCidRefsForEntries(entries: PageIpfs["comments"]): PageIpfs["comments"] {
+        const withReplies = entries.filter((entry) => this._entryHasDbReplies(entry));
+        if (withReplies.length === 0) return entries;
+        const trees = withReplies.every((entry) => entry.comment.depth === 0)
+            ? this._assembleReplyTrees(
+                  this.queryRepliesUnderPosts(withReplies.map((entry) => entry.commentUpdate.cid)).map((entry) => ({
+                      entry,
+                      parent: entry.comment.parentCid!
+                  }))
+              )
+            : this._assembleReplyTreesFromCidRefs(withReplies);
+        return this._rebuildEntriesFromTrees(entries, trees);
+    }
+
+    // The listed-subtree resolution for entries that are not all posts (a reply's page, at any depth): walk the CID
+    // refs level by level, each level one primary-key read of the cids the level above lists, batched under the
+    // SQLite variable cap. Reads exactly the tree the entries embed, so a reply's cost is its own subtree (issue #351).
+    private _assembleReplyTreesFromCidRefs(entries: PageIpfs["comments"]): ReturnType<DbHandler["_assembleReplyTrees"]> {
+        const mapper = this._pageEntryMapper(undefined, true);
+        const listedChildren = (ofEntries: PageIpfs["comments"]): string[] => {
+            const cids: string[] = [];
+            for (const entry of ofEntries) {
+                const replies = entry.commentUpdate.replies as Record<string, DbRepliesSortEntry> | undefined;
+                if (!replies) continue;
+                for (const sortEntry of Object.values(replies)) if (sortEntry?.commentCids) cids.push(...sortEntry.commentCids);
+            }
+            return cids;
+        };
+        const items: { entry: PageIpfs["comments"][number]; parent: string }[] = [];
+        const seen = new Set<string>();
+        let frontier = listedChildren(entries);
+        while (frontier.length > 0) {
+            const level: PageIpfs["comments"] = [];
+            this._forEachCidBatch<unknown[]>(
+                frontier.filter((cid) => !seen.has(cid)),
+                (placeholders) => `
+                SELECT ${mapper.selectList(
+                    (col) => `c.${col}`,
+                    (col) => `cu.${col}`
+                )}
+                FROM ${TABLES.COMMENTS} c
+                INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                WHERE c.cid IN (${placeholders})
+            `,
+                (row) => level.push(mapper.map(row)),
+                true
+            );
+            for (const entry of level) {
+                seen.add(entry.commentUpdate.cid);
+                items.push({ entry, parent: entry.comment.parentCid! });
+            }
+            frontier = listedChildren(level);
+        }
+        return this._assembleReplyTrees(items);
+    }
+
+    // Each entry's pages rebuilt from the assembled trees in its own commentCids order
+    private _rebuildEntriesFromTrees(
+        entries: PageIpfs["comments"],
+        { parsedByCid, buildWireCommentUpdate, attachReplies }: ReturnType<DbHandler["_assembleReplyTrees"]>
+    ): PageIpfs["comments"] {
         return entries.map((entry) => {
-            const replies = entry.commentUpdate.replies as Record<string, DbRepliesSortEntry> | undefined;
-            if (!replies) return entry;
+            if (!this._entryHasDbReplies(entry)) return entry;
+            const replies = entry.commentUpdate.replies as Record<string, DbRepliesSortEntry>;
 
-            // Check if it's DB CID-ref format (has commentCids or allPageCids)
-            const isDbFormat = Object.values(replies).some((s) => s?.commentCids || s?.allPageCids);
-            if (!isDbFormat) return entry;
-
-            // Build resolved pages and pageCids from CID refs
             const resolvedPages: Record<string, PageIpfs> = {};
             const resolvedPageCids: Record<string, string> = {};
-            for (const [sortName, sortEntry] of Object.entries(replies)) {
+            for (const sortName of Object.keys(replies).sort()) {
+                const sortEntry = replies[sortName];
                 if (sortEntry?.commentCids) {
-                    const resolvedComments = sortEntry.commentCids
-                        .map((cid) => parsedByCid.get(cid))
-                        .filter(Boolean)
-                        .map((child) => ({
-                            comment: child!.comment,
-                            commentUpdate: buildWireCommentUpdate(child!.commentUpdate, attachReplies(child!.commentUpdate.cid))
-                        }));
-                    // Derive nextCid from allPageCids[0]; fall back to legacy nextCid field for old DB rows
+                    const resolvedComments: PageIpfs["comments"] = [];
+                    for (const cid of sortEntry.commentCids) {
+                        const child = parsedByCid.get(cid);
+                        if (child)
+                            resolvedComments.push({
+                                comment: child.comment,
+                                commentUpdate: buildWireCommentUpdate(child.commentUpdate, attachReplies(cid))
+                            });
+                    }
+                    // nextCid from allPageCids[0]; the legacy nextCid field for old DB rows
                     const nextCidForSort = sortEntry.allPageCids?.[0] ?? (sortEntry as { nextCid?: string }).nextCid;
-                    resolvedPages[sortName] = {
-                        comments: resolvedComments,
-                        ...(nextCidForSort ? { nextCid: nextCidForSort } : {})
-                    };
+                    resolvedPages[sortName] = { comments: resolvedComments, ...(nextCidForSort ? { nextCid: nextCidForSort } : {}) };
                 }
-                // Derive pageCid from allPageCids[0] (first page CID for this sort)
-                if (sortEntry?.allPageCids?.[0]) {
-                    resolvedPageCids[sortName] = sortEntry.allPageCids[0];
-                }
+                if (sortEntry?.allPageCids?.[0]) resolvedPageCids[sortName] = sortEntry.allPageCids[0];
             }
 
             const { replies: _dbReplies, ...entryCommentUpdateRest } = entry.commentUpdate;
             return {
                 ...entry,
-                commentUpdate: {
+                commentUpdate: withSortedKeys({
                     ...entryCommentUpdateRest,
                     replies: {
-                        pages: resolvedPages,
-                        ...(Object.keys(resolvedPageCids).length > 0 ? { pageCids: resolvedPageCids } : {})
+                        ...(Object.keys(resolvedPageCids).length > 0 ? { pageCids: resolvedPageCids } : {}),
+                        pages: resolvedPages
                     }
-                } as CommentUpdateType
+                }) as CommentUpdateType
             };
         });
     }
@@ -1648,37 +1653,31 @@ export class DbHandler {
         opts: { commentUpdateCols: string[]; commentIpfsCols: string[] }
     ): PageIpfs["comments"] {
         if (cids.length === 0) return [];
-        const placeholders = cids.map(() => "?").join(",");
-        const commentUpdateSelects = this._existingColumns(TABLES.COMMENT_UPDATES, opts.commentUpdateCols).map(
-            (col) => `cu.${col} AS commentUpdate_${col}`
-        );
-        const commentIpfsSelects = this._existingColumns(TABLES.COMMENTS, opts.commentIpfsCols).map(
-            (col) => `c.${col} AS commentIpfs_${col}`
-        );
-
-        const queryStr = `
-            SELECT ${commentIpfsSelects.join(", ")}, ${commentUpdateSelects.join(", ")}
+        const mapper = this._positionalMapperFor({
+            commentIpfsCols: this._existingColumns(TABLES.COMMENTS, opts.commentIpfsCols),
+            commentUpdateCols: this._existingColumns(TABLES.COMMENT_UPDATES, opts.commentUpdateCols)
+        });
+        const entries: PageIpfs["comments"] = [];
+        this._forEachCidBatch<unknown[]>(
+            cids,
+            (placeholders) => `
+            SELECT ${mapper.selectList(
+                (col) => `c.${col}`,
+                (col) => `cu.${col}`
+            )}
             FROM ${TABLES.COMMENTS} c
             INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
             WHERE c.cid IN (${placeholders})
-        `;
-        const rows = this._db.prepare(queryStr).all(...cids) as PrefixedCommentRow[];
-        return rows.map((row) => {
-            const { comment, commentUpdate } = this._parsePrefixedComment(row);
-            return { comment, commentUpdate };
-        });
+        `,
+            (row) => entries.push(mapper.map(row)),
+            true
+        );
+        return entries;
     }
 
     queryFlattenedPageReplies(options: Omit<PageOptions, "firstPageSizeBytes"> & { parentCid: string }): PageIpfs["comments"] {
-        const commentUpdateCols = keys(
-            options.commentUpdateFieldsToExclude
-                ? omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
-                : CommentUpdateSchema.shape
-        );
-        // TODO, is it omitting replies?
-        const commentUpdateSelects = commentUpdateCols.map((col) => `c_updates.${col} AS commentUpdate_${col}`);
-        const commentIpfsCols = [...keys(CommentIpfsSchema.shape), "extraProps"];
-        const commentIpfsSelects = commentIpfsCols.map((col) => `comments_alias.${col} AS commentIpfs_${col}`);
+        const mapper = this._pageEntryMapper(options.commentUpdateFieldsToExclude);
+        const commentUpdateCols = mapper.commentUpdateCols;
 
         let baseWhereClausesStr = "";
         let recursiveWhereClausesStr = "";
@@ -1736,19 +1735,20 @@ export class DbHandler {
                 INNER JOIN comment_tree tree ON comments.parentCid = tree.cid
                 WHERE 1=1 ${recursiveWhereClausesStr}
             )
-            SELECT ${commentIpfsSelects.join(", ")}, ${commentUpdateCols.map((col) => `comments_alias.c_updates_${col} AS commentUpdate_${col}`).join(", ")}
+            SELECT ${mapper.selectList(
+                (col) => `comments_alias.${col}`,
+                (col) => `comments_alias.c_updates_${col}`
+            )}
             FROM comment_tree comments_alias
         `;
-
-        const commentsRaw = this._db.prepare(query).all(...params) as (PrefixedCommentRow & { tree_level: number })[];
-        return commentsRaw.map((commentRaw) => {
-            const { comment, commentUpdate } = this._parsePrefixedComment(commentRaw);
-            return { comment, commentUpdate };
-        });
+        const rows = this._prepareCached(query)
+            .raw(true)
+            .all(...params) as unknown[][];
+        return rows.map(mapper.map);
     }
 
     queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">): CommentUpdatesRow | undefined {
-        const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).get(comment.cid) as
+        const row = this._prepareCached(`SELECT * FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).get(comment.cid) as
             | CommentUpdatesRow
             | undefined;
         if (!row) return undefined;
@@ -1758,9 +1758,9 @@ export class DbHandler {
     queryCommentUpdateTimestampBucketReplies(opts: {
         cid: string;
     }): Pick<CommentUpdatesRow, "updatedAt" | "postUpdatesBucket" | "replies"> | undefined {
-        const row = this._db
-            .prepare(`SELECT updatedAt, postUpdatesBucket, replies FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`)
-            .get(opts.cid) as { updatedAt: number; postUpdatesBucket: number | null; replies: string | null } | undefined;
+        const row = this._prepareCached(`SELECT updatedAt, postUpdatesBucket, replies FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).get(
+            opts.cid
+        ) as { updatedAt: number; postUpdatesBucket: number | null; replies: string | null } | undefined;
         if (!row) return undefined;
         return {
             updatedAt: row.updatedAt,
@@ -1770,7 +1770,7 @@ export class DbHandler {
     }
 
     queryCommentUpdateBucketAndReplies(opts: { cid: string }): Pick<CommentUpdatesRow, "postUpdatesBucket" | "replies"> | undefined {
-        const row = this._db.prepare(`SELECT postUpdatesBucket, replies FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).get(opts.cid) as
+        const row = this._prepareCached(`SELECT postUpdatesBucket, replies FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ?`).get(opts.cid) as
             | { postUpdatesBucket: number | null; replies: string | null }
             | undefined;
         if (!row) return undefined;
@@ -1793,14 +1793,12 @@ export class DbHandler {
     }
 
     queryCommentBySignatureEncoded(signatureEncoded: string): CommentsTableRow | undefined {
-        const row = this._db
-            .prepare(
-                `SELECT * FROM ${TABLES.COMMENTS}
+        const row = this._prepareCached(
+            `SELECT * FROM ${TABLES.COMMENTS}
                  WHERE json_extract(signature, '$.signature') = ?
                     OR originalCommentSignatureEncoded = ?
                  LIMIT 1`
-            )
-            .get(signatureEncoded, signatureEncoded) as CommentsTableRow | undefined;
+        ).get(signatureEncoded, signatureEncoded) as CommentsTableRow | undefined;
         if (!row) return undefined;
         return this._parseCommentsTableRow(row);
     }
@@ -1832,133 +1830,245 @@ export class DbHandler {
     }
 
     queryCommentsPendingApproval(): CommentsTableRow[] {
-        const results = this._db
-            .prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid DESC`)
-            .all() as CommentsTableRow[];
+        const results = this._prepareCached(
+            `SELECT * FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid DESC`
+        ).all() as CommentsTableRow[];
         return results.map((r) => this._parseCommentsTableRow(r));
     }
 
-    queryCommentsToBeUpdated(): CommentsTableRow[] {
-        // TODO optimize this query in the future
-        // Make sure tests in commentsToUpdate.db.community.test.js are passing
-        const query = `
-            WITH RECURSIVE 
-            direct_updates AS (
-                SELECT c.* FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
-                UNION
-                SELECT c.* FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                AND (
-                    EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.insertedAt)
-                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.insertedAt)
-                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.insertedAt)
-                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.insertedAt)
-                  )
+    // Windowed reply sorts (settings.pages.replies[].options.maxAge) need a time-based trigger that nothing else
+    // provides: a page's membership changes when a reply crosses the window boundary even though no row changed.
+    // One arm per distinct window flags a parent only when a reply was inside the window at the parent's last
+    // generation (cu.updatedAt) and is outside it now, so a quiet thread costs a range scan and nothing else.
+    // Flat sorts filter the whole flattened subtree and are generated for posts only, so their arm walks
+    // descendants up to the depth-0 ancestor. Pinned replies bypass the filter when pinnedFirst is true. Omitted
+    // entirely (empty strings) when no reply sort is windowed, so the default config pays nothing.
+    private _buildWindowedReplySortArms(now: number): { ctes: string; selects: string[]; params: Record<string, number> } {
+        const windowedSorts = (this._community._pageSorts?.replies ?? []).filter((sort) => typeof sort.maxAgeSeconds === "number");
+        if (windowedSorts.length === 0) return { ctes: "", selects: [], params: {} };
+        const ctes: string[] = [];
+        const selects: string[] = [];
+        const params: Record<string, number> = { windowNow: now };
+        const seen = new Set<string>();
+        for (const sort of windowedSorts) {
+            const key = `${sort.maxAgeSeconds}:${sort.flat}:${sort.pinnedFirst}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const i = ctes.length;
+            params[`windowMaxAge${i}`] = sort.maxAgeSeconds!;
+            const pinnedClause = sort.pinnedFirst ? `AND (rcu.pinned IS NULL OR rcu.pinned != 1)` : "";
+            const crossingClause = `r_ts >= cu_anc.updatedAt - :windowMaxAge${i} AND r_ts < :windowNow - :windowMaxAge${i}`;
+            if (sort.flat)
+                ctes.push(`
+            windowed_flat_${i}_ancestors AS (
+                SELECT r.cid AS reply_cid, r.timestamp AS r_ts, r.parentCid AS anc_cid FROM ${TABLES.COMMENTS} r WHERE r.parentCid IS NOT NULL
+                UNION ALL
+                SELECT wa.reply_cid, wa.r_ts, p.parentCid FROM windowed_flat_${i}_ancestors wa
+                JOIN ${TABLES.COMMENTS} p ON p.cid = wa.anc_cid WHERE p.parentCid IS NOT NULL
             ),
-            child_counts AS (
-                SELECT 
-                    c.parentCid AS cid,
-                    COUNT(*) AS actual_child_count
+            windowed_${i} AS (
+                SELECT DISTINCT wa.anc_cid AS cid
+                FROM windowed_flat_${i}_ancestors wa
+                JOIN ${TABLES.COMMENTS} anc ON anc.cid = wa.anc_cid AND anc.depth = 0
+                JOIN ${TABLES.COMMENT_UPDATES} cu_anc ON cu_anc.cid = wa.anc_cid
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} rcu ON rcu.cid = wa.reply_cid
+                WHERE ${crossingClause} ${pinnedClause}
+            )`);
+            else
+                ctes.push(`
+            windowed_${i} AS (
+                SELECT DISTINCT r.parentCid AS cid
+                FROM (SELECT cid, parentCid, timestamp AS r_ts FROM ${TABLES.COMMENTS} WHERE parentCid IS NOT NULL) r
+                JOIN ${TABLES.COMMENT_UPDATES} cu_anc ON cu_anc.cid = r.parentCid
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} rcu ON rcu.cid = r.cid
+                WHERE ${crossingClause} ${pinnedClause}
+            )`);
+            selects.push(`SELECT c.rowid FROM ${TABLES.COMMENTS} c JOIN windowed_${i} w${i} ON c.cid = w${i}.cid`);
+        }
+        return { ctes: ctes.join(","), selects, params };
+    }
+
+    // The rowids of every comment the update cycle has to recalculate, collected into a temp table (issue #355).
+    //
+    // The flag set used to be one query: recursive CTEs stacked over `SELECT c.*`, whose every UNION and
+    // DISTINCT deduplicated ~900-byte rows on a temp B-tree and whose every level re-copied the board. On a
+    // 3.1M-comment board that was 2.7 GB of heap and 5.7 minutes before the first CommentUpdate. Here the set
+    // is an integer-keyed temp table, each arm of the old query is one INSERT OR IGNORE into it, and the two
+    // cascades (an author's other comments, and the parent chain) read the table they extend. Integer keys are
+    // what make it cheap: the same sequence keyed by cid strings took three times as long. Measured on that
+    // board: 14.5 s for the whole sequence in the SQLite shell.
+    //
+    // The arms, in order, and what each stands for:
+    //   1. no CommentUpdate row yet, or one not yet published to the postUpdates directory;
+    //   2. a vote, edit, moderation or child comment inserted since the row was calculated (issue #209: the
+    //      row's insertedAt is the batch's start timestamp, so nothing inserted during a batch is missed);
+    //   3. childCount no longer matches the counted children (a child removed, deleted or purged);
+    //   4. lastChildCid no longer matches the newest counted child;
+    //   5. a child listed in the stored replies pages has a newer CommentUpdate than the parent's;
+    //   6. windowed reply sorts, one arm per distinct window (see _buildWindowedReplySortArms);
+    //   7. every other comment by an author of a flagged comment (author.community aggregates);
+    //   8. every ancestor of a flagged comment (its counts, last reply and reply pages read the child's row).
+    // Pending-approval comments are never flagged and stop the parent-chain walk.
+    // Make sure the tests in commentsToUpdate.db.community.test.ts are passing after changing any of them.
+    private _collectCommentsToBeUpdated(): void {
+        const windowed = this._buildWindowedReplySortArms(timestamp());
+        const notPending = (alias: string) => `(${alias}.pendingApproval IS NULL OR ${alias}.pendingApproval != 1)`;
+        // A child that counts towards its parent's childCount: has a CommentUpdate, not removed, not deleted by its author
+        const countedChild = `
                 FROM ${TABLES.COMMENTS} c
                 JOIN ${TABLES.COMMENT_UPDATES} cu_child ON c.cid = cu_child.cid
-                LEFT JOIN (
-                    SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
-                ) deleted_lookup ON deleted_lookup.cid = c.cid
                 WHERE c.parentCid IS NOT NULL
-                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND ${notPending("c")}
                   AND (cu_child.removed IS NOT 1 AND cu_child.removed IS NOT TRUE)
-                  AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
+                  AND (json_extract(cu_child.edit, '$.deleted') IS NULL OR json_extract(cu_child.edit, '$.deleted') != 1)`;
+        const insert = `INSERT OR IGNORE INTO ${COMMENTS_TO_UPDATE_TEMP_TABLE}`;
+        const arms: string[] = [
+            `${insert}
+            SELECT c.rowid FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+            WHERE ${notPending("c")}
+            AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))`,
+            `${insert}
+            SELECT c.rowid FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+            WHERE ${notPending("c")}
+            AND (
+                EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.insertedAt)
+                OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.insertedAt)
+                OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.insertedAt)
+                OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.insertedAt)
+            )`,
+            `${insert}
+            WITH child_counts AS (
+                SELECT c.parentCid AS cid, COUNT(*) AS actual_child_count
+                ${countedChild}
                 GROUP BY c.parentCid
-            ),
-            filtered_children AS (
-                SELECT
-                    c.parentCid AS cid,
-                    c.cid AS child_cid,
-                    ROW_NUMBER() OVER (PARTITION BY c.parentCid ORDER BY c.rowid DESC) AS child_rank
-                FROM ${TABLES.COMMENTS} c
-                JOIN ${TABLES.COMMENT_UPDATES} cu_child ON c.cid = cu_child.cid
-                LEFT JOIN (
-                    SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
-                ) deleted_lookup ON deleted_lookup.cid = c.cid
-                WHERE c.parentCid IS NOT NULL
-                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                  AND (cu_child.removed IS NOT 1 AND cu_child.removed IS NOT TRUE)
-                  AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
-                  AND COALESCE(cu_child.approved, 1) != 0
-            ),
-            last_child_cids AS (
-                SELECT cid, child_cid AS actual_last_child_cid
-                FROM filtered_children
-                WHERE child_rank = 1
-            ),
-            stale_child_counts AS (
-                SELECT parent.cid
-                FROM ${TABLES.COMMENTS} parent
-                JOIN ${TABLES.COMMENT_UPDATES} cu_parent ON parent.cid = cu_parent.cid
-                LEFT JOIN child_counts cc ON cc.cid = parent.cid
-                WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
-                  AND COALESCE(cc.actual_child_count, 0) != COALESCE(cu_parent.childCount, 0)
-            ),
-            stale_last_child_cids AS (
-                SELECT parent.cid
-                FROM ${TABLES.COMMENTS} parent
-                JOIN ${TABLES.COMMENT_UPDATES} cu_parent ON parent.cid = cu_parent.cid
-                LEFT JOIN last_child_cids lc ON lc.cid = parent.cid
-                WHERE (parent.pendingApproval IS NULL OR parent.pendingApproval != 1)
-                  AND COALESCE(lc.actual_last_child_cid, '') != COALESCE(cu_parent.lastChildCid, '')
-            ),
-            stale_replies AS (
-                SELECT DISTINCT cu_parent.cid
-                FROM ${TABLES.COMMENT_UPDATES} cu_parent
-                CROSS JOIN json_each(
-                    json_extract(cu_parent.replies, '$.best.commentCids')
-                ) child_ref
-                JOIN ${TABLES.COMMENT_UPDATES} cu_child ON cu_child.cid = child_ref.value
-                WHERE cu_parent.replies IS NOT NULL
-                  AND json_type(cu_parent.replies, '$.best.commentCids') = 'array'
-                  -- Compare against the parent's updatedAt, not its insertedAt (issue #230). insertedAt is
-                  -- the batch's start timestamp, shared by every row the batch writes (issue #209/#211),
-                  -- while updatedAt is stamped when that row is actually calculated. A batch walks a post
-                  -- tree deepest-depth-first, so a child is always calculated before its parent and its
-                  -- updatedAt lands after the batch's start: comparing against insertedAt re-flagged every
-                  -- parent of any batch spanning >= 1 second, which produced another such batch, and the
-                  -- update loop never converged. updatedAt is when the parent's replies page was actually
-                  -- generated, which is the point the child's data could have gone stale relative to.
-                  AND cu_child.updatedAt > cu_parent.updatedAt
-            ),
-            base_updates AS (
-                SELECT * FROM direct_updates
-                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_child_counts scc ON c.cid = scc.cid
-                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_last_child_cids slc ON c.cid = slc.cid
-                UNION SELECT c.* FROM ${TABLES.COMMENTS} c JOIN stale_replies sr ON c.cid = sr.cid
-            ),
-            authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM base_updates),
-            author_comments AS (
-                SELECT c.* FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-            ),
-            comments_needing_update AS (
-                SELECT * FROM base_updates
-                UNION SELECT * FROM author_comments
-            ),
-            parent_chain AS (
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN comments_needing_update cnu ON p.cid = cnu.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
-                UNION
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
-            ),
-            all_updates AS (
-                SELECT cid FROM comments_needing_update UNION SELECT cid FROM parent_chain
             )
-            SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
+            SELECT parent.rowid
+            FROM ${TABLES.COMMENT_UPDATES} cu_parent
+            JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+            LEFT JOIN child_counts cc ON cc.cid = cu_parent.cid
+            WHERE ${notPending("parent")}
+              AND COALESCE(cc.actual_child_count, 0) != COALESCE(cu_parent.childCount, 0)`,
+            `${insert}
+            WITH last_child_rowids AS (
+                SELECT c.parentCid AS cid, MAX(c.rowid) AS last_child_rowid
+                ${countedChild}
+                  AND COALESCE(cu_child.approved, 1) != 0
+                GROUP BY c.parentCid
+            )
+            SELECT parent.rowid
+            FROM ${TABLES.COMMENT_UPDATES} cu_parent
+            JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+            LEFT JOIN last_child_rowids lc ON lc.cid = cu_parent.cid
+            LEFT JOIN ${TABLES.COMMENTS} last_child ON last_child.rowid = lc.last_child_rowid
+            WHERE ${notPending("parent")}
+              AND COALESCE(last_child.cid, '') != COALESCE(cu_parent.lastChildCid, '')`,
+            `${insert}
+            SELECT DISTINCT parent.rowid
+            FROM ${TABLES.COMMENT_UPDATES} cu_parent
+            JOIN ${TABLES.COMMENTS} parent ON parent.cid = cu_parent.cid
+            CROSS JOIN json_each(cu_parent.replies) sort_entry
+            CROSS JOIN json_each(json_extract(sort_entry.value, '$.commentCids')) child_ref
+            JOIN ${TABLES.COMMENT_UPDATES} cu_child ON cu_child.cid = child_ref.value
+            WHERE cu_parent.replies IS NOT NULL
+              AND json_type(sort_entry.value, '$.commentCids') = 'array'
+              -- Compare against the parent's updatedAt, not its insertedAt (issue #230). insertedAt is
+              -- the batch's start timestamp, shared by every row the batch writes (issue #209/#211),
+              -- while updatedAt is stamped when that row is actually calculated. A batch walks a post
+              -- tree deepest-depth-first, so a child is always calculated before its parent and its
+              -- updatedAt lands after the batch's start: comparing against insertedAt re-flagged every
+              -- parent of any batch spanning >= 1 second, which produced another such batch, and the
+              -- update loop never converged. updatedAt is when the parent's replies page was actually
+              -- generated, which is the point the child's data could have gone stale relative to.
+              AND cu_child.updatedAt > cu_parent.updatedAt`,
+            ...windowed.selects.map((select) => `${insert} WITH RECURSIVE ${windowed.ctes} ${select}`),
+            `${insert}
+            SELECT c.rowid FROM ${TABLES.COMMENTS} c
+            WHERE ${notPending("c")}
+              AND c.authorSignerAddress IN (
+                SELECT flagged.authorSignerAddress FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE} t
+                JOIN ${TABLES.COMMENTS} flagged ON flagged.rowid = t.id
+              )`,
+            `${insert}
+            WITH RECURSIVE parent_chain(id, parentCid) AS (
+                SELECT p.rowid, p.parentCid FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE} t
+                JOIN ${TABLES.COMMENTS} c ON c.rowid = t.id
+                JOIN ${TABLES.COMMENTS} p ON p.cid = c.parentCid
+                WHERE ${notPending("p")}
+                UNION
+                SELECT p.rowid, p.parentCid FROM parent_chain pc JOIN ${TABLES.COMMENTS} p ON p.cid = pc.parentCid
+                WHERE ${notPending("p")}
+            )
+            SELECT id FROM parent_chain`
+        ];
+        for (const arm of arms) {
+            // Each statement is bound only to the named parameters it mentions (the windowed arms' window bounds)
+            const params = Object.fromEntries(Object.entries(windowed.params).filter(([name]) => arm.includes(`:${name}`)));
+            this._prepareCached(arm).run(params);
+        }
+    }
+
+    // Runs `read` with the temp table of comments to update filled, and empties it afterwards whatever happens.
+    // The table is one per connection: the update loop is the only caller on a community's own connection, and
+    // a test handler is a connection of its own.
+    private _withCommentsToBeUpdated<Result>(read: () => Result): Result {
+        this._db.exec(`CREATE TEMP TABLE IF NOT EXISTS ${COMMENTS_TO_UPDATE_TEMP_TABLE} (id INTEGER PRIMARY KEY)`);
+        this._db.exec(`DELETE FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE}`);
+        try {
+            this._collectCommentsToBeUpdated();
+            return read();
+        } finally {
+            this._db.exec(`DELETE FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE}`);
+        }
+    }
+
+    // Cached, so every caller sets raw() itself: the mode sticks to the statement object
+    private _selectCommentsToBeUpdated(): Statement {
+        return this._prepareCached(`
+            SELECT c.cid, c.depth FROM ${COMMENTS_TO_UPDATE_TEMP_TABLE} t JOIN ${TABLES.COMMENTS} c ON c.rowid = t.id
             WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-            ORDER BY c.rowid
-        `;
-        const results = this._db.prepare(query).all() as CommentsTableRow[];
-        return results.map((r) => this._parseCommentsTableRow(r));
+            ORDER BY t.id
+        `);
+    }
+
+    // Which comments the update cycle has to recalculate, as cid and depth only, in rowid order. Each slice of the
+    // cycle loads its own rows through queryCommentsByCids. See _collectCommentsToBeUpdated for what flags a comment.
+    queryCommentsToBeUpdated(): Pick<CommentsTableRow, "cid" | "depth">[] {
+        return this._withCommentsToBeUpdated(
+            () => this._selectCommentsToBeUpdated().raw(false).all() as Pick<CommentsTableRow, "cid" | "depth">[]
+        );
+    }
+
+    // The same set as queryCommentsToBeUpdated, grouped by depth as plain arrays of cids in rowid order: what the update
+    // cycle holds for the whole board is then one string per comment to update (3.1M comments: 250 MB against 750 MB
+    // of {cid, depth} objects, and 2.7 GB of full rows before issue #355).
+    queryCidsToBeUpdatedByDepth(): Map<number, string[]> {
+        return this._withCommentsToBeUpdated(() => {
+            const cidsByDepth = new Map<number, string[]>();
+            for (const [cid, depth] of this._selectCommentsToBeUpdated().raw(true).iterate() as IterableIterator<[string, number]>) {
+                const cids = cidsByDepth.get(depth);
+                if (cids) cids.push(cid);
+                else cidsByDepth.set(depth, [cid]);
+            }
+            return cidsByDepth;
+        });
+    }
+
+    // The comment rows behind a list of cids, parsed, in the order the cids were given (a cid with no row is
+    // skipped). What each slice of the update cycle loads for itself, since queryCommentsToBeUpdated no longer
+    // materializes the rows for the whole board (issue #355).
+    queryCommentsByCids(cids: string[]): CommentsTableRow[] {
+        const byCid = new Map<string, CommentsTableRow>();
+        this._forEachCidBatch<CommentsTableRow>(
+            cids,
+            (placeholders) => `SELECT * FROM ${TABLES.COMMENTS} WHERE cid IN (${placeholders})`,
+            (row) => byCid.set(row.cid, this._parseCommentsTableRow(row))
+        );
+        const rows: CommentsTableRow[] = [];
+        for (const cid of cids) {
+            const row = byCid.get(cid);
+            if (row) rows.push(row);
+        }
+        return rows;
     }
 
     queryCommunityStats(): CommunityStats {
@@ -2189,21 +2299,19 @@ export class DbHandler {
     }
 
     queryComment(cid: string): CommentsTableRow | undefined {
-        const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as CommentsTableRow | undefined;
+        const row = this._prepareCached(`SELECT * FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as CommentsTableRow | undefined;
         if (!row) return undefined;
         return this._parseCommentsTableRow(row);
     }
 
     commentExistsInDb(cid: string): boolean {
-        return this._db.prepare(`SELECT 1 FROM ${TABLES.COMMENTS} WHERE cid = ? LIMIT 1`).get(cid) !== undefined;
+        return this._prepareCached(`SELECT 1 FROM ${TABLES.COMMENTS} WHERE cid = ? LIMIT 1`).get(cid) !== undefined;
     }
 
     queryPseudonymityAliasByCommentCid(commentCid: string): PseudonymityAliasRow | undefined {
-        const row = this._db
-            .prepare(
-                `SELECT commentCid, aliasPrivateKey, originalAuthorPublicKey, originalAuthorName, mode, insertedAt FROM ${TABLES.PSEUDONYMITY_ALIASES} WHERE commentCid = ?`
-            )
-            .get(commentCid) as PseudonymityAliasRow | undefined;
+        const row = this._prepareCached(
+            `SELECT commentCid, aliasPrivateKey, originalAuthorPublicKey, originalAuthorName, mode, insertedAt FROM ${TABLES.PSEUDONYMITY_ALIASES} WHERE commentCid = ?`
+        ).get(commentCid) as PseudonymityAliasRow | undefined;
         return row;
     }
 
@@ -2255,39 +2363,6 @@ export class DbHandler {
         return { authorSignerAddress, parentCid };
     }
 
-    private _queryCommentCounts(cid: string): Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount" | "childCount"> {
-        const { clause: addrClause, params: addrParams } = this._communityAddressClauseNamed("c", "cc");
-        const query = `
-        SELECT
-            (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = :cid AND vote = 1) AS upvoteCount,
-            (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = :cid AND vote = -1) AS downvoteCount,
-            (
-                WITH RECURSIVE descendants AS (
-                    SELECT c.cid FROM ${TABLES.COMMENTS} c
-                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                    LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                    WHERE c.parentCid = :cid AND ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
-                    UNION ALL
-                    SELECT c.cid FROM ${TABLES.COMMENTS} c
-                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                    LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                    JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
-                    WHERE ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
-                ) SELECT COUNT(*) FROM descendants
-            ) AS replyCount,
-            (
-                SELECT COUNT(*) FROM ${TABLES.COMMENTS} c
-                INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                WHERE c.parentCid = :cid AND ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
-            ) AS childCount
-        `;
-        return this._db.prepare(query).get({ cid, ...addrParams }) as Pick<
-            CommentUpdateType,
-            "replyCount" | "upvoteCount" | "downvoteCount" | "childCount"
-        >;
-    }
-
     queryPostsWithOutdatedBuckets(buckets: number[]): { cid: string; timestamp: number; currentBucket: number; newBucket: number }[] {
         const currentTimestampSeconds = timestamp(); // timestamp is in seconds
         const maxBucket = Math.max(...buckets);
@@ -2307,7 +2382,7 @@ export class DbHandler {
             ) SELECT cid, timestamp, current_bucket AS currentBucket, new_bucket AS newBucket
             FROM post_data WHERE current_bucket != new_bucket
         `;
-        return this._db.prepare(query).all(...addrParams, maxBucket) as {
+        return this._prepareCached(query).all(...addrParams, maxBucket) as {
             cid: string;
             timestamp: number;
             currentBucket: number;
@@ -2337,6 +2412,7 @@ export class DbHandler {
     }
 
     removeCommentFromPendingApproval(comment: Pick<CommentsTableRow, "cid">): void {
+        this._publicationWriteGeneration++;
         const log = Logger("pkc-js:local-community:db-handler:removeCommentFromPendingApproval");
         const stmt = this._db.prepare(`UPDATE ${TABLES.COMMENTS} SET pendingApproval = 0 WHERE cid = ?`);
         const res = stmt.run(comment.cid);
@@ -2500,19 +2576,6 @@ export class DbHandler {
         return purgedDetails;
     }
 
-    private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {
-        const result = this._db
-            .prepare(
-                `
-            SELECT json_extract(commentModeration, '$.reason') AS reason FROM ${TABLES.COMMENT_MODERATIONS}
-            WHERE commentCid = ? AND json_extract(commentModeration, '$.reason') IS NOT NULL ORDER BY rowid DESC LIMIT 1
-        `
-            )
-            .get(comment.cid) as { reason: string } | undefined;
-        if (!result) return undefined;
-        return result;
-    }
-
     queryCommentFlagsSetByMod(cid: string): Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "archived" | "removed" | "nsfw"> {
         const query = `
             WITH flags_with_rank AS (
@@ -2538,7 +2601,7 @@ export class DbHandler {
                 MAX(CASE WHEN nsfw IS NOT NULL AND nsfw_rank = 1 THEN nsfw ELSE NULL END) AS nsfw
             FROM flags_with_rank
         `;
-        const flags = this._db.prepare(query).get(cid) as
+        const flags = this._prepareCached(query).get(cid) as
             | Record<keyof Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "archived" | "removed" | "nsfw">, 0 | 1 | null>
             | undefined;
         if (!flags) return {};
@@ -2558,173 +2621,607 @@ export class DbHandler {
         return result && result.deleted !== null ? { deleted: Boolean(result.deleted) } : undefined;
     }
 
-    private _queryModCommentFlairs(
-        comment: Pick<CommentsTableRow, "cid">
-    ): { flairs?: CommentModerationTableRow["commentModeration"]["flairs"] } | undefined {
-        const result = this._db
-            .prepare(
-                `
-            SELECT json_extract(commentModeration, '$.flairs') AS flairs FROM ${TABLES.COMMENT_MODERATIONS}
-            WHERE commentCid = ? AND json_extract(commentModeration, '$.flairs') IS NOT NULL ORDER BY rowid DESC LIMIT 1
-        `
-            )
-            .get(comment.cid) as { flairs: string } | undefined;
-        if (!result) return undefined;
-        return { flairs: JSON.parse(result.flairs) as CommentModerationTableRow["commentModeration"]["flairs"] };
-    }
-
-    private _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid">) {
-        const lastChildCid = this._db
-            .prepare(
-                `SELECT c.cid FROM ${TABLES.COMMENTS} c
-                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
-                 LEFT JOIN (
-                     SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
-                 ) deleted_lookup ON deleted_lookup.cid = c.cid
-                 WHERE c.parentCid = ?
-                   AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                   AND COALESCE(cu.approved, 1) != 0
-                   AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE)
-                   AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
-                 ORDER BY c.rowid DESC
-                 LIMIT 1`
-            )
-            .get(comment.cid) as { cid: string } | undefined;
-        const lastReplyTimestamp = this.queryMaximumTimestampUnderComment(comment);
-        return { lastChildCid: lastChildCid?.cid, lastReplyTimestamp };
-    }
-
     _queryIsCommentApproved(
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">
     ): { approved: boolean } | undefined {
-        const result = this._db
-            .prepare(
-                `
+        const result = this._prepareCached(
+            `
             SELECT json_extract(commentModeration, '$.approved') AS approved FROM ${TABLES.COMMENT_MODERATIONS}
             WHERE commentCid = ? AND json_extract(commentModeration, '$.approved') IS NOT NULL ORDER BY rowid DESC LIMIT 1
         `
-            )
-            .get(comment.cid) as { approved: 0 | 1 | boolean | null } | undefined;
+        ).get(comment.cid) as { approved: 0 | 1 | boolean | null } | undefined;
         if (!result || result.approved === null) return undefined;
         return { approved: Boolean(result.approved) };
     }
 
-    private _calculateCommentNumbers(cid: string): { number?: number; postNumber?: number } {
-        const commentRowMeta = this._db
-            .prepare(`SELECT rowid as rowid, depth, pendingApproval, number, postNumber FROM ${TABLES.COMMENTS} WHERE cid = ?`)
-            .get(cid) as
-            | { rowid: number; depth: number; pendingApproval: number | null; number: number | null; postNumber: number | null }
-            | undefined;
-        if (!commentRowMeta) throw Error(`Failed to query row metadata for comment ${cid}`);
-        if (commentRowMeta.pendingApproval === 1) return {};
-
-        let commentNumber = typeof commentRowMeta.number === "number" && commentRowMeta.number > 0 ? commentRowMeta.number : undefined;
-        let postNumber =
-            typeof commentRowMeta.postNumber === "number" && commentRowMeta.postNumber > 0 ? commentRowMeta.postNumber : undefined;
-
-        if (commentNumber === undefined || (commentRowMeta.depth === 0 && postNumber === undefined)) {
-            const existingNumbers = this._db
-                .prepare(`SELECT number, postNumber FROM ${TABLES.COMMENT_UPDATES} WHERE cid = ? LIMIT 1`)
-                .get(cid) as { number: number | null; postNumber: number | null } | undefined;
-
-            if (commentNumber === undefined && typeof existingNumbers?.number === "number" && existingNumbers.number > 0)
-                commentNumber = existingNumbers.number;
-            if (commentRowMeta.depth === 0 && postNumber === undefined) {
-                if (typeof existingNumbers?.postNumber === "number" && existingNumbers.postNumber > 0)
-                    postNumber = existingNumbers.postNumber;
-            }
-        }
-
-        return {
-            ...(commentNumber !== undefined ? { number: commentNumber } : undefined),
-            ...(postNumber !== undefined ? { postNumber } : undefined)
-        };
+    queryCalculatedCommentUpdate(opts: { comment: CommentUpdateCalculationInput; authorDomain?: string }): CalculatedCommentUpdate {
+        // The batch of one: the per-comment API is the batched calculation over a single entry (issue #352)
+        return this._calculateCommentUpdates([{ comment: opts.comment, authorDomain: opts.authorDomain }], createCommunityAuthorMemo()).get(
+            opts.comment.cid
+        )!;
     }
 
-    queryCalculatedCommentUpdate(opts: {
-        comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp"> & {
-            challengeCommentUpdate?: Record<string, unknown>;
+    // The CommentUpdate fields of every given comment in one pass (issue #352): each field group is one statement per
+    // chunk of comments instead of nine statements per comment, and the author aggregates are computed once per
+    // distinct author (address set + domain) and kept in `authorMemo`, which the update cycle shares across its
+    // depth batches so an author with a thousand comments is aggregated once per cycle, or once per publication
+    // write (a memo filled before a vote landed would pair that vote's fresh counts with a stale score). Same result as
+    // queryCalculatedCommentUpdate for every comment (the per-comment API is this over one entry).
+    queryCalculatedCommentUpdates(opts: {
+        comments: (CommentUpdateCalculationInput & Pick<CommentsTableRow, "author">)[];
+        authorMemo?: CommunityAuthorMemo;
+    }): Map<string, CalculatedCommentUpdate> {
+        return this._calculateCommentUpdates(
+            opts.comments.map((comment) => ({ comment, authorDomain: getAuthorNameFromWire(comment.author) })),
+            opts.authorMemo ?? createCommunityAuthorMemo()
+        );
+    }
+
+    private _calculateCommentUpdates(
+        entries: { comment: CommentUpdateCalculationInput; authorDomain?: string }[],
+        authorMemo: CommunityAuthorMemo
+    ): Map<string, CalculatedCommentUpdate> {
+        const result = new Map<string, CalculatedCommentUpdate>();
+        if (entries.length === 0) return result;
+        const cids = entries.map((entry) => entry.comment.cid);
+        const authorByCid = this._queryCommunityAuthorsForCommentUpdates(entries, authorMemo);
+        const votes = this._queryVoteCountsByCids(cids);
+        const counts = this._queryReplyCountsByParentCids(cids);
+        const lastReplyTimestamps = this._queryLastReplyTimestampsByParentCids(cids);
+        const lastChildCids = this._queryLastChildCidsByParentCids(cids);
+        const moderations = this._queryModerationSummariesByCids(cids);
+        const authorEdits = this._queryLatestAuthorEditsByCids(entries.map((entry) => entry.comment));
+        const numbers = this._queryCommentNumbersByCids(cids);
+
+        for (const { comment } of entries) {
+            const authorCommunity = authorByCid.get(comment.cid);
+            if (!authorCommunity) throw Error("Failed to query author.community in queryCalculatedCommentUpdate");
+            const moderation = moderations.get(comment.cid);
+            const authorEdit = authorEdits.get(comment.cid);
+            const isThisCommentApproved = moderation?.approved !== undefined ? { approved: moderation.approved } : undefined;
+            const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // automatically add removed:true if approved=false. Will be overridden if there's commentFlags.removed
+            const { number: commentNumber, postNumber } = numbers.get(comment.cid) ?? {};
+            const voteCounts = votes.get(comment.cid) ?? { upvoteCount: 0, downvoteCount: 0 };
+            const replyCounts = counts.get(comment.cid) ?? { replyCount: 0, childCount: 0 };
+
+            // Seed with challenge-supplied commentUpdate (lowest priority, per-field). Mod queries below
+            // overwrite individual keys (reason, flairs, flags, approved, ...) when the mod has actually
+            // published a moderation that set that key — challenge keys the mod never touched persist.
+            // Same logic applies one level deeper for author.community: challenge-supplied
+            // commentUpdate.author.community.<newKey> (e.g. countryCode) seeds underneath the computed
+            // authorCommunity, so community-computed keys (postScore, replyScore, ...) and mod-settable
+            // keys (flairs, banExpiresAt) always win. The validator forbids challenges from setting any
+            // schema-defined key on author.community, so the spread here only carries novel extras.
+            const challengeAuthorCommunity = (comment.challengeCommentUpdate?.author as { community?: Record<string, unknown> } | undefined)
+                ?.community;
+            result.set(comment.cid, {
+                ...(comment.challengeCommentUpdate ?? {}),
+                ...(removedFromApproved ? removedFromApproved : undefined),
+                cid: comment.cid,
+                ...(commentNumber !== undefined ? { number: commentNumber } : undefined),
+                ...(postNumber !== undefined ? { postNumber } : undefined),
+                upvoteCount: voteCounts.upvoteCount,
+                downvoteCount: voteCounts.downvoteCount,
+                replyCount: replyCounts.replyCount,
+                childCount: replyCounts.childCount,
+                flairs: moderation?.flairs || authorEdit?.flairs || (comment.challengeCommentUpdate?.flairs as CommentUpdateType["flairs"]),
+                ...moderation?.flags,
+                // moderatorReason wins when present, else fall back to the challenge-supplied reason (if any).
+                reason: moderation?.reason ?? (comment.challengeCommentUpdate?.reason as string | undefined),
+                author: { community: { ...(challengeAuthorCommunity ?? {}), ...authorCommunity } },
+                lastChildCid: lastChildCids.get(comment.cid),
+                lastReplyTimestamp: lastReplyTimestamps.get(comment.cid),
+                ...(authorEdit ? { edit: authorEdit } : undefined),
+                ...(isThisCommentApproved ? { approved: isThisCommentApproved.approved } : undefined)
+            });
+        }
+        return result;
+    }
+
+    // Chunks of a cid list under the SQLite variable cap, each padded with NULLs to a power of two so a query has at
+    // most 13 prepared variants instead of one per batch size (`x IN (..., NULL)` never matches the padding).
+    private _cidChunks(cids: string[], variablesBesidesCids = 0): { placeholders: string; params: (string | null)[] }[] {
+        const max = 4096 - variablesBesidesCids;
+        const chunks: { placeholders: string; params: (string | null)[] }[] = [];
+        for (let start = 0; start < cids.length; start += max) {
+            const chunk = cids.slice(start, start + max);
+            let size = 1;
+            while (size < chunk.length) size *= 2;
+            size = Math.min(size, max);
+            chunks.push({
+                placeholders: new Array(size).fill("?").join(","),
+                params: [...chunk, ...new Array(size - chunk.length).fill(null)]
+            });
+        }
+        return chunks;
+    }
+
+    private _queryVoteCountsByCids(cids: string[]): Map<string, { upvoteCount: number; downvoteCount: number }> {
+        const result = new Map<string, { upvoteCount: number; downvoteCount: number }>();
+        for (const { placeholders, params } of this._cidChunks(cids)) {
+            const rows = this._prepareCached(
+                `SELECT commentCid,
+                        SUM(CASE WHEN vote = 1 THEN 1 ELSE 0 END) AS upvoteCount,
+                        SUM(CASE WHEN vote = -1 THEN 1 ELSE 0 END) AS downvoteCount
+                 FROM ${TABLES.VOTES} WHERE commentCid IN (${placeholders}) GROUP BY commentCid`
+            ).all(...params) as { commentCid: string; upvoteCount: number; downvoteCount: number }[];
+            for (const row of rows) result.set(row.commentCid, { upvoteCount: row.upvoteCount, downvoteCount: row.downvoteCount });
+        }
+        return result;
+    }
+
+    // replyCount and childCount of every parent in one recursive walk anchored on all of them: a descendant counts
+    // when every comment on the path from the parent has a CommentUpdate, this community's address, and is neither
+    // removed nor deleted; childCount is the level-1 part of the same walk.
+    private _queryReplyCountsByParentCids(parentCids: string[]): Map<string, { replyCount: number; childCount: number }> {
+        const result = new Map<string, { replyCount: number; childCount: number }>();
+        const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
+        const passes = `${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)`;
+        const deletedLookup = `(SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES})`;
+        for (const { placeholders, params } of this._cidChunks(parentCids, addrParams.length * 2)) {
+            const rows = this._prepareCached(
+                `WITH RECURSIVE descendants(root, cid, level) AS (
+                    SELECT c.parentCid, c.cid, 1 FROM ${TABLES.COMMENTS} c
+                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                    LEFT JOIN ${deletedLookup} AS d ON c.cid = d.cid
+                    WHERE c.parentCid IN (${placeholders}) AND ${passes}
+                    UNION ALL
+                    SELECT desc_nodes.root, c.cid, desc_nodes.level + 1 FROM ${TABLES.COMMENTS} c
+                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                    LEFT JOIN ${deletedLookup} AS d ON c.cid = d.cid
+                    JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
+                    WHERE ${passes}
+                )
+                SELECT root, COUNT(*) AS replyCount, SUM(CASE WHEN level = 1 THEN 1 ELSE 0 END) AS childCount
+                FROM descendants GROUP BY root`
+            ).all(...params, ...addrParams, ...addrParams) as { root: string; replyCount: number; childCount: number }[];
+            for (const row of rows) result.set(row.root, { replyCount: row.replyCount, childCount: row.childCount });
+        }
+        return result;
+    }
+
+    // lastReplyTimestamp of every parent: the newest timestamp under it. A direct reply counts unless it is pending or
+    // disapproved (a reply with no CommentUpdate yet counts); a deeper one also needs a CommentUpdate, this
+    // community's address and to be neither removed nor deleted, and so does every comment on its path.
+    private _queryLastReplyTimestampsByParentCids(parentCids: string[]): Map<string, number> {
+        const result = new Map<string, number>();
+        const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
+        for (const { placeholders, params } of this._cidChunks(parentCids, addrParams.length)) {
+            const rows = this._prepareCached(
+                `WITH RECURSIVE descendants(root, cid, timestamp) AS (
+                    SELECT c.parentCid, c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                    LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                    WHERE c.parentCid IN (${placeholders})
+                      AND COALESCE(cu.approved, 1) != 0
+                      AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                    UNION ALL
+                    SELECT desc_nodes.root, c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                    LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
+                    JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
+                    WHERE ${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                      AND COALESCE(cu.approved, 1) != 0
+                      AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                )
+                SELECT root, MAX(timestamp) AS maxTimestamp FROM descendants GROUP BY root`
+            ).all(...params, ...addrParams) as { root: string; maxTimestamp: number | null }[];
+            for (const row of rows) if (row.maxTimestamp !== null) result.set(row.root, row.maxTimestamp);
+        }
+        return result;
+    }
+
+    // lastChildCid of every parent: its newest direct reply that has a CommentUpdate and is not pending, disapproved,
+    // removed or deleted (MAX(rowid) with the bare cid column: SQLite returns the cid of that row).
+    private _queryLastChildCidsByParentCids(parentCids: string[]): Map<string, string> {
+        const result = new Map<string, string>();
+        for (const { placeholders, params } of this._cidChunks(parentCids)) {
+            const rows = this._prepareCached(
+                `SELECT c.parentCid AS parentCid, c.cid AS cid, MAX(c.rowid) AS lastRowid FROM ${TABLES.COMMENTS} c
+                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 LEFT JOIN (
+                     SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}
+                 ) deleted_lookup ON deleted_lookup.cid = c.cid
+                 WHERE c.parentCid IN (${placeholders})
+                   AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                   AND COALESCE(cu.approved, 1) != 0
+                   AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE)
+                   AND (deleted_lookup.deleted_flag IS NULL OR deleted_lookup.deleted_flag != 1)
+                 GROUP BY c.parentCid`
+            ).all(...params) as { parentCid: string; cid: string }[];
+            for (const row of rows) result.set(row.parentCid, row.cid);
+        }
+        return result;
+    }
+
+    // What the moderations of each comment say, newest first, one read for the batch: the latest non-null value per
+    // field (reason, flairs, approved and the six flags), the same precedence as the per-field statements this replaces.
+    private _queryModerationSummariesByCids(cids: string[]): Map<
+        string,
+        {
+            reason?: string;
+            flairs?: CommentModerationTableRow["commentModeration"]["flairs"];
+            approved?: boolean;
+            flags: Partial<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "archived" | "removed" | "nsfw">>;
+        }
+    > {
+        type Summary = {
+            reason?: string;
+            flairs?: CommentModerationTableRow["commentModeration"]["flairs"];
+            approved?: boolean;
+            flags: Partial<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "archived" | "removed" | "nsfw">>;
         };
-        authorDomain?: string;
-    }): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion"> {
-        const { comment, authorDomain } = opts;
+        const FLAG_NAMES = ["spoiler", "pinned", "locked", "archived", "removed", "nsfw"] as const;
+        const result = new Map<string, Summary>();
+        for (const { placeholders, params } of this._cidChunks(cids)) {
+            const rows = this._prepareCached(
+                `SELECT commentCid, commentModeration FROM ${TABLES.COMMENT_MODERATIONS} WHERE commentCid IN (${placeholders}) ORDER BY rowid DESC`
+            ).all(...params) as { commentCid: string; commentModeration: string }[];
+            for (const row of rows) {
+                const moderation = JSON.parse(row.commentModeration) as Record<string, unknown>;
+                let summary = result.get(row.commentCid);
+                if (!summary) {
+                    summary = { flags: {} };
+                    result.set(row.commentCid, summary);
+                }
+                if (summary.reason === undefined && typeof moderation.reason === "string") summary.reason = moderation.reason;
+                if (summary.flairs === undefined && moderation.flairs !== null && moderation.flairs !== undefined)
+                    summary.flairs = moderation.flairs as Summary["flairs"];
+                if (summary.approved === undefined && moderation.approved !== null && moderation.approved !== undefined)
+                    summary.approved = Boolean(moderation.approved);
+                for (const flag of FLAG_NAMES)
+                    if (summary.flags[flag] === undefined && moderation[flag] !== null && moderation[flag] !== undefined)
+                        summary.flags[flag] = Boolean(moderation[flag]);
+            }
+        }
+        return result;
+    }
 
-        const authorCommunity = this.queryCommunityAuthorForCommentUpdate({
-            authorSignerAddress: comment.authorSignerAddress,
-            commentCid: comment.cid,
-            authorDomain
-        });
-        const authorEdit = this.queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress);
-        const commentUpdateCounts = this._queryCommentCounts(comment.cid);
-        const moderatorReason = this._queryLatestModeratorReason(comment);
-        const commentFlags = this.queryCommentFlagsSetByMod(comment.cid);
-        const commentModFlairs = this._queryModCommentFlairs(comment);
-        const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
-        const isThisCommentApproved = this._queryIsCommentApproved(comment);
-        const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // automatically add removed:true if approved=false. Will be overridden if there's commentFlags.removed
+    // The latest edit each comment's own author published, one read for the batch
+    private _queryLatestAuthorEditsByCids(
+        comments: Pick<CommentsTableRow, "cid" | "authorSignerAddress">[]
+    ): Map<string, CommentEditPubsubMessagePublication> {
+        const result = new Map<string, CommentEditPubsubMessagePublication>();
+        const authorOf = new Map(comments.map((comment) => [comment.cid, comment.authorSignerAddress]));
+        const commentEditFields = keys(CommentEditPubsubMessagePublicationSchema.shape);
+        for (const { placeholders, params } of this._cidChunks(comments.map((comment) => comment.cid))) {
+            const rows = this._prepareCached(
+                `SELECT * FROM ${TABLES.COMMENT_EDITS} WHERE commentCid IN (${placeholders}) AND isAuthorEdit = 1 ORDER BY rowid DESC`
+            ).all(...params) as CommentEditsTableRow[];
+            for (const row of rows) {
+                if (result.has(row.commentCid) || authorOf.get(row.commentCid) !== row.authorSignerAddress) continue;
+                const parsed = this._spreadExtraProps(this._parseCommentEditsRow(row));
+                const signedKeys = parsed.signature.signedPropertyNames as CommentEditSignature["signedPropertyNames"];
+                result.set(
+                    row.commentCid,
+                    pick(parsed, ["signature", ...signedKeys, ...commentEditFields]) as CommentEditPubsubMessagePublication
+                );
+            }
+        }
+        return result;
+    }
 
-        const { number: commentNumber, postNumber } = this._calculateCommentNumbers(comment.cid);
+    // number / postNumber of each comment: the comments row's, else the numbers an earlier CommentUpdate carried
+    private _queryCommentNumbersByCids(cids: string[]): Map<string, { number?: number; postNumber?: number }> {
+        type Meta = { cid: string; depth: number; pendingApproval: number | null; number: number | null; postNumber: number | null };
+        const metaByCid = new Map<string, Meta>();
+        for (const { placeholders, params } of this._cidChunks(cids)) {
+            const rows = this._prepareCached(
+                `SELECT cid, depth, pendingApproval, number, postNumber FROM ${TABLES.COMMENTS} WHERE cid IN (${placeholders})`
+            ).all(...params) as Meta[];
+            for (const row of rows) metaByCid.set(row.cid, row);
+        }
+        const result = new Map<string, { number?: number; postNumber?: number }>();
+        const needStored: string[] = [];
+        for (const cid of cids) {
+            const meta = metaByCid.get(cid);
+            if (!meta) throw Error(`Failed to query row metadata for comment ${cid}`);
+            if (meta.pendingApproval === 1) {
+                result.set(cid, {});
+                continue;
+            }
+            const number = typeof meta.number === "number" && meta.number > 0 ? meta.number : undefined;
+            const postNumber = typeof meta.postNumber === "number" && meta.postNumber > 0 ? meta.postNumber : undefined;
+            result.set(cid, {
+                ...(number !== undefined ? { number } : undefined),
+                ...(postNumber !== undefined ? { postNumber } : undefined)
+            });
+            if (number === undefined || (meta.depth === 0 && postNumber === undefined)) needStored.push(cid);
+        }
+        for (const { placeholders, params } of this._cidChunks(needStored)) {
+            const rows = this._prepareCached(
+                `SELECT cid, number, postNumber FROM ${TABLES.COMMENT_UPDATES} WHERE cid IN (${placeholders})`
+            ).all(...params) as { cid: string; number: number | null; postNumber: number | null }[];
+            for (const row of rows) {
+                const meta = metaByCid.get(row.cid)!;
+                const numbers = result.get(row.cid)!;
+                if (numbers.number === undefined && typeof row.number === "number" && row.number > 0) numbers.number = row.number;
+                if (meta.depth === 0 && numbers.postNumber === undefined && typeof row.postNumber === "number" && row.postNumber > 0)
+                    numbers.postNumber = row.postNumber;
+            }
+        }
+        return result;
+    }
 
-        if (!authorCommunity) throw Error("Failed to query author.community in queryCalculatedCommentUpdate");
-        // Seed with challenge-supplied commentUpdate (lowest priority, per-field). Mod queries below
-        // overwrite individual keys (reason, flairs, flags, approved, ...) when the mod has actually
-        // published a moderation that set that key — challenge keys the mod never touched persist.
-        // Same logic applies one level deeper for author.community: challenge-supplied
-        // commentUpdate.author.community.<newKey> (e.g. countryCode) seeds underneath the computed
-        // authorCommunity, so community-computed keys (postScore, replyScore, ...) and mod-settable
-        // keys (flairs, banExpiresAt) always win. The validator forbids challenges from setting any
-        // schema-defined key on author.community, so the spread here only carries novel extras.
-        const challengeAuthorCommunity = (comment.challengeCommentUpdate?.author as { community?: Record<string, unknown> } | undefined)
-            ?.community;
-        return {
-            ...(comment.challengeCommentUpdate ?? {}),
-            ...(removedFromApproved ? removedFromApproved : undefined),
-            cid: comment.cid,
-            ...(commentNumber !== undefined ? { number: commentNumber } : undefined),
-            ...(postNumber !== undefined ? { postNumber } : undefined),
-            ...commentUpdateCounts,
-            flairs:
-                commentModFlairs?.flairs || authorEdit?.flairs || (comment.challengeCommentUpdate?.flairs as CommentUpdateType["flairs"]),
-            ...commentFlags,
-            // moderatorReason wins when present, else fall back to the challenge-supplied reason (if any).
-            reason: moderatorReason?.reason ?? (comment.challengeCommentUpdate?.reason as string | undefined),
-            author: { community: { ...(challengeAuthorCommunity ?? {}), ...authorCommunity } },
-            ...lastChildAndLastReplyTimestamp,
-            ...(authorEdit ? { edit: authorEdit } : undefined),
-            ...(isThisCommentApproved ? { approved: isThisCommentApproved.approved } : undefined)
+    // author.community of every comment: the karma of the address set the comment's author is (an alias comment
+    // counts the alias alone, a plain one every alias of the author too) plus the mod edits (bans, flairs) targeting
+    // any of them or the domain. Aggregated once per distinct (karma set, mod-edit set, domain) and memoised for the
+    // cycle, as long as nothing was written to the publication tables since the memo was filled; the aggregates
+    // themselves are one GROUP BY per chunk of addresses.
+    private _queryCommunityAuthorsForCommentUpdates(
+        entries: { comment: CommentUpdateCalculationInput; authorDomain?: string }[],
+        memo: CommunityAuthorMemo
+    ): Map<string, CommunityAuthor | undefined> {
+        type Need = { karma: string[]; modEdit: string[]; domain?: string; key: string };
+        if (memo.writeGeneration !== this._publicationWriteGeneration) {
+            memo.authors.clear();
+            memo.writeGeneration = this._publicationWriteGeneration;
+        }
+        const aliasByCid = this._queryPseudonymityAliasesByCommentCids(entries.map((entry) => entry.comment.cid));
+        const plainAddresses = [
+            ...new Set(entries.filter((entry) => !aliasByCid.has(entry.comment.cid)).map((entry) => entry.comment.authorSignerAddress))
+        ];
+        const expanded = this._queryAliasExpandedAddressSets(plainAddresses);
+        const keyOf = (karma: string[], modEdit: string[], domain?: string) =>
+            `${[...karma].sort().join(",")}|${[...modEdit].sort().join(",")}|${domain ?? ""}`;
+        const needByCid = new Map<string, Need>();
+        for (const { comment, authorDomain } of entries) {
+            const alias = aliasByCid.get(comment.cid);
+            if (alias) {
+                // Karma for just this alias, but mod edits (bans/flairs) from both the alias and the original author
+                const modEdit = [comment.authorSignerAddress];
+                try {
+                    const originalAddress = getPKCAddressFromPublicKeySync(alias.originalAuthorPublicKey);
+                    if (originalAddress !== comment.authorSignerAddress) modEdit.push(originalAddress);
+                } catch {
+                    // ignore malformed keys
+                }
+                const domain = alias.originalAuthorName || authorDomain;
+                needByCid.set(comment.cid, {
+                    karma: [comment.authorSignerAddress],
+                    modEdit,
+                    domain,
+                    key: keyOf([comment.authorSignerAddress], modEdit, domain)
+                });
+            } else {
+                const set = [...(expanded.get(comment.authorSignerAddress) ?? new Set([comment.authorSignerAddress]))];
+                needByCid.set(comment.cid, { karma: set, modEdit: set, domain: authorDomain, key: keyOf(set, set, authorDomain) });
+            }
+        }
+        const uncached = new Map<string, Need>();
+        for (const need of needByCid.values()) if (!memo.authors.has(need.key)) uncached.set(need.key, need);
+        if (uncached.size > 0) {
+            const addresses = new Set<string>();
+            const domains = new Set<string>();
+            for (const need of uncached.values()) {
+                for (const address of need.karma) addresses.add(address);
+                for (const address of need.modEdit) addresses.add(address);
+                if (need.domain) domains.add(need.domain);
+            }
+            const aggregates = this._queryAuthorAggregatesByAddresses([...addresses]);
+            const modEditRows = this._queryAuthorModEditRows([...addresses], [...domains]);
+            for (const need of uncached.values()) {
+                const modEditSet = new Set(need.modEdit);
+                const modAuthorEdits = modEditRows
+                    .filter(
+                        (row) =>
+                            (row.targetAuthorSignerAddress !== null && modEditSet.has(row.targetAuthorSignerAddress)) ||
+                            (need.domain !== undefined && row.targetAuthorDomain === need.domain)
+                    )
+                    .map((row) => row.author);
+                const banAuthor = modAuthorEdits.find((modEdit) => typeof modEdit?.banExpiresAt === "number");
+                const authorFlairsByMod = modAuthorEdits.find((modEdit) => modEdit?.flairs);
+                const modEdits: Pick<CommunityAuthor, "banExpiresAt" | "flairs"> = {};
+                if (banAuthor?.banExpiresAt) modEdits.banExpiresAt = banAuthor.banExpiresAt;
+                if (authorFlairsByMod?.flairs) modEdits.flairs = authorFlairsByMod.flairs;
+
+                const karma = need.karma.map((address) => aggregates.get(address)).filter((aggregate) => aggregate !== undefined);
+                if (karma.length === 0) {
+                    memo.authors.set(need.key, Object.keys(modEdits).length > 0 ? (modEdits as CommunityAuthor) : undefined);
+                    continue;
+                }
+                const last = firstBy(karma, [(aggregate) => aggregate.lastRowid, "desc"])!;
+                const first = firstBy(karma, (aggregate) => aggregate.firstRowid)!;
+                memo.authors.set(need.key, {
+                    postScore: sumBy(karma, (aggregate) => aggregate.postScore),
+                    replyScore: sumBy(karma, (aggregate) => aggregate.replyScore),
+                    lastCommentCid: last.lastCommentCid,
+                    ...modEdits,
+                    firstCommentTimestamp: first.firstCommentTimestamp
+                });
+            }
+        }
+        const result = new Map<string, CommunityAuthor | undefined>();
+        for (const [cid, need] of needByCid) result.set(cid, memo.authors.get(need.key));
+        return result;
+    }
+
+    private _queryPseudonymityAliasesByCommentCids(cids: string[]): Map<string, PseudonymityAliasRow> {
+        const result = new Map<string, PseudonymityAliasRow>();
+        for (const { placeholders, params } of this._cidChunks(cids)) {
+            const rows = this._prepareCached(
+                `SELECT commentCid, aliasPrivateKey, originalAuthorPublicKey, originalAuthorName, mode, insertedAt FROM ${TABLES.PSEUDONYMITY_ALIASES} WHERE commentCid IN (${placeholders})`
+            ).all(...params) as PseudonymityAliasRow[];
+            for (const row of rows) result.set(row.commentCid, row);
+        }
+        return result;
+    }
+
+    // What queryCommunityAuthor sums for a plain address: the address itself, every alias address of that original
+    // author, and the original author of that alias address, batched over a chunk of addresses.
+    private _queryAliasExpandedAddressSets(addresses: string[]): Map<string, Set<string>> {
+        const result = new Map<string, Set<string>>(addresses.map((address) => [address, new Set([address])]));
+        for (const { placeholders, params } of this._cidChunks(addresses)) {
+            const aliasRows = this._prepareCached(
+                `SELECT alias.originalAuthorSignerAddress AS original, comments.authorSignerAddress AS aliasAddress
+                 FROM ${TABLES.PSEUDONYMITY_ALIASES} AS alias
+                 INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+                 WHERE alias.originalAuthorSignerAddress IN (${placeholders})`
+            ).all(...params) as { original: string; aliasAddress: string | null }[];
+            for (const row of aliasRows) if (row.aliasAddress) result.get(row.original)?.add(row.aliasAddress);
+            const originalRows = this._prepareCached(
+                `SELECT comments.authorSignerAddress AS aliasAddress, alias.originalAuthorPublicKey AS originalAuthorPublicKey
+                 FROM ${TABLES.PSEUDONYMITY_ALIASES} AS alias
+                 INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+                 WHERE comments.authorSignerAddress IN (${placeholders})`
+            ).all(...params) as { aliasAddress: string; originalAuthorPublicKey: string }[];
+            for (const row of originalRows)
+                try {
+                    result.get(row.aliasAddress)?.add(getPKCAddressFromPublicKeySync(row.originalAuthorPublicKey));
+                } catch {
+                    // ignore malformed keys
+                }
+        }
+        return result;
+    }
+
+    // Per address: post and reply karma (votes on the author's comments) and the rowids of the author's first and
+    // last comments, one GROUP BY per chunk of addresses
+    private _queryAuthorAggregatesByAddresses(addresses: string[]): Map<
+        string,
+        {
+            postScore: number;
+            replyScore: number;
+            lastRowid: number;
+            lastCommentCid: string;
+            firstRowid: number;
+            firstCommentTimestamp: number;
+        }
+    > {
+        type Aggregate = {
+            postScore: number;
+            replyScore: number;
+            lastRowid: number;
+            lastCommentCid: string;
+            firstRowid: number;
+            firstCommentTimestamp: number;
         };
+        const partial = new Map<string, Omit<Aggregate, "lastCommentCid" | "firstCommentTimestamp">>();
+        for (const { placeholders, params } of this._cidChunks(addresses)) {
+            const rows = this._prepareCached(
+                `SELECT c.authorSignerAddress AS address,
+                        COALESCE(SUM(CASE WHEN c.depth = 0 AND v.vote = 1 THEN 1 WHEN c.depth = 0 AND v.vote = -1 THEN -1 ELSE 0 END), 0) AS postScore,
+                        COALESCE(SUM(CASE WHEN c.depth > 0 AND v.vote = 1 THEN 1 WHEN c.depth > 0 AND v.vote = -1 THEN -1 ELSE 0 END), 0) AS replyScore,
+                        MAX(c.rowid) AS lastRowid, MIN(c.rowid) AS firstRowid
+                 FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.VOTES} v ON c.cid = v.commentCid
+                 WHERE c.authorSignerAddress IN (${placeholders}) GROUP BY c.authorSignerAddress`
+            ).all(...params) as { address: string; postScore: number; replyScore: number; lastRowid: number; firstRowid: number }[];
+            for (const row of rows) partial.set(row.address, row);
+        }
+        const rowids = [...new Set([...partial.values()].flatMap((aggregate) => [aggregate.lastRowid, aggregate.firstRowid]))];
+        const byRowid = new Map<number, { cid: string; timestamp: number }>();
+        for (const { placeholders, params } of this._cidChunks(rowids.map(String))) {
+            const rows = this._prepareCached(`SELECT rowid, cid, timestamp FROM ${TABLES.COMMENTS} WHERE rowid IN (${placeholders})`).all(
+                ...params
+            ) as { rowid: number; cid: string; timestamp: number }[];
+            for (const row of rows) byRowid.set(row.rowid, row);
+        }
+        const result = new Map<string, Aggregate>();
+        for (const [address, aggregate] of partial) {
+            const last = byRowid.get(aggregate.lastRowid);
+            const first = byRowid.get(aggregate.firstRowid);
+            if (!last) throw Error("Failed to query communityAuthor.lastCommentCid");
+            if (!first) throw Error("Failed to query communityAuthor.firstCommentTimestamp");
+            result.set(address, { ...aggregate, lastCommentCid: last.cid, firstCommentTimestamp: first.timestamp });
+        }
+        return result;
+    }
+
+    // Every mod edit of an author (bans, flairs) targeting any of the addresses or domains, newest first, with its
+    // target so a caller keeps the ones aimed at one author. Read by target, so a ban survives a purged comment.
+    private _queryAuthorModEditRows(
+        addresses: string[],
+        domains: string[]
+    ): {
+        rowid: number;
+        targetAuthorSignerAddress: string | null;
+        targetAuthorDomain: string | null;
+        author: CommentModerationTableRow["commentModeration"]["author"];
+    }[] {
+        type Row = {
+            rowid: number;
+            targetAuthorSignerAddress: string | null;
+            targetAuthorDomain: string | null;
+            commentAuthorJson: string;
+        };
+        const rows: Row[] = [];
+        const select = `SELECT rowid, targetAuthorSignerAddress, targetAuthorDomain, json_extract(commentModeration, '$.author') AS commentAuthorJson
+                        FROM ${TABLES.COMMENT_MODERATIONS} WHERE json_extract(commentModeration, '$.author') IS NOT NULL AND`;
+        for (const { placeholders, params } of this._cidChunks(addresses))
+            rows.push(...(this._prepareCached(`${select} targetAuthorSignerAddress IN (${placeholders})`).all(...params) as Row[]));
+        for (const { placeholders, params } of this._cidChunks(domains))
+            rows.push(...(this._prepareCached(`${select} targetAuthorDomain IN (${placeholders})`).all(...params) as Row[]));
+        const unique = uniqueBy(rows, (row) => row.rowid).sort((a, b) => b.rowid - a.rowid);
+        return unique.map((row) => ({
+            rowid: row.rowid,
+            targetAuthorSignerAddress: row.targetAuthorSignerAddress,
+            targetAuthorDomain: row.targetAuthorDomain,
+            author: JSON.parse(row.commentAuthorJson) as CommentModerationTableRow["commentModeration"]["author"]
+        }));
+    }
+
+    // The stored updatedAt / postUpdatesBucket / replies of a batch of comments, what calculateNewCommentUpdate reads
+    // before writing the next CommentUpdate (issue #352)
+    queryCommentUpdateTimestampBucketRepliesByCids(
+        cids: string[]
+    ): Map<string, Pick<CommentUpdatesRow, "updatedAt" | "postUpdatesBucket" | "replies">> {
+        const result = new Map<string, Pick<CommentUpdatesRow, "updatedAt" | "postUpdatesBucket" | "replies">>();
+        for (const { placeholders, params } of this._cidChunks(cids)) {
+            const rows = this._prepareCached(
+                `SELECT cid, updatedAt, postUpdatesBucket, replies FROM ${TABLES.COMMENT_UPDATES} WHERE cid IN (${placeholders})`
+            ).all(...params) as { cid: string; updatedAt: number; postUpdatesBucket: number | null; replies: string | null }[];
+            for (const row of rows)
+                result.set(row.cid, {
+                    updatedAt: row.updatedAt,
+                    postUpdatesBucket: row.postUpdatesBucket ?? undefined,
+                    replies: typeof row.replies === "string" ? JSON.parse(row.replies) : undefined
+                } as Pick<CommentUpdatesRow, "updatedAt" | "postUpdatesBucket" | "replies">);
+        }
+        return result;
     }
 
     queryLatestPostCid(): Pick<CommentsTableRow, "cid"> | undefined {
-        return this._db
-            .prepare(
-                `SELECT c.cid FROM ${TABLES.COMMENTS} c
+        return this._prepareCached(
+            `SELECT c.cid FROM ${TABLES.COMMENTS} c
                  LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
                  WHERE c.depth = 0
                    AND c.pendingApproval IS NOT 1
                    AND COALESCE(cu.approved, 1) != 0
                  ORDER BY c.rowid DESC
                  LIMIT 1`
-            )
-            .get() as Pick<CommentsTableRow, "cid"> | undefined;
+        ).get() as Pick<CommentsTableRow, "cid"> | undefined;
     }
 
     queryLatestCommentCid(): Pick<CommentsTableRow, "cid"> | undefined {
-        return this._db
-            .prepare(
-                `SELECT c.cid FROM ${TABLES.COMMENTS} c
+        return this._prepareCached(
+            `SELECT c.cid FROM ${TABLES.COMMENTS} c
                  LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
                  WHERE c.pendingApproval IS NOT 1
                    AND COALESCE(cu.approved, 1) != 0
                  ORDER BY c.rowid DESC
                  LIMIT 1`
-            )
-            .get() as Pick<CommentsTableRow, "cid"> | undefined;
+        ).get() as Pick<CommentsTableRow, "cid"> | undefined;
     }
 
-    queryAllCommentsOrderedByIdAsc(): CommentsTableRow[] {
-        const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all() as CommentsTableRow[];
-        return results.map((r) => this._parseCommentsTableRow(r));
+    // Every comment row in rowid order, one batch at a time, so a caller that walks the whole board holds a
+    // batch instead of the board. Reading them all at once (what the repin on start used to do) was 2.7 GB of
+    // rows on a 3.1M-comment board, an OOM before the publish loop had started (issue #359).
+    //
+    // Keyset paging on rowid rather than one held-open cursor: the caller awaits IPFS between batches, and an
+    // open better-sqlite3 iterator would block every other statement on this connection for that whole time.
+    // The rowid selected alongside the row is the cursor only: it is not part of the comments schema, so the
+    // row parser drops it.
+    *iterateAllCommentsOrderedByIdAsc(batchSize: number): Generator<CommentsTableRow[], void> {
+        assert(Number.isInteger(batchSize) && batchSize > 0, `iterateAllCommentsOrderedByIdAsc needs a positive batch size`);
+        let lastRowid = 0;
+        while (true) {
+            const rows = this._prepareCached(`SELECT rowid, * FROM ${TABLES.COMMENTS} WHERE rowid > ? ORDER BY rowid ASC LIMIT ?`).all(
+                lastRowid,
+                batchSize
+            ) as { rowid: number }[];
+            if (rows.length === 0) return;
+            lastRowid = rows[rows.length - 1].rowid;
+            yield rows.map((row) => this._parseCommentsTableRow(row));
+        }
     }
 
     queryAuthorModEdits(opts: {
@@ -2749,14 +3246,12 @@ export class DbHandler {
         }
 
         // Query directly by targetAuthorSignerAddress or targetAuthorDomain to find bans/flairs even for purged comments
-        const modAuthorEditsRaw = this._db
-            .prepare(
-                `
+        const modAuthorEditsRaw = this._prepareCached(
+            `
             SELECT json_extract(commentModeration, '$.author') AS commentAuthorJson FROM ${TABLES.COMMENT_MODERATIONS}
             WHERE (${conditions.join(" OR ")}) AND json_extract(commentModeration, '$.author') IS NOT NULL ORDER BY rowid DESC
         `
-            )
-            .all(...params) as { commentAuthorJson: string }[];
+        ).all(...params) as { commentAuthorJson: string }[];
 
         const modAuthorEdits = modAuthorEditsRaw.map(
             (r) => JSON.parse(r.commentAuthorJson) as CommentModerationTableRow["commentModeration"]["author"]
@@ -2814,40 +3309,27 @@ export class DbHandler {
     queryCommunityAuthor(authorSignerAddress: string, authorDomain?: string): CommunityAuthor | undefined {
         const authorSignerAddresses = new Set<string>([authorSignerAddress]);
 
-        // If the provided address is the original signer, include all alias signer addresses for that author.
-        const aliasRowsForOriginal = this._db
-            .prepare(
-                `
-            SELECT alias.commentCid, alias.originalAuthorPublicKey
+        // If the provided address is the original signer, include all alias signer addresses for that author
+        // (originalAuthorSignerAddress is derived from the original public key at insert and indexed, issue #351).
+        const aliasSignerRows = this._prepareCached(
+            `
+            SELECT comments.authorSignerAddress
             FROM ${TABLES.PSEUDONYMITY_ALIASES} AS alias
+            INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
+            WHERE alias.originalAuthorSignerAddress = ?
         `
-            )
-            .all() as Pick<PseudonymityAliasRow, "commentCid" | "originalAuthorPublicKey">[];
-        for (const aliasRow of aliasRowsForOriginal) {
-            try {
-                const originalAddress = getPKCAddressFromPublicKeySync(aliasRow.originalAuthorPublicKey);
-                if (originalAddress === authorSignerAddress) {
-                    const commentRow = this._db
-                        .prepare(`SELECT authorSignerAddress FROM ${TABLES.COMMENTS} WHERE cid = ?`)
-                        .get(aliasRow.commentCid) as { authorSignerAddress?: string } | undefined;
-                    if (commentRow?.authorSignerAddress) authorSignerAddresses.add(commentRow.authorSignerAddress);
-                }
-            } catch {
-                // ignore malformed keys
-            }
-        }
+        ).all(authorSignerAddress) as { authorSignerAddress: string | null }[];
+        for (const row of aliasSignerRows) if (row.authorSignerAddress) authorSignerAddresses.add(row.authorSignerAddress);
 
         // If the provided address is an alias, include the original signer address for that alias.
-        const aliasRowsForAliasAddress = this._db
-            .prepare(
-                `
+        const aliasRowsForAliasAddress = this._prepareCached(
+            `
             SELECT alias.originalAuthorPublicKey
             FROM ${TABLES.PSEUDONYMITY_ALIASES} AS alias
             INNER JOIN ${TABLES.COMMENTS} AS comments ON comments.cid = alias.commentCid
             WHERE comments.authorSignerAddress = ?
         `
-            )
-            .all(authorSignerAddress) as Pick<PseudonymityAliasRow, "originalAuthorPublicKey">[];
+        ).all(authorSignerAddress) as Pick<PseudonymityAliasRow, "originalAuthorPublicKey">[];
         for (const aliasRow of aliasRowsForAliasAddress) {
             try {
                 const originalAddress = getPKCAddressFromPublicKeySync(aliasRow.originalAuthorPublicKey);
@@ -2871,17 +3353,15 @@ export class DbHandler {
 
         const modAuthorEdits = this.queryAuthorModEdits({ authorSignerAddresses: modEditAddresses, authorDomain });
 
-        const authorCommentsData = this._db
-            .prepare(
-                `
+        const authorCommentsData = this._prepareCached(
+            `
             SELECT c.depth, c.rowid, c.timestamp, c.cid,
                    COALESCE(SUM(CASE WHEN v.vote = 1 THEN 1 ELSE 0 END), 0) as upvoteCount,
                    COALESCE(SUM(CASE WHEN v.vote = -1 THEN 1 ELSE 0 END), 0) as downvoteCount
             FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.VOTES} v ON c.cid = v.commentCid
             WHERE c.authorSignerAddress IN (${placeholders}) GROUP BY c.cid
         `
-            )
-            .all(...karmaAddresses) as (Pick<CommentsTableRow, "depth" | "timestamp" | "cid"> & {
+        ).all(...karmaAddresses) as (Pick<CommentsTableRow, "depth" | "timestamp" | "cid"> & {
             rowid: number;
             upvoteCount: number;
             downvoteCount: number;
@@ -2916,38 +3396,6 @@ export class DbHandler {
      * We query karma for ONLY the alias address (no lookup to other aliases like queryCommunityAuthor does),
      * but include mod edits from both alias and original author.
      */
-    queryCommunityAuthorForCommentUpdate(opts: {
-        authorSignerAddress: string;
-        commentCid: string;
-        authorDomain?: string;
-    }): CommunityAuthor | undefined {
-        const { authorSignerAddress, commentCid, authorDomain } = opts;
-
-        // Check if this comment has a pseudonymity alias
-        const aliasRow = this.queryPseudonymityAliasByCommentCid(commentCid);
-        if (!aliasRow) {
-            // No pseudonymity mode - use standard aggregated karma
-            return this.queryCommunityAuthor(authorSignerAddress, authorDomain);
-        }
-
-        // Get original author's address for mod edits (bans/flairs are applied to original author)
-        const modEditAddresses = [authorSignerAddress];
-        try {
-            const originalAddress = getPKCAddressFromPublicKeySync(aliasRow.originalAuthorPublicKey);
-            if (originalAddress !== authorSignerAddress) {
-                modEditAddresses.push(originalAddress);
-            }
-        } catch {
-            // ignore malformed keys
-        }
-
-        // For mod edits (bans/flairs), use the original author's domain if available
-        const modEditDomain = aliasRow.originalAuthorName || authorDomain;
-
-        // Query karma for just this alias, but mod edits from both alias and original
-        return this._queryCommunityAuthorByAddresses([authorSignerAddress], modEditAddresses, modEditDomain);
-    }
-
     private _getAllDescendantCids(cid: string): string[] {
         const allCids: string[] = [cid];
         const directChildren = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(cid) as { cid: string }[];
@@ -2960,6 +3408,7 @@ export class DbHandler {
     }
 
     purgeComment(cid: string, isNestedCall: boolean = false): PurgedCommentTableRows[] {
+        this._publicationWriteGeneration++;
         const log = Logger("pkc-js:local-community:db-handler:purgeComment");
         const purgedRecords: PurgedCommentTableRows[] = [];
         const detachedPageCids: string[] = [];
@@ -3041,10 +3490,12 @@ export class DbHandler {
 
                 // Force update on a random comment to ensure IPNS update triggers even if no other comments need updating
                 // Make sure we don't select a comment that's being purged
-                const placeholders = allCidsToBeDeleted.map(() => "?").join(",");
+                // The purged set as one JSON parameter: a purged post can have more descendants than a statement may bind
                 const randomComment = this._db
-                    .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE cid NOT IN (${placeholders}) ORDER BY RANDOM() LIMIT 1`)
-                    .get(...allCidsToBeDeleted) as { cid: string } | undefined;
+                    .prepare(
+                        `SELECT cid FROM ${TABLES.COMMENTS} WHERE cid NOT IN (SELECT value FROM json_each(?)) ORDER BY RANDOM() LIMIT 1`
+                    )
+                    .get(JSON.stringify(allCidsToBeDeleted)) as { cid: string } | undefined;
                 if (randomComment) {
                     allCommentsToUpdate.push(randomComment.cid);
                     log(`Forcing update on random comment ${randomComment.cid} to ensure IPNS update after purge`);
@@ -3185,12 +3636,14 @@ export class DbHandler {
         return fs.existsSync(communityDbPath);
     }
 
+    // Batched under the SQLite variable cap: a cycle that updates every comment (after a migration, or a
+    // settings.pages edit) passes more cids than one statement may bind (issue #351)
     markCommentsAsPublishedToPostUpdates(commentCids: string[]): void {
         if (commentCids.length === 0) return;
-        const stmt = this._db.prepare(
-            `UPDATE ${TABLES.COMMENT_UPDATES} SET publishedToPostUpdatesMFS = 1 WHERE cid IN (${commentCids.map(() => "?").join(",")})`
+        this._runForEachCidBatch(
+            commentCids,
+            (placeholders) => `UPDATE ${TABLES.COMMENT_UPDATES} SET publishedToPostUpdatesMFS = 1 WHERE cid IN (${placeholders})`
         );
-        stmt.run(...commentCids);
     }
 
     forceUpdateOnAllComments(): void {
@@ -3199,116 +3652,235 @@ export class DbHandler {
 
     forceUpdateOnAllCommentsWithCid(commentCids: string[]): void {
         if (commentCids.length === 0) return;
-        this._db
-            .prepare(
-                `UPDATE ${TABLES.COMMENT_UPDATES} SET publishedToPostUpdatesMFS = 0 WHERE cid IN (${commentCids.map(() => "?").join(",")})`
-            )
-            .run(...commentCids);
-    }
-
-    queryAllCommentCidsAndTheirReplies(): { cid: string; allPageCids: string[] }[] {
-        const log = Logger("pkc-js:local-community:db-handler:queryAllCidsUnderThisCommunity");
-
-        const rows = this._db
-            .prepare(
-                `SELECT c.cid AS cid, cu.replies AS replies
-                 FROM ${TABLES.COMMENTS} c
-                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid`
-            )
-            .all() as { cid: string; replies?: string | null }[];
-
-        return rows.map((row) => {
-            const allPageCids: string[] = [];
-            if (typeof row.replies === "string" && row.replies.length > 0) {
-                try {
-                    const parsed = JSON.parse(row.replies) as Record<string, DbRepliesSortEntry>;
-                    for (const sortEntry of Object.values(parsed)) {
-                        if (sortEntry?.allPageCids) allPageCids.push(...sortEntry.allPageCids);
-                    }
-                } catch (e) {
-                    log.error(`Failed to parse replies JSON for comment ${row.cid} when collecting cids`, e);
-                }
-            }
-            return { cid: row.cid, allPageCids };
-        });
-    }
-
-    queryPostsWithActiveScore(
-        pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">
-    ): (PageIpfs["comments"][0] & { activeScore: number })[] {
-        const { clause: rootAddrClause, params: rootAddrParams } = this._communityAddressClauseNamed("p", "asRoot");
-        const { clause: descAddrClause, params: descAddrParams } = this._communityAddressClauseNamed("c", "asDesc");
-        const { clause: postsAddrClause, params: postsAddrParams } = this._communityAddressClauseNamed("c", "asPosts");
-
-        const activeScoreRootConditions = ["p.depth = 0"];
-        if (pageOptions.excludeCommentsWithDifferentCommunityAddress) activeScoreRootConditions.push(rootAddrClause);
-        if (pageOptions.excludeCommentPendingApproval) activeScoreRootConditions.push(this._pendingApprovalClause("p"));
-        if (pageOptions.excludeRemovedComments) activeScoreRootConditions.push(this._removedClause("cu_root"));
-        if (pageOptions.excludeDeletedComments) activeScoreRootConditions.push(this._deletedFromUpdatesClause("cu_root"));
-        if (pageOptions.excludeCommentWithApprovedFalse) activeScoreRootConditions.push(this._approvedClause("cu_root"));
-        const activeScoreRootWhere = `WHERE ${activeScoreRootConditions.join(" AND ")}`;
-
-        const activeScoreDescendantConditions: string[] = [];
-        if (pageOptions.excludeCommentsWithDifferentCommunityAddress) activeScoreDescendantConditions.push(descAddrClause);
-        if (pageOptions.excludeCommentPendingApproval) activeScoreDescendantConditions.push(this._pendingApprovalClause("c"));
-        if (pageOptions.excludeRemovedComments) activeScoreDescendantConditions.push(this._removedClause("cu"));
-        if (pageOptions.excludeDeletedComments) activeScoreDescendantConditions.push(this._deletedFromLookupClause("deleted_lookup"));
-        if (pageOptions.excludeCommentWithApprovedFalse) activeScoreDescendantConditions.push(this._approvedClause("cu"));
-        const activeScoreDescendantWhere =
-            activeScoreDescendantConditions.length > 0 ? `WHERE ${activeScoreDescendantConditions.join(" AND ")}` : "";
-
-        const activeScoresCte = `
-            WITH RECURSIVE descendants AS (
-                SELECT p.cid AS post_cid, p.cid AS current_cid, p.timestamp
-                FROM ${TABLES.COMMENTS} p
-                INNER JOIN ${TABLES.COMMENT_UPDATES} cu_root ON p.cid = cu_root.cid
-                ${activeScoreRootWhere}
-                UNION ALL
-                SELECT desc_tree.post_cid, c.cid AS current_cid, c.timestamp FROM ${TABLES.COMMENTS} c
-                INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS deleted_lookup ON c.cid = deleted_lookup.cid
-                JOIN descendants desc_tree ON c.parentCid = desc_tree.current_cid
-                ${activeScoreDescendantWhere}
-            ) SELECT post_cid, MAX(timestamp) as active_score FROM descendants GROUP BY post_cid
-        `;
-        const commentUpdateCols = keys(
-            pageOptions.commentUpdateFieldsToExclude
-                ? omit(CommentUpdateSchema.shape, pageOptions.commentUpdateFieldsToExclude)
-                : CommentUpdateSchema.shape
+        this._runForEachCidBatch(
+            commentCids,
+            (placeholders) => `UPDATE ${TABLES.COMMENT_UPDATES} SET publishedToPostUpdatesMFS = 0 WHERE cid IN (${placeholders})`
         );
-        const commentUpdateSelects = commentUpdateCols.map((col) => `cu.${col} AS commentUpdate_${col}`);
-        const commentIpfsCols = [...keys(CommentIpfsSchema.shape), "extraProps"];
-        const commentIpfsSelects = commentIpfsCols.map((col) => `c.${col} AS commentIpfs_${col}`);
+    }
 
-        let postsQueryStr = `
-            SELECT ${commentIpfsSelects.join(", ")}, ${commentUpdateSelects.join(", ")}, asc_scores.active_score
-            FROM ${TABLES.COMMENTS} c INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-            INNER JOIN (${activeScoresCte}) AS asc_scores ON c.cid = asc_scores.post_cid
-        `;
-        const params: Record<string, any> = { ...rootAddrParams, ...descAddrParams };
+    // The write form of _forEachCidBatch: one statement per batch, in one transaction
+    private _runForEachCidBatch(cids: string[], queryFor: (placeholders: string) => string): void {
+        const BATCH = 4096;
+        const run = this._db.transaction(() => {
+            for (let start = 0; start < cids.length; start += BATCH) {
+                const batch = cids.slice(start, start + BATCH);
+                this._prepareCached(queryFor(new Array(batch.length).fill("?").join(","))).run(...batch);
+            }
+        });
+        run();
+    }
 
+    // Every comment's cid and the cids of its reply pages, in rowid slices: what delete() unpins. One slice is
+    // held at a time, so deleting a board of a million comments costs a slice of memory, not the board
+    // (issue #389: the all-at-once array and Set ran a 4 GB heap out at 1M).
+    *iterateCommentCidsAndTheirPageCids(sliceSize: number): Generator<{ cid: string; allPageCids: string[] }[]> {
+        const log = Logger("pkc-js:local-community:db-handler:iterateCommentCidsAndTheirPageCids");
+        const statement = this._db.prepare(
+            `SELECT c.rowid AS rowid, c.cid AS cid, cu.replies AS replies
+             FROM ${TABLES.COMMENTS} c
+             LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+             WHERE c.rowid > ?
+             ORDER BY c.rowid ASC
+             LIMIT ?`
+        );
+        let afterRowid = 0;
+        while (true) {
+            const rows = statement.all(afterRowid, sliceSize) as { rowid: number; cid: string; replies?: string | null }[];
+            if (rows.length === 0) return;
+            afterRowid = rows[rows.length - 1].rowid;
+            yield rows.map((row) => {
+                const allPageCids: string[] = [];
+                if (typeof row.replies === "string" && row.replies.length > 0) {
+                    try {
+                        const parsed = JSON.parse(row.replies) as Record<string, DbRepliesSortEntry>;
+                        for (const sortEntry of Object.values(parsed)) {
+                            if (sortEntry?.allPageCids) allPageCids.push(...sortEntry.allPageCids);
+                        }
+                    } catch (e) {
+                        log.error(`Failed to parse replies JSON for comment ${row.cid} when collecting cids`, e);
+                    }
+                }
+                return { cid: row.cid, allPageCids };
+            });
+        }
+    }
+
+    // Every post (depth 0) that survives the exclusion options, with its DB-format replies (CID refs) still attached;
+    // callers resolve those with resolveRepliesCidRefsForEntries. Scoring is the page sort's job (issue #73).
+    queryPosts(
+        pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">
+    ): PageIpfs["comments"] {
+        const mapper = this._pageEntryMapper(pageOptions.commentUpdateFieldsToExclude);
+
+        const params: Record<string, string> = {};
         const postsWhereClauses = ["c.depth = 0"];
-
         if (pageOptions.excludeCommentsWithDifferentCommunityAddress) {
-            postsWhereClauses.push(postsAddrClause);
-            Object.assign(params, postsAddrParams);
+            const { clause, params: addrParams } = this._communityAddressClauseNamed("c", "asPosts");
+            postsWhereClauses.push(clause);
+            Object.assign(params, addrParams);
         }
         if (pageOptions.excludeRemovedComments) postsWhereClauses.push(this._removedClause("cu"));
         if (pageOptions.excludeDeletedComments) postsWhereClauses.push(this._deletedFromUpdatesClause("cu"));
         if (pageOptions.excludeCommentPendingApproval) postsWhereClauses.push(this._pendingApprovalClause("c"));
         if (pageOptions.excludeCommentWithApprovedFalse) postsWhereClauses.push(this._approvedClause("cu"));
 
-        postsQueryStr += ` WHERE ${postsWhereClauses.join(" AND ")}`;
+        const postsQueryStr = `
+            SELECT ${mapper.selectList(
+                (col) => `c.${col}`,
+                (col) => `cu.${col}`
+            )}
+            FROM ${TABLES.COMMENTS} c INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+            WHERE ${postsWhereClauses.join(" AND ")}
+        `;
+        const rows = this._prepareCached(postsQueryStr).raw(true).all(params) as unknown[][];
+        return rows.map(mapper.map);
+    }
 
-        const postsRaw = this._db.prepare(postsQueryStr).all(params) as (PrefixedCommentRow & { active_score: number })[];
-        return postsRaw.map((postRaw) => {
-            const { comment, commentUpdate } = this._parsePrefixedComment(postRaw);
-            return {
-                comment,
-                commentUpdate,
-                activeScore: postRaw.active_score
+    // queryPosts plus the built-in active score: the bump time the CommentUpdate carries (max of the post's own
+    // timestamp and lastReplyTimestamp), the same number the active page sort file and a client compute. Kept as one
+    // entry point for "posts with their bump score" for the migration tests.
+    queryPostsWithActiveScore(
+        pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">
+    ): (PageIpfs["comments"][0] & { activeScore: number })[] {
+        return this.queryPosts(pageOptions).map((post) => ({
+            ...post,
+            activeScore: Math.max(post.comment.timestamp, post.commentUpdate.lastReplyTimestamp ?? 0)
+        }));
+    }
+
+    // Every reply (depth > 0) in the community, or under one post, with no exclusions applied: the one reply set a
+    // generation loads for its requireReplies sorts, each of which then filters it with its own exclusion options
+    // through applyPageSortExclusions (the same filter a client applies) and slices each comment's subtree from it
+    // (createDescendantsLookup). Lean on purpose (PageSortReplyEntry): a fixed column list mapped by hand, no
+    // signature, no nested pages, no schema row parser, since a board can hold a million replies and this runs per
+    // generation. A pending-approval reply is marked on its CommentUpdate the way the mod queue marks one, so the
+    // filter can see it; the list never reaches a page.
+    queryAllRepliesForPageSort(opts: { postCid?: string; postCids?: string[] } = {}): PageSortReplyEntry[] {
+        // A list of posts streams in batches under the SQLite variable cap: what a post sort with requireReplies
+        // scores over, one batch of posts' subtrees at a time (issue #351)
+        if (opts.postCids) {
+            const entries: PageSortReplyEntry[] = [];
+            const BATCH = 4096;
+            for (let start = 0; start < opts.postCids.length; start += BATCH) {
+                const batch = opts.postCids.slice(start, start + BATCH);
+                entries.push(...this._queryRepliesForPageSort(`c.postCid IN (${batch.map(() => "?").join(",")})`, batch));
+            }
+            return entries;
+        }
+        if (opts.postCid) return this._queryRepliesForPageSort("c.postCid = ?", [opts.postCid]);
+        return this._queryRepliesForPageSort("1 = 1", []);
+    }
+
+    private _queryRepliesForPageSort(scopeClause: string, params: unknown[]): PageSortReplyEntry[] {
+        const whereClauses = ["c.depth > 0", scopeClause];
+        const query = `
+            SELECT c.cid, c.parentCid, c.postCid, c.depth, c.timestamp, c.content, c.title, c.link, c.author, c.communityPublicKey,
+                c.communityName, c.nsfw, c.spoiler, c.flairs, c.pendingApproval,
+                cu.upvoteCount, cu.downvoteCount, cu.replyCount, cu.childCount, cu.updatedAt, cu.lastReplyTimestamp, cu.pinned,
+                cu.locked, cu.removed, cu.approved, cu.nsfw AS cuNsfw, cu.spoiler AS cuSpoiler, cu.flairs AS cuFlairs,
+                json_extract(cu.edit, '$.deleted') AS editDeleted
+            FROM ${TABLES.COMMENTS} c INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+            WHERE ${whereClauses.join(" AND ")}
+        `;
+        // Raw rows: better-sqlite3 building an object per row is the dominant cost at a million rows (about 4x the
+        // array form on the benchmark in test/benchmarks), and the entry shape is fixed anyway.
+        type Row = [
+            cid: string,
+            parentCid: string,
+            postCid: string,
+            depth: number,
+            timestamp: number,
+            content: string | null,
+            title: string | null,
+            link: string | null,
+            author: string,
+            communityPublicKey: string | null,
+            communityName: string | null,
+            nsfw: number | null,
+            spoiler: number | null,
+            flairs: string | null,
+            pendingApproval: number | null,
+            upvoteCount: number,
+            downvoteCount: number,
+            replyCount: number,
+            childCount: number,
+            updatedAt: number,
+            lastReplyTimestamp: number | null,
+            pinned: number | null,
+            locked: number | null,
+            removed: number | null,
+            approved: number | null,
+            cuNsfw: number | null,
+            cuSpoiler: number | null,
+            cuFlairs: string | null,
+            editDeleted: number | null
+        ];
+        const rows = this._prepareCached(query)
+            .raw(true)
+            .all(...params) as Row[];
+        const entries: PageSortReplyEntry[] = new Array(rows.length);
+        for (let i = 0; i < rows.length; i++) {
+            const [
+                cid,
+                parentCid,
+                postCid,
+                depth,
+                timestamp,
+                content,
+                title,
+                link,
+                author,
+                communityPublicKey,
+                communityName,
+                nsfw,
+                spoiler,
+                flairs,
+                pendingApproval,
+                upvoteCount,
+                downvoteCount,
+                replyCount,
+                childCount,
+                updatedAt,
+                lastReplyTimestamp,
+                pinned,
+                locked,
+                removed,
+                approved,
+                cuNsfw,
+                cuSpoiler,
+                cuFlairs,
+                editDeleted
+            ] = rows[i];
+            const comment: PageSortReplyEntry["comment"] = { parentCid, postCid, depth, timestamp, author: JSON.parse(author) };
+            if (content !== null) comment.content = content;
+            if (title !== null) comment.title = title;
+            if (link !== null) comment.link = link;
+            if (communityPublicKey !== null) comment.communityPublicKey = communityPublicKey;
+            if (communityName !== null) comment.communityName = communityName;
+            if (nsfw !== null) comment.nsfw = Boolean(nsfw);
+            if (spoiler !== null) comment.spoiler = Boolean(spoiler);
+            if (flairs !== null) comment.flairs = JSON.parse(flairs);
+            const commentUpdate: PageSortReplyEntry["commentUpdate"] = {
+                cid,
+                upvoteCount,
+                downvoteCount,
+                replyCount,
+                childCount,
+                updatedAt
             };
-        });
+            if (lastReplyTimestamp !== null) commentUpdate.lastReplyTimestamp = lastReplyTimestamp;
+            if (pinned !== null) commentUpdate.pinned = Boolean(pinned);
+            if (locked !== null) commentUpdate.locked = Boolean(locked);
+            if (removed !== null) commentUpdate.removed = Boolean(removed);
+            if (approved !== null) commentUpdate.approved = Boolean(approved);
+            if (cuNsfw !== null) commentUpdate.nsfw = Boolean(cuNsfw);
+            if (cuSpoiler !== null) commentUpdate.spoiler = Boolean(cuSpoiler);
+            if (cuFlairs !== null) commentUpdate.flairs = JSON.parse(cuFlairs);
+            if (editDeleted) commentUpdate.edit = { deleted: true };
+            if (pendingApproval) commentUpdate.pendingApproval = true;
+            entries[i] = { comment, commentUpdate };
+        }
+        return entries;
     }
 
     private _processRecordsForDbBeforeInsert<T extends Record<string, any>>(records: T[]): T[] {

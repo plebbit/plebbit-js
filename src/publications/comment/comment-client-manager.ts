@@ -23,6 +23,7 @@ import {
     resolveWhenPredicateIsTrue
 } from "../../util.js";
 import { PublicationClientsManager } from "../publication-client-manager.js";
+import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../constants.js";
 import { RemoteCommunity } from "../../community/remote-community.js";
 import { findCommentInPageInstance, findCommentInPageInstanceRecursively, findCommentInParsedPages } from "../../pages/util.js";
 import {
@@ -51,7 +52,9 @@ type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
     | undefined;
 
-export const MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE = 1024 * 1024;
+// Re-exported so every caller that has always imported the cap from here keeps working
+export { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE };
+
 export class CommentClientsManager extends PublicationClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };

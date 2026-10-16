@@ -43,6 +43,12 @@ async function _pinLsWithRetries({
     });
 }
 
+// How many comment rows a repin walk reads at a time. The pins run 50 at a time whatever this is; the batch
+// only has to keep that limiter fed, and it is what bounds the walk's memory. The whole board used to be read
+// before the first pin ran, with one promise per comment built up front, which on a 3.1M-comment board was
+// 2.7 GB of rows and an OOM before the publish loop started (issue #359).
+const REPIN_COMMENTS_BATCH_SIZE = 1000;
+
 export async function repinCommentsIPFSIfNeeded(community: LocalCommunity) {
     const log = Logger("pkc-js:local-community:start:_repinCommentsIPFSIfNeeded");
     const latestCommentCid = community._dbHandler.queryLatestCommentCid(); // latest comment ordered by id
@@ -59,26 +65,31 @@ export async function repinCommentsIPFSIfNeeded(community: LocalCommunity) {
 
     log("The latest comment is not pinned in the ipfs node, pkc-js will repin all existing comment ipfs for community", community.address);
 
-    // latestCommentCid should be the last in unpinnedCommentsFromDb array, in case we throw an error on a comment before it, it does not get pinned
-    const unpinnedCommentsFromDb = community._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
-
-    // In the _repinCommentIpfs method:
+    // Ascending rowid, a batch at a time, each one pinned and dropped before the next is read (we assume all
+    // comments are unpinned if the latest comment is not pinned). The order matters as much as the batching:
+    // the latest comment is the last row of the last batch, and the pin.ls probe above takes it as standing
+    // for the whole board, so a walk that fails partway must leave it unpinned or the next start would read
+    // the board as pinned and never retry. A failure here rejects before the batch holding it is even read.
+    const addLog = Logger("pkc-js:local-community:start:_repinCommentsIPFSIfNeeded:_addCommentRowToIPFS");
     const limit = pLimit(50);
-    const pinningPromises = unpinnedCommentsFromDb.map((unpinnedCommentRow) =>
-        limit(async () => {
-            if (unpinnedCommentRow.pendingApproval) return; // we don't pin comments waiting to get approved
-            await community._addCommentRowToIPFS(
-                unpinnedCommentRow,
-                Logger("pkc-js:local-community:start:_repinCommentsIPFSIfNeeded:_addCommentRowToIPFS")
-            );
-        })
-    );
-
-    await Promise.all(pinningPromises);
+    let commentsWalked = 0;
+    let commentsPinned = 0;
+    for (const commentRowsBatch of community._dbHandler.iterateAllCommentsOrderedByIdAsc(REPIN_COMMENTS_BATCH_SIZE)) {
+        await Promise.all(
+            commentRowsBatch.map((unpinnedCommentRow) =>
+                limit(async () => {
+                    if (unpinnedCommentRow.pendingApproval) return; // we don't pin comments waiting to get approved
+                    await community._addCommentRowToIPFS(unpinnedCommentRow, addLog);
+                    commentsPinned++;
+                })
+            )
+        );
+        commentsWalked += commentRowsBatch.length;
+    }
 
     community._dbHandler.forceUpdateOnAllComments(); // force pkc-js to republish all comment updates
 
-    log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
+    log(`${commentsPinned} of ${commentsWalked} comments' IPFS have been repinned`);
 }
 
 // How long a superseded cid stays pinned after landing in _cidsToUnPin (issue #305). A client that

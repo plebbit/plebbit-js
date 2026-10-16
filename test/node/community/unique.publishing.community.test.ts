@@ -56,8 +56,9 @@ class InMemoryDbHandlerMock {
         this._keyv.set(key, value);
     }
 
-    queryAllCommentCidsAndTheirReplies(): { cid: string }[] {
-        return this.comments.map((comment) => ({ cid: comment.cid }));
+    *iterateCommentCidsAndTheirPageCids(sliceSize: number): Generator<{ cid: string; allPageCids: string[] }[]> {
+        for (let index = 0; index < this.comments.length; index += sliceSize)
+            yield this.comments.slice(index, index + sliceSize).map((comment) => ({ cid: comment.cid, allPageCids: <string[]>[] }));
     }
 
     // comment helpers

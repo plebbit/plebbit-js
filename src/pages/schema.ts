@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CidStringSchema } from "../schema/schema.js";
 import { CommentIpfsSchema, CommentUpdateForChallengeVerificationSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
+import { isReservedObjectKey } from "../object-key-util.js";
 
 // Pages schemas here
 
@@ -9,13 +10,20 @@ export const PageIpfsSchema = z.object({
     nextCid: CidStringSchema.optional()
 });
 
+// Any non-empty sort name a page-sort package declares (settings.pages, #73), except the ones that are not safe as
+// plain-object keys on a client (src/object-key-util.ts)
+export const SortNameStringSchema = z
+    .string()
+    .min(1)
+    .refine((name) => !isReservedObjectKey(name), { message: "A sort name cannot be __proto__, constructor or prototype" });
+
 export const PostSortNameSchema = z
     .enum(["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"])
-    .or(z.string().min(1)); // this is added to allow flexibility
+    .or(SortNameStringSchema); // this is added to allow flexibility
 
 // Comment pages here
 
-export const ReplySortNameSchema = z.enum(["best", "new", "old", "newFlat", "oldFlat"]).or(z.string().min(1)); // this is added to allow flexiblity;
+export const ReplySortNameSchema = z.enum(["best", "new", "old", "newFlat", "oldFlat"]).or(SortNameStringSchema); // this is added to allow flexiblity;
 
 // TODO combine the two into one schema
 export const PostsPagesIpfsSchema = z.object({
@@ -29,7 +37,7 @@ export const RepliesPagesIpfsSchema = z.object({
 });
 
 export const ModQueuePagesIpfsSchema = z.object({
-    pageCids: z.record(z.string().min(1), CidStringSchema)
+    pageCids: z.record(SortNameStringSchema, CidStringSchema)
 });
 
 export const ModQueuePageIpfsSchema = z.object({

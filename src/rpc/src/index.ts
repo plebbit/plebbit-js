@@ -975,7 +975,20 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
             omit(challengeFactory({ challengeSettings: {} }), ["getChallenge", "validateChallengeSettings"])
         );
 
-        return <PKCWsServerSettingsSerialized>{ pkcOptions, challenges };
+        // Page sorts (issue #73): the same projection, functions dropped and `requireReplies` kept so a config UI can
+        // show what a sort costs. A factory that throws with no options is a broken package and is left out of the
+        // listing rather than failing the whole settings payload.
+        const allPageSortFactories = { ...(PKCJs.PKC.pageSorts || {}), ...(pkc.settings?.pageSorts || {}) };
+        const pageSorts: PKCWsServerSettingsSerialized["pageSorts"] = {};
+        for (const [name, pageSortFactory] of Object.entries(allPageSortFactories)) {
+            try {
+                pageSorts[name] = omit(pageSortFactory({ pageSortSettings: { name } }), ["score", "validatePageSortSettings"]);
+            } catch (e) {
+                log.error(`Page sort "${name}" could not be listed in the RPC settings because its factory threw`, e);
+            }
+        }
+
+        return <PKCWsServerSettingsSerialized>{ pkcOptions, challenges, pageSorts };
     }
 
     async settingsSubscribe(params: any, connectionId: string): Promise<RpcSubscriptionIdResult> {

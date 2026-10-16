@@ -336,7 +336,9 @@ describeSkipIfRpc("exclude/role identity: resolver-independent cases (resolveAut
                     [harness.ownerDomain]: { role: "moderator" }
                 },
                 settings: {
-                    challenges: [{ name: "fail", options: { error: "Only moderators can post here." }, exclude: [{ roles: ["moderator"] }] }]
+                    challenges: [
+                        { name: "fail", options: { error: "Only moderators can post here." }, exclude: [{ roles: ["moderator"] }] }
+                    ]
                 }
             });
         });

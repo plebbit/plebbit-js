@@ -26,7 +26,7 @@ import {
 } from "../publications/publication-community.js";
 import { sha256 } from "js-sha256";
 import type { LRUCache } from "lru-cache";
-import { BaseClientsManager } from "../clients/base-client-manager.js";
+import type { BaseClientsManager } from "../clients/base-client-manager.js";
 import { parseJsonWithPKCErrorIfFails, parsePageIpfsSchemaWithPKCErrorIfItFails } from "../schema/schema-util.js";
 import type { CommunityIpfsType } from "../community/types.js";
 import { buildRuntimeAuthor } from "../publications/publication-author.js";
@@ -49,11 +49,7 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: (...args) => hotScore(...args) },
     new: { score: (...args) => newScore(...args) },
-    active: {
-        score: (...args) => {
-            throw Error("Active sort has no scoring");
-        }
-    },
+    active: { score: (...args) => activeScore(...args) },
     topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
     topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
     topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
@@ -93,18 +89,23 @@ export function hotScore(comment: CommentToSort) {
     return round(sign * order + seconds / 45000, 7);
 }
 
+// Bump order from what the CommentUpdate carries; the same number the built-in active page sort file returns
+export function activeScore(comment: CommentToSort) {
+    return Math.max(comment.comment.timestamp, comment.commentUpdate.lastReplyTimestamp ?? 0);
+}
+
 export function bestScore(comment: CommentToSort) {
     assert(typeof comment.commentUpdate.downvoteCount === "number" && typeof comment.commentUpdate.upvoteCount === "number");
 
     const originalUpvoteCount = comment.commentUpdate.upvoteCount; // can be 0
-    const upvoteCount = comment.commentUpdate.upvoteCount + 1; // reddit initial upvotes is 1, pkc is 0
     const downvoteCount = comment.commentUpdate.downvoteCount;
+    if (originalUpvoteCount + downvoteCount === 0) return 0; // no votes, no evidence
 
+    // reddit's initial upvote is 1, pkc's is 0: the implicit upvote counts in both the positives and the total, or
+    // p exceeds 1 whenever a comment has upvotes and no downvotes and the square root below is NaN
+    const upvoteCount = originalUpvoteCount + 1;
     // n is the total number of ratings
-    const n = originalUpvoteCount + downvoteCount;
-    if (n === 0) {
-        return 0;
-    }
+    const n = upvoteCount + downvoteCount;
 
     // zα/2 is the (1-α/2) quantile of the standard normal distribution
     const z = 1.281551565545;

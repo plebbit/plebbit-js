@@ -138,8 +138,11 @@ describeSkipIfRpc("comment.update: local-kubo-rpc transient fetch failure must n
         const kuboRpcUrl = Object.keys(remotePKC.clients.kuboRpcClients)[0];
         const kuboClient = (remotePKC.clients.kuboRpcClients[kuboRpcUrl] as { _client: { cat: Function } })._client;
         const originalCat = kuboClient.cat.bind(kuboClient);
-        const pageCidToFail = extractFirstPageCid(forcedParentStoredUpdate);
-        expect(pageCidToFail).toBeDefined();
+        // The reply searches the parent's `old` or `new` pageCids (whichever its timestamp points at), so the first page
+        // of every sort is targeted: `replies` lists the sorts in settings.pages order and its first sort is not
+        // necessarily the one the reply fetches.
+        const pageCidsToFail = extractFirstPageCids(forcedParentStoredUpdate);
+        expect(pageCidsToFail.size).toBeGreaterThan(0);
         // Fail each target CID twice — verifies that _fetchCidP2P retries more than once
         // (i.e. the mechanism isn't just "retry once and give up"). _fetchCidP2P uses
         // MAX_ATTEMPTS = 3, so two injected failures + one pass exercises the retry loop.
@@ -148,7 +151,7 @@ describeSkipIfRpc("comment.update: local-kubo-rpc transient fetch failure must n
         kuboClient.cat = function patchedCat(target: unknown, opts?: unknown): AsyncIterable<Uint8Array> {
             const arg = typeof target === "string" ? target : String(target);
             const isPostUpdateMfsPath = arg.includes("/") && arg.endsWith("/update");
-            const isTargetedPageCid = arg === pageCidToFail;
+            const isTargetedPageCid = pageCidsToFail.has(arg);
             const currentFailures = failureCountByArg.get(arg) ?? 0;
             if ((isPostUpdateMfsPath || isTargetedPageCid) && currentFailures < FAIL_ATTEMPTS) {
                 failureCountByArg.set(arg, currentFailures + 1);
@@ -228,14 +231,13 @@ describeSkipIfRpc("comment.update: local-kubo-rpc transient fetch failure must n
     }, 35_000);
 });
 
-function extractFirstPageCid(storedUpdate: CommentUpdatesRow): string | undefined {
-    const replies = storedUpdate.replies;
-    if (!replies) return undefined;
-    for (const sortEntry of Object.values(replies)) {
+function extractFirstPageCids(storedUpdate: CommentUpdatesRow): Set<string> {
+    const firstPageCids = new Set<string>();
+    for (const sortEntry of Object.values(storedUpdate.replies ?? {})) {
         const allPageCids = (sortEntry as { allPageCids?: string[] } | undefined)?.allPageCids;
-        if (allPageCids?.[0]) return allPageCids[0];
+        if (allPageCids?.[0]) firstPageCids.add(allPageCids[0]);
     }
-    return undefined;
+    return firstPageCids;
 }
 
 async function waitForStoredCommentUpdate(community: LocalCommunity, cid: string): Promise<CommentUpdateType> {
