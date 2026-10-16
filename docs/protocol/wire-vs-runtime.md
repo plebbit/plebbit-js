@@ -61,7 +61,7 @@ All in `src/publications/publication-author.ts`:
 | Function | Purpose |
 |----------|---------|
 | `omitRuntimeAuthorFields(author)` | Strip runtime fields before storage/wire transmission |
-| `cleanWireAuthor(author)` | Get clean wire author (omit runtime fields, return undefined if empty) |
+| `cleanWireAuthor(author)` | Get clean wire author (omit runtime fields, return undefined if empty). Only ever applied to an author that is signed as absent or non-empty: an incoming `author: {}` is rejected at validation, because dropping it would change the signed bytes (issue #387) |
 | `buildRuntimeAuthor({ author, signaturePublicKey, community })` | Rebuild runtime fields from wire + signature |
 | `getAuthorNameFromWire(author)` | Extract `name` from wire format (handles backward compat) |
 | `getAuthorDomainFromWire(author)` | Extract domain name if `name` is a domain |
@@ -92,6 +92,7 @@ Old wire records may have `address` in the wire format. The code handles this:
 - **Always use `omitRuntimeAuthorFields()` / `omitRuntimeCommunityFields()`** before serializing to wire or storing in DB.
 - **Always use `buildRuntimeAuthor()` / `buildRuntimeCommunity()`** after deserializing from wire: never manually assign `address`.
 - When adding a new field, decide: does it go on wire (signed, permanent) or is it runtime-only (computed, ephemeral)?
+- **An author with no fields is omitted, never `{}`**: pkc-js strips an empty author before signing, and a community rejects a publication that signs one (`ERR_PUBLICATION_AUTHOR_IS_AN_EMPTY_OBJECT`), so the wire-to-row-to-wire round trip never has to preserve an empty object (issue #387).
 
 ## Common Mistakes
 
