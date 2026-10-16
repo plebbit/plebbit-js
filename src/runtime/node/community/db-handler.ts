@@ -82,8 +82,12 @@ export type CalculatedCommentUpdate = Omit<CommentUpdateType, "signature" | "upd
 export type CommentUpdateCalculationInput = Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp"> & {
     challengeCommentUpdate?: Record<string, unknown>;
 };
-// One cycle's author aggregates, keyed by the address set and domain they were computed for
-export type CommunityAuthorMemo = Map<string, CommunityAuthor | undefined>;
+// One cycle's author aggregates, keyed by the address set and domain they were computed for, together with the
+// publication write generation they were read at (DbHandler._publicationWriteGeneration). A vote, comment, edit or
+// moderation stored between two slices of the cycle advances the generation and the next slice starts the memo over,
+// so a comment's author.community is never older than the vote counts read in the same slice.
+export type CommunityAuthorMemo = { writeGeneration: number; authors: Map<string, CommunityAuthor | undefined> };
+export const createCommunityAuthorMemo = (): CommunityAuthorMemo => ({ writeGeneration: -1, authors: new Map() });
 
 // Per-connection temp table holding the rowids of the comments the update cycle has to recalculate (issue #355)
 const COMMENTS_TO_UPDATE_TEMP_TABLE = "temp.commentsToUpdate";
@@ -115,6 +119,9 @@ export class DbHandler {
     private _createdTables: boolean;
     private _columnNamesByTable: Record<string, string[]>;
     private _positionalMappers: Map<string, PositionalCommentRowMapper>;
+    // Advanced by every write to the publication tables (comments, votes, edits, moderations, aliases, purges). The
+    // update cycle's author memo (CommunityAuthorMemo) is only reused while it stays the same.
+    private _publicationWriteGeneration = 0;
     private _preparedStatements: Map<string, Statement>;
 
     constructor(community: DbHandler["_community"]) {
@@ -1094,17 +1101,20 @@ export class DbHandler {
     }
 
     deleteVote(authorSignerAddress: VotesTableRow["authorSignerAddress"], commentCid: VotesTableRow["commentCid"]): void {
+        this._publicationWriteGeneration++;
         this._db
             .prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ? AND authorSignerAddress = ?`)
             .run(commentCid, authorSignerAddress);
     }
 
     private _deleteCommentEditRow(rowid: number): boolean {
+        this._publicationWriteGeneration++;
         const deleteResult = this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid = ?`).run(rowid);
         return deleteResult.changes > 0;
     }
 
     insertVotes(votes: VotesTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (votes.length === 0) return;
         const processedVotes = this._processRecordsForDbBeforeInsert(votes);
 
@@ -1137,6 +1147,7 @@ export class DbHandler {
     }
 
     insertComments(comments: CommentsTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (comments.length === 0) return;
         const processedComments = this._processRecordsForDbBeforeInsert(comments);
 
@@ -1166,6 +1177,7 @@ export class DbHandler {
     }
 
     insertPseudonymityAliases(aliases: PseudonymityAliasRow[]): void {
+        this._publicationWriteGeneration++;
         if (aliases.length === 0) return;
         const processedAliases = this._processRecordsForDbBeforeInsert(aliases).map((alias) => ({
             ...alias,
@@ -1222,6 +1234,7 @@ export class DbHandler {
     }
 
     insertCommentModerations(moderations: CommentModerationsTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (moderations.length === 0) return;
         const processedModerations = this._processRecordsForDbBeforeInsert(moderations);
 
@@ -1249,6 +1262,7 @@ export class DbHandler {
     }
 
     insertCommentEdits(edits: CommentEditsTableRowInsert[]): void {
+        this._publicationWriteGeneration++;
         if (edits.length === 0) return;
         const processedEdits = this._processRecordsForDbBeforeInsert(edits);
 
@@ -2398,6 +2412,7 @@ export class DbHandler {
     }
 
     removeCommentFromPendingApproval(comment: Pick<CommentsTableRow, "cid">): void {
+        this._publicationWriteGeneration++;
         const log = Logger("pkc-js:local-community:db-handler:removeCommentFromPendingApproval");
         const stmt = this._db.prepare(`UPDATE ${TABLES.COMMENTS} SET pendingApproval = 0 WHERE cid = ?`);
         const res = stmt.run(comment.cid);
@@ -2621,7 +2636,7 @@ export class DbHandler {
 
     queryCalculatedCommentUpdate(opts: { comment: CommentUpdateCalculationInput; authorDomain?: string }): CalculatedCommentUpdate {
         // The batch of one: the per-comment API is the batched calculation over a single entry (issue #352)
-        return this._calculateCommentUpdates([{ comment: opts.comment, authorDomain: opts.authorDomain }], new Map()).get(
+        return this._calculateCommentUpdates([{ comment: opts.comment, authorDomain: opts.authorDomain }], createCommunityAuthorMemo()).get(
             opts.comment.cid
         )!;
     }
@@ -2629,7 +2644,8 @@ export class DbHandler {
     // The CommentUpdate fields of every given comment in one pass (issue #352): each field group is one statement per
     // chunk of comments instead of nine statements per comment, and the author aggregates are computed once per
     // distinct author (address set + domain) and kept in `authorMemo`, which the update cycle shares across its
-    // depth batches so an author with a thousand comments is aggregated once per cycle. Same result as
+    // depth batches so an author with a thousand comments is aggregated once per cycle, or once per publication
+    // write (a memo filled before a vote landed would pair that vote's fresh counts with a stale score). Same result as
     // queryCalculatedCommentUpdate for every comment (the per-comment API is this over one entry).
     queryCalculatedCommentUpdates(opts: {
         comments: (CommentUpdateCalculationInput & Pick<CommentsTableRow, "author">)[];
@@ -2637,7 +2653,7 @@ export class DbHandler {
     }): Map<string, CalculatedCommentUpdate> {
         return this._calculateCommentUpdates(
             opts.comments.map((comment) => ({ comment, authorDomain: getAuthorNameFromWire(comment.author) })),
-            opts.authorMemo ?? new Map()
+            opts.authorMemo ?? createCommunityAuthorMemo()
         );
     }
 
@@ -2929,12 +2945,17 @@ export class DbHandler {
     // author.community of every comment: the karma of the address set the comment's author is (an alias comment
     // counts the alias alone, a plain one every alias of the author too) plus the mod edits (bans, flairs) targeting
     // any of them or the domain. Aggregated once per distinct (karma set, mod-edit set, domain) and memoised for the
-    // cycle; the aggregates themselves are one GROUP BY per chunk of addresses.
+    // cycle, as long as nothing was written to the publication tables since the memo was filled; the aggregates
+    // themselves are one GROUP BY per chunk of addresses.
     private _queryCommunityAuthorsForCommentUpdates(
         entries: { comment: CommentUpdateCalculationInput; authorDomain?: string }[],
         memo: CommunityAuthorMemo
     ): Map<string, CommunityAuthor | undefined> {
         type Need = { karma: string[]; modEdit: string[]; domain?: string; key: string };
+        if (memo.writeGeneration !== this._publicationWriteGeneration) {
+            memo.authors.clear();
+            memo.writeGeneration = this._publicationWriteGeneration;
+        }
         const aliasByCid = this._queryPseudonymityAliasesByCommentCids(entries.map((entry) => entry.comment.cid));
         const plainAddresses = [
             ...new Set(entries.filter((entry) => !aliasByCid.has(entry.comment.cid)).map((entry) => entry.comment.authorSignerAddress))
@@ -2967,7 +2988,7 @@ export class DbHandler {
             }
         }
         const uncached = new Map<string, Need>();
-        for (const need of needByCid.values()) if (!memo.has(need.key)) uncached.set(need.key, need);
+        for (const need of needByCid.values()) if (!memo.authors.has(need.key)) uncached.set(need.key, need);
         if (uncached.size > 0) {
             const addresses = new Set<string>();
             const domains = new Set<string>();
@@ -2995,12 +3016,12 @@ export class DbHandler {
 
                 const karma = need.karma.map((address) => aggregates.get(address)).filter((aggregate) => aggregate !== undefined);
                 if (karma.length === 0) {
-                    memo.set(need.key, Object.keys(modEdits).length > 0 ? (modEdits as CommunityAuthor) : undefined);
+                    memo.authors.set(need.key, Object.keys(modEdits).length > 0 ? (modEdits as CommunityAuthor) : undefined);
                     continue;
                 }
                 const last = firstBy(karma, [(aggregate) => aggregate.lastRowid, "desc"])!;
                 const first = firstBy(karma, (aggregate) => aggregate.firstRowid)!;
-                memo.set(need.key, {
+                memo.authors.set(need.key, {
                     postScore: sumBy(karma, (aggregate) => aggregate.postScore),
                     replyScore: sumBy(karma, (aggregate) => aggregate.replyScore),
                     lastCommentCid: last.lastCommentCid,
@@ -3010,7 +3031,7 @@ export class DbHandler {
             }
         }
         const result = new Map<string, CommunityAuthor | undefined>();
-        for (const [cid, need] of needByCid) result.set(cid, memo.get(need.key));
+        for (const [cid, need] of needByCid) result.set(cid, memo.authors.get(need.key));
         return result;
     }
 
@@ -3387,6 +3408,7 @@ export class DbHandler {
     }
 
     purgeComment(cid: string, isNestedCall: boolean = false): PurgedCommentTableRows[] {
+        this._publicationWriteGeneration++;
         const log = Logger("pkc-js:local-community:db-handler:purgeComment");
         const purgedRecords: PurgedCommentTableRows[] = [];
         const detachedPageCids: string[] = [];

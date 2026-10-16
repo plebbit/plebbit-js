@@ -16,7 +16,7 @@ import type {
     DbRepliesSortEntry
 } from "../../../../publications/comment/types.js";
 import type { LocalCommunity } from "../local-community.js";
-import type { CalculatedCommentUpdate, CommunityAuthorMemo } from "../db-handler.js";
+import { createCommunityAuthorMemo, type CalculatedCommentUpdate, type CommunityAuthorMemo } from "../db-handler.js";
 import type { CommentUpdateToWriteToDbAndPublishToIpfs } from "./defaults.js";
 import { rmUnneededMfsPaths } from "./cleanup.js";
 import { wirePagesFromGeneration } from "../page-generator.js";
@@ -244,10 +244,11 @@ export async function updateCommentsThatNeedToBeUpdated(
 
     // Deepest depth first across the whole board: a comment's counts, last reply and reply pages read its children's
     // CommentUpdates, so every child is calculated and written before any parent. Within a depth the fields of every
-    // comment are read in one batched pass (issue #352) and the author aggregates are memoised for the cycle, then
-    // the reply pages, signing and the depth's single upsert follow.
+    // comment are read in one batched pass (issue #352) and the author aggregates are memoised for the cycle (the
+    // memo starts over after any publication write, so a vote stored mid-cycle never meets a stale score), then the
+    // reply pages, signing and the depth's single upsert follow.
     const depthsDeepestFirst = [...cidsByDepth.keys()].sort((a, b) => b - a);
-    const authorMemo: CommunityAuthorMemo = new Map();
+    const authorMemo: CommunityAuthorMemo = createCommunityAuthorMemo();
     const allCommentUpdateRows: CommentUpdateToWriteToDbAndPublishToIpfs[] | undefined = onCommentUpdatesWritten ? undefined : [];
     const limit = pLimit(50);
     for (const depth of depthsDeepestFirst) {

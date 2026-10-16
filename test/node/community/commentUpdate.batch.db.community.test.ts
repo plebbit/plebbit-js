@@ -1,14 +1,13 @@
 import { beforeEach, afterEach, describe, it, expect } from "vitest";
 import assert from "assert";
-import { DbHandler } from "../../../dist/node/runtime/node/community/db-handler.js";
+import { DbHandler, createCommunityAuthorMemo } from "../../../dist/node/runtime/node/community/db-handler.js";
 import { describeSkipIfRpc } from "../../helpers/conditional-tests.js";
 import signers from "../../fixtures/signers.js";
 
 import type {
     CommentsTableRow,
     CommentsTableRowInsert,
-    CommentUpdatesTableRowInsert,
-    CommunityAuthor
+    CommentUpdatesTableRowInsert
 } from "../../../dist/node/publications/comment/types.js";
 import type { VotesTableRowInsert } from "../../../dist/node/publications/vote/types.js";
 import type { CommentModerationsTableRowInsert } from "../../../dist/node/publications/comment-moderation/types.js";
@@ -316,15 +315,33 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdates (batched) matches qu
     it("reuses a per-cycle author memo instead of aggregating the author again", () => {
         assert(dbHandler);
         const rows = rowsOf(seeded);
-        const authorMemo = new Map<string, CommunityAuthor | undefined>();
+        const authorMemo = createCommunityAuthorMemo();
         const first = dbHandler.queryCalculatedCommentUpdates({ comments: rows, authorMemo });
-        expect(authorMemo.size, "one entry per distinct author (address set + domain)").to.be.greaterThan(0);
+        expect(authorMemo.authors.size, "one entry per distinct author (address set + domain)").to.be.greaterThan(0);
         // Poison every memo entry: a second batch with the same memo must return the memoised aggregates verbatim
-        for (const key of authorMemo.keys()) authorMemo.set(key, { ...authorMemo.get(key)!, postScore: 4242 });
+        for (const key of authorMemo.authors.keys()) authorMemo.authors.set(key, { ...authorMemo.authors.get(key)!, postScore: 4242 });
         const second = dbHandler.queryCalculatedCommentUpdates({ comments: rows, authorMemo });
         for (const row of rows) {
             expect(second.get(row.cid)!.author.community.postScore).to.equal(4242);
             expect({ ...second.get(row.cid)!, author: undefined }).to.deep.equal({ ...first.get(row.cid)!, author: undefined });
         }
+    });
+
+    it("recomputes an author's aggregate when a vote lands between two slices of the cycle", () => {
+        // The shape of the vote-test failures on CI: a post and its reply by one author are both flagged, the reply's
+        // slice fills the memo, a downvote on the post is stored while the cycle awaits the reply's pages, then the
+        // post's slice runs. Its downvoteCount is read fresh in that slice, so its author.community must be too:
+        // clients saw a signed CommentUpdate with downvoteCount 1 and author.community.postScore 0.
+        assert(dbHandler);
+        const author = "12D3KooMemoAuthor";
+        const post = insertComment({ authorSignerAddress: author });
+        const reply = insertComment({ depth: 1, parentCid: post.cid, authorSignerAddress: author });
+        const authorMemo = createCommunityAuthorMemo();
+        const replySlice = dbHandler.queryCalculatedCommentUpdates({ comments: rowsOf([reply]), authorMemo });
+        expect(replySlice.get(reply.cid)!.author.community.postScore).to.equal(0);
+        vote(post, -1);
+        const calculated = dbHandler.queryCalculatedCommentUpdates({ comments: rowsOf([post]), authorMemo }).get(post.cid)!;
+        expect(calculated.downvoteCount).to.equal(1);
+        expect(calculated.author.community.postScore, "the aggregate must be as fresh as the vote counts of the same slice").to.equal(-1);
     });
 });
