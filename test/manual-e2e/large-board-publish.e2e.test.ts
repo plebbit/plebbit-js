@@ -75,6 +75,9 @@ import type { PageTypeJson } from "../../dist/node/pages/types.js";
 //     are the flag query's author and ancestor arms: 12 authors had one comment flagged (windowed reply sorts moving
 //     with the clock is the likely seed), every other comment of theirs followed (8,504), then every ancestor of
 //     those (7,860, among them 6,203 posts whose postUpdates file was rewritten).
+//   delete() of the board under the same default heap: 133 s, after two fixes it forced (issue #389): the comment cids
+//     are now read and unpinned in rowid slices instead of all at once, and the last record's page cids come from
+//     what the community recorded when publishing instead of fetching and walking every page (9.4 GB of JSON here).
 
 const envInt = (name: string, fallback: number) => (Number(process.env[name]) > 0 ? Number(process.env[name]) : fallback);
 const POSTS = envInt("E2E_POSTS", 2000);
