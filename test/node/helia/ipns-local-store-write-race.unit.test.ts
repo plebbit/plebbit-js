@@ -126,8 +126,11 @@ describeSkipIfRpc("IPNS localStore compare-then-write race (issue #321)", () => 
 
         const [seq5, seq4] = [await t.makeRecord(5n), await t.makeRecord(4n)];
         t.setHoldGets(true);
-        // e.g. a direct fetch returning seq 5 and a slower provider returning seq 4 for the same name
+        // e.g. a direct fetch returning seq 5 and a slower provider returning seq 4 for the same name.
+        // Park the writers one at a time so heldGets[0] is always the seq 5 writer: two writers
+        // started together reach the compare read in scheduling order, not call order.
         const writeSeq5 = cacheIpnsRecordInPubsubLocalStore({ localStore: t.localStore, routingKey: t.routingKey, marshalledRecord: seq5 });
+        await t.waitForHeldGets(1);
         const writeSeq4 = cacheIpnsRecordInPubsubLocalStore({ localStore: t.localStore, routingKey: t.routingKey, marshalledRecord: seq4 });
         await t.waitForHeldGets(2); // both writers read "has" and are about to compare against seq 3
         t.setHoldGets(false);
@@ -149,6 +152,7 @@ describeSkipIfRpc("IPNS localStore compare-then-write race (issue #321)", () => 
         const seq5 = await t.makeRecord(5n);
         t.setHoldGets(true);
         const writeA = cacheIpnsRecordInPubsubLocalStore({ localStore: t.localStore, routingKey: t.routingKey, marshalledRecord: seq5 });
+        await t.waitForHeldGets(1);
         const writeB = cacheIpnsRecordInPubsubLocalStore({ localStore: t.localStore, routingKey: t.routingKey, marshalledRecord: seq5 });
         await t.waitForHeldGets(2);
         t.setHoldGets(false);
@@ -178,8 +182,12 @@ describeSkipIfRpc("IPNS localStore compare-then-write race (issue #321)", () => 
 
         const [seq5, seq4] = [await t.makeRecord(5n), await t.makeRecord(4n)];
         t.setHoldGets(true);
-        // e.g. two mesh peers forwarding different sequence numbers of the same name
+        // e.g. two mesh peers forwarding different sequence numbers of the same name. helia's
+        // #handleRecord runs asynchronously per message, so two messages dispatched back to back
+        // reach the compare read in scheduling order (seq 4 first on a slow runner, seen on macOS
+        // CI). Park seq 5 before dispatching seq 4 so heldGets[0] is always the seq 5 handler.
         deliverGossip(seq5);
+        await t.waitForHeldGets(1);
         deliverGossip(seq4);
         await t.waitForHeldGets(2);
         t.setHoldGets(false);
