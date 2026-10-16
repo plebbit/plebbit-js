@@ -238,6 +238,12 @@ The contract:
   loads the post's subtree, which is bounded. `BENCH_PIPELINE=1` times the whole publish cycle instead
   (every comment's CommentUpdate, then the post pages): about 0.25 ms per comment, which is what a full
   regeneration after a migration or a `settings.pages` edit costs.
+  The manual e2e `test/manual-e2e/large-board-publish.e2e.test.ts` (issue #386) runs the same shape end to end
+  on a real kubo: 33k posts / 1.02M comments with the nine default sorts, under Node's default 4 GB heap,
+  started, published, loaded by a remote client and published again after one new post. Measured 2026-10-16:
+  the start-time repin walk 40 min, the first cycle 18.9 min at a 2.75 GB heap peak and 6.4 GB RSS while
+  writing 7.9 GB of pages, and the next cycle 295 s for a single new post, which is the re-add of every page
+  rather than generation.
 
 - **Sync only.** Generation runs per comment per cycle; an async signature would invite a network call in
   the community's hot loop. This is a deliberate divergence from `ChallengeFile.getChallenge`.

@@ -49,6 +49,14 @@ import type { PageTypeJson } from "../../dist/node/pages/types.js";
 // comments in 118 s; first cycle 19.7 s with this process peaking at 410 MB heap / 1,662 MB RSS and the daemon at
 // 210 MB RSS; the remote client walked 3 pages of `hot`; the second cycle after one appended post took 3.7 s.
 // topHour is absent from the published sorts because the seeded board ends an hour before the run.
+//
+// Measured 2026-10-16, same branch and setup, E2E_POSTS=33000 (1,020,719 comments from 1,320 authors, nine default
+// sorts, repin included, VITEST_TIMEOUT and E2E_FIRST_PUBLISH_TIMEOUT_MS raised): 3/3 passed in 68 min. Seeding 265 s;
+// the repin walk re-added all 1.02M comments in 40 min; first cycle 18.9 min with this process peaking at 2,753 MB
+// heap / 6,398 MB RSS and the daemon at 914 MB RSS while about 7.9 GB of pages were written (kubo repo 0.93 GB to
+// 8.85 GB); published hot, new, active, topDay, topWeek, topMonth, topYear, topAll; the remote client walked 3 pages
+// of `hot`; the second cycle after one appended post took 295 s. A million comments fits a 16 GB machine; the
+// steady-state cost (every page re-added each cycle, the flag scan of #361) is what is left (issue #386).
 
 const envInt = (name: string, fallback: number) => (Number(process.env[name]) > 0 ? Number(process.env[name]) : fallback);
 const POSTS = envInt("E2E_POSTS", 2000);
