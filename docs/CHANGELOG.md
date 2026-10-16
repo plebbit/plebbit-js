@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.107](https://github.com/pkcprotocol/pkc-js/compare/v0.0.106...v0.0.107) (2026-10-16)
+
+### Features
+
+* **helia:** report ERR_COMMUNITY_UNREACHABLE_FROM_THIS_CLIENT for relay-only providers ([#377](https://github.com/pkcprotocol/pkc-js/issues/377)) ([#392](https://github.com/pkcprotocol/pkc-js/issues/392)) ([494ed7c](https://github.com/pkcprotocol/pkc-js/commit/494ed7ceca6535a2939611cbb25d452a076b9cf1)), closes [#215](https://github.com/pkcprotocol/pkc-js/issues/215)
+
+### Bug Fixes
+
+* **rpc:** emit updatingstatechange for succeeded, failed and waiting-retry over RPC ([#364](https://github.com/pkcprotocol/pkc-js/issues/364)) ([#393](https://github.com/pkcprotocol/pkc-js/issues/393)) ([41a38c9](https://github.com/pkcprotocol/pkc-js/commit/41a38c94fdda0ee6ee7ff9248afcf4199801a32a))
+
 ## [0.0.106](https://github.com/pkcprotocol/pkc-js/compare/v0.0.105...v0.0.106) (2026-10-16)
 
 ### Bug Fixes
