@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.110](https://github.com/pkcprotocol/pkc-js/compare/v0.0.109...v0.0.110) (2026-10-17)
+
+### Features
+
+* **types:** export page sort settings entry and score argument types ([#397](https://github.com/pkcprotocol/pkc-js/issues/397)) ([#398](https://github.com/pkcprotocol/pkc-js/issues/398)) ([3f35c22](https://github.com/pkcprotocol/pkc-js/commit/3f35c22c1822094dc5df082e98b76f3a3a6fcc2e))
+
 ## [0.0.109](https://github.com/pkcprotocol/pkc-js/compare/v0.0.108...v0.0.109) (2026-10-16)
 
 ### Bug Fixes
