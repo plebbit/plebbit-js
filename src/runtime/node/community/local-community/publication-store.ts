@@ -604,6 +604,34 @@ export async function storeComment(
     return { comment: commentIpfs, cid: commentCid };
 }
 
+// The key of the alias a comment would share with the author's other comments, or undefined when it
+// gets a fresh alias regardless (per-reply, a new per-post post) or is not pseudonymized at all.
+function pseudonymityAliasLockKey(community: LocalCommunity, comment: CommentPubsubMessagePublication): string | undefined {
+    const mode = community.features?.pseudonymityMode;
+    const originalAuthorPublicKey = comment.signature.publicKey;
+    if (mode === "per-author") return `per-author:${originalAuthorPublicKey}`;
+    if (mode === "per-post" && comment.postCid) return `per-post:${originalAuthorPublicKey}:${comment.postCid}`;
+    return undefined;
+}
+
+async function withPseudonymityAliasLock<T>(community: LocalCommunity, key: string | undefined, fn: () => Promise<T>): Promise<T> {
+    if (!key) return fn();
+    const previous = community._pseudonymityAliasLocks.get(key) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => (release = resolve));
+    const tail = previous.then(() => current);
+    community._pseudonymityAliasLocks.set(key, tail);
+    // previous never rejects: every tail resolves once its store releases, whether the store succeeded or threw
+    await previous;
+    try {
+        return await fn();
+    } finally {
+        release();
+        // Only remove our own entry: a later store under the same key has already chained onto it
+        if (community._pseudonymityAliasLocks.get(key) === tail) community._pseudonymityAliasLocks.delete(key);
+    }
+}
+
 export async function storePublication({
     community,
     request,
@@ -625,33 +653,38 @@ export async function storePublication({
         return storeCommentEdit(community, commentEditWithAlias, request.challengeRequestId);
     } else if (request.commentModeration) return storeCommentModeration(community, request.commentModeration, request.challengeRequestId);
     else if (request.comment) {
-        const originalCommentSignatureEncoded = request.comment.signature.signature;
-        const { publication, anonymity } = await prepareCommentWithAnonymity({
-            community,
-            originalComment: request.comment,
-            authorIdentityMatcher: authorIdentityMatcher ?? authorIdentityMatcherForRequest({ community, request })
-        });
-        const storedComment = await storeComment(community, {
-            commentPubsub: publication,
-            pendingApproval,
-            pseudonymityMode: anonymity?.mode,
-            originalCommentSignatureEncoded: anonymity ? originalCommentSignatureEncoded : undefined,
-            challengeAggregate
-        });
+        const originalComment = request.comment;
+        const originalCommentSignatureEncoded = originalComment.signature.signature;
+        // The alias lookup in prepareCommentWithAnonymity and the alias insert below are separated by
+        // storeComment's awaits, so the whole span runs under the alias key's lock (issue #399).
+        return withPseudonymityAliasLock(community, pseudonymityAliasLockKey(community, originalComment), async () => {
+            const { publication, anonymity } = await prepareCommentWithAnonymity({
+                community,
+                originalComment,
+                authorIdentityMatcher: authorIdentityMatcher ?? authorIdentityMatcherForRequest({ community, request })
+            });
+            const storedComment = await storeComment(community, {
+                commentPubsub: publication,
+                pendingApproval,
+                pseudonymityMode: anonymity?.mode,
+                originalCommentSignatureEncoded: anonymity ? originalCommentSignatureEncoded : undefined,
+                challengeAggregate
+            });
 
-        if (anonymity)
-            community._dbHandler.insertPseudonymityAliases([
-                {
-                    commentCid: storedComment.cid,
-                    aliasPrivateKey: anonymity.aliasPrivateKey,
-                    originalAuthorPublicKey: anonymity.originalAuthorPublicKey,
-                    originalAuthorName: getAuthorNameFromWire(anonymity.originalComment.author) || null,
-                    mode: anonymity.mode,
-                    insertedAt: timestamp()
-                }
-            ]);
+            if (anonymity)
+                community._dbHandler.insertPseudonymityAliases([
+                    {
+                        commentCid: storedComment.cid,
+                        aliasPrivateKey: anonymity.aliasPrivateKey,
+                        originalAuthorPublicKey: anonymity.originalAuthorPublicKey,
+                        originalAuthorName: getAuthorNameFromWire(anonymity.originalComment.author) || null,
+                        mode: anonymity.mode,
+                        insertedAt: timestamp()
+                    }
+                ]);
 
-        return storedComment;
+            return storedComment;
+        });
     } else if (request.communityEdit) return storeCommunityEditPublication(community, request.communityEdit, request.challengeRequestId);
     else throw Error("Don't know how to store this publication" + request);
 }
