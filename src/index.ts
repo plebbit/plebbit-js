@@ -67,5 +67,14 @@ export type { HeliaWithLibp2pPubsub } from "./helia/types.js";
 // Public re-exports: the page sort file contract (issue #73), for packages such as @pkcprotocol/active-page-sort
 // and for UI libraries that install such a package to re-sort a page they hold (docs/protocol/page-sorts.md,
 // "Client side").
-export type { PageSortFile, PageSortFileFactory, PageSortFileFactoryInput } from "./community/types.js";
+export type {
+    CommunityPageSortSetting,
+    PageSortFile,
+    PageSortFileInput,
+    PageSortFileFactory,
+    PageSortFileFactoryInput,
+    PageSortFileFactoryArgs,
+    PageSortScope,
+    PageSortScoreArgs
+} from "./community/types.js";
 export type { PageSortReplyEntry } from "./pages/types.js";

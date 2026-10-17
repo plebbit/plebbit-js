@@ -261,6 +261,14 @@ The contract:
   `test/fixtures/page-sorts/active-no-bump-keyword.js`; `test/fixtures/page-sorts/keyword-filter.js`
   declines comments, and `test/fixtures/page-sorts/most-replies.js` scores a reply over its own subtree.
 
+Typing a package against the contract: pkc-js exports the file types from its root, so a TypeScript package
+compiles against what the community runs rather than a copy of it. `PageSortFileFactory` is the default export's
+type, `PageSortFile` what it returns, `PageSortScoreArgs` what `score` receives, `CommunityPageSortSetting` the
+`settings.pages` entry the factory is called with (`PageSortFileFactoryArgs` is the `{ pageSortSettings }`
+wrapper), `PageSortReplyEntry` one element of `replies`, and `PageSortScope` is `"posts" | "replies"`.
+`PageSortFileInput` / `PageSortFileFactoryInput` are the input-side variants a consumer passes to the
+`pageSorts` PKC option. The reference package is `@pkcprotocol/active-page-sort`.
+
 Registering a factory under the `pageSorts` PKC option (or on `PKC.pageSorts`) makes it available by
 `name`; a `path` entry loads a file directly. Installing packages to `${dataPath}/page-sorts/` through
 `bitsocial page-sort install` is bitsocial-cli work that builds on the same registry. A reload applies at
