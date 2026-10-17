@@ -171,6 +171,10 @@ export type PageSortFileFactoryInput = z.input<typeof PageSortFileFactorySchema>
 
 export type PageSortFileFactoryArgs = z.infer<typeof PageSortFileFactoryArgsSchema>;
 
+// What `score` receives per comment (issue #397): the comment, its CommentUpdate with `replies` stripped, the merged
+// options, `baseTimestamp`, and `replies` for a file declaring `requireReplies`.
+export type PageSortScoreArgs = Parameters<PageSortFile["score"]>[0];
+
 export type PageSortScope = z.infer<typeof PageSortScopeSchema>;
 
 export type CommunityPageSort = z.infer<typeof CommunityPageSortSchema>;
