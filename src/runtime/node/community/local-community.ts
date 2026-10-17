@@ -120,6 +120,11 @@ export class LocalCommunity extends RpcLocalCommunity implements CreateNewLocalC
     // signature. A second request for the same signed publication (a client retry under a new
     // challengeRequestId, issue #228) waits on this promise instead of running its own exchange.
     _inFlightPublicationExchanges: Map<string, Promise<void>> = new Map();
+    // Tail of the per-alias-key chain of comment stores, keyed by pseudonymityAliasLockKey. A comment
+    // whose alias would be shared (per-post, per-author) waits here until the previous store under the
+    // same key has inserted its alias row, so the author's concurrent first publications resolve to
+    // one alias instead of each generating their own (issue #399).
+    _pseudonymityAliasLocks: Map<string, Promise<void>> = new Map();
     // Lifetime of one challenge exchange (see CHALLENGE_EXCHANGE_TTL_MS). Read when the caches
     // above are created at start; an instance field so a test can lower it.
     _challengeExchangeTtlMs: number = CHALLENGE_EXCHANGE_TTL_MS;
