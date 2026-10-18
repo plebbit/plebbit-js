@@ -16,7 +16,12 @@ import {
     type TreeNode
 } from "./page-sorts-test-util.js";
 
-import type { CommunitySettings } from "../../../../dist/node/community/types.js";
+import { wirePagesFromGeneration } from "../../../../dist/node/runtime/node/community/page-generator.js";
+import { DEFAULT_RESERVED_OPTIONS } from "../../../../dist/node/pages/page-sort-options.js";
+import mostRepliesPageSort from "../../../fixtures/page-sorts/most-replies.js";
+import { resortPageLikeAUi } from "../../../node-and-browser/pages/page-sorts-client-test-util.js";
+
+import type { CommunitySettings, PageSortFileFactoryInput } from "../../../../dist/node/community/types.js";
 import type { PageIpfs } from "../../../../dist/node/pages/types.js";
 
 const DEFAULT_POST_SORTS = ["active", "hot", "new", "topAll", "topDay", "topHour", "topMonth", "topWeek", "topYear"];
@@ -542,6 +547,98 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
             expect(commentCidsOfPage(busyReplies.singlePreloadedPage.mostReplies)).to.deep.equal(
                 ["r-two", "r-removed-child", "r-none"].map(cidOf)
             );
+        } finally {
+            await context.cleanup();
+        }
+    });
+
+    // Issue #407: the replies a requireReplies sort receives are not reduced by the sort's exclusion options. A removed
+    // or deleted reply is a tombstone (docs/protocol/comment-lifecycle.md, "Which replies count"): it and the present
+    // replies under it reach `score`, so a package decides what counts, and the community's set equals what a client
+    // walks from the reply pages, which keep tombstones.
+    it("requireReplies: removed and deleted replies and the replies under them reach score, even with the posts scope's exclusions", async () => {
+        const context = await createCommunityWithDefaultDb();
+        try {
+            await editPages(context, {
+                posts: [{ path: MOST_REPLIES_SORT_PATH, preloaded: true }, { path: NO_BUMP_KEYWORD_SORT_PATH }],
+                replies: [{ name: "newFlat", preloaded: true }]
+            });
+            const base = timestamp() - 10_000;
+            const { cidOf } = await seedComments(context.community, [
+                {
+                    label: "under-removed",
+                    timestamp: base + 100,
+                    children: [
+                        {
+                            label: "removed-reply",
+                            timestamp: base + 200,
+                            children: [
+                                { label: "removed-child-a", timestamp: base + 900 },
+                                { label: "removed-child-b", timestamp: base + 300 }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    label: "under-deleted",
+                    timestamp: base + 50,
+                    children: [
+                        { label: "deleted-reply", timestamp: base + 250, children: [{ label: "deleted-child", timestamp: base + 800 }] }
+                    ]
+                },
+                {
+                    label: "two-present",
+                    timestamp: base + 600,
+                    children: [
+                        { label: "present-a", timestamp: base + 650 },
+                        { label: "present-b", timestamp: base + 700 }
+                    ]
+                }
+            ]);
+            await updateCommentsThatNeedToBeUpdated(context.community);
+            const db = context.community._dbHandler["_db"];
+            db.prepare(`UPDATE commentUpdates SET removed = 1 WHERE cid = ?`).run(cidOf("removed-reply"));
+            db.prepare(`UPDATE commentUpdates SET edit = ? WHERE cid = ?`).run(JSON.stringify({ deleted: true }), cidOf("deleted-reply"));
+            const generator = getPageGenerator(context.community);
+
+            const posts = await generator.generateCommunityPosts({ preloadedPageSizeBytes: LARGE_PRELOAD_BUDGET });
+            if (!posts) throw new Error("expected post pages");
+            const mostRepliesPage = wirePagesFromGeneration(posts).pages.mostReplies;
+            // Descendants: under-removed 3 (tombstone + 2 under it), two-present 2, under-deleted 2 (tombstone + 1)
+            expect(commentCidsOfPage(mostRepliesPage)).to.deep.equal(["under-removed", "two-present", "under-deleted"].map(cidOf));
+
+            // A client walking the reply pages (newFlat keeps tombstones by default) gets the same set and the same order
+            const walked: PageIpfs["comments"] = [];
+            for (const label of ["under-removed", "under-deleted", "two-present"]) {
+                const replyPages = await generator.generatePostPages(
+                    context.community._dbHandler.queryComment(cidOf(label))!,
+                    LARGE_PRELOAD_BUDGET
+                );
+                if (!replyPages || !("singlePreloadedPage" in replyPages)) throw new Error("expected the single preloaded page shortcut");
+                walked.push(...replyPages.singlePreloadedPage.newFlat!.comments);
+            }
+            expect(walked.map((entry) => entry.commentUpdate.cid)).to.include.members([cidOf("removed-reply"), cidOf("deleted-reply")]);
+            const resorted = resortPageLikeAUi({
+                comments: [...mostRepliesPage!.comments].reverse(),
+                factory: mostRepliesPageSort as PageSortFileFactoryInput,
+                pageSortSettings: { name: "mostReplies", options: DEFAULT_RESERVED_OPTIONS.posts },
+                baseTimestamp: timestamp(),
+                replies: walked
+            });
+            expect(resorted.map((entry) => entry.commentUpdate.cid)).to.deep.equal(commentCidsOfPage(mostRepliesPage));
+
+            // The no-bump package with no keyword set is the built-in active: a present reply under a tombstone bumps
+            await editPages(context, { posts: [{ path: NO_BUMP_KEYWORD_SORT_PATH, preloaded: true }] });
+            const byPackage = await generator.generateCommunityPosts({ preloadedPageSizeBytes: LARGE_PRELOAD_BUDGET });
+            if (!byPackage || !("singlePreloadedPage" in byPackage)) throw new Error("expected the single preloaded page shortcut");
+            await editPages(context, { posts: [{ name: "active", preloaded: true }] });
+            const builtIn = await getPageGenerator(context.community).generateCommunityPosts({
+                preloadedPageSizeBytes: LARGE_PRELOAD_BUDGET
+            });
+            if (!builtIn || !("singlePreloadedPage" in builtIn)) throw new Error("expected the single preloaded page shortcut");
+            const expectedActive = ["under-removed", "under-deleted", "two-present"].map(cidOf); // bump times 900, 800, 700
+            expect(commentCidsOfPage(builtIn.singlePreloadedPage.active)).to.deep.equal(expectedActive);
+            expect(commentCidsOfPage(byPackage.singlePreloadedPage.active)).to.deep.equal(expectedActive);
         } finally {
             await context.cleanup();
         }
