@@ -8,14 +8,23 @@
 // "sage is overused" in prose keeps bumping; a reply whose content is "sage" or has a line "sage" does not.
 //
 // The file is `score`-only and declares `requireReplies`, so pkc-js hands it every descendant of the scored
-// post as a flat list (the community builds it from the database, a client from the reply pages it walked),
-// already reduced by the sort's exclusion options. The file reads nothing but content and timestamp.
+// post as a flat list (the community builds it from the database, a client from the reply pages it walked).
+// The list is not reduced by the sort's exclusion options (issue #407): removed, deleted, disapproved and
+// pending replies arrive too, and the file applies the built-in active's rule itself (docs/protocol/
+// comment-lifecycle.md, "Which replies count"): such a reply does not bump, the present replies under it do.
 
 const splitKeywords = (raw) =>
     (raw ?? "")
         .split(",")
         .map((keyword) => keyword.trim())
         .filter(Boolean);
+
+// A tombstone (removed, deleted, disapproved) or a reply still in the mod queue never bumps its thread
+const isCounted = ({ commentUpdate }) =>
+    commentUpdate.removed !== true &&
+    commentUpdate.edit?.deleted !== true &&
+    commentUpdate.approved !== false &&
+    commentUpdate.pendingApproval !== true;
 
 const isNoBump = (content, keywords) => {
     if (typeof content !== "string") return false;
@@ -39,11 +48,12 @@ export default function activeNoBumpKeywordPageSort({ pageSortSettings }) {
                 placeholder: "sage,nobump"
             }
         ],
-        // MAX(timestamp) over the post and its descendants, skipping no-bump replies. Descendants of a no-bump reply
-        // are still counted, so a normal reply under a no-bump one bumps as usual.
+        // MAX(timestamp) over the post and its descendants, skipping tombstones, pending replies and no-bump replies.
+        // Descendants of a skipped reply are still counted, so a normal reply under one bumps as usual.
         score({ comment, replies }) {
             let score = comment.timestamp;
-            for (const reply of replies) if (!isNoBump(reply.comment.content, keywords)) score = Math.max(score, reply.comment.timestamp);
+            for (const reply of replies)
+                if (isCounted(reply) && !isNoBump(reply.comment.content, keywords)) score = Math.max(score, reply.comment.timestamp);
             return score;
         }
     };
