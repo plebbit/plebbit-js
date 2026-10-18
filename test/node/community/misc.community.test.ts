@@ -395,6 +395,16 @@ describe.concurrent(`community.clients (Local)`, async () => {
     });
 
     describeIfRpc(`community.clients.pkcRpcClients (local community ran over RPC)`, async () => {
+        // pkcRpcClients interleaves two independent state machines: the IPNS publish loop (publishing-ipns/stopped)
+        // and the challenge exchange. Storing a publication sets the update trigger before the verification is
+        // signed and published, so the loop's 100ms poll can emit publishing-ipns on either side of
+        // publishing-challenge-verification (issue #406). Assert each machine's order separately.
+        const ipnsPublishStates = new Set(["publishing-ipns", "stopped"]);
+        const splitRpcClientStates = (states: string[]) => ({
+            ipns: states.filter((state) => ipnsPublishStates.has(state)),
+            challengeExchange: states.filter((state) => !ipnsPublishStates.has(state))
+        });
+
         it(`community.clients.pkcRpcClients[rpcUrl] is stopped by default`, async () => {
             const community = (await pkc.createCommunity({})) as RpcLocalCommunity;
             const rpcUrl = Object.keys(pkc.clients.pkcRpcClients)[0];
@@ -431,13 +441,11 @@ describe.concurrent(`community.clients (Local)`, async () => {
             const rpcUrl = Object.keys(pkc.clients.pkcRpcClients)[0];
             const recordedStates: string[] = [];
 
-            const expectedStates = [
-                "publishing-ipns",
-                "stopped",
+            const expectedIpnsStates = ["publishing-ipns", "stopped", "publishing-ipns"];
+            const expectedChallengeExchangeStates = [
                 "waiting-challenge-requests",
                 "publishing-challenge-verification",
-                "waiting-challenge-requests",
-                "publishing-ipns"
+                "waiting-challenge-requests"
             ];
             community.clients.pkcRpcClients[rpcUrl].on("statechange", (newState) => recordedStates.push(newState));
 
@@ -447,9 +455,10 @@ describe.concurrent(`community.clients (Local)`, async () => {
 
             const post = await publishRandomPost({ communityAddress: community.address, pkc: pkc });
             await waitTillPostInCommunityPages(post as Comment & { cid: string }, pkc);
-            if (recordedStates[recordedStates.length - 1] === "stopped")
-                expect(recordedStates).to.deep.equal([...expectedStates, "stopped"]);
-            else expect(recordedStates).to.deep.equal(expectedStates);
+            const { ipns, challengeExchange } = splitRpcClientStates(recordedStates);
+            if (ipns[ipns.length - 1] === "stopped") expect(ipns).to.deep.equal([...expectedIpnsStates, "stopped"]);
+            else expect(ipns).to.deep.equal(expectedIpnsStates);
+            expect(challengeExchange).to.deep.equal(expectedChallengeExchangeStates);
 
             await community.delete();
         });
@@ -461,16 +470,13 @@ describe.concurrent(`community.clients (Local)`, async () => {
             const rpcUrl = Object.keys(pkc.clients.pkcRpcClients)[0];
             const recordedStates: string[] = [];
 
-            const expectedStates = [
-                "publishing-ipns",
-                "stopped",
+            const expectedIpnsStates = ["publishing-ipns", "stopped", "publishing-ipns", "stopped"];
+            const expectedChallengeExchangeStates = [
                 "waiting-challenge-requests",
                 "publishing-challenge",
                 "waiting-challenge-answers",
                 "publishing-challenge-verification",
-                "waiting-challenge-requests",
-                "publishing-ipns",
-                "stopped"
+                "waiting-challenge-requests"
             ];
             community.clients.pkcRpcClients[rpcUrl].on("statechange", (newState) => recordedStates.push(newState));
 
@@ -487,7 +493,9 @@ describe.concurrent(`community.clients (Local)`, async () => {
             await publishWithExpectedResult({ publication: mockPost, expectedChallengeSuccess: true });
             await new Promise((resolve) => community.once("update", resolve));
             await new Promise((resolve) => community.once("startedstatechange", resolve)); // wait for the last stopped state to be emitted
-            expect(recordedStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
+            const { ipns, challengeExchange } = splitRpcClientStates(recordedStates);
+            expect(ipns.slice(0, expectedIpnsStates.length)).to.deep.equal(expectedIpnsStates);
+            expect(challengeExchange.slice(0, expectedChallengeExchangeStates.length)).to.deep.equal(expectedChallengeExchangeStates);
 
             await community.delete();
         });
