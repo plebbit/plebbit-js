@@ -8,6 +8,12 @@ on:
     types:
       - 'completed'
 
+# One release at a time: two overlapping runs both bumped from the same tag, and 0.0.113 reached npm
+# from the older commit while the newer run's publish was rejected. Queued, never cancelled.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   on-success:
     runs-on: ubuntu-latest
