@@ -188,7 +188,12 @@ export default function ({ pageSortSettings }) {
         defaultOptions: {},                    // merged under the entry's options
         score({ comment, commentUpdate, options, baseTimestamp, replies }) {
             let score = comment.timestamp;
-            for (const reply of replies) if (!keywords.includes(reply.comment.content?.trim())) score = Math.max(score, reply.comment.timestamp);
+            for (const { comment: reply, commentUpdate: update } of replies) {
+                // A tombstone or a pending reply does not bump; the present replies under it still do
+                const tombstoneOrPending =
+                    update.removed === true || update.edit?.deleted === true || update.approved === false || update.pendingApproval === true;
+                if (!tombstoneOrPending && !keywords.includes(reply.content?.trim())) score = Math.max(score, reply.timestamp);
+            }
             return score;
         },
         validatePageSortSettings({ pageSortSettings }) {}  // throw to reject the entry
@@ -368,9 +373,13 @@ const ordered =
   the nested sort's pages and every reply's own reply pages recursively, since a nested reply carries its
   own `replies.pages` and `nextCid`. The UI hands each comment its own descendants from that list (by
   `parentCid`), the entries as walked, since a page entry is a superset of `PageSortReplyEntry`. Reply pages
-  keep removed and deleted replies as tombstones, so the walk sees what the community passes. With the
-  default reply-page options the walk does miss pending-approval replies, which the community passes; a
-  file that drops pending replies (nothing can be published under one) scores the same on both sides. How many
+  keep removed and deleted replies as tombstones only while the reply sort's `excludeRemovedComments` and
+  `excludeDeletedComments` are `"false"` (the default). An owner can turn either on for a reply sort, and then
+  its pages leave tombstones out (a nested sort loses the replies under them too), so check the sort's
+  `publicOptions` in `community.pageSorts.replies` and walk a published reply sort that keeps them. If none
+  does, the client cannot reproduce the community's order. Pending-approval replies are hidden from reply
+  pages by default but passed by the community; a file that drops pending replies (nothing can be published
+  under one) scores the same on both sides. How many
   threads to walk and when to stop is the UI's policy; the worked example of both the walk and the
   re-sort is `test/node-and-browser/pages/page-sorts-client-test-util.ts`. A file without
   `requireReplies` needs none of this.
