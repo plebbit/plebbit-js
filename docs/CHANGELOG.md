@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.113](https://github.com/pkcprotocol/pkc-js/compare/v0.0.112...v0.0.113) (2026-10-18)
+
+### Bug Fixes
+
+* **community:** skip removed/deleted replies in reply counts and bumps, keep the replies under them ([#404](https://github.com/pkcprotocol/pkc-js/issues/404)) ([29e0206](https://github.com/pkcprotocol/pkc-js/commit/29e020614277af10fb047f73cc3311cb4472f2ed)), closes [#403](https://github.com/pkcprotocol/pkc-js/issues/403) [#403](https://github.com/pkcprotocol/pkc-js/issues/403) [#405](https://github.com/pkcprotocol/pkc-js/issues/405) [#405](https://github.com/pkcprotocol/pkc-js/issues/405) [#403](https://github.com/pkcprotocol/pkc-js/issues/403) [#405](https://github.com/pkcprotocol/pkc-js/issues/405)
+* **pages:** pass tombstone replies to requireReplies page sorts ([#408](https://github.com/pkcprotocol/pkc-js/issues/408)) ([0ac709c](https://github.com/pkcprotocol/pkc-js/commit/0ac709c8f07cded5d71290f88ced4c9c565ad6bd)), closes [#407](https://github.com/pkcprotocol/pkc-js/issues/407) [#407](https://github.com/pkcprotocol/pkc-js/issues/407) [#407](https://github.com/pkcprotocol/pkc-js/issues/407) [#407](https://github.com/pkcprotocol/pkc-js/issues/407)
+
 ## [0.0.112](https://github.com/pkcprotocol/pkc-js/compare/v0.0.111...v0.0.112) (2026-10-18)
 
 ### Bug Fixes
