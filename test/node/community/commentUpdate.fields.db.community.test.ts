@@ -475,31 +475,53 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             expect(calculated.lastReplyTimestamp).to.equal(nestedTimestamp);
         });
 
-        // A removed or deleted reply does not bump its thread, at any depth, and neither does anything under it: the
-        // same replies replyCount leaves out (issue #403)
-        it("ignores a removed direct reply and the replies under it", () => {
+        // A removed or deleted reply neither counts nor bumps its thread (issue #403), but the present replies under it
+        // still do: reply pages keep it as a tombstone with its replies visible (issue #405)
+        it("ignores a removed direct reply but counts the present replies under it", () => {
             const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
             createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
-            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
             insertCommentUpdate(removedReply, { removed: true });
-            createCommentWithUpdate({ depth: 2, parentCid: removedReply.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            createCommentWithUpdate({ depth: 2, parentCid: removedReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
 
             const calculated = queryCalculated(post);
-            expect(calculated.replyCount).to.equal(1);
-            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.replyCount).to.equal(2);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
         });
 
-        it("ignores a deleted direct reply and the replies under it", () => {
+        it("ignores a deleted direct reply but counts the present replies under it", () => {
             const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
             createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
-            const deletedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            const deletedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
             insertCommentUpdate(deletedReply);
             markEditDeleted(deletedReply);
-            createCommentWithUpdate({ depth: 2, parentCid: deletedReply.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            createCommentWithUpdate({ depth: 2, parentCid: deletedReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(2);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
+        });
+
+        it("counts a present reply under a chain of removed and deleted replies", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_300 });
+            insertCommentUpdate(removedReply, { removed: true });
+            const deletedReply = insertComment({ depth: 2, parentCid: removedReply.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            insertCommentUpdate(deletedReply);
+            markEditDeleted(deletedReply);
+            createCommentWithUpdate({ depth: 3, parentCid: deletedReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
 
             const calculated = queryCalculated(post);
             expect(calculated.replyCount).to.equal(1);
-            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.childCount).to.equal(0);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
+
+            // the removed reply's own CommentUpdate counts the present reply two levels under it as well
+            const removedCalculated = queryCalculated(removedReply);
+            expect(removedCalculated.replyCount).to.equal(1);
+            expect(removedCalculated.lastReplyTimestamp).to.equal(1_700_000_100);
         });
 
         it("is undefined when every reply is removed or deleted", () => {
