@@ -55,10 +55,31 @@ Extends `CommentPubsubMessage` with community-added fields:
 - `pinned`, `locked`, `archived`, `removed`, `approved`: mod actions
 - `reason`: reason for mod action
 - `author.community`: per-community author stats (postScore, replyScore, banExpiresAt)
-- `lastChildCid`, `lastReplyTimestamp`: for efficient update checking
+- `lastChildCid`, `lastReplyTimestamp`: for efficient update checking (see [Which replies count](#which-replies-count))
 - `replies`: pre-loaded first page of replies
 - `signature`: community owner's signature
 - `updatedAt`, `protocolVersion`
+
+## Which Replies Count
+
+`replyCount`, `childCount`, `lastReplyTimestamp` and `lastChildCid` follow one rule. `replyCount` and
+`lastReplyTimestamp` cover every depth under the comment; `childCount` and `lastChildCid` only its direct replies.
+
+| Reply | Counted, bumps the thread | Replies under it |
+|---|---|---|
+| Present (has a CommentUpdate, none of the below) | yes | counted |
+| Removed by a mod, or deleted by its author | no | still counted (reply pages keep it as a tombstone) |
+| Disapproved in the mod queue, kept with a reason | no | none can exist |
+| Pending in the mod queue | no | none can exist |
+| From another community address | no | not counted |
+| No CommentUpdate yet | no | not counted |
+
+A reply counts once it has a CommentUpdate. The update cycle calculates the deepest comments first, so in one cycle
+every new reply's CommentUpdate exists before its ancestors are calculated. Publishing under a pending or disapproved
+comment is rejected, which is why they never have replies under them.
+
+Removing a reply un-bumps its thread: `lastReplyTimestamp` is recalculated without it, and the built-in `active` sort
+reads `lastReplyTimestamp` (see [page-sorts.md](page-sorts.md)).
 
 ## Comment States
 
@@ -80,5 +101,5 @@ Extends `CommentPubsubMessage` with community-added fields:
 - Treating `CommentIpfs` as mutable, it is permanent. Only `CommentUpdate` changes.
 - Confusing who signs what, `CommentIpfs` keeps the author's original signature; `CommentUpdate` is signed by the community owner.
 - Forgetting that `replyCount` includes both direct and indirect children, while `childCount` (optional) is only direct children.
-- Assuming a removed or deleted reply hides its subtree from the counts. It is a tombstone in reply pages: it is not counted in `replyCount`/`childCount` and does not set `lastReplyTimestamp`, but the present replies under it are counted and do bump the thread.
+- Assuming a removed or deleted reply hides its subtree from the counts. It is a tombstone in reply pages: it is not counted in `replyCount`/`childCount` and does not set `lastReplyTimestamp`, but the present replies under it are counted and do bump the thread. See [Which replies count](#which-replies-count).
 - Adding fields to `CommentIpfs` that should be in `CommentUpdate`, if the data can change over time, it belongs in `CommentUpdate`.

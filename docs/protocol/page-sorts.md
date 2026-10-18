@@ -100,7 +100,7 @@ filtered.
 |---|---|---|
 | `hot`, `new`, `old`, `best`, `controversial`, `top` | either | `top` has no window of its own; pair it with `maxAge` |
 | `topHour`, `topDay`, `topWeek`, `topMonth`, `topYear`, `topAll` | either | `top` with a fixed `defaultOptions.maxAge` (`topAll` has none) |
-| `active` | posts | Bump order: the newest of the post's own timestamp and its CommentUpdate's `lastReplyTimestamp`, so a client re-sorts by bump order from the page alone. A removed or deleted reply does not bump the thread; the present replies under it still do |
+| `active` | posts | Bump order: the newest of the post's own timestamp and its CommentUpdate's `lastReplyTimestamp`, so a client re-sorts by bump order from the page alone. A removed, deleted or disapproved reply does not bump the thread; the present replies under it still do (see [comment-lifecycle.md](comment-lifecycle.md#which-replies-count)) |
 | `newFlat`, `oldFlat` | replies | Sort the flattened descendant subtree; generated for a post's replies only, ignored for deeper comments |
 
 Configuring `newFlat` under `posts` or `active` under `replies` is a validation error (`ERR_PAGE_SORT_SCOPE_MISMATCH`).
