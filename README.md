@@ -111,7 +111,7 @@ CommentUpdate /* (IPFS file) */ {
   author?: { // add commentUpdate.author.community to comment.author.community, override comment.author.flairs with commentUpdate.author.community.flairs if any
     community: CommunityAuthor
   }
-  lastReplyTimestamp?: number // the timestamp of the most recent direct or indirect child of the comment
+  lastReplyTimestamp?: number // the timestamp of the most recent direct or indirect reply of the comment; a reply counts only if it and every comment above it are neither removed, deleted, pending nor disapproved, so removing a reply un-bumps its thread
   lastChildCid?: string // the CID of the most recent direct child of the comment
 }
 Author {

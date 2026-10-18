@@ -174,7 +174,7 @@ export const CommentUpdateSchema = z
         updatedAt: PKCTimestampSchema, // timestamp in seconds the CommentUpdate was updated
         author: AuthorWithCommentUpdateSchema.pick({ community: true }).optional(), // add commentUpdate.author.community to comment.author.community, override comment.author.flairs with commentUpdate.author.community.flairs if any
         lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
-        lastReplyTimestamp: PKCTimestampSchema.optional(), // The timestamp of the most recent direct or indirect child of the comment
+        lastReplyTimestamp: PKCTimestampSchema.optional(), // The timestamp of the most recent direct or indirect reply of the comment, counting only replies that, along with every comment above them, are neither removed, deleted, pending nor disapproved
         signature: JsonSignatureSchema, // signature of the CommentUpdate by the community owner to protect against malicious gateway
         protocolVersion: ProtocolVersionSchema,
         // The getter defers TypeScript inference of the comment-schema <-> pages-schema cycle; the
