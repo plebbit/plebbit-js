@@ -68,7 +68,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             author: { address: authorSignerAddress },
             content: overrides["content"] ?? `content-${cid}`,
             title: depth === 0 ? overrides["title"] ?? `title-${cid}` : undefined,
-            communityPublicKey: communityAddress,
+            communityPublicKey: overrides["communityPublicKey"] ?? communityAddress,
             timestamp,
             depth,
             postCid: resolvedPostCid,
@@ -145,6 +145,13 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
                 insertedAt: resolvedInsertedAt
             }
         ]);
+    };
+
+    // An author-deleted comment: the deletion lives in commentUpdates.edit, written raw because a full signed edit is noise here
+    const markEditDeleted = (comment: InsertedComment): void => {
+        assert(_dbHandler, "DbHandler not initialised");
+        const db = _dbHandler["_db"] as { prepare: (sql: string) => { run: (...args: unknown[]) => void } };
+        db.prepare(`UPDATE commentUpdates SET edit = ? WHERE cid = ?`).run(JSON.stringify({ deleted: true }), comment.cid);
     };
 
     const insertVote = (comment: InsertedComment, options: InsertVoteOptions = {}): void => {
@@ -466,6 +473,62 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
 
             calculated = queryCalculated(post);
             expect(calculated.lastReplyTimestamp).to.equal(nestedTimestamp);
+        });
+
+        // A removed or deleted reply does not bump its thread, at any depth, and neither does anything under it: the
+        // same replies replyCount leaves out (issue #403)
+        it("ignores a removed direct reply and the replies under it", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            insertCommentUpdate(removedReply, { removed: true });
+            createCommentWithUpdate({ depth: 2, parentCid: removedReply.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+        });
+
+        it("ignores a deleted direct reply and the replies under it", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const deletedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            insertCommentUpdate(deletedReply);
+            markEditDeleted(deletedReply);
+            createCommentWithUpdate({ depth: 2, parentCid: deletedReply.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+        });
+
+        it("is undefined when every reply is removed or deleted", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            insertCommentUpdate(removedReply, { removed: true });
+            const deletedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            insertCommentUpdate(deletedReply);
+            markEditDeleted(deletedReply);
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(0);
+            expect(calculated.lastReplyTimestamp).to.be.undefined;
+        });
+
+        it("ignores a direct reply from another community", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            createCommentWithUpdate({
+                depth: 1,
+                parentCid: post.cid,
+                postCid: post.cid,
+                timestamp: 1_700_000_100,
+                overrides: { communityPublicKey: "12D3KooWForeignCommunity" }
+            });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
         });
     });
 
