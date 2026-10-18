@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.111](https://github.com/pkcprotocol/pkc-js/compare/v0.0.110...v0.0.111) (2026-10-18)
+
+### Bug Fixes
+
+* **community:** give an author's concurrent publications one pseudonymity alias ([#399](https://github.com/pkcprotocol/pkc-js/issues/399)) ([#400](https://github.com/pkcprotocol/pkc-js/issues/400)) ([df73eec](https://github.com/pkcprotocol/pkc-js/commit/df73eece358e19e37ac2509db3d444afd0112b65))
+
 ## [0.0.110](https://github.com/pkcprotocol/pkc-js/compare/v0.0.109...v0.0.110) (2026-10-17)
 
 ### Features
