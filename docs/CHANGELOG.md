@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.112](https://github.com/pkcprotocol/pkc-js/compare/v0.0.111...v0.0.112) (2026-10-18)
+
+### Bug Fixes
+
+* **types:** let a page entry pass as PageSortReplyEntry under exactOptionalPropertyTypes ([470b742](https://github.com/pkcprotocol/pkc-js/commit/470b74295ec99d9ae2049c5c79e003146a07c7eb)), closes [#402](https://github.com/pkcprotocol/pkc-js/issues/402)
+
 ## [0.0.111](https://github.com/pkcprotocol/pkc-js/compare/v0.0.110...v0.0.111) (2026-10-18)
 
 ### Bug Fixes
