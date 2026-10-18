@@ -161,17 +161,19 @@ describeSkipIfRpc("community.nameResolved re-earns a false verdict (#353)", () =
             predicate: async () => community.nameResolved === false
         });
 
-        const countAfterFirstVerdict = resolveCount;
-        // Well under the floor, and long enough for several update cycles at the 500ms updateInterval these
-        // test instances use.
+        // Per name: the communities from the cases above are still updating and share the resolver.
+        const countAfterFirstVerdict = resolveCountByName[name] ?? 0;
+        // Well under the floor, and long enough for at least one update cycle (500ms updateInterval on the
+        // gateway path, a fixed 1000ms sleep between cycles on the kubo-RPC path).
         await new Promise((resolve) => setTimeout(resolve, FALSE_TTL_MS / 2));
-        // Other suites in this describe share the resolver, but they run sequentially, so any growth here is
-        // this community's own retries.
-        expect(resolveCount - countAfterFirstVerdict).to.be.lessThan(2);
+        expect((resolveCountByName[name] ?? 0) - countAfterFirstVerdict).to.be.lessThan(2);
 
         // Past the floor it is allowed to ask again, which is what makes the flip in the cases above possible.
-        await new Promise((resolve) => setTimeout(resolve, FALSE_TTL_MS));
-        expect(resolveCount).to.be.greaterThan(countAfterFirstVerdict);
+        // Polled rather than slept: the retry runs on the first cycle that starts after the floor, and on the
+        // kubo-RPC path cycles are ~1050ms apart, so a fixed wait of one cycle past the floor can fall between
+        // two of them.
+        await waitUntil(() => (resolveCountByName[name] ?? 0) > countAfterFirstVerdict, FALSE_TTL_MS * 3);
+        expect(resolveCountByName[name]).to.be.greaterThan(countAfterFirstVerdict);
     });
 
     // Issue #353. The retry is bounded by a floor measured from when the last verdict was RECORDED, and a
