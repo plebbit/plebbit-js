@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.114](https://github.com/pkcprotocol/pkc-js/compare/v0.0.113...v0.0.114) (2026-10-18)
+
+### Bug Fixes
+
+* **ci:** run one release at a time so overlapping runs cannot publish the same version ([c036a2e](https://github.com/pkcprotocol/pkc-js/commit/c036a2e41b10216b4259384c9ba142bb0a6fb6fc)), closes [#408](https://github.com/pkcprotocol/pkc-js/issues/408)
+* **release:** publish the [#408](https://github.com/pkcprotocol/pkc-js/issues/408) tombstone fix as 0.0.114 ([f2d0229](https://github.com/pkcprotocol/pkc-js/commit/f2d02295b94b72a8c515f8bf0bd10764b7086141))
+
 ## [0.0.113](https://github.com/pkcprotocol/pkc-js/compare/v0.0.112...v0.0.113) (2026-10-18)
 
 ### Bug Fixes
