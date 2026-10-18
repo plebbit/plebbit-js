@@ -249,6 +249,22 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             const nestedCalculated = queryCalculated(nestedReply);
             expect(nestedCalculated.replyCount).to.equal(0);
         });
+
+        // A disapproved reply the mod kept (approved: false plus a reason) stays in reply pages until the retention
+        // purge, like a removed one, so it is a tombstone too: it is not counted and does not bump. It never has replies
+        // under it, since publishing under a pending or disapproved comment is rejected.
+        it("does not count a disapproved direct reply", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const disapprovedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            insertCommentUpdate(disapprovedReply, { approved: false });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
+        });
     });
 
     describe("lastChildCid", () => {
@@ -479,7 +495,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
         // still do: reply pages keep it as a tombstone with its replies visible (issue #405)
         it("ignores a removed direct reply but counts the present replies under it", () => {
             const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
-            createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
             const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
             insertCommentUpdate(removedReply, { removed: true });
             createCommentWithUpdate({ depth: 2, parentCid: removedReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
@@ -488,11 +504,12 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             expect(calculated.replyCount).to.equal(2);
             expect(calculated.childCount).to.equal(1);
             expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
         });
 
         it("ignores a deleted direct reply but counts the present replies under it", () => {
             const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
-            createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
             const deletedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
             insertCommentUpdate(deletedReply);
             markEditDeleted(deletedReply);
@@ -502,6 +519,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             expect(calculated.replyCount).to.equal(2);
             expect(calculated.childCount).to.equal(1);
             expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
         });
 
         it("counts a present reply under a chain of removed and deleted replies", () => {
@@ -534,12 +552,14 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
 
             const calculated = queryCalculated(post);
             expect(calculated.replyCount).to.equal(0);
+            expect(calculated.childCount).to.equal(0);
             expect(calculated.lastReplyTimestamp).to.be.undefined;
+            expect(calculated.lastChildCid).to.be.undefined;
         });
 
         it("ignores a direct reply from another community", () => {
             const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
-            createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
             createCommentWithUpdate({
                 depth: 1,
                 parentCid: post.cid,
@@ -550,7 +570,43 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
 
             const calculated = queryCalculated(post);
             expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
             expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
+        });
+
+        // A pending reply has no CommentUpdate (the update cycle skips pending comments) and is not in reply pages
+        it("ignores a pending direct reply", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            insertComment({
+                depth: 1,
+                parentCid: post.cid,
+                postCid: post.cid,
+                timestamp: 1_700_000_100,
+                overrides: { pendingApproval: true }
+            });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
+        });
+
+        // A reply counts once it has a CommentUpdate, at any depth: the cycle calculates the deepest comments first, so a
+        // reply's CommentUpdate exists by the time its ancestors are calculated in the same cycle
+        it("ignores a reply that has no CommentUpdate yet, at any depth", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            insertComment({ depth: 2, parentCid: presentReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
         });
     });
 
