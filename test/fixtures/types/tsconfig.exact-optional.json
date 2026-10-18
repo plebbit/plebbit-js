@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "ES2021",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "strict": true,
+        "exactOptionalPropertyTypes": true,
+        "skipLibCheck": true,
+        "noEmit": true,
+        "types": ["node"]
+    },
+    "files": ["./page-sort-reply-entry.exact-optional.ts"]
+}

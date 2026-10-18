@@ -91,7 +91,7 @@ export interface PageSortReplyEntry {
         | "nsfw"
         | "spoiler"
         | "flairs"
-    > & { edit?: Pick<NonNullable<CommentUpdateType["edit"]>, "deleted">; pendingApproval?: boolean };
+    > & { edit?: Pick<NonNullable<CommentUpdateType["edit"]>, "deleted"> | undefined; pendingApproval?: boolean | undefined };
 }
 
 // JSON types
