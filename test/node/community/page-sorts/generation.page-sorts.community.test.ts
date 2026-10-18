@@ -555,7 +555,8 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
     // Issue #407: the replies a requireReplies sort receives are not reduced by the sort's exclusion options. A removed
     // or deleted reply is a tombstone (docs/protocol/comment-lifecycle.md, "Which replies count"): it and the present
     // replies under it reach `score`, so a package decides what counts, and the community's set equals what a client
-    // walks from the reply pages, which keep tombstones.
+    // walks from the reply pages, which keep tombstones. The reference no-bump file follows the same rule as the
+    // built-in active: a tombstone or a pending reply does not bump, a present reply under a tombstone does.
     it("requireReplies: removed and deleted replies and the replies under them reach score, even with the posts scope's exclusions", async () => {
         const context = await createCommunityWithDefaultDb();
         try {
@@ -593,23 +594,30 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
                         { label: "present-a", timestamp: base + 650 },
                         { label: "present-b", timestamp: base + 700 }
                     ]
-                }
+                },
+                // A tombstone newer than everything under it, and a reply still in the mod queue: neither may bump
+                { label: "newest-removed", timestamp: base + 400, children: [{ label: "late-removed", timestamp: base + 1000 }] },
+                { label: "newest-pending", timestamp: base + 450, children: [{ label: "late-pending", timestamp: base + 1100 }] }
             ]);
             await updateCommentsThatNeedToBeUpdated(context.community);
             const db = context.community._dbHandler["_db"];
-            db.prepare(`UPDATE commentUpdates SET removed = 1 WHERE cid = ?`).run(cidOf("removed-reply"));
+            for (const label of ["removed-reply", "late-removed"])
+                db.prepare(`UPDATE commentUpdates SET removed = 1 WHERE cid = ?`).run(cidOf(label));
             db.prepare(`UPDATE commentUpdates SET edit = ? WHERE cid = ?`).run(JSON.stringify({ deleted: true }), cidOf("deleted-reply"));
             const generator = getPageGenerator(context.community);
 
             const posts = await generator.generateCommunityPosts({ preloadedPageSizeBytes: LARGE_PRELOAD_BUDGET });
             if (!posts) throw new Error("expected post pages");
             const mostRepliesPage = wirePagesFromGeneration(posts).pages.mostReplies;
-            // Descendants: under-removed 3 (tombstone + 2 under it), two-present 2, under-deleted 2 (tombstone + 1)
-            expect(commentCidsOfPage(mostRepliesPage)).to.deep.equal(["under-removed", "two-present", "under-deleted"].map(cidOf));
+            // Descendants: under-removed 3 (tombstone + 2 under it), two-present 2, under-deleted 2 (tombstone + 1),
+            // newest-pending 1 (not pending yet), newest-removed 1 (the tombstone)
+            expect(commentCidsOfPage(mostRepliesPage)).to.deep.equal(
+                ["under-removed", "two-present", "under-deleted", "newest-pending", "newest-removed"].map(cidOf)
+            );
 
             // A client walking the reply pages (newFlat keeps tombstones by default) gets the same set and the same order
             const walked: PageIpfs["comments"] = [];
-            for (const label of ["under-removed", "under-deleted", "two-present"]) {
+            for (const label of ["under-removed", "under-deleted", "two-present", "newest-removed", "newest-pending"]) {
                 const replyPages = await generator.generatePostPages(
                     context.community._dbHandler.queryComment(cidOf(label))!,
                     LARGE_PRELOAD_BUDGET
@@ -617,7 +625,9 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
                 if (!replyPages || !("singlePreloadedPage" in replyPages)) throw new Error("expected the single preloaded page shortcut");
                 walked.push(...replyPages.singlePreloadedPage.newFlat!.comments);
             }
-            expect(walked.map((entry) => entry.commentUpdate.cid)).to.include.members([cidOf("removed-reply"), cidOf("deleted-reply")]);
+            expect(walked.map((entry) => entry.commentUpdate.cid)).to.include.members(
+                ["removed-reply", "deleted-reply", "late-removed"].map(cidOf)
+            );
             const resorted = resortPageLikeAUi({
                 comments: [...mostRepliesPage!.comments].reverse(),
                 factory: mostRepliesPageSort as PageSortFileFactoryInput,
@@ -627,7 +637,18 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
             });
             expect(resorted.map((entry) => entry.commentUpdate.cid)).to.deep.equal(commentCidsOfPage(mostRepliesPage));
 
-            // The no-bump package with no keyword set is the built-in active: a present reply under a tombstone bumps
+            // Now put late-pending in the mod queue (after the client walk: default reply pages hide pending replies), and
+            // recompute the posts' lastReplyTimestamp, which the cycle signed before the moderation state was set
+            db.prepare(`UPDATE comments SET pendingApproval = 1 WHERE cid = ?`).run(cidOf("late-pending"));
+            for (const label of ["under-removed", "under-deleted", "newest-removed", "newest-pending"]) {
+                const { lastReplyTimestamp } = context.community._dbHandler.queryCalculatedCommentUpdate({
+                    comment: context.community._dbHandler.queryComment(cidOf(label))!
+                });
+                db.prepare(`UPDATE commentUpdates SET lastReplyTimestamp = ? WHERE cid = ?`).run(lastReplyTimestamp ?? null, cidOf(label));
+            }
+
+            // The no-bump package with no keyword set is the built-in active: a present reply under a tombstone bumps,
+            // the tombstone itself and a pending reply do not
             await editPages(context, { posts: [{ path: NO_BUMP_KEYWORD_SORT_PATH, preloaded: true }] });
             const byPackage = await generator.generateCommunityPosts({ preloadedPageSizeBytes: LARGE_PRELOAD_BUDGET });
             if (!byPackage || !("singlePreloadedPage" in byPackage)) throw new Error("expected the single preloaded page shortcut");
@@ -636,7 +657,8 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
                 preloadedPageSizeBytes: LARGE_PRELOAD_BUDGET
             });
             if (!builtIn || !("singlePreloadedPage" in builtIn)) throw new Error("expected the single preloaded page shortcut");
-            const expectedActive = ["under-removed", "under-deleted", "two-present"].map(cidOf); // bump times 900, 800, 700
+            // Bump times 900, 800, 700, 450 (late-pending skipped), 400 (late-removed skipped)
+            const expectedActive = ["under-removed", "under-deleted", "two-present", "newest-pending", "newest-removed"].map(cidOf);
             expect(commentCidsOfPage(builtIn.singlePreloadedPage.active)).to.deep.equal(expectedActive);
             expect(commentCidsOfPage(byPackage.singlePreloadedPage.active)).to.deep.equal(expectedActive);
         } finally {
