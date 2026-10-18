@@ -502,7 +502,7 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
         }
     });
 
-    it("requireReplies: a post is scored over its descendants minus the sort's exclusions, and a reply over its own subtree", async () => {
+    it("requireReplies: a post is scored over its descendants, and a reply over its own subtree", async () => {
         const context = await createCommunityWithDefaultDb();
         try {
             await editPages(context, {
@@ -534,13 +534,13 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
             context.community._dbHandler["_db"].prepare(`UPDATE commentUpdates SET removed = 1 WHERE cid = ?`).run(cidOf("removed"));
             const generator = getPageGenerator(context.community);
 
-            // Posts: busy has 5 descendants surviving the default exclusions (removed excluded), one-reply 1, quiet 0
+            // Posts: busy has 6 descendants (the removed one included, issue #407), one-reply 1, quiet 0
             const posts = await generator.generateCommunityPosts({ preloadedPageSizeBytes: LARGE_PRELOAD_BUDGET });
             if (!posts || !("singlePreloadedPage" in posts)) throw new Error("expected the single preloaded page shortcut");
             expect(commentCidsOfPage(posts.singlePreloadedPage.mostReplies)).to.deep.equal(["busy", "one-reply", "quiet"].map(cidOf));
 
-            // Replies of busy: each reply is scored over its own subtree, with the removed grandchild excluded, so
-            // r-two (2) beats r-removed-child (0, newer) which ties with r-none (0) and loses on age
+            // Replies of busy: each reply is scored over its own subtree, the removed grandchild included even though
+            // the sort sets excludeRemovedComments, so r-two (2) beats r-removed-child (1) which beats r-none (0)
             const busy = context.community._dbHandler.queryComment(cidOf("busy"))!;
             const busyReplies = await generator.generatePostPages(busy, LARGE_PRELOAD_BUDGET);
             if (!busyReplies || !("singlePreloadedPage" in busyReplies)) throw new Error("expected the single preloaded page shortcut");

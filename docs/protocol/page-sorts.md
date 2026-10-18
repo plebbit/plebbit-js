@@ -90,6 +90,9 @@ publishes per sort, so a client never needs to know the defaults below.
 Reserved options cannot be listed in `privateOptions`: a client re-sorting a page must know how its set was
 filtered.
 
+The `exclude*` flags filter the comments a sort ranks. They do not filter the `replies` a `requireReplies` sort
+receives (issue #407): those reach `score` in `options`, and the file applies them to `replies` if it wants to.
+
 `maxAge` makes any sort a sliding window: "hot in the last 24 hours" is `{ name: "hot", options: { maxAge: "1d" } }`. Windows are relative to generation time; there are no absolute cutoffs. A windowed sort's page membership changes as comments age out even when nothing was posted, so its CID rotates on every rebuild: a post sort is rebuilt at least every 15 minutes, and a reply sort's parent is re-flagged only when a reply actually crosses the boundary. Six windowed sorts are six rotating CIDs, which pulls against the reason to configure fewer sorts.
 
 `pinnedFirst: "true"` puts pinned comments first and lets them bypass the window, so a sticky never ages out. `"false"` treats them as ordinary comments.
@@ -211,17 +214,20 @@ The contract:
   `score`, and a client passing the published options reproduces the drop. Any other non-numeric score is
   a bug and fails the sort for the cycle.
 - **`requireReplies`.** A sort whose order depends on the replies (bump order with exceptions, most-replied
-  first) declares it and receives `replies`: every descendant of the scored comment that survives the
-  sort's exclusion options, as one flat, unordered array. A post gets everything under it, a reply on a
+  first) declares it and receives `replies`: every descendant of the scored comment, as one flat, unordered
+  array. pkc-js drops only replies from another community address and replies with no CommentUpdate yet.
+  Removed, deleted, pending and disapproved replies all reach `score`, whatever the sort's `exclude*`
+  options say: a removed or deleted reply is a tombstone whose present replies still count (see
+  [Which replies count](comment-lifecycle.md#which-replies-count)), so cutting it would cut its subtree.
+  The file decides what counts; the built-in `active` skips tombstones and counts what is under them. A post gets everything under it, a reply on a
   reply page gets its own subtree. Each entry is the lean `PageSortReplyEntry`: the comment's `parentCid`,
   `postCid`, `depth`, `timestamp`, `content`, `title`, `link`, `author`, community address fields, `nsfw`,
   `spoiler` and `flairs`, and the CommentUpdate's `cid`, vote and reply counts, `updatedAt`,
   `lastReplyTimestamp`, `pinned`, `locked`, `removed`, `approved`, `nsfw`, `spoiler`, `flairs` and
   `edit.deleted`. No signature, no nested pages, no media metadata. A page entry is a superset, so a client
   passes the entries it walked as they are. The community loads the set once per generation with one
-  unfiltered query (the whole community for a post sort, the post's subtree for a reply sort), every
-  `requireReplies` sort filters it with its own exclusion options and slices each comment's subtree from
-  it. On a client the caller walks the reply pages and passes each comment its descendants. A file
+  query (the whole community for a post sort, the post's subtree for a reply sort), drops foreign replies
+  and slices each comment's subtree from it for every `requireReplies` sort. On a client the caller walks the reply pages and passes each comment its descendants. A file
   without the flag never receives `replies` and costs nothing
   beyond the entry itself: re-sorting is then a per-entry computation with no reply fetching anywhere,
   which is what every built-in is, `active` included. A reply-dependent sort has no way to know the list is
@@ -250,8 +256,9 @@ The contract:
 
 - **Sync only.** Generation runs per comment per cycle; an async signature would invite a network call in
   the community's hot loop. This is a deliberate divergence from `ChallengeFile.getChallenge`.
-- pkc-js owns pinned placement, `maxAge`, chunking, page-size budgeting and the exclusions. A file contains
-  no date arithmetic, never sees a pinned flag and never decides what "removed" means.
+- pkc-js owns pinned placement, `maxAge`, chunking, page-size budgeting and the exclusions on the ranked set.
+  A file contains no date arithmetic and never sees a pinned flag. The one place a file reads moderation
+  state is `replies`, which pkc-js passes unfiltered (see `requireReplies` above).
 - Options are strings. Document how you split a list.
 - `optionInputs` is optional but declaring it lets core catch typos in the owner's options; an entry may
   also list the reserved names, they are always accepted.
@@ -360,7 +367,10 @@ const ordered =
   `oldFlat`, published by default) lists a post's whole subtree in one chain of pages; without one, walk
   the nested sort's pages and every reply's own reply pages recursively, since a nested reply carries its
   own `replies.pages` and `nextCid`. The UI hands each comment its own descendants from that list (by
-  `parentCid`), the entries as walked, since a page entry is a superset of `PageSortReplyEntry`. How many
+  `parentCid`), the entries as walked, since a page entry is a superset of `PageSortReplyEntry`. Reply pages
+  keep removed and deleted replies as tombstones, so the walk sees what the community passes. With the
+  default reply-page options the walk does miss pending-approval replies, which the community passes; a
+  file that drops pending replies (nothing can be published under one) scores the same on both sides. How many
   threads to walk and when to stop is the UI's policy; the worked example of both the walk and the
   re-sort is `test/node-and-browser/pages/page-sorts-client-test-util.ts`. A file without
   `requireReplies` needs none of this.

@@ -8,8 +8,9 @@
 // "sage is overused" in prose keeps bumping; a reply whose content is "sage" or has a line "sage" does not.
 //
 // The file is `score`-only and declares `requireReplies`, so pkc-js hands it every descendant of the scored
-// post as a flat list (the community builds it from the database, a client from the reply pages it walked),
-// already reduced by the sort's exclusion options. The file reads nothing but content and timestamp.
+// post as a flat list (the community builds it from the database, a client from the reply pages it walked).
+// The list is not reduced by the sort's exclusion options (issue #407): removed and deleted replies arrive too.
+// The file reads nothing but content and timestamp.
 
 const splitKeywords = (raw) =>
     (raw ?? "")

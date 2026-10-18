@@ -21,8 +21,8 @@ import env from "../../../version.js";
 import { PKCError } from "../../../pkc-error.js";
 import type { ResolvedPageSort } from "./page-sorts/index.js";
 import {
-    applyPageSortExclusions,
     createDescendantsLookup,
+    filterRepliesForPageSort,
     orderPageCommentsByScore,
     partitionPageCommentsForSort,
     scorePageCommentsWithFile,
@@ -513,28 +513,19 @@ export class PageGenerator {
         return this._chunkComments({ comments: commentsSorted, firstPageSizeBytes: options.firstPageSizeBytes, sizeOf: options.sizeOf });
     }
 
-    // The reply set requireReplies sorts score over: one unfiltered query per generation, shared by every such sort,
-    // each filtering it with its own exclusion options in JS. Nothing runs unless a sort asks.
+    // The reply set requireReplies sorts score over: one query per generation, shared by every such sort, with only
+    // foreign replies dropped (filterRepliesForPageSort; a sort's exclusions are the file's to apply, issue #407).
+    // Nothing runs unless a sort asks.
     private _createRepliesLoader(load: () => PageSortReplyEntry[]): (sort: ResolvedPageSort) => PageSortReplyEntry[] {
-        let all: PageSortReplyEntry[] | undefined;
-        const filtered = new Map<string, PageSortReplyEntry[]>();
-        return (sort) => {
-            all ??= load();
-            const key = JSON.stringify(sort.exclusions);
-            if (!filtered.has(key))
-                filtered.set(
-                    key,
-                    applyPageSortExclusions({ comments: all, exclusions: sort.exclusions, communityAddress: this._community.address })
-                );
-            return filtered.get(key)!;
-        };
+        let replies: PageSortReplyEntry[] | undefined;
+        return () => (replies ??= filterRepliesForPageSort({ replies: load(), communityAddress: this._community.address }));
     }
 
     // The reply set a requireReplies post sort scores over, streamed: the provider walks the posts in the order the
-    // scorer asks for them and loads one batch of posts' subtrees at a time (lean entries, the sort's exclusions
-    // applied), so a board's replies are never in memory at once; the file still receives each post's whole subtree
+    // scorer asks for them and loads one batch of posts' subtrees at a time (lean entries, foreign replies dropped,
+    // tombstones kept: issue #407), so a board's replies are never in memory at once; the file still receives each post's whole subtree
     // (issue #351). A post asked out of order (never, in practice) just loads its own batch.
-    private _createStreamingRepliesProvider(sort: ResolvedPageSort): (ordered: PageComment[]) => (cid: string) => PageSortReplyEntry[] {
+    private _createStreamingRepliesProvider(): (ordered: PageComment[]) => (cid: string) => PageSortReplyEntry[] {
         const db = this._community._dbHandler;
         const communityAddress = this._community.address;
         return (ordered) => {
@@ -551,9 +542,7 @@ export class PageGenerator {
                     const replies = db.queryAllRepliesForPageSort({
                         postCids: ordered.slice(batchStart, batchEnd).map((entry) => entry.commentUpdate.cid)
                     });
-                    descendantsOf = createDescendantsLookup(
-                        applyPageSortExclusions({ comments: replies, exclusions: sort.exclusions, communityAddress })
-                    );
+                    descendantsOf = createDescendantsLookup(filterRepliesForPageSort({ replies, communityAddress }));
                 }
                 return descendantsOf(cid);
             };
@@ -780,7 +769,7 @@ export class PageGenerator {
             scope: "posts",
             sorts,
             loadComments,
-            streamReplies: (sort) => this._createStreamingRepliesProvider(sort), // a requireReplies post sort streams each post's subtree
+            streamReplies: () => this._createStreamingRepliesProvider(), // a requireReplies post sort streams each post's subtree
             source: this._dbPageEntrySource(),
             entryCache: this._postEntryCache,
             preloadedPageSizeBytes,

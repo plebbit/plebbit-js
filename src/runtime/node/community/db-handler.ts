@@ -3764,13 +3764,13 @@ export class DbHandler {
         }));
     }
 
-    // Every reply (depth > 0) in the community, or under one post, with no exclusions applied: the one reply set a
-    // generation loads for its requireReplies sorts, each of which then filters it with its own exclusion options
-    // through applyPageSortExclusions (the same filter a client applies) and slices each comment's subtree from it
-    // (createDescendantsLookup). Lean on purpose (PageSortReplyEntry): a fixed column list mapped by hand, no
+    // Every reply (depth > 0) with a CommentUpdate in the community, or under one post, with no exclusions applied:
+    // the one reply set a generation loads for its requireReplies sorts. Only foreign replies are then dropped
+    // (filterRepliesForPageSort); removed, deleted, pending and disapproved replies all reach the file, which applies
+    // the sort's exclusions itself (issue #407). Each comment's subtree is sliced from it (createDescendantsLookup). Lean on purpose (PageSortReplyEntry): a fixed column list mapped by hand, no
     // signature, no nested pages, no schema row parser, since a board can hold a million replies and this runs per
-    // generation. A pending-approval reply is marked on its CommentUpdate the way the mod queue marks one, so the
-    // filter can see it; the list never reaches a page.
+    // generation. A pending-approval reply is marked on its CommentUpdate the way the mod queue marks one, so a file
+    // can see it; the list never reaches a page.
     queryAllRepliesForPageSort(opts: { postCid?: string; postCids?: string[] } = {}): PageSortReplyEntry[] {
         // A list of posts streams in batches under the SQLite variable cap: what a post sort with requireReplies
         // scores over, one batch of posts' subtrees at a time (issue #351)
