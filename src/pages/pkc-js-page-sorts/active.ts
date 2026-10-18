@@ -4,9 +4,9 @@ import type { PageSortFileFactory } from "../../community/types.js";
 // CommentUpdate already carries as lastReplyTimestamp (the recursive MAX(timestamp) the community computes when a
 // descendant changes, before pages are generated in the same cycle). A per-comment score like every other built-in,
 // so a client re-sorts by bump order from the page alone. lastReplyTimestamp hard-codes the removed/deleted/unapproved
-// exclusions at every depth (a removed or deleted reply and everything under it never bump), so an owner who turns
-// excludeRemovedComments off for posts still does not get removed replies bumping threads: bump time is what the
-// CommentUpdate carries.
+// exclusions at every depth (a removed or deleted reply never bumps; the present replies under it do), so an owner
+// who turns excludeRemovedComments off for posts still does not get removed replies bumping threads: bump time is
+// what the CommentUpdate carries.
 const active: PageSortFileFactory = () => ({
     sortName: "active",
     description: "Most recently bumped first: posts ordered by the newest reply anywhere in their thread",

@@ -92,7 +92,7 @@ CommentUpdate /* (IPFS file) */ {
   upvoteCount: number
   downvoteCount: number
   replies?: Pages // only preload page 1 sorted by 'best', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
-  replyCount: number
+  replyCount: number // direct and indirect replies; removed and deleted replies are not counted, the present replies under them are
   childCount?: number // the total of direct children of the comment, does not include indirect children
   number?: number // sequential comment number assigned by the community
   postNumber?: number // sequential post number assigned by the community
@@ -111,7 +111,7 @@ CommentUpdate /* (IPFS file) */ {
   author?: { // add commentUpdate.author.community to comment.author.community, override comment.author.flairs with commentUpdate.author.community.flairs if any
     community: CommunityAuthor
   }
-  lastReplyTimestamp?: number // the timestamp of the most recent direct or indirect reply of the comment; a reply counts only if it and every comment above it are neither removed, deleted, pending nor disapproved, so removing a reply un-bumps its thread
+  lastReplyTimestamp?: number // the timestamp of the most recent direct or indirect reply of the comment; removed and deleted replies do not count (so removing a reply un-bumps its thread) but the present replies under them do; pending and disapproved replies, and everything under them, do not count
   lastChildCid?: string // the CID of the most recent direct child of the comment
 }
 Author {

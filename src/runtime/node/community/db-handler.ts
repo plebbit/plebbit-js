@@ -2750,29 +2750,36 @@ export class DbHandler {
         return result;
     }
 
-    // replyCount and childCount of every parent in one recursive walk anchored on all of them: a descendant counts
-    // when every comment on the path from the parent has a CommentUpdate, this community's address, and is neither
-    // removed nor deleted; childCount is the level-1 part of the same walk.
+    // Whether a comment in a reply walk is present (neither removed nor deleted), over the cu and d aliases the walks
+    // join. A comment that is not present is skipped by the counts but still walked through: reply pages keep it as a
+    // tombstone, so the present replies under it are still part of the thread (#405).
+    private _replyWalkPresentExpression(): string {
+        return `CASE WHEN (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1) THEN 1 ELSE 0 END`;
+    }
+
+    // replyCount and childCount of every parent in one recursive walk anchored on all of them: the walk follows every
+    // descendant whose path from the parent has a CommentUpdate and this community's address, and a descendant counts
+    // when it is also present (neither removed nor deleted); childCount is the level-1 part of the same count.
     private _queryReplyCountsByParentCids(parentCids: string[]): Map<string, { replyCount: number; childCount: number }> {
         const result = new Map<string, { replyCount: number; childCount: number }>();
         const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
-        const passes = `${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)`;
+        const present = this._replyWalkPresentExpression();
         const deletedLookup = `(SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES})`;
         for (const { placeholders, params } of this._cidChunks(parentCids, addrParams.length * 2)) {
             const rows = this._prepareCached(
-                `WITH RECURSIVE descendants(root, cid, level) AS (
-                    SELECT c.parentCid, c.cid, 1 FROM ${TABLES.COMMENTS} c
+                `WITH RECURSIVE descendants(root, cid, level, present) AS (
+                    SELECT c.parentCid, c.cid, 1, ${present} FROM ${TABLES.COMMENTS} c
                     INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                     LEFT JOIN ${deletedLookup} AS d ON c.cid = d.cid
-                    WHERE c.parentCid IN (${placeholders}) AND ${passes}
+                    WHERE c.parentCid IN (${placeholders}) AND ${addrClause}
                     UNION ALL
-                    SELECT desc_nodes.root, c.cid, desc_nodes.level + 1 FROM ${TABLES.COMMENTS} c
+                    SELECT desc_nodes.root, c.cid, desc_nodes.level + 1, ${present} FROM ${TABLES.COMMENTS} c
                     INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                     LEFT JOIN ${deletedLookup} AS d ON c.cid = d.cid
                     JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
-                    WHERE ${passes}
+                    WHERE ${addrClause}
                 )
-                SELECT root, COUNT(*) AS replyCount, SUM(CASE WHEN level = 1 THEN 1 ELSE 0 END) AS childCount
+                SELECT root, SUM(present) AS replyCount, SUM(CASE WHEN level = 1 THEN present ELSE 0 END) AS childCount
                 FROM descendants GROUP BY root`
             ).all(...params, ...addrParams, ...addrParams) as { root: string; replyCount: number; childCount: number }[];
             for (const row of rows) result.set(row.root, { replyCount: row.replyCount, childCount: row.childCount });
@@ -2780,31 +2787,30 @@ export class DbHandler {
         return result;
     }
 
-    // lastReplyTimestamp of every parent: the newest timestamp under it, over the same descendants replyCount counts
-    // (every comment on the path has a CommentUpdate, this community's address, and is neither removed nor deleted),
-    // further narrowed to ones that are neither pending nor disapproved. A removed or deleted reply therefore does not
-    // bump its thread, and neither does anything under it.
+    // lastReplyTimestamp of every parent: the newest timestamp among the replies replyCount counts, with the walk further
+    // narrowed to comments that are neither pending nor disapproved. A removed or deleted reply does not bump its thread
+    // (#403), but the present replies under it do (#405).
     private _queryLastReplyTimestampsByParentCids(parentCids: string[]): Map<string, number> {
         const result = new Map<string, number>();
         const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
-        const passes = `${addrClause} AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
-                      AND COALESCE(cu.approved, 1) != 0 AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)`;
+        const walked = `${addrClause} AND COALESCE(cu.approved, 1) != 0 AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)`;
+        const present = this._replyWalkPresentExpression();
         const deletedLookup = `(SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES})`;
         for (const { placeholders, params } of this._cidChunks(parentCids, addrParams.length * 2)) {
             const rows = this._prepareCached(
-                `WITH RECURSIVE descendants(root, cid, timestamp) AS (
-                    SELECT c.parentCid, c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                `WITH RECURSIVE descendants(root, cid, timestamp, present) AS (
+                    SELECT c.parentCid, c.cid, c.timestamp, ${present} FROM ${TABLES.COMMENTS} c
                     INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                     LEFT JOIN ${deletedLookup} AS d ON c.cid = d.cid
-                    WHERE c.parentCid IN (${placeholders}) AND ${passes}
+                    WHERE c.parentCid IN (${placeholders}) AND ${walked}
                     UNION ALL
-                    SELECT desc_nodes.root, c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                    SELECT desc_nodes.root, c.cid, c.timestamp, ${present} FROM ${TABLES.COMMENTS} c
                     INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                     LEFT JOIN ${deletedLookup} AS d ON c.cid = d.cid
                     JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
-                    WHERE ${passes}
+                    WHERE ${walked}
                 )
-                SELECT root, MAX(timestamp) AS maxTimestamp FROM descendants GROUP BY root`
+                SELECT root, MAX(CASE WHEN present = 1 THEN timestamp END) AS maxTimestamp FROM descendants GROUP BY root`
             ).all(...params, ...addrParams, ...addrParams) as { root: string; maxTimestamp: number | null }[];
             for (const row of rows) if (row.maxTimestamp !== null) result.set(row.root, row.maxTimestamp);
         }

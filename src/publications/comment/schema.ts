@@ -157,7 +157,7 @@ export const CommentUpdateSchema = z
         cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
         upvoteCount: z.number().nonnegative().int(),
         downvoteCount: z.number().nonnegative().int(),
-        replyCount: z.number().nonnegative().int(), // the total of reply trees underneath this comment, which includes direct and indirect children
+        replyCount: z.number().nonnegative().int(), // the total of reply trees underneath this comment, which includes direct and indirect children; removed and deleted replies are not counted, the present replies under them are
         childCount: z.number().nonnegative().int().optional(), // the total of direct children of the comment, does not include indirect children
         number: z.number().int().positive().optional(),
         postNumber: z.number().int().positive().optional(),
@@ -174,7 +174,7 @@ export const CommentUpdateSchema = z
         updatedAt: PKCTimestampSchema, // timestamp in seconds the CommentUpdate was updated
         author: AuthorWithCommentUpdateSchema.pick({ community: true }).optional(), // add commentUpdate.author.community to comment.author.community, override comment.author.flairs with commentUpdate.author.community.flairs if any
         lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
-        lastReplyTimestamp: PKCTimestampSchema.optional(), // The timestamp of the most recent direct or indirect reply of the comment, counting only replies that, along with every comment above them, are neither removed, deleted, pending nor disapproved
+        lastReplyTimestamp: PKCTimestampSchema.optional(), // The timestamp of the most recent direct or indirect reply of the comment, over the replies replyCount counts that are neither pending nor disapproved (nor under a pending or disapproved reply); a removed or deleted reply does not count, the present replies under it do
         signature: JsonSignatureSchema, // signature of the CommentUpdate by the community owner to protect against malicious gateway
         protocolVersion: ProtocolVersionSchema,
         // The getter defers TypeScript inference of the comment-schema <-> pages-schema cycle; the

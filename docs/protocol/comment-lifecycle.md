@@ -80,4 +80,5 @@ Extends `CommentPubsubMessage` with community-added fields:
 - Treating `CommentIpfs` as mutable, it is permanent. Only `CommentUpdate` changes.
 - Confusing who signs what, `CommentIpfs` keeps the author's original signature; `CommentUpdate` is signed by the community owner.
 - Forgetting that `replyCount` includes both direct and indirect children, while `childCount` (optional) is only direct children.
+- Assuming a removed or deleted reply hides its subtree from the counts. It is a tombstone in reply pages: it is not counted in `replyCount`/`childCount` and does not set `lastReplyTimestamp`, but the present replies under it are counted and do bump the thread.
 - Adding fields to `CommentIpfs` that should be in `CommentUpdate`, if the data can change over time, it belongs in `CommentUpdate`.

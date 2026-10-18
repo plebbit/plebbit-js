@@ -197,14 +197,14 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdates (batched) matches qu
         );
         authorEdit(r1a, { deleted: true });
         markUpdate(r1a, { edit: { deleted: true } });
-        add(insertComment({ depth: 3, parentCid: r1a.cid, postCid: p1.cid })); // under a deleted reply: excluded from counts
+        add(insertComment({ depth: 3, parentCid: r1a.cid, postCid: p1.cid })); // under a deleted reply: still counted (#405)
         const r1b = add(insertComment({ depth: 2, parentCid: r1.cid, postCid: p1.cid, authorSignerAddress: AUTHOR_A }));
         vote(r1b, -1, 2);
         add(insertComment({ depth: 3, parentCid: r1b.cid, postCid: p1.cid, authorSignerAddress: AUTHOR_B }));
         const r2 = add(insertComment({ depth: 1, parentCid: p1.cid, authorSignerAddress: AUTHOR_C, authorName: AUTHOR_C_DOMAIN }));
         moderate(r2, { removed: true, reason: "spam" });
         markUpdate(r2, { removed: 1 });
-        add(insertComment({ depth: 2, parentCid: r2.cid, postCid: p1.cid })); // under a removed reply
+        add(insertComment({ depth: 2, parentCid: r2.cid, postCid: p1.cid })); // under a removed reply: still counted (#405)
         add(insertComment({ depth: 1, parentCid: p1.cid, pendingApproval: true }));
         add(insertComment({ depth: 1, parentCid: p1.cid, withUpdate: false })); // no CommentUpdate row yet
         add(insertComment({ depth: 1, parentCid: p1.cid, foreignCommunity: true }));
@@ -284,7 +284,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdates (batched) matches qu
         expect(p1).to.include({ pinned: false, locked: true, reason: "latest reason wins", upvoteCount: 3, downvoteCount: 1 });
         // The counts filter on removed, deleted, address and the presence of a CommentUpdate row, not on pending
         expect(p1.childCount, "removed, update-less and foreign replies are not children; a pending one with a row is").to.equal(2);
-        expect(p1.replyCount, "the deleted reply and everything under removed/deleted replies is excluded").to.equal(4);
+        expect(p1.replyCount, "removed/deleted replies are excluded, the present replies under them are not (#405)").to.equal(6);
         const p3 = byCid.get(seeded.find((c) => c.authorSignerAddress === AUTHOR_C && c.depth === 0)!.cid)!;
         expect(p3.flairs, "mod flairs win over the author edit and the challenge").to.deep.equal([{ text: "mod flair" }]);
         expect(p3).to.include({ spoiler: true, nsfw: true, reason: "from challenge" });
