@@ -87,7 +87,7 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
             author: overrides.author ?? { address: authorSignerAddress },
             content: overrides.content ?? `content-${cid}`,
             title: depth === 0 ? overrides.title ?? `title-${cid}` : undefined,
-            communityPublicKey: communityAddress,
+            communityPublicKey: overrides.communityPublicKey ?? communityAddress,
             timestamp: resolvedTimestamp,
             depth,
             postCid: resolvedPostCid,
@@ -573,6 +573,68 @@ describeSkipIfRpc("db-handler.queryCommentsToBeUpdated", function () {
         const cids = commentCidsNeedingUpdate();
         expect(cids).to.include(reply.cid, "reply should be enqueued because its childCount is stale after removal");
         expect(cids).to.include(post.cid, "post should be enqueued when descendant childCount becomes stale");
+    });
+
+    // childCount leaves out a disapproved reply, so the arm that compares it with the stored childCount must too:
+    // otherwise the parent is re-flagged on every cycle and the update loop never converges (like issue #230)
+    it("does not requeue a parent whose stored childCount leaves out a disapproved reply", async () => {
+        const baseTimestamp = currentTimestamp();
+        const post = insertComment({ timestamp: baseTimestamp, overrides: { insertedAt: baseTimestamp } });
+        const disapprovedReply = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { insertedAt: baseTimestamp + 1 }
+        });
+        insertCommentUpdate(disapprovedReply, {
+            publishedToPostUpdatesMFS: 1,
+            approved: 0,
+            updatedAt: baseTimestamp + 2,
+            insertedAt: baseTimestamp + 2
+        });
+        insertCommentUpdate(post, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 0,
+            childCount: 0,
+            updatedAt: baseTimestamp + 3,
+            insertedAt: baseTimestamp + 3
+        });
+
+        expect(commentCidsNeedingUpdate()).to.not.include(post.cid);
+    });
+
+    // childCount and lastChildCid leave out a reply from another community, so the arms that compare them with the
+    // stored values must too, or the parent is re-flagged on every cycle
+    it("does not requeue a parent whose stored childCount and lastChildCid leave out a reply from another community", async () => {
+        const baseTimestamp = currentTimestamp();
+        const post = insertComment({ timestamp: baseTimestamp, overrides: { insertedAt: baseTimestamp } });
+        const presentReply = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 1,
+            overrides: { insertedAt: baseTimestamp + 1 }
+        });
+        const foreignReply = insertComment({
+            depth: 1,
+            parentCid: post.cid,
+            postCid: post.cid,
+            timestamp: baseTimestamp + 2,
+            overrides: { insertedAt: baseTimestamp + 2, communityPublicKey: "12D3KooWForeignCommunity" }
+        });
+        for (const reply of [presentReply, foreignReply])
+            insertCommentUpdate(reply, { publishedToPostUpdatesMFS: 1, updatedAt: baseTimestamp + 3, insertedAt: baseTimestamp + 3 });
+        insertCommentUpdate(post, {
+            publishedToPostUpdatesMFS: 1,
+            replyCount: 1,
+            childCount: 1,
+            lastChildCid: presentReply.cid,
+            updatedAt: baseTimestamp + 4,
+            insertedAt: baseTimestamp + 4
+        });
+
+        expect(commentCidsNeedingUpdate()).to.not.include(post.cid);
     });
 
     it("includes post ancestor when lastChildCid is stale but childCount is correct", async () => {

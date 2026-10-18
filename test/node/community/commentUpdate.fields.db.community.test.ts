@@ -68,7 +68,7 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
             author: { address: authorSignerAddress },
             content: overrides["content"] ?? `content-${cid}`,
             title: depth === 0 ? overrides["title"] ?? `title-${cid}` : undefined,
-            communityPublicKey: communityAddress,
+            communityPublicKey: overrides["communityPublicKey"] ?? communityAddress,
             timestamp,
             depth,
             postCid: resolvedPostCid,
@@ -145,6 +145,13 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
                 insertedAt: resolvedInsertedAt
             }
         ]);
+    };
+
+    // An author-deleted comment: the deletion lives in commentUpdates.edit, written raw because a full signed edit is noise here
+    const markEditDeleted = (comment: InsertedComment): void => {
+        assert(_dbHandler, "DbHandler not initialised");
+        const db = _dbHandler["_db"] as { prepare: (sql: string) => { run: (...args: unknown[]) => void } };
+        db.prepare(`UPDATE commentUpdates SET edit = ? WHERE cid = ?`).run(JSON.stringify({ deleted: true }), comment.cid);
     };
 
     const insertVote = (comment: InsertedComment, options: InsertVoteOptions = {}): void => {
@@ -241,6 +248,22 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
 
             const nestedCalculated = queryCalculated(nestedReply);
             expect(nestedCalculated.replyCount).to.equal(0);
+        });
+
+        // A disapproved reply the mod kept (approved: false plus a reason) stays in reply pages until the retention
+        // purge, like a removed one, so it is a tombstone too: it is not counted and does not bump. It never has replies
+        // under it, since publishing under a pending or disapproved comment is rejected.
+        it("does not count a disapproved direct reply", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const disapprovedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            insertCommentUpdate(disapprovedReply, { approved: false });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
         });
     });
 
@@ -466,6 +489,124 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
 
             calculated = queryCalculated(post);
             expect(calculated.lastReplyTimestamp).to.equal(nestedTimestamp);
+        });
+
+        // A removed or deleted reply neither counts nor bumps its thread (issue #403), but the present replies under it
+        // still do: reply pages keep it as a tombstone with its replies visible (issue #405)
+        it("ignores a removed direct reply but counts the present replies under it", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            insertCommentUpdate(removedReply, { removed: true });
+            createCommentWithUpdate({ depth: 2, parentCid: removedReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(2);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
+        });
+
+        it("ignores a deleted direct reply but counts the present replies under it", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            const deletedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            insertCommentUpdate(deletedReply);
+            markEditDeleted(deletedReply);
+            createCommentWithUpdate({ depth: 2, parentCid: deletedReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(2);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
+        });
+
+        it("counts a present reply under a chain of removed and deleted replies", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_300 });
+            insertCommentUpdate(removedReply, { removed: true });
+            const deletedReply = insertComment({ depth: 2, parentCid: removedReply.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+            insertCommentUpdate(deletedReply);
+            markEditDeleted(deletedReply);
+            createCommentWithUpdate({ depth: 3, parentCid: deletedReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(0);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_100);
+
+            // the removed reply's own CommentUpdate counts the present reply two levels under it as well
+            const removedCalculated = queryCalculated(removedReply);
+            expect(removedCalculated.replyCount).to.equal(1);
+            expect(removedCalculated.lastReplyTimestamp).to.equal(1_700_000_100);
+        });
+
+        it("is undefined when every reply is removed or deleted", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const removedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            insertCommentUpdate(removedReply, { removed: true });
+            const deletedReply = insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            insertCommentUpdate(deletedReply);
+            markEditDeleted(deletedReply);
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(0);
+            expect(calculated.childCount).to.equal(0);
+            expect(calculated.lastReplyTimestamp).to.be.undefined;
+            expect(calculated.lastChildCid).to.be.undefined;
+        });
+
+        it("ignores a direct reply from another community", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            createCommentWithUpdate({
+                depth: 1,
+                parentCid: post.cid,
+                postCid: post.cid,
+                timestamp: 1_700_000_100,
+                overrides: { communityPublicKey: "12D3KooWForeignCommunity" }
+            });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
+        });
+
+        // A pending reply has no CommentUpdate (the update cycle skips pending comments) and is not in reply pages
+        it("ignores a pending direct reply", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            insertComment({
+                depth: 1,
+                parentCid: post.cid,
+                postCid: post.cid,
+                timestamp: 1_700_000_100,
+                overrides: { pendingApproval: true }
+            });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
+        });
+
+        // A reply counts once it has a CommentUpdate, at any depth: the cycle calculates the deepest comments first, so a
+        // reply's CommentUpdate exists by the time its ancestors are calculated in the same cycle
+        it("ignores a reply that has no CommentUpdate yet, at any depth", () => {
+            const post = createCommentWithUpdate({ depth: 0, timestamp: 1_700_000_000 });
+            const presentReply = createCommentWithUpdate({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_050 });
+            insertComment({ depth: 2, parentCid: presentReply.cid, postCid: post.cid, timestamp: 1_700_000_100 });
+            insertComment({ depth: 1, parentCid: post.cid, postCid: post.cid, timestamp: 1_700_000_200 });
+
+            const calculated = queryCalculated(post);
+            expect(calculated.replyCount).to.equal(1);
+            expect(calculated.childCount).to.equal(1);
+            expect(calculated.lastReplyTimestamp).to.equal(1_700_000_050);
+            expect(calculated.lastChildCid).to.equal(presentReply.cid);
         });
     });
 
