@@ -9,10 +9,13 @@ type ErrorWithCode = Error & { code?: string; errno?: number; syscall?: string; 
 
 // Builds the exact error undici threw for the initial pubsub/sub request in CI (#422, windows node-local):
 //   TypeError("fetch failed")
-//     cause: AggregateError { code: "ETIMEDOUT", errors: [connect ETIMEDOUT ::1:15001, connect ETIMEDOUT 127.0.0.1:15001] }
-// Node's happy-eyeballs per-address attempt timeout (250ms) expired on both localhost addresses
-// while kubo's API was saturated by five communities starting at once. There is no undici
-// ConnectTimeoutError layer here, unlike #384.
+//     cause: AggregateError { code: "ETIMEDOUT", errors: [connect ETIMEDOUT ::1:15001, connect ECONNREFUSED 127.0.0.1:15001] }
+// Windows resolves localhost to ::1 first. kubo's API listens on IPv4 only and Windows does not refuse
+// ::1 promptly, so Node's happy-eyeballs 250ms attempt timer fires (ETIMEDOUT). The last address,
+// 127.0.0.1, gets no timer and was refused by the OS while kubo was saturated by five communities
+// starting at once. The AggregateError takes errors[0].code, so ETIMEDOUT masks the real refusal.
+// Shape verified with real sockets (non-accepting ::1 listener, nothing on 127.0.0.1, lookup
+// returning [::1, 127.0.0.1]) on node v22. There is no undici ConnectTimeoutError layer, unlike #384.
 const happyEyeballsConnectTimeoutError = (): TypeError => {
     const perAddress: ErrorWithCode[] = [
         Object.assign(new Error("connect ETIMEDOUT ::1:15001"), {
@@ -22,9 +25,9 @@ const happyEyeballsConnectTimeoutError = (): TypeError => {
             address: "::1",
             port: 15001
         }),
-        Object.assign(new Error("connect ETIMEDOUT 127.0.0.1:15001"), {
-            code: "ETIMEDOUT",
-            errno: -4039,
+        Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:15001"), {
+            code: "ECONNREFUSED",
+            errno: -4078,
             syscall: "connect",
             address: "127.0.0.1",
             port: 15001
