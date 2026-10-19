@@ -161,6 +161,9 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
     private _onSettingsChange: {
         [connectionId: string]: { [subscriptionId: number]: (args: { newPKC: PKC }) => Promise<void> };
     } = {}; // TODO rename this to _afterSettingsChange
+    // Only the settingsSubscribe senders. Unlike _onSettingsChange, whose handlers restart communities and re-subscribe
+    // updates onto a new pkc, these just re-send `settingschange`, which is all notifySettingsChange needs.
+    private _settingsSenders = new Map<string, (args: { newPKC: PKC }) => Promise<void>>();
 
     private _startedCommunities: { [address: string]: "pending" | LocalCommunity } = {};
     private _autoStartOnBoot: boolean = false;
@@ -1007,11 +1010,14 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
             sendEvent("settingschange", this._serializeSettingsFromPKC(newPKC));
         };
 
+        const senderKey = `${connectionId}:${subscriptionId}`;
         this.subscriptionCleanups[connectionId][subscriptionId] = async () => {
             if (this._onSettingsChange[connectionId]) delete this._onSettingsChange[connectionId][subscriptionId];
+            this._settingsSenders.delete(senderKey);
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = sendRpcSettings;
+        this._settingsSenders.set(senderKey, sendRpcSettings);
         await sendRpcSettings({ newPKC: this.pkc });
 
         return { subscriptionId };
@@ -1024,6 +1030,22 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
 
     private async _createPKCInstanceFromSetSettings(newOptions: InputPKCOptions) {
         return PKCJs.PKC(newOptions);
+    }
+
+    // For a host that changed the challenge or page sort registry of this server's pkc in place (bitsocial-cli's
+    // `challenge install` / `page-sort install` reload, issue #411): re-send `settingschange` with the current
+    // registries to every settings subscriber, so connected clients accept the new names without reconnecting. It only
+    // reads the in-memory registries. It does not run the other setSettings handlers, which restart every community;
+    // communities pick a registry change up on their own next cycle.
+    async notifySettingsChange(): Promise<void> {
+        await this._setSettingsQueue; // never interleave with a setSettings swapping the pkc
+        for (const [senderKey, send] of [...this._settingsSenders]) {
+            try {
+                await send({ newPKC: this.pkc });
+            } catch (error) {
+                log.error(`Failed to send settingschange to settings subscription ${senderKey}, continuing with the rest`, error);
+            }
+        }
     }
 
     async setSettings(params: any): Promise<RpcSuccessResult> {

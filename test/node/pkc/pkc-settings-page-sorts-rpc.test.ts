@@ -114,6 +114,40 @@ describe("pkc.settings.pageSorts over RPC", () => {
         await clientPKC.destroy();
     });
 
+    // A host that installs a sort package into the running server's registry (bitsocial-cli's `page-sort install`,
+    // issue #411) calls notifySettingsChange so connected clients see it without reconnecting. It must not run the
+    // other settings-change handlers, which restart every started community on the new pkc.
+    it("notifySettingsChange pushes a newly registered page sort to a connected client and nothing else", async () => {
+        const { clientPKC } = await connectClient();
+        const rpcClient = clientPKC.clients.pkcRpcClients[RPC_URL];
+        const server = rpcServer as unknown as {
+            _onSettingsChange: Record<string, Record<number, (args: { newPKC: PKCType }) => Promise<void>>>;
+        };
+        let restartHandlerCalls = 0;
+        server._onSettingsChange["fake-connection"] = { 1: async () => void restartHandlerCalls++ };
+        const registry = serverPKC.settings.pageSorts!;
+        registry["late-sort"] = (() => ({
+            sortName: "late-sort",
+            description: "Registered after the client connected",
+            score: ({ comment }: { comment: { timestamp: number } }) => comment.timestamp
+        })) as unknown as PageSortFileFactory;
+        try {
+            expect(rpcClient.settings?.pageSorts?.["late-sort"]).to.be.undefined;
+            await rpcServer.notifySettingsChange();
+            await resolveWhenConditionIsTrue({
+                toUpdate: rpcClient,
+                predicate: async () => Boolean(rpcClient.settings?.pageSorts?.["late-sort"]),
+                eventName: "settingschange"
+            });
+            expect(rpcClient.settings!.pageSorts!["late-sort"].description).to.equal("Registered after the client connected");
+            expect(restartHandlerCalls).to.equal(0);
+        } finally {
+            delete registry["late-sort"];
+            delete server._onSettingsChange["fake-connection"];
+            await clientPKC.destroy();
+        }
+    });
+
     it("an RpcLocalCommunity rejects a name the server does not have before the round trip, and accepts a registered one", async () => {
         const { clientPKC } = await connectClient();
         const community = (await clientPKC.createCommunity({})) as RpcLocalCommunity;
