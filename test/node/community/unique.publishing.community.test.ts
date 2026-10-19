@@ -34,6 +34,20 @@ class InMemoryDbHandlerMock {
     createTransaction(): void {}
     commitTransaction(): void {}
     rollbackTransaction(): void {}
+    // The in-memory form of the rolled-back savepoint: whatever write adds is dropped again after read
+    readBackWithoutStoring<T>(opts: { write: () => void; read: () => T }): T {
+        const snapshot = {
+            comments: [...this.comments],
+            commentEdits: [...this.commentEdits],
+            communityAuthors: new Map(this.communityAuthors)
+        };
+        try {
+            opts.write();
+            return opts.read();
+        } finally {
+            Object.assign(this, snapshot);
+        }
+    }
     removeOldestPendingCommentIfWeHitMaxPendingCount(): void {}
     destoryConnection(): void {}
     markCommentsAsPublishedToPostUpdates(): void {}

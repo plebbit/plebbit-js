@@ -204,14 +204,24 @@ export async function prepareCommentEditWithAlias(community: LocalCommunity, ori
 // signed bytes in between (an author object that cleanWireAuthor empties, a string SQLite cannot keep
 // verbatim, a future normalisation) is only discovered when the community verifies its own next record
 // before publishing it, and from then on every publish cycle fails: the board stops publishing. Known
-// cases are rejected at validation with their own reason; these two gates run inside the insert
-// transaction so any case nobody has named yet rejects that one publication instead of freezing the
-// board. They run exactly what the readers run: the row rebuilt the way the pages rebuild it, hashed
-// and verified the way a page is verified.
-async function assertStoredCommentIsVerbatim(opts: { community: LocalCommunity; commentCid: string; log: Logger }): Promise<void> {
-    const { community, commentCid, log } = opts;
-    const storedRow = community._dbHandler.queryComment(commentCid);
-    if (!storedRow) throw Error(`Comment ${commentCid} is missing from the DB inside the transaction that inserted it`);
+// cases are rejected at validation with their own reason; these two gates run before the insert so
+// any case nobody has named yet rejects that one publication instead of freezing the board. They run
+// exactly what the readers run: the row rebuilt the way the pages rebuild it, hashed and verified the
+// way a page is verified. The gates await, so they read the row back from a savepoint that is rolled
+// back rather than from inside the insert transaction: a transaction held open across an await is
+// joined, and can be rolled back, by every other exchange on the shared connection (issue #417).
+async function assertStoredCommentIsVerbatim(opts: {
+    community: LocalCommunity;
+    commentRow: CommentsTableRow;
+    commentCid: string;
+    log: Logger;
+}): Promise<void> {
+    const { community, commentRow, commentCid, log } = opts;
+    const storedRow = community._dbHandler.readBackWithoutStoring({
+        write: () => community._dbHandler.insertComments([commentRow]),
+        read: () => community._dbHandler.queryComment(commentCid)
+    });
+    if (!storedRow) throw Error(`Comment ${commentCid} could not be read back from the DB after inserting it`);
     const storedComment = deriveCommentIpfsFromCommentTableRow(storedRow);
     const storedCid = await calculateIpfsCidV0(deterministicStringify(storedComment)!);
     const storedValidity = await verifyCommentIpfs({
@@ -234,14 +244,18 @@ async function assertStoredCommentIsVerbatim(opts: { community: LocalCommunity; 
 
 async function assertStoredAuthorEditIsVerbatim(opts: {
     community: LocalCommunity;
+    editTableRow: CommentEditsTableRow;
     commentEditRaw: CommentEditPubsubMessagePublication;
     authorSignerAddress: string;
     log: Logger;
 }): Promise<void> {
-    const { community, commentEditRaw, authorSignerAddress, log } = opts;
-    const storedEdit = community._dbHandler.queryLatestAuthorEdit(commentEditRaw.commentCid, authorSignerAddress);
+    const { community, editTableRow, commentEditRaw, authorSignerAddress, log } = opts;
+    const storedEdit = community._dbHandler.readBackWithoutStoring({
+        write: () => community._dbHandler.insertCommentEdits([editTableRow]),
+        read: () => community._dbHandler.queryLatestAuthorEdit(commentEditRaw.commentCid, authorSignerAddress)
+    });
     if (!storedEdit || storedEdit.signature.signature !== commentEditRaw.signature.signature)
-        throw Error(`Edit of comment ${commentEditRaw.commentCid} is missing from the DB inside the transaction that inserted it`);
+        throw Error(`Edit of comment ${commentEditRaw.commentCid} could not be read back from the DB after inserting it`);
     // what verifyCommentUpdate runs on commentUpdate.edit
     const storedValidity = await _validateSignatureOfPKCRecord(storedEdit);
     if (storedValidity.valid) return;
@@ -295,15 +309,9 @@ export async function storeCommentEdit(
         throw new PKCError("ERR_DUPLICATE_COMMENT_EDIT", { editTableRow });
     }
 
-    community._dbHandler.createTransaction();
-    try {
-        community._dbHandler.insertCommentEdits([editTableRow]);
-        if (editSignedByOriginalAuthor) await assertStoredAuthorEditIsVerbatim({ community, commentEditRaw, authorSignerAddress, log });
-        community._dbHandler.commitTransaction();
-    } catch (e) {
-        community._dbHandler.rollbackTransaction();
-        throw e;
-    }
+    if (editSignedByOriginalAuthor)
+        await assertStoredAuthorEditIsVerbatim({ community, editTableRow, commentEditRaw, authorSignerAddress, log });
+    community._dbHandler.insertCommentEdits([editTableRow]);
 
     // If author is deleting a pending or disapproved comment, purge it immediately from the database
     if (commentEditRaw.deleted === true) {
@@ -578,7 +586,8 @@ export async function storeComment(
     }
     if (originalCommentSignatureEncoded) commentRow.originalCommentSignatureEncoded = originalCommentSignatureEncoded;
 
-    // we may need to query comment and verify its signature
+    await assertStoredCommentIsVerbatim({ community, commentRow, commentCid, log });
+    // Synchronous from here to the commit, so no other exchange can write inside this transaction (issue #417)
     community._dbHandler.createTransaction();
     try {
         if (!pendingApproval) {
@@ -587,7 +596,6 @@ export async function storeComment(
             if (typeof postNumber === "number") commentRow.postNumber = postNumber;
         }
         community._dbHandler.insertComments([commentRow]);
-        await assertStoredCommentIsVerbatim({ community, commentCid, log });
         if (typeof community.settings?.maxPendingApprovalCount === "number")
             community._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(community.settings.maxPendingApprovalCount);
         community._dbHandler.commitTransaction();

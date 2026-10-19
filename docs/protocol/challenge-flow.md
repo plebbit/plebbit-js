@@ -113,7 +113,7 @@ On **failure**:
 -   `challengeErrors`: `{ [challengeIndex]: errorMessage }`
 -   `reason`: human-readable failure reason
 
-Three reasons exist so that a publication the community could not republish byte-for-byte is refused instead of stored (issue #387): `ERR_PUBLICATION_AUTHOR_IS_AN_EMPTY_OBJECT` and `ERR_PUBLICATION_HAS_MALFORMED_UNICODE_STRING` from validation (`checkPublicationValidity`), and `ERR_COMMUNITY_CANNOT_STORE_PUBLICATION_VERBATIM` from the store-time gate, which rebuilds the comment or author edit from its freshly inserted row and rolls the insert back if the rebuilt record no longer hashes to its cid or verifies. See `docs/protocol/signing.md`.
+Three reasons exist so that a publication the community could not republish byte-for-byte is refused instead of stored (issue #387): `ERR_PUBLICATION_AUTHOR_IS_AN_EMPTY_OBJECT` and `ERR_PUBLICATION_HAS_MALFORMED_UNICODE_STRING` from validation (`checkPublicationValidity`), and `ERR_COMMUNITY_CANNOT_STORE_PUBLICATION_VERBATIM` from the store-time gate, which rebuilds the comment or author edit from a read-back of its row (inserted in a savepoint that is rolled back, issue #417) and refuses to store it if the rebuilt record no longer hashes to its cid or verifies. See `docs/protocol/signing.md`.
 
 ## Duplicate and Overlapping Requests
 
