@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.115](https://github.com/pkcprotocol/pkc-js/compare/v0.0.114...v0.0.115) (2026-10-19)
+
+### Features
+
+* **community:** reload challenge and page sort packages in running communities ([#415](https://github.com/pkcprotocol/pkc-js/issues/415)) ([2a95dcb](https://github.com/pkcprotocol/pkc-js/commit/2a95dcb76897c17961d7dcdbbf3ef11d71ca56eb))
+
+### Bug Fixes
+
+* **community:** stop a failing exchange rolling back another exchange's insert ([#417](https://github.com/pkcprotocol/pkc-js/issues/417)) ([#419](https://github.com/pkcprotocol/pkc-js/issues/419)) ([9571e37](https://github.com/pkcprotocol/pkc-js/commit/9571e3732edc827143e000464410c2cc61a8dfc9)), closes [#387](https://github.com/pkcprotocol/pkc-js/issues/387) [#387](https://github.com/pkcprotocol/pkc-js/issues/387)
+* **pubsub:** retry and fall back when a pubsub subscribe fails to connect ([#422](https://github.com/pkcprotocol/pkc-js/issues/422)) ([#423](https://github.com/pkcprotocol/pkc-js/issues/423)) ([74f5b83](https://github.com/pkcprotocol/pkc-js/commit/74f5b83f76b1ad147dccfdb9af930428cc55ea99))
+
 ## [0.0.114](https://github.com/pkcprotocol/pkc-js/compare/v0.0.113...v0.0.114) (2026-10-18)
 
 ### Bug Fixes
