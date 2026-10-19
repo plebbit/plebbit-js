@@ -114,6 +114,7 @@ export class DbHandler {
     _db!: BetterSqlite3Database;
     private _community!: LocalCommunity;
     private _transactionDepth!: number;
+    private _transactionGeneration = 0;
     private _dbConfig!: { filename: string } & Database.Options;
     private _keyv!: KeyvBetterSqlite3;
     private _createdTables: boolean;
@@ -285,8 +286,40 @@ export class DbHandler {
     createTransaction(): void {
         if (this._transactionDepth === 0) {
             this._db.exec("BEGIN");
+            this._guardAgainstTransactionAcrossAwait();
         }
         this._transactionDepth++;
+    }
+
+    // The connection and its transaction depth are shared by every challenge exchange and the update loop, so
+    // a transaction left open across an await is joined by every write that runs meanwhile, and its rollback
+    // discards those writes too (issue #417). Transactions must open and close in one synchronous run. An
+    // await always yields to the microtask queue, so a transaction still open when this microtask runs spans
+    // one. Under vitest it throws, so a test that reaches such a transaction fails.
+    private _guardAgainstTransactionAcrossAwait(): void {
+        const transactionGeneration = ++this._transactionGeneration;
+        queueMicrotask(() => {
+            if (this._transactionDepth === 0 || this._transactionGeneration !== transactionGeneration) return;
+            const error = new Error(
+                "A DB transaction was left open across an await. Transactions must open and close synchronously (issue #417)"
+            );
+            Logger("pkc-js:local-community:db-handler:createTransaction").error(error);
+            if (process.env["VITEST"]) throw error;
+        });
+    }
+
+    // Runs write and then read inside a savepoint that is always rolled back, so the caller gets a row exactly
+    // as SQLite stores it without storing it. This lets a check that has to await run on the stored form with
+    // no transaction open (issue #417).
+    readBackWithoutStoring<T>(opts: { write: () => void; read: () => T }): T {
+        this._db.exec("SAVEPOINT read_back_without_storing");
+        try {
+            opts.write();
+            return opts.read();
+        } finally {
+            this._db.exec("ROLLBACK TO read_back_without_storing");
+            this._db.exec("RELEASE read_back_without_storing");
+        }
     }
 
     commitTransaction(): void {

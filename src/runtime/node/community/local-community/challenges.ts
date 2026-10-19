@@ -958,14 +958,12 @@ export async function handleChallengeExchange(community: LocalCommunity, pubsubM
             await handleChallengeRequest(community, parsedPubsubMsg, false);
         } catch (e) {
             log.error(`Failed to process challenge request message received at (${timeReceived})`, e);
-            community._dbHandler.rollbackTransaction();
         }
     } else if (parsedPubsubMsg.type === "CHALLENGEANSWER") {
         try {
             await handleChallengeAnswer(community, parsedPubsubMsg);
         } catch (e) {
             log.error(`Failed to process challenge answer message received at (${timeReceived})`, e);
-            community._dbHandler.rollbackTransaction();
         }
     }
 }
