@@ -221,7 +221,7 @@ describe("local community garbage collection", () => {
         const purgeCid = VALID_CID_A;
         const replyPageCids = ["QmRepliesPage1111111111111111111111111111111111111", "QmRepliesPage2222222222222222222222222222222222222"];
 
-        await addAllCidsUnderPurgedCommentToBeRemoved(
+        addAllCidsUnderPurgedCommentToBeRemoved(
             community as unknown as LocalCommunity,
             {
                 commentTableRow: { cid: purgeCid },
@@ -305,7 +305,7 @@ describe("local community garbage collection", () => {
         // A purge that lands after a cycle's unpin pass gets its blocks removed by that same cycle's
         // block.rm, so by the next unpin pass _blocksToRm is empty again; the flush must still happen
         // via the pending-purge flag set when the purge queued its cids.
-        await addAllCidsUnderPurgedCommentToBeRemoved(
+        addAllCidsUnderPurgedCommentToBeRemoved(
             community as unknown as LocalCommunity,
             { commentTableRow: { cid: VALID_CID_A } } as unknown as PurgedCommentTableRows
         );
@@ -318,7 +318,7 @@ describe("local community garbage collection", () => {
         expect(community._cidsToUnPin.size).to.equal(0);
     });
 
-    it("removes queued MFS paths and keeps pending ones when files are missing", async () => {
+    it("removes queued MFS paths and dequeues the ones kubo reports as already missing", async () => {
         const { community, kuboClient } = createTestCommunity();
         const toDelete = ["/sub/remove/first", "/sub/remove/second"];
         community._mfsPathsToRemove = new Set(toDelete);
@@ -338,7 +338,8 @@ describe("local community garbage collection", () => {
 
         expect(missingResult).to.have.members(toDelete);
         expect(removeSpy.mock.calls.length).to.equal(2);
-        expect(community._mfsPathsToRemove.size).to.equal(toDelete.length);
+        // An absent path is already removed, so it must not stay queued for the per-cycle drain (issue #420)
+        expect(community._mfsPathsToRemove.size).to.equal(0);
         expect(kuboClient._client.files.rm.mock.calls.length).to.equal(0);
     });
 

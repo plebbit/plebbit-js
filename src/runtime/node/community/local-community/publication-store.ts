@@ -392,18 +392,41 @@ export async function storeCommentModeration(
 
         const commentToPurge = community._dbHandler.queryComment(modTableRow.commentCid);
         if (!commentToPurge) throw Error("Comment to purge not found");
-        const purgedTableRows = community._dbHandler.purgeComment(modTableRow.commentCid);
 
-        for (const purgedTableRow of purgedTableRows) await addAllCidsUnderPurgedCommentToBeRemoved(community, purgedTableRow);
+        // Every DB-side effect of the purge happens synchronously, before the MFS cleanup below can
+        // throw, and the purge commits together with its moderation row (issue #420). No await may
+        // sit inside the transaction (issue #417).
+        community._dbHandler.createTransaction();
+        let purgedTableRows: ReturnType<typeof community._dbHandler.purgeComment>;
+        try {
+            purgedTableRows = community._dbHandler.purgeComment(modTableRow.commentCid);
+            community._dbHandler.insertCommentModerations([modTableRow]);
+            community._dbHandler.commitTransaction();
+        } catch (e) {
+            community._dbHandler.rollbackTransaction();
+            throw e;
+        }
 
-        log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", "out of DB and IPFS");
-
-        await rmUnneededMfsPaths(community); // not sure if needed here
+        for (const purgedTableRow of purgedTableRows) addAllCidsUnderPurgedCommentToBeRemoved(community, purgedTableRow);
         if (community.updateCid) {
             // need to remove any update cids with reference to purged comment
             community._blocksToRm.push(community.updateCid);
             community._cidsToUnPin.add(community.updateCid);
         }
+        community._communityUpdateTrigger = true;
+
+        log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", "out of DB and IPFS");
+
+        // Best-effort: the purge is already committed, so a kubo hiccup (e.g. MFS lock contention with
+        // repo gc) must not report it as failed. The paths stay in _mfsPathsToRemove and the publish
+        // cycle that _communityUpdateTrigger starts retries them before building the record. A single attempt keeps a real ERR_TIMED_OUT_RM_MFS_FILE from holding the
+        // moderator's challenge verification for several minutes of retries.
+        try {
+            await rmUnneededMfsPaths(community, { numOfRetries: 0 });
+        } catch (e) {
+            log.error("Failed to remove MFS paths of purged comment", modTableRow.commentCid, "the sync loop will retry", e);
+        }
+        return;
     } else if ("approved" in modTableRow.commentModeration) {
         if (modTableRow.commentModeration.approved) {
             log(
