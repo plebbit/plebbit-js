@@ -385,6 +385,7 @@ export enum messages {
     ERR_FAILED_TO_LOAD_LOCAL_RAW_IPNS_RECORD = "Failed to load local IPNS record from within our kubo node",
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY = "Failed to import challenge file factory",
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE = "Failed to import challenge file",
+    ERR_CHALLENGE_FILE_INVALID = "The challenge file factory did not return a valid ChallengeFile",
     ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION = "invalid getChallenge response from community challenge",
     ERR_LOCAL_COMMUNITY_RECORD_TOO_LARGE = "Local community has produced a record that is too large. This is a critical error and a bug in pkc-js",
     ERR_CAN_NOT_LOAD_DB_IF_LOCAL_COMMUNITY_ALREADY_STARTED_IN_ANOTHER_PROCESS = "Can't load a local community that's already started in another process. You need to use the same PKC instance to load the community",

@@ -59,6 +59,7 @@ const bundle = await rolldown({
         index: "dist/node/index.js",
         "index-with-compile-cache": "dist/node/index-with-compile-cache.js",
         challenges: "dist/node/challenges.js",
+        "page-sorts": "dist/node/page-sorts.js",
         "rpc/src/index": "dist/node/rpc/src/index.js"
     },
     platform: "node",

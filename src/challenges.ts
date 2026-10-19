@@ -1,3 +1,4 @@
+export { validateChallengeFileFactory } from "./validate-package-factories.js";
 export type {
     ChallengeFileInput,
     ChallengeInput,

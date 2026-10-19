@@ -61,6 +61,11 @@
             "browser": null,
             "import": "./dist/bundled/challenges.js"
         },
+        "./page-sorts": {
+            "types": "./dist/node/page-sorts.d.ts",
+            "browser": null,
+            "import": "./dist/bundled/page-sorts.js"
+        },
         "./rpc": {
             "types": "./dist/node/rpc/src/index.d.ts",
             "browser": null,

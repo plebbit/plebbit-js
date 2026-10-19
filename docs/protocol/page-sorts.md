@@ -172,7 +172,8 @@ malformed row) aborts the cycle the same way.
 
 ## Writing a page sort file
 
-A file default-exports a factory, invoked once per community start and per settings edit with the entry.
+A file default-exports a factory, invoked with the entry once per community start, per settings edit, and
+when the factory registered under the entry's `name` changes (see [Reloading packages](#reloading-packages)).
 The returned object is cached and reused by every generation.
 
 ```js
@@ -283,8 +284,37 @@ wrapper), `PageSortReplyEntry` one element of `replies`, and `PageSortScope` is 
 
 Registering a factory under the `pageSorts` PKC option (or on `PKC.pageSorts`) makes it available by
 `name`; a `path` entry loads a file directly. Installing packages to `${dataPath}/page-sorts/` through
-`bitsocial page-sort install` is bitsocial-cli work that builds on the same registry. A reload applies at
-the next generation; a cycle producing some pages from the old version and some from the new is acceptable.
+`bitsocial page-sort install` is bitsocial-cli work that builds on the same registry. An installer checks a
+package's default export with `validatePageSortFileFactory(factory, { name })` from
+`@pkcprotocol/pkc-js/page-sorts` before registering it (`validateChallengeFileFactory` from
+`@pkcprotocol/pkc-js/challenges` is the challenge counterpart). It applies the same schemas a community does,
+and throws `ERR_FAILED_TO_IMPORT_PAGE_SORT_FILE_FACTORY` for an export that is not a factory and
+`ERR_PAGE_SORT_FILE_INVALID` for one that does not return a valid file, for example a challenge package.
+
+### Reloading packages
+
+A host may replace a factory in the registry of a running node, as bitsocial-cli does after installing a new
+version of a package. Each community notices it at the start of its next publish cycle, before any
+CommentUpdate or page is generated (`syncPageSortsWithRegistry`):
+
+- **In a running process** the community remembers the factory every `name` entry resolved to and compares it
+  with `===`. A host that re-imports only changed packages (bitsocial-cli uses a content-hash cache-busting
+  query) keeps unchanged factories identical, so nothing happens for them.
+- **Across a restart** the community compares a persisted fingerprint: `settings.pages`, what each entry
+  resolved to (metadata, merged options) and the source of every factory and `score` that did not ship with
+  pkc-js. A package replaced while the node was down is caught on start. It is best-effort for code that lives
+  only in a helper module the package imports. Built-in sources are left out so a pkc-js upgrade does not
+  regenerate every board, and a community with no fingerprint yet only records one.
+- **A change is handled like a `settings.pages` edit**: the entries are resolved again (an entry whose factory
+  is gone is reported once on the `error` event and skipped), every CommentUpdate is regenerated, and the
+  record is republished with the new `community.pageSorts`.
+- **`path` entries are not reloaded while running.** Node caches the imported module for the life of the
+  process, so an edited file applies on the next start, where the fingerprint picks it up.
+
+The record's `community.challenges` follows the registry the same way: it is recomputed each cycle and the
+record is republished only when it changed. Challenges themselves already run the current factory on every
+request. A host that changed the registry calls `rpcServer.notifySettingsChange()` so connected RPC clients
+receive the new `settings.pageSorts` / `settings.challenges` without reconnecting.
 
 ## Client side
 

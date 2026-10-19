@@ -107,7 +107,7 @@ if (!bootstrap.includes('import("./index.js")')) {
 
 // --- 3 + 4. Export parity and require(esm), in fresh child processes -------------------------
 
-const entries = ["index.js", "index-with-compile-cache.js", "challenges.js", "rpc/src/index.js"];
+const entries = ["index.js", "index-with-compile-cache.js", "challenges.js", "page-sorts.js", "rpc/src/index.js"];
 
 function exportKeysInChildProcess(fileAbsPath) {
     const script = `const m = await import(${JSON.stringify(url.pathToFileURL(fileAbsPath).href)}); console.log(JSON.stringify(Object.keys(m).sort()));`;

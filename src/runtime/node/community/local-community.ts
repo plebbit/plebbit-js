@@ -95,7 +95,12 @@ import {
     loadAndPruneExportsFromKeyv
 } from "./local-community/export.js";
 import type { InternalExportHandle } from "./local-community/export.js";
-import type { CommunityExportRecord, ExportCommunityUserOptions, ExportCommunityModLogsOptions } from "../../../community/types.js";
+import type {
+    CommunityExportRecord,
+    ExportCommunityUserOptions,
+    ExportCommunityModLogsOptions,
+    PageSortFileFactoryInput
+} from "../../../community/types.js";
 import type { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 
 // This is a sub we have locally in our pkc datapath, in a NodeJS environment
@@ -138,6 +143,9 @@ export class LocalCommunity extends RpcLocalCommunity implements CreateNewLocalC
     // settings.pages resolved against the loaded sort files (issue #73); set at start and on every settings edit.
     // Initialized (not just declared) so hideClassPrivateProps sees it and keeps it out of JSON.
     _pageSorts: ResolvedPageSorts | undefined = undefined;
+    // The registry factory each settings.pages entry resolved to when _pageSorts was built (lookupPageSortFactories).
+    // Each cycle compares it with === to notice a package replaced in the registry (issue #411).
+    _pageSortFactories: (PageSortFileFactoryInput | undefined)[] | undefined = undefined;
     _dbHandler!: DbHandler;
     _stopHasBeenCalled: boolean; // we use this to track if community.stop() has been called after community.start() or community.update()
     _publishLoopPromise?: Promise<void> = undefined;

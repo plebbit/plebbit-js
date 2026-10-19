@@ -19,8 +19,9 @@ const PKCJs = {
  */
 export function setPKCJs(_PKC: any) {
     assert(typeof _PKC === "function", `setPKCJs invalid PKC argument '${_PKC}' not a function`);
-    // Preserve built-in challenge registry for RPC settings serialization when tests inject a plain function.
+    // Preserve built-in challenge and page sort registries for RPC settings serialization when tests inject a plain function.
     if (_PKC.challenges === undefined) _PKC.challenges = PKC.challenges;
+    if (_PKC.pageSorts === undefined) _PKC.pageSorts = PKC.pageSorts;
     PKCJs.PKC = _PKC;
     log("setPKCJs", _PKC?.constructor?.name);
 }
