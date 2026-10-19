@@ -1,9 +1,9 @@
 // Issue #417: a failing challenge exchange rolls back another exchange's in-flight insert.
 //
 // A LocalCommunity has one DB connection, and its transaction depth is shared by every exchange that
-// runs on it at the same time. storeComment and storeCommentEdit open a transaction, insert, then await
-// the #387 store-time gate (an async CID calculation plus a signature verification) before they commit.
-// Two things go wrong while that await is pending:
+// runs on it at the same time. storeComment and storeCommentEdit used to open a transaction, insert, then
+// await the #387 store-time gate (an async CID calculation plus a signature verification) before they
+// committed. Two things went wrong while that await was pending:
 //
 // - Direct: another exchange throws, and handleChallengeExchange's catch calls rollbackTransaction() on
 //   a transaction it never opened. The ROLLBACK discards the half-finished insert, and the later
@@ -16,13 +16,14 @@
 //   parked comment's own gate rejects it), those writes are discarded too, after their publishers were
 //   told they succeeded.
 //
-// The window is held open deterministically. The first calculateIpfsCidV0 call after insertComments is
-// the gate's hash of the stored comment row, and the first _validateSignatureOfPKCRecord call after
+// The gate now runs on a read-back of the row before the insert transaction opens, and that transaction
+// closes synchronously. These cases park the store at its gate and check that nothing is lost.
+//
+// The store is parked deterministically. The first calculateIpfsCidV0 call after insertComments is the
+// gate's hash of the stored comment row, and the first _validateSignatureOfPKCRecord call after
 // insertCommentEdits is the gate's verification of the stored author edit; the DB read in between is
 // synchronous, so the mocks park exactly those calls. Failing exchanges are handed straight to the
 // community's pubsub handler so the test can await their catch block.
-//
-// Every case is it.fails until #417 is fixed; the fix flips them to it.
 //
 // describeSkipIfRpc: spies on the LocalCommunity's DB handler and calls its pubsub handler in this
 // process, which an RPC client cannot reach.
@@ -85,10 +86,7 @@ import type { IpfsHttpClientPubsubMessage } from "../../../../dist/node/types.js
 import type { ChallengeRequestMessageType } from "../../../../dist/node/pubsub-messages/types.js";
 import type { SignerType } from "../../../../dist/node/signer/types.js";
 
-const itFailsUntil417IsFixed = it.fails;
-
-// Bounded so a step that never happens fails its test here, instead of the runner's timeout (which
-// it.fails would count as the expected failure).
+// Bounded so a step that never happens fails its test with the step's name instead of the runner's timeout
 const STEP_TIMEOUT_MS = 30_000;
 const withinStepTimeout = <T>(promise: Promise<T>, step: string): Promise<T> =>
     new Promise<T>((resolve, reject) => {
@@ -116,7 +114,7 @@ const waitUntil = async (predicate: () => Promise<boolean>, step: string): Promi
 
 type ParkedStore = { entered: Promise<void>; release: () => void; reject: (error: Error) => void; disarm: () => void };
 
-// Parks the next comment or author-edit store inside its transaction, right after the insert
+// Parks the next comment or author-edit store at its verbatim gate, right after the gate's insert
 function parkNextStore(community: LocalCommunity, kind: "comment" | "authorEdit"): ParkedStore {
     let release!: () => void;
     let reject!: (error: Error) => void;
@@ -135,7 +133,7 @@ function parkNextStore(community: LocalCommunity, kind: "comment" | "authorEdit"
         storeGate.armed = undefined;
         release();
     };
-    return { entered: withinStepTimeout(entered, `the ${kind} store to park inside its transaction`), release, reject, disarm };
+    return { entered: withinStepTimeout(entered, `the ${kind} store to park at its verbatim gate`), release, reject, disarm };
 }
 
 // Private on Publication; reached the same way duplicate-challenge-delivery.publish.test.ts reaches the pubsub handler
@@ -275,7 +273,7 @@ describeSkipIfRpc("Issue #417: a failing challenge exchange during another excha
 
     for (const victim of directVictims) {
         for (const failingExchange of failingExchanges) {
-            itFailsUntil417IsFixed(`${victim.name} is stored and accepted when ${failingExchange.name} fails meanwhile`, async () => {
+            it(`${victim.name} is stored and accepted when ${failingExchange.name} fails meanwhile`, async () => {
                 const parked = parkNextStore(community, victim.kind);
                 try {
                     const publication = await victim.create();
@@ -348,7 +346,7 @@ describeSkipIfRpc("Issue #417: a failing challenge exchange during another excha
     ];
 
     for (const victim of collateralVictims) {
-        itFailsUntil417IsFixed(`${victim.name} stored during a comment's store stays stored when that comment is rejected`, async () => {
+        it(`${victim.name} stored during a comment's store stays stored when that comment is rejected`, async () => {
             const parked = parkNextStore(community, "comment");
             try {
                 const rejectedComment = await generateMockPost({ communityAddress: community.address, pkc });
@@ -365,7 +363,7 @@ describeSkipIfRpc("Issue #417: a failing challenge exchange during another excha
                 // Written inside the parked transaction: this connection already reads it back
                 await waitUntil(isStored, `${victim.name} to be written to the DB`);
 
-                // The parked comment's store gate rejects it, so storeComment rolls back its transaction
+                // The parked comment's store gate rejects it (before #417 was fixed, this rolled back the open transaction)
                 parked.reject(new Error("Test rejects the parked comment at its store gate"));
                 expect(await withinStepTimeout(rejectedOutcome, "the parked comment to be rejected")).toBeUndefined();
 
