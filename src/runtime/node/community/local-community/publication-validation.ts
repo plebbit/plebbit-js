@@ -156,6 +156,9 @@ async function checkWireFormatAndCommunityAuthor(
     // communityName, if present, must match this community's address
     const pubCommunityName = getCommunityNameFromWire(publication as Record<string, unknown>);
     if (pubCommunityName && pubCommunityName !== community.address) return messages.ERR_PUBLICATION_INVALID_COMMUNITY_NAME;
+    // A community with a name requires it (issue #401): the name is part of the community's identity, and a client that
+    // reached the community by its key can read the name off the record it loaded before signing
+    if (!pubCommunityName && isStringDomain(community.address)) return messages.ERR_PUBLICATION_MISSING_COMMUNITY_NAME;
 
     if (publication.timestamp <= timestamp() - 5 * 60 || publication.timestamp >= timestamp() + 5 * 60)
         return messages.ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE;

@@ -281,6 +281,7 @@ export enum messages {
     ERR_PUBLICATION_INVALID_COMMUNITY_PUBLIC_KEY = "The communityPublicKey field of publication does not match the community's IPNS key",
     ERR_PUBLICATION_SIGNED_TO_MINTER_INSTEAD_OF_ANCHOR = "The communityPublicKey field of publication is this delegated community's minter key; publications must be signed to the community's anchor identity",
     ERR_PUBLICATION_INVALID_COMMUNITY_NAME = "The communityName field of publication does not match the community's address",
+    ERR_PUBLICATION_MISSING_COMMUNITY_NAME = "The publication has no communityName, but the community it is published to has a name; sign it with the community's name",
     ERR_AUTHOR_IS_BANNED = "Author is banned",
     ERR_PUBLICATION_HAS_NO_AUTHOR_ADDRESS = "Publication has no author.address",
     ERR_COMMUNITY_PUBLICATION_PARENT_HAS_BEEN_REMOVED = "The parent of this publication has been removed",
