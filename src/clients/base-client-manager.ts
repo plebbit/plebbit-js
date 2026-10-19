@@ -234,7 +234,34 @@ export class BaseClientsManager {
 
         let error: Error | undefined;
         try {
-            await pubsubClient.pubsub.subscribe(pubsubTopic, handler, { onError: handlePubsubError });
+            await pRetry(
+                async () => {
+                    try {
+                        await pubsubClient.pubsub.subscribe(pubsubTopic, handler, { onError: handlePubsubError });
+                    } catch (e) {
+                        // Only a transient socket-level failure is retried, e.g. kubo's API refusing connections
+                        // while saturated (#422). Anything else, including "Already subscribed", stops immediately.
+                        const networkErrorDetails = extractNetworkErrorDetails(e);
+                        const isTransient = networkErrorDetails !== undefined && hasTransientNetworkErrorCode(networkErrorDetails);
+                        if (!isTransient) throw e instanceof Error ? new PRetryAbortError(e) : e;
+                        throw e;
+                    }
+                },
+                {
+                    // 2 retries + initial attempt = up to 3 attempts. Backoff 250ms, 500ms between retries.
+                    retries: 2,
+                    factor: 2,
+                    minTimeout: 250,
+                    maxTimeout: 1000,
+                    onFailedAttempt: ({ error: attemptError, attemptNumber, retriesLeft }) => {
+                        if (retriesLeft > 0)
+                            log.trace(
+                                `Transient failure subscribing to pubsub topic (${pubsubTopic}) on (${kuboPubsubRpcUrlOrLibp2pJsKey}), attempt ${attemptNumber}/${attemptNumber + retriesLeft}`,
+                                attemptError?.message
+                            );
+                    }
+                }
+            );
             if (error) throw error;
             await this._pkc._stats.recordGatewaySuccess(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe", Date.now() - timeBefore);
             this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey].push(pubsubTopic);
@@ -258,7 +285,7 @@ export class BaseClientsManager {
         for (let i = 0; i < providersSorted.length; i++) {
             const pubsubProviderUrl = providersSorted[i];
             try {
-                return this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
+                return await this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
             } catch (e: unknown) {
                 providerToError[pubsubProviderUrl] = <PKCError>e;
             }
