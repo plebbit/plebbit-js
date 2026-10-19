@@ -218,9 +218,12 @@ export async function rmUnneededMfsPaths(community: LocalCommunity, opts?: { num
             return toDeleteMfsPaths;
         } catch (e) {
             const error = <Error>e;
-            if (error.message.includes("file does not exist"))
-                return toDeleteMfsPaths; // file does not exist, we can return the paths that were not deleted
-            else {
+            if (error.message.includes("file does not exist")) {
+                // An absent path is already removed, so dequeue it like a successful rm. Left queued, the
+                // publish cycle's per-pass drain would retry it forever (issue #420)
+                toDeleteMfsPaths.forEach((path) => community._mfsPathsToRemove.delete(path));
+                return toDeleteMfsPaths;
+            } else {
                 log.error("Failed to remove paths from MFS", toDeleteMfsPaths, e);
                 throw error;
             }
