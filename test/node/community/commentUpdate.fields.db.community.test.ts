@@ -39,7 +39,9 @@ describeSkipIfRpc("db-handler.queryCalculatedCommentUpdate", () => {
     const currentTimestamp = (): number => Math.floor(Date.now() / 1000);
 
     async function createTestDbHandler(): Promise<DbHandler> {
-        communityAddress = `test-sub-${Date.now()}-${Math.random()}`;
+        // No "." in it, so the community is addressed by key (isStringDomain) and a reply carrying another key belongs to
+        // another community under the community identity rule (issue #401)
+        communityAddress = `test-sub-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const fakePKC = { noData: true };
         const fakeCommunity = { address: communityAddress, _pkc: fakePKC };
         const handler = new DbHandler(fakeCommunity as never);
