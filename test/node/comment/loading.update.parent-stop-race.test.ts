@@ -217,10 +217,15 @@ describeSkipIfRpc("comment.update: local-kubo-rpc transient fetch failure must n
             expect(community.state).toBe("started");
 
             // Sanity: confirm the patch actually fired — otherwise this test would pass
-            // even on master and give a false "fixed" signal. Each targeted CID was failed
-            // FAIL_ATTEMPTS times (by design), so the total recorded failures should be
-            // >= FAIL_ATTEMPTS for at least one arg.
-            expect(failureCountByArg.size).toBeGreaterThan(0);
+            // even on master and give a false "fixed" signal — and that the fetch was retried
+            // past the first failure. The reply can recover before the retry runs: with the
+            // shared dataPath the post may find its CommentUpdate in the community's preloaded
+            // posts page and the reply in the post's preloaded replies page, with no `cat` of
+            // the MFS path or a page CID. The predicate then resolves right after the first
+            // injected failure, while the retry is still in its ~1s backoff, so wait for the
+            // retry chain to reach FAIL_ATTEMPTS instead of reading the count immediately
+            // (issue #368).
+            await waitForInjectedFailures({ failureCountByArg, expectedFailures: FAIL_ATTEMPTS, timeoutMs: 10_000 });
             const maxFailures = Math.max(...Array.from(failureCountByArg.values()));
             expect(maxFailures).toBe(FAIL_ATTEMPTS);
         } finally {
@@ -263,6 +268,25 @@ async function waitForStoredParentPageCids(community: LocalCommunity, parentCid:
         await new Promise((resolve) => setTimeout(resolve, 50));
     }
     throw new Error(`Timed out waiting for parent comment ${parentCid} to have replies with allPageCids in stored update`);
+}
+
+async function waitForInjectedFailures({
+    failureCountByArg,
+    expectedFailures,
+    timeoutMs
+}: {
+    failureCountByArg: Map<string, number>;
+    expectedFailures: number;
+    timeoutMs: number;
+}): Promise<void> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+        if (Array.from(failureCountByArg.values()).some((count) => count >= expectedFailures)) return;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error(
+        `Timed out after ${timeoutMs}ms waiting for an injected fetch failure to fire ${expectedFailures} times, got ${JSON.stringify(Object.fromEntries(failureCountByArg))}`
+    );
 }
 
 async function resolveWhenConditionIsTrueWithTimeout({
