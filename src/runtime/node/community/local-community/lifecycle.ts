@@ -17,6 +17,7 @@ import {
 } from "../../../../pkc/tracked-instance-registry-util.js";
 import { LocalCommunity } from "../local-community.js";
 import { findProcessStartedCommunity, processStartedCommunities, syncProcessStartedCommunity } from "./registry.js";
+import { syncPageSortsWithRegistry } from "./registry-sync.js";
 import { communityChallengePubsubTopic } from "./comment-updates.js";
 import { providePubsubTopicRoutingCidsIfNeeded } from "./pubsub.js";
 import { reprovideOnAddressChangeIfDue } from "./reprovide-on-address-change.js";
@@ -210,9 +211,12 @@ export async function start(community: LocalCommunity) {
         // on every start until the owner fixes it, because a suppressed error is how a misconfiguration
         // gets forgotten.
         await emitChallengeSettingsValidationErrors(community, log);
-        // Resolve settings.pages against the sort files now, once, so page generation reuses the instances; each
-        // invalid entry is its own error event and is skipped, the rest of the config still publishes (issue #73)
-        await community._loadPageSorts();
+        // Resolve settings.pages against the sort files now, so page generation reuses the instances; each invalid entry
+        // is its own error event and is skipped, the rest of the config still publishes (issue #73). A package replaced
+        // while the node was down changes the persisted fingerprint and regenerates every CommentUpdate (issue #411).
+        community._pageSorts = undefined;
+        community._pageSortFactories = undefined;
+        await syncPageSortsWithRegistry(community);
     } catch (e) {
         await community.stop(); // Make sure to reset the community state
         //@ts-expect-error

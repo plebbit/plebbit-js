@@ -11,7 +11,10 @@ export enum STORAGE_KEYS {
     // Highest anchor sequence this node has ever accepted. Kept separately from the record above so a
     // rollback is refused even if the record itself is missing, and because kubo reports success for a
     // put it discards, which makes anti-rollback ours to enforce.
-    HIGHEST_ACCEPTED_ANCHOR_SEQUENCE
+    HIGHEST_ACCEPTED_ANCHOR_SEQUENCE,
+    // Fingerprint of settings.pages resolved against the registered sort factories (issue #411). Compared on start so a
+    // sort package replaced while the node was down regenerates every CommentUpdate, like a settings.pages edit.
+    PAGE_SORTS_FINGERPRINT
 }
 
 // Configs for LRU storage

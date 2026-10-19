@@ -33,6 +33,7 @@ import { cleanUpIpfsRepoIfDue, purgeDisapprovedCommentsOlderThan, unpinStaleCids
 import { providePubsubTopicRoutingCidsIfNeeded } from "./pubsub.js";
 import { wirePagesFromGeneration } from "../page-generator.js";
 import { generatePagesReportingFailedSorts } from "../page-sorts/index.js";
+import { syncWithRegistries } from "./registry-sync.js";
 
 export async function calculateNewPostUpdates(community: LocalCommunity): Promise<CommunityIpfsType["postUpdates"]> {
     const postUpdates: CommunityIpfsType["postUpdates"] = {};
@@ -468,6 +469,8 @@ export async function syncIpnsWithDb(community: LocalCommunity) {
         community._setStartedStateWithEmission("publishing-ipns");
         community._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
         await purgeDisapprovedCommentsOlderThan(community);
+        // Before any CommentUpdate or page is generated, so a package replaced in the registry applies to this cycle
+        await syncWithRegistries(community);
         const cidsUpdatedInThisCycle = await updateCommentsAndWritePostUpdates(community);
         requireCommunityUpdateIfModQueueChanged(community);
         await updateCommunityIpnsIfNeeded(community, cidsUpdatedInThisCycle);

@@ -1,4 +1,6 @@
 import { pathToFileURL } from "node:url";
+import { sha256 } from "js-sha256";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PKCError } from "../../../../pkc-error.js";
 import { PageSortFileFactorySchema } from "../../../../community/schema.js";
 import { validatePageSortFile } from "../../../../pages/page-sort-scoring.js";
@@ -67,11 +69,89 @@ const resolvePageSortFactoryByName = ({
     // User-defined shadows built-ins
     pkc?.settings?.pageSorts?.[name] ?? pkcJsPageSorts[name];
 
+// The built-ins as pkc-js shipped them. A consumer may shadow one in the shared registry, so "is this the built-in"
+// is an identity check against this snapshot, not a lookup in the registry.
+const shippedBuiltInPageSorts: Readonly<Record<string, PageSortFileFactoryInput>> = Object.freeze({ ...pkcJsPageSorts });
+
+const entriesOfEveryScope = (
+    pagesSettings: CommunityPagesSettings | undefined
+): { scope: PageSortScope; entries: readonly CommunityPageSortSetting[] }[] => [
+    { scope: "posts", entries: pagesSettings?.posts ?? DEFAULT_POST_SORT_SETTINGS },
+    { scope: "replies", entries: pagesSettings?.replies ?? DEFAULT_REPLY_SORT_SETTINGS }
+];
+
+// The factory each settings.pages entry resolves to right now, in posts-then-replies order. A `path` entry is
+// undefined: Node caches the imported module for the life of the process, so it can only change across a restart,
+// which the fingerprint below catches. Comparing two snapshots with === is how a running community notices that a
+// consumer replaced a package in the registry (issue #411).
+export function lookupPageSortFactories({
+    pagesSettings,
+    pkc
+}: {
+    pagesSettings: CommunityPagesSettings | undefined;
+    pkc?: PKCWithSettingsPageSorts;
+}): (PageSortFileFactoryInput | undefined)[] {
+    return entriesOfEveryScope(pagesSettings).flatMap(({ entries }) =>
+        entries.map((entry) => (entry.name ? resolvePageSortFactoryByName({ name: entry.name, pkc }) : undefined))
+    );
+}
+
+// What survives a restart: settings.pages, what each entry resolved to, and the source of every sort that did not
+// ship with pkc-js. A package replaced while the node was down changes it, so start can regenerate every CommentUpdate.
+// Built-in sources are left out on purpose: a pkc-js upgrade that only reformats its bundle must not regenerate every
+// board. Code that lives only in a helper a package imports from another file is not covered; the in-process identity
+// check is exact, this is best-effort.
+export function computePageSortsFingerprint({
+    pagesSettings,
+    resolved,
+    pkc
+}: {
+    pagesSettings: CommunityPagesSettings | undefined;
+    resolved: ResolvedPageSorts;
+    pkc?: PKCWithSettingsPageSorts;
+}): string {
+    const isShippedBuiltIn = (factory: PageSortFileFactoryInput | undefined, name: string | undefined) =>
+        factory !== undefined && typeof name === "string" && shippedBuiltInPageSorts[name] === factory;
+    const describeFactory = (name: string | undefined) => {
+        if (typeof name !== "string") return null; // a `path` entry: its source is covered by the resolved file below
+        const factory = resolvePageSortFactoryByName({ name, pkc });
+        if (factory === undefined) return null;
+        return isShippedBuiltIn(factory, name) ? "built-in" : factory.toString();
+    };
+    const describeResolved = (sort: ResolvedPageSort) => ({
+        settings: sort.settings,
+        sortName: sort.sortName,
+        options: sort.options,
+        file: {
+            description: sort.file.description,
+            optionInputs: sort.file.optionInputs,
+            defaultOptions: sort.file.defaultOptions,
+            scope: sort.file.scope,
+            flat: sort.file.flat,
+            requireReplies: sort.file.requireReplies,
+            ...(isShippedBuiltIn(
+                sort.settings.name ? resolvePageSortFactoryByName({ name: sort.settings.name, pkc }) : undefined,
+                sort.settings.name
+            )
+                ? {}
+                : { score: sort.file.score.toString(), validatePageSortSettings: sort.file.validatePageSortSettings?.toString() })
+        }
+    });
+    return sha256(
+        deterministicStringify({
+            pages: pagesSettings ?? null,
+            factories: entriesOfEveryScope(pagesSettings).flatMap(({ entries }) => entries.map((entry) => describeFactory(entry.name))),
+            posts: resolved.posts.map(describeResolved),
+            replies: resolved.replies.map(describeResolved)
+        }) ?? ""
+    );
+}
+
 const describePageSort = (pageSortSettings: CommunityPageSortSetting): string =>
     pageSortSettings.name || pageSortSettings.path || "unknown page sort";
 
 // One settings.pages[] entry, loaded and merged with everything pkc-js derives from it. Built once per community
-// start and per settings edit, then reused by every generation, so a file may prepare statements in its closure.
+// start, per settings edit and when the registered factory changes (issue #411), then reused by every generation.
 export type ResolvedPageSort = ParsedReservedPageSortOptions & {
     sortName: string;
     scope: PageSortScope; // where the entry sits, not what the file declares
@@ -226,11 +306,7 @@ export async function resolvePageSortsAndCollectFailures({
 }): Promise<{ resolved: ResolvedPageSorts; failures: PageSortSettingsValidationFailure[] }> {
     const failures: PageSortSettingsValidationFailure[] = [];
     const resolved: ResolvedPageSorts = { posts: [], replies: [] };
-    const scopes: { scope: PageSortScope; entries: readonly CommunityPageSortSetting[] }[] = [
-        { scope: "posts", entries: pagesSettings?.posts ?? DEFAULT_POST_SORT_SETTINGS },
-        { scope: "replies", entries: pagesSettings?.replies ?? DEFAULT_REPLY_SORT_SETTINGS }
-    ];
-    for (const { scope, entries } of scopes) {
+    for (const { scope, entries } of entriesOfEveryScope(pagesSettings)) {
         const seenSortNames = new Set<string>();
         for (const [pageSortIndex, pageSortSettings] of entries.entries()) {
             const pageSortName = describePageSort(pageSortSettings);
@@ -331,10 +407,11 @@ export async function loadPageSortsForStartedCommunity(community: LocalCommunity
     });
     for (const { error, scope, pageSortIndex, pageSortName } of failures) {
         error.details = { ...error.details, scope, pageSortIndex, pageSortName, communityAddress: community.address };
-        log.error("Invalid settings.pages entry on start, skipping it", community.address, error);
+        log.error("Invalid settings.pages entry, skipping it", community.address, error);
         community.emit("error", error);
     }
     community._pageSorts = resolved;
+    community._pageSortFactories = lookupPageSortFactories({ pagesSettings: community.settings?.pages, pkc: community._pkc });
     return resolved;
 }
 

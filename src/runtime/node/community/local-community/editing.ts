@@ -19,6 +19,7 @@ import type { LocalCommunity } from "../local-community.js";
 import { isDefaultChallengeStructure } from "./defaults.js";
 import { findProcessStartedCommunity, processStartedCommunities, syncProcessStartedCommunity } from "./registry.js";
 import { updateDbInternalState, updateInstancePropsWithStartedCommunityOrDb } from "./db-state.js";
+import { setResolvedPageSorts } from "./registry-sync.js";
 
 export async function movePostUpdatesFolderToNewAddress(community: LocalCommunity, oldAddress: string, newAddress: string) {
     const log = Logger("pkc-js:local-community:_movePostUpdatesFolderToNewAddress");
@@ -113,11 +114,12 @@ export async function parsePagesToEdit(
 // Apply a persisted settings.pages edit to the running instance. Any change to settings.pages, however small,
 // regenerates every CommentUpdate: reply pages are only rebuilt for flagged comments, so without this an untouched
 // comment would carry its old reply sorts indefinitely. Runs after any restart of the community, since start()
-// resolves whatever settings were persisted at that moment. Needs an open DB.
-function applyPagesEdit(community: LocalCommunity, pagesEdit: PagesEdit | undefined): void {
+// resolves whatever settings were persisted at that moment. Needs an open DB. Also records the factories and the
+// fingerprint, so the registry sync (issue #411) does not take an edit for a registry change.
+async function applyPagesEdit(community: LocalCommunity, pagesEdit: PagesEdit | undefined): Promise<void> {
     if (!pagesEdit) return;
     if (pagesEdit.pagesChanged) community._dbHandler.forceUpdateOnAllComments();
-    community._pageSorts = pagesEdit.resolved;
+    await setResolvedPageSorts(community, pagesEdit.resolved);
 }
 
 export async function validateNewAddressBeforeEditing(community: LocalCommunity, newAddress: string, log: Logger) {
@@ -176,7 +178,7 @@ export async function editPropsOnStartedCommunity(
             ...parsedEditOptions,
             _internalStateUpdateId: uniqueEditId
         });
-    applyPagesEdit(community, pagesEdit);
+    await applyPagesEdit(community, pagesEdit);
     community._communityUpdateTrigger = true;
     log(
         `Community (${community.address}) props (${keys(parsedEditOptions)}) has been edited. Will be including edited props in next update: `,
@@ -218,7 +220,7 @@ export async function editPropsOnNotStartedCommunity(
     if ("updatedAt" in mergedInternalState && mergedInternalState.updatedAt)
         await community.initInternalCommunityAfterFirstUpdateNoMerge(mergedInternalState);
     else await community.initInternalCommunityBeforeFirstUpdateNoMerge(mergedInternalState);
-    applyPagesEdit(community, pagesEdit);
+    await applyPagesEdit(community, pagesEdit);
     await community._dbHandler.destoryConnection();
     community.emit("update", community);
     return community;
