@@ -201,7 +201,7 @@ export async function unpinStaleCids(
     }
 }
 
-export async function rmUnneededMfsPaths(community: LocalCommunity): Promise<string[]> {
+export async function rmUnneededMfsPaths(community: LocalCommunity, opts?: { numOfRetries?: number }): Promise<string[]> {
     const log = Logger("pkc-js:local-community:sync:_rmUnneededMfsPaths");
 
     if (community._mfsPathsToRemove.size > 0) {
@@ -211,7 +211,8 @@ export async function rmUnneededMfsPaths(community: LocalCommunity): Promise<str
             await removeMfsFilesSafely({
                 kuboRpcClient: kuboRpc,
                 paths: toDeleteMfsPaths,
-                log
+                log,
+                inputNumOfRetries: opts?.numOfRetries
             });
             toDeleteMfsPaths.forEach((path) => community._mfsPathsToRemove.delete(path));
             return toDeleteMfsPaths;
@@ -387,10 +388,10 @@ async function _runRepoGcIfDue({
     );
 }
 
-export async function addAllCidsUnderPurgedCommentToBeRemoved(
+export function addAllCidsUnderPurgedCommentToBeRemoved(
     community: LocalCommunity,
     purgedCommentAndCommentUpdate: PurgedCommentTableRows
-) {
+): void {
     // Every purge flow funnels through here, and the flag makes the next unpinStaleCids pass flush
     // the grace period for the whole queue even when the purge lands mid-sync (see unpinStaleCids).
     // The timestamp lets the flush tell whether the cycle it ran in generated its record before or
@@ -436,7 +437,7 @@ export async function purgeDisapprovedCommentsOlderThan(community: LocalCommunit
 
     for (const purgedComment of purgedComments)
         for (const purgedCommentAndCommentUpdate of purgedComment.purgedTableRows)
-            await addAllCidsUnderPurgedCommentToBeRemoved(community, purgedCommentAndCommentUpdate);
+            addAllCidsUnderPurgedCommentToBeRemoved(community, purgedCommentAndCommentUpdate);
 
     if (community._mfsPathsToRemove.size > 0) await rmUnneededMfsPaths(community);
     if (community.updateCid) {

@@ -21,6 +21,7 @@ describeSkipIfRpc("Purge whose MFS cleanup fails (issue #420)", () => {
     let community: LocalCommunity;
     let moderatorSigner: SignerWithPublicKeyAddress;
     let post: Comment;
+    let postMfsPath: string;
     let restoreRm: (() => void) | undefined;
 
     beforeAll(async () => {
@@ -50,6 +51,8 @@ describeSkipIfRpc("Purge whose MFS cleanup fails (issue #420)", () => {
                 community.lastPostCid === post.cid &&
                 typeof community._dbHandler.queryStoredCommentUpdate({ cid: post.cid! })?.postUpdatesBucket === "number"
         });
+        const bucket = community._dbHandler.queryStoredCommentUpdate({ cid: post.cid! })!.postUpdatesBucket;
+        postMfsPath = `/${community.address}/postUpdates/${bucket}/${post.cid}/update`;
     });
 
     afterAll(async () => {
@@ -65,8 +68,8 @@ describeSkipIfRpc("Purge whose MFS cleanup fails (issue #420)", () => {
             kuboFiles.rm = originalRm;
         };
         let rmCalls = 0;
-        // Any error other than "file does not exist" is rethrown by rmUnneededMfsPaths, after
-        // removeMfsFilesSafely's own retries. This mirrors kubo's MFS lock contention with repo gc
+        // Any error other than "file does not exist" is rethrown by rmUnneededMfsPaths. This mirrors
+        // kubo's MFS lock contention with repo gc
         kuboFiles.rm = (async () => {
             rmCalls++;
             throw Error("Simulated kubo MFS lock contention (issue #420)");
@@ -83,6 +86,7 @@ describeSkipIfRpc("Purge whose MFS cleanup fails (issue #420)", () => {
         );
         await purgeMod.publish();
         const { challengeSuccess, reason } = await verification;
+        const mfsPathStillQueued = community._mfsPathsToRemove.has(postMfsPath);
 
         restoreRm();
         restoreRm = undefined;
@@ -98,5 +102,26 @@ describeSkipIfRpc("Purge whose MFS cleanup fails (issue #420)", () => {
         const storedMods = community._dbHandler.queryAllCommentModerations({ commentCid: post.cid! });
         expect(storedMods.length, "the purge moderation row should be stored").to.equal(1);
         expect(storedMods[0].commentModeration.purged).to.be.true;
+
+        // 3. The failed MFS path stays queued for the sync loop, which removes it once kubo recovers
+        expect(mfsPathStillQueued, "the failed MFS path should stay queued for the sync loop to retry").to.be.true;
+        await resolveWhenConditionIsTrue({
+            toUpdate: community,
+            predicate: async () => {
+                try {
+                    await kuboFiles.stat(postMfsPath);
+                    return false;
+                } catch (e) {
+                    expect((e as Error).message).to.equal("file does not exist");
+                    return true;
+                }
+            }
+        });
+
+        // 4. The purge is published: a new record that no longer lists the purged post
+        await resolveWhenConditionIsTrue({
+            toUpdate: community,
+            predicate: async () => community.lastPostCid !== post.cid
+        });
     });
 });

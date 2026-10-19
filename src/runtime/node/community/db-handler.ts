@@ -1021,7 +1021,7 @@ export class DbHandler {
                     .all() as { cid: string }[];
                 for (const { cid } of duplicateCids) {
                     const purgedRows = this.purgeComment(cid);
-                    for (const row of purgedRows) await addAllCidsUnderPurgedCommentToBeRemoved(this._community, row);
+                    for (const row of purgedRows) addAllCidsUnderPurgedCommentToBeRemoved(this._community, row);
                 }
                 log(`Purged ${duplicateCids.length} duplicate comment row(s) based on signature.signature with higher rowid values.`);
                 continue;

@@ -29,7 +29,7 @@ import {
     updateCommentsThatNeedToBeUpdated,
     writePostUpdatesToMfs
 } from "./comment-updates.js";
-import { cleanUpIpfsRepoIfDue, purgeDisapprovedCommentsOlderThan, unpinStaleCids } from "./cleanup.js";
+import { cleanUpIpfsRepoIfDue, purgeDisapprovedCommentsOlderThan, rmUnneededMfsPaths, unpinStaleCids } from "./cleanup.js";
 import { providePubsubTopicRoutingCidsIfNeeded } from "./pubsub.js";
 import { wirePagesFromGeneration } from "../page-generator.js";
 import { generatePagesReportingFailedSorts } from "../page-sorts/index.js";
@@ -472,6 +472,12 @@ export async function syncIpnsWithDb(community: LocalCommunity) {
         // Before any CommentUpdate or page is generated, so a package replaced in the registry applies to this cycle
         await syncWithRegistries(community);
         const cidsUpdatedInThisCycle = await updateCommentsAndWritePostUpdates(community);
+        // The record's postUpdates cids are stat'd from MFS, so a path still queued here (e.g. a purge
+        // whose own MFS cleanup failed) would keep the purged CommentUpdate in the published record.
+        // writePostUpdatesToMfs drains the queue only on cycles that write a post, so drain it on
+        // every cycle. A failure throws before the update trigger is consumed, so the next pass
+        // retries (issue #420).
+        if (community._mfsPathsToRemove.size > 0) await rmUnneededMfsPaths(community);
         requireCommunityUpdateIfModQueueChanged(community);
         await updateCommunityIpnsIfNeeded(community, cidsUpdatedInThisCycle);
         await cleanUpIpfsRepoIfDue(community);
