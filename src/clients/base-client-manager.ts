@@ -258,7 +258,7 @@ export class BaseClientsManager {
         for (let i = 0; i < providersSorted.length; i++) {
             const pubsubProviderUrl = providersSorted[i];
             try {
-                return this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
+                return await this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
             } catch (e: unknown) {
                 providerToError[pubsubProviderUrl] = <PKCError>e;
             }
