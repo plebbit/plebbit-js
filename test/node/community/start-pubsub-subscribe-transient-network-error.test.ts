@@ -38,10 +38,10 @@ const happyEyeballsConnectTimeoutError = (): TypeError => {
     });
 };
 
-// Makes the first pubsub subscribe to `topic` reject with the CI error, on whichever provider is
-// tried first; every later call (a retry or another provider) goes through to the real client.
-// Returns the list of provider URLs that were asked to subscribe to `topic`, in order.
-const failFirstSubscribeToTopic = (pkc: PKC, topic: string): string[] => {
+// Makes the first pubsub subscribe to `topic` reject with `makeError()` (the CI error by default), on
+// whichever provider is tried first; every later call (a retry or another provider) goes through to
+// the real client. Returns the list of provider URLs that were asked to subscribe to `topic`, in order.
+const failFirstSubscribeToTopic = (pkc: PKC, topic: string, makeError: () => Error = happyEyeballsConnectTimeoutError): string[] => {
     const attemptedProviders: string[] = [];
     for (const providerUrl of Object.keys(pkc.clients.pubsubKuboRpcClients)) {
         const pubsub = pkc.clients.pubsubKuboRpcClients[providerUrl]._client.pubsub;
@@ -49,7 +49,7 @@ const failFirstSubscribeToTopic = (pkc: PKC, topic: string): string[] => {
         vi.spyOn(pubsub, "subscribe").mockImplementation(async (...args: Parameters<typeof pubsub.subscribe>) => {
             if (args[0] === topic) {
                 attemptedProviders.push(providerUrl);
-                if (attemptedProviders.length === 1) throw happyEyeballsConnectTimeoutError();
+                if (attemptedProviders.length === 1) throw makeError();
             }
             return originalSubscribe(...args);
         });
@@ -94,5 +94,21 @@ describeSkipIfRpc("LocalCommunity.start() survives a transient connect error on 
 
         expect(community.started).to.equal(true);
         expect(attemptedProviders.length).to.be.greaterThanOrEqual(2);
+    });
+
+    // Control: the retry is limited to socket-level network failures. An error without a network
+    // code must still fail start() on the first attempt, without retrying the same provider.
+    it("does not retry a subscribe failure that is not a transient network error", async () => {
+        pkc = await mockPKC({ pubsubKuboRpcClientsOptions: ["http://localhost:15002/api/v0"] }, true);
+        community = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+        const attemptedProviders = failFirstSubscribeToTopic(
+            pkc,
+            community.pubsubTopic || community.address,
+            () => new Error("pubsub is not enabled on this node")
+        );
+
+        await expect(community.start()).rejects.toMatchObject({ code: "ERR_PUBSUB_FAILED_TO_SUBSCRIBE" });
+
+        expect(attemptedProviders).to.deep.equal(["http://localhost:15002/api/v0"]);
     });
 });
