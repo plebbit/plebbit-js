@@ -1,0 +1,95 @@
+import { afterEach, it, expect, vi } from "vitest";
+import { mockPKC, createSubWithNoChallenge } from "../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc } from "../../helpers/conditional-tests.js";
+
+import type { PKC } from "../../../dist/node/pkc/pkc.js";
+import type { LocalCommunity } from "../../../dist/node/runtime/node/community/local-community.js";
+
+type ErrorWithCode = Error & { code?: string; errno?: number; syscall?: string; address?: string; port?: number };
+
+// Builds the exact error undici threw for the initial pubsub/sub request in CI (#422, windows node-local):
+//   TypeError("fetch failed")
+//     cause: AggregateError { code: "ETIMEDOUT", errors: [connect ETIMEDOUT ::1:15001, connect ETIMEDOUT 127.0.0.1:15001] }
+// Node's happy-eyeballs per-address attempt timeout (250ms) expired on both localhost addresses
+// while kubo's API was saturated by five communities starting at once. There is no undici
+// ConnectTimeoutError layer here, unlike #384.
+const happyEyeballsConnectTimeoutError = (): TypeError => {
+    const perAddress: ErrorWithCode[] = [
+        Object.assign(new Error("connect ETIMEDOUT ::1:15001"), {
+            code: "ETIMEDOUT",
+            errno: -4039,
+            syscall: "connect",
+            address: "::1",
+            port: 15001
+        }),
+        Object.assign(new Error("connect ETIMEDOUT 127.0.0.1:15001"), {
+            code: "ETIMEDOUT",
+            errno: -4039,
+            syscall: "connect",
+            address: "127.0.0.1",
+            port: 15001
+        })
+    ];
+    return Object.assign(new TypeError("fetch failed"), {
+        cause: Object.assign(new AggregateError(perAddress, ""), { code: "ETIMEDOUT" })
+    });
+};
+
+// Makes the first pubsub subscribe to `topic` reject with the CI error, on whichever provider is
+// tried first; every later call (a retry or another provider) goes through to the real client.
+// Returns the list of provider URLs that were asked to subscribe to `topic`, in order.
+const failFirstSubscribeToTopic = (pkc: PKC, topic: string): string[] => {
+    const attemptedProviders: string[] = [];
+    for (const providerUrl of Object.keys(pkc.clients.pubsubKuboRpcClients)) {
+        const pubsub = pkc.clients.pubsubKuboRpcClients[providerUrl]._client.pubsub;
+        const originalSubscribe = pubsub.subscribe.bind(pubsub);
+        vi.spyOn(pubsub, "subscribe").mockImplementation(async (...args: Parameters<typeof pubsub.subscribe>) => {
+            if (args[0] === topic) {
+                attemptedProviders.push(providerUrl);
+                if (attemptedProviders.length === 1) throw happyEyeballsConnectTimeoutError();
+            }
+            return originalSubscribe(...args);
+        });
+    }
+    return attemptedProviders;
+};
+
+// LocalCommunity.start() runs inside the RPC server process under RPC, so its pubsub client cannot be
+// stubbed from the test process. The subscribe path is the same code either way, so the direct
+// config covers it.
+describeSkipIfRpc("LocalCommunity.start() survives a transient connect error on its first pubsub subscribe (#422)", () => {
+    let pkc: PKC | undefined;
+    let community: LocalCommunity | undefined;
+
+    afterEach(async () => {
+        vi.restoreAllMocks();
+        if (community) await community.delete().catch(() => {});
+        if (pkc) await pkc.destroy();
+        community = undefined;
+        pkc = undefined;
+    });
+
+    it("retries the subscribe on the same provider when it is the only pubsub provider", async () => {
+        // forceMockPubsub swaps in the in-process mock client even though pubsub providers are configured
+        pkc = await mockPKC({ pubsubKuboRpcClientsOptions: ["http://localhost:15002/api/v0"] }, true);
+        community = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+        const attemptedProviders = failFirstSubscribeToTopic(pkc, community.pubsubTopic || community.address);
+
+        await community.start();
+
+        expect(community.started).to.equal(true);
+        expect(attemptedProviders).to.deep.equal(["http://localhost:15002/api/v0", "http://localhost:15002/api/v0"]);
+    });
+
+    it("falls back to the next pubsub provider when the first one fails to connect", async () => {
+        pkc = await mockPKC(); // three mocked pubsub providers
+        expect(Object.keys(pkc.clients.pubsubKuboRpcClients).length).to.be.greaterThan(1);
+        community = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+        const attemptedProviders = failFirstSubscribeToTopic(pkc, community.pubsubTopic || community.address);
+
+        await community.start();
+
+        expect(community.started).to.equal(true);
+        expect(attemptedProviders.length).to.be.greaterThanOrEqual(2);
+    });
+});
