@@ -10,6 +10,7 @@ import {
     type ResolvedPageSorts
 } from "../page-sorts/index.js";
 import type { LocalCommunity } from "../local-community.js";
+import type { PageSortFileFactoryInput } from "../../../../community/types.js";
 
 // Challenge and page sort factories live in a registry a consumer can change while communities run: bitsocial-cli's
 // `challenge install` / `page-sort install` re-import a package and replace its entry in PKC.challenges /
@@ -20,16 +21,19 @@ import type { LocalCommunity } from "../local-community.js";
 const PAGE_SORTS_FINGERPRINT_KEY = STORAGE_KEYS[STORAGE_KEYS.PAGE_SORTS_FINGERPRINT];
 
 // Install a freshly resolved settings.pages on the instance: the sorts, the factories they came from (for the
-// per-cycle identity check), the record's projection, and the fingerprint a restart compares against.
-export async function setResolvedPageSorts(community: LocalCommunity, resolved: ResolvedPageSorts): Promise<void> {
+// per-cycle identity check), the record's projection, and the fingerprint a restart compares against. `factories` must
+// be the lookupPageSortFactories snapshot taken BEFORE resolving: looking the registry up again here would record a
+// factory swapped in mid-resolve as already applied, and every later cycle would compare equal and keep the old sort.
+export async function setResolvedPageSorts(
+    community: LocalCommunity,
+    resolved: ResolvedPageSorts,
+    factories: (PageSortFileFactoryInput | undefined)[]
+): Promise<void> {
     const pagesSettings = community.settings?.pages;
     community._pageSorts = resolved;
-    community._pageSortFactories = lookupPageSortFactories({ pagesSettings, pkc: community._pkc });
+    community._pageSortFactories = factories;
     community.pageSorts = derivePublicPageSorts({ pagesSettings, resolved });
-    await community._dbHandler.keyvSet(
-        PAGE_SORTS_FINGERPRINT_KEY,
-        computePageSortsFingerprint({ pagesSettings, resolved, pkc: community._pkc })
-    );
+    await community._dbHandler.keyvSet(PAGE_SORTS_FINGERPRINT_KEY, computePageSortsFingerprint({ pagesSettings, resolved, factories }));
 }
 
 const sameFactories = (a: readonly unknown[] | undefined, b: readonly unknown[]): boolean =>
@@ -50,11 +54,12 @@ export async function syncPageSortsWithRegistry(community: LocalCommunity): Prom
     const previousFingerprint = community._dbHandler.keyvGet<string>(PAGE_SORTS_FINGERPRINT_KEY);
     const previousPublicPageSorts = deterministicStringify(community.pageSorts ?? null);
     const resolved = await loadPageSortsForStartedCommunity(community); // reports each entry that no longer resolves
-    const fingerprint = computePageSortsFingerprint({ pagesSettings, resolved, pkc: community._pkc });
+    const factories = community._pageSortFactories!; // the snapshot the loader took before resolving
+    const fingerprint = computePageSortsFingerprint({ pagesSettings, resolved, factories });
     // In memory, === already proved the registry changed. From disk, a community that predates the fingerprint has
     // nothing to compare with and only takes the baseline, so upgrading pkc-js does not regenerate every board.
     const changed = inMemory || (previousFingerprint !== undefined && previousFingerprint !== fingerprint);
-    await setResolvedPageSorts(community, resolved);
+    await setResolvedPageSorts(community, resolved, factories);
     if (changed) {
         log("Page sort factories changed in the registry, regenerating every CommentUpdate", community.address);
         community._dbHandler.forceUpdateOnAllComments();

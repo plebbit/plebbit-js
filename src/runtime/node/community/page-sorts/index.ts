@@ -104,19 +104,23 @@ export function lookupPageSortFactories({
 export function computePageSortsFingerprint({
     pagesSettings,
     resolved,
-    pkc
+    factories
 }: {
     pagesSettings: CommunityPagesSettings | undefined;
     resolved: ResolvedPageSorts;
-    pkc?: PKCWithSettingsPageSorts;
+    factories: (PageSortFileFactoryInput | undefined)[]; // the lookupPageSortFactories snapshot `resolved` was built from
 }): string {
-    const isShippedBuiltIn = (factory: PageSortFileFactoryInput | undefined, name: string | undefined) =>
-        factory !== undefined && typeof name === "string" && shippedBuiltInPageSorts[name] === factory;
-    const describeFactory = (name: string | undefined) => {
-        if (typeof name !== "string") return null; // a `path` entry: its source is covered by the resolved file below
-        const factory = resolvePageSortFactoryByName({ name, pkc });
+    const entries = entriesOfEveryScope(pagesSettings).flatMap(({ entries }) => entries);
+    const factoryOfEntry = new Map(entries.map((entry, i) => [entry, factories[i]]));
+    const isShippedBuiltIn = (entry: CommunityPageSortSetting) => {
+        const factory = factoryOfEntry.get(entry);
+        return factory !== undefined && typeof entry.name === "string" && shippedBuiltInPageSorts[entry.name] === factory;
+    };
+    // a `path` entry or a missing factory is null: a path file's source is covered by the resolved file below
+    const describeFactory = (entry: CommunityPageSortSetting) => {
+        const factory = factoryOfEntry.get(entry);
         if (factory === undefined) return null;
-        return isShippedBuiltIn(factory, name) ? "built-in" : factory.toString();
+        return isShippedBuiltIn(entry) ? "built-in" : factory.toString();
     };
     const describeResolved = (sort: ResolvedPageSort) => ({
         settings: sort.settings,
@@ -129,10 +133,7 @@ export function computePageSortsFingerprint({
             scope: sort.file.scope,
             flat: sort.file.flat,
             requireReplies: sort.file.requireReplies,
-            ...(isShippedBuiltIn(
-                sort.settings.name ? resolvePageSortFactoryByName({ name: sort.settings.name, pkc }) : undefined,
-                sort.settings.name
-            )
+            ...(isShippedBuiltIn(sort.settings)
                 ? {}
                 : { score: sort.file.score.toString(), validatePageSortSettings: sort.file.validatePageSortSettings?.toString() })
         }
@@ -140,7 +141,7 @@ export function computePageSortsFingerprint({
     return sha256(
         deterministicStringify({
             pages: pagesSettings ?? null,
-            factories: entriesOfEveryScope(pagesSettings).flatMap(({ entries }) => entries.map((entry) => describeFactory(entry.name))),
+            factories: entries.map(describeFactory),
             posts: resolved.posts.map(describeResolved),
             replies: resolved.replies.map(describeResolved)
         }) ?? ""
@@ -400,6 +401,9 @@ export function derivePublicPageSorts({
 export async function loadPageSortsForStartedCommunity(community: LocalCommunity): Promise<ResolvedPageSorts> {
     const log = Logger("pkc-js:local-community:page-sorts:load");
     await community._dbHandler.initDbIfNeeded();
+    // Snapshot before resolving: a registry change that lands mid-resolve then shows up as a mismatch on the next
+    // cycle (one extra re-resolve) instead of being recorded as already applied
+    const factories = lookupPageSortFactories({ pagesSettings: community.settings?.pages, pkc: community._pkc });
     const { resolved, failures } = await resolvePageSortsAndCollectFailures({
         pagesSettings: community.settings?.pages,
         pkc: community._pkc,
@@ -411,7 +415,7 @@ export async function loadPageSortsForStartedCommunity(community: LocalCommunity
         community.emit("error", error);
     }
     community._pageSorts = resolved;
-    community._pageSortFactories = lookupPageSortFactories({ pagesSettings: community.settings?.pages, pkc: community._pkc });
+    community._pageSortFactories = factories;
     return resolved;
 }
 

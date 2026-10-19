@@ -108,6 +108,22 @@ describeSkipIfRpc("registry sync: page sorts (issue #411)", () => {
         expect(forceUpdate).not.toHaveBeenCalled();
         expect(context.community._communityUpdateTrigger).to.equal(false);
     });
+
+    // A reload that lands while the sorts are being resolved (the sync awaits between looking the registry up and
+    // installing the result) must not be recorded as already applied, or every later cycle compares equal and the
+    // community keeps the old sort until a restart.
+    it("picks up a factory replaced in the registry while the previous one was being resolved", async () => {
+        const v1 = makePageSort("v1") as unknown as (args: unknown) => unknown;
+        registry[SORT_NAME] = ((args: unknown) => {
+            registry[SORT_NAME] = makePageSort("v2"); // the reload lands mid-resolve
+            return v1(args);
+        }) as unknown as PageSortFileFactoryInput;
+        await syncPageSortsWithRegistry(context.community);
+        expect(context.community._pageSorts!.posts[0].file.description).to.equal("registry sync sort v1");
+
+        await syncPageSortsWithRegistry(context.community);
+        expect(context.community._pageSorts!.posts[0].file.description).to.equal("registry sync sort v2");
+    });
 });
 
 describeSkipIfRpc("registry sync: community.challenges (issue #410)", () => {

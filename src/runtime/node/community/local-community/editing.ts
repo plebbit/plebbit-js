@@ -8,11 +8,12 @@ import { parseCommunityEditOptionsSchemaWithPKCErrorIfItFails } from "../../../.
 import { findStartedCommunity, trackStartedCommunity } from "../../../../pkc/tracked-instance-registry-util.js";
 import { getCommunityChallengeFromCommunityChallengeSettings } from "../challenges/index.js";
 import { throwIfChallengeSettingsAreInvalid } from "../challenges/validate-challenge-settings.js";
-import { derivePublicPageSorts, resolvePageSortsOrThrow, type ResolvedPageSorts } from "../page-sorts/index.js";
+import { derivePublicPageSorts, lookupPageSortFactories, resolvePageSortsOrThrow, type ResolvedPageSorts } from "../page-sorts/index.js";
 import type {
     CommunityEditOptions,
     CommunityIpfsType,
     InternalCommunityRecordAfterFirstUpdateType,
+    PageSortFileFactoryInput,
     ParsedCommunityEditOptions
 } from "../../../../community/types.js";
 import type { LocalCommunity } from "../local-community.js";
@@ -94,6 +95,7 @@ export async function parseChallengesToEdit(
 export type PagesEdit = {
     pageSorts: InternalCommunityRecordAfterFirstUpdateType["pageSorts"];
     resolved: ResolvedPageSorts;
+    factories: (PageSortFileFactoryInput | undefined)[]; // the registry snapshot taken before resolving (issue #411)
     pagesChanged: boolean;
 };
 
@@ -102,13 +104,14 @@ export async function parsePagesToEdit(
     newSettings: NonNullable<CommunityEditOptions["settings"]>
 ): Promise<PagesEdit> {
     await community._dbHandler.initDbIfNeeded();
+    const factories = lookupPageSortFactories({ pagesSettings: newSettings.pages, pkc: community._pkc });
     const resolved = await resolvePageSortsOrThrow({
         pagesSettings: newSettings.pages,
         pkc: community._pkc,
         communityAddress: community.address
     });
     const pagesChanged = deterministicStringify(community.settings?.pages ?? null) !== deterministicStringify(newSettings.pages ?? null);
-    return { pageSorts: derivePublicPageSorts({ pagesSettings: newSettings.pages, resolved }), resolved, pagesChanged };
+    return { pageSorts: derivePublicPageSorts({ pagesSettings: newSettings.pages, resolved }), resolved, factories, pagesChanged };
 }
 
 // Apply a persisted settings.pages edit to the running instance. Any change to settings.pages, however small,
@@ -119,7 +122,7 @@ export async function parsePagesToEdit(
 async function applyPagesEdit(community: LocalCommunity, pagesEdit: PagesEdit | undefined): Promise<void> {
     if (!pagesEdit) return;
     if (pagesEdit.pagesChanged) community._dbHandler.forceUpdateOnAllComments();
-    await setResolvedPageSorts(community, pagesEdit.resolved);
+    await setResolvedPageSorts(community, pagesEdit.resolved, pagesEdit.factories);
 }
 
 export async function validateNewAddressBeforeEditing(community: LocalCommunity, newAddress: string, log: Logger) {
