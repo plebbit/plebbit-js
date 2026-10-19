@@ -144,6 +144,44 @@ Name resolution happens on the **RPC server**, not the RPC client. This means:
 
 If an RPC server has no resolvers configured, any request with a domain name will fail with `ERR_NO_RESOLVER_FOR_NAME`.
 
+## A community's identity in its comments
+
+Every publication carries the community it was signed for: `communityPublicKey` (required; publish validation rejects
+any other key) and `communityName` (required when the community has a name, `ERR_PUBLICATION_MISSING_COMMUNITY_NAME`;
+it must equal the community's address). Both fields are signed, so they never change once a comment is stored, even
+when the owner later changes the community's address with `edit({ address })`.
+
+A name is part of the community's identity. Which stored comments a community still publishes is decided by the
+**community identity rule** (issue [#401](https://github.com/pkcprotocol/pkc-js/issues/401)), which is exactly what
+client page verification (`verifyPageComment`) accepts, so a community never publishes a comment clients reject and never
+hides one they accept:
+
+-   **The community has a name `C`:** a comment whose `communityName` is set must carry `C` or its `.eth`/`.bso` alias.
+    A comment without a name passes, and its key is not checked (clients tolerate a rotated key on a named community).
+-   **The community has no name:** a comment whose `communityPublicKey` is set must carry the community's key. A
+    comment without a key passes (migrated pre-v37 domain rows have none). The name is not checked.
+
+The rule is always on, not a page sort option (it replaced `excludeCommentsWithDifferentCommunityAddress`). It applies
+to every page, to `replyCount`, `childCount` and `lastReplyTimestamp`, to the stats and to the first-comment lookup, so
+the counts always match the pages (`_communityIdentityClause` in `db-handler.ts`, `createCommunityIdentityRowFilter`
+in `src/pages/page-sort-scoring.ts`).
+
+What happens to comments published before an address change:
+
+| Address change | Comments signed before it | Published after it |
+| --- | --- | --- |
+| key only → `C` (a name added) | key, no name | yes |
+| `a.eth` → `a.bso` | named `a.eth` | yes, the alias matches |
+| `N` → `M` (a different name) | named `N` | **no**, they belong to the identity `N` |
+| `N` → `M` | key, no name | yes |
+| `N` → key only (the name dropped) | named `N` | yes: a community without a name does not check names, so clients still accept them |
+| `N` → key only | pre-v37, named `N`, no key | yes |
+| `N` → `M` → `N` (renamed back) | named `N` | yes again, the rule is evaluated against the current name at every page build |
+
+A publication created with only a community's key (`createComment({ communityAddress: <key> })`) is signed again at
+`publish()` with the name of the community record it loaded, so pkc-js never sends a publication without the name to a
+community that has one. Its `signature` therefore changes between `createX` and `publish()` in that case.
+
 ## Invariants
 
 -   `author.address` and `community.address` are **immutable**, never override or fall back to a derived address.
