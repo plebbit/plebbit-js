@@ -1,5 +1,6 @@
 import { PageSortFileSchema } from "../community/schema.js";
 import { getEquivalentCommunityAddresses } from "../util.js";
+import { isStringDomain } from "../domain-util.js";
 import type { ParsedReservedPageSortOptions } from "./page-sort-options.js";
 import type { PageSortFile } from "../community/types.js";
 import type { PageIpfs, PageSortExclusionOptionName, PageSortReplyEntry } from "./types.js";
@@ -24,8 +25,25 @@ export function validatePageSortFile(rawFile: unknown): PageSortFile {
     };
 }
 
-// The reserved exclusions applied to page entries in JS. Mirrors the SQL clauses in DbHandler (exclusionClauses): a comment is removed when commentUpdate.removed is true, deleted when its author's edit says so,
-// disapproved when commentUpdate.approved is false, pending when commentUpdate.pendingApproval is true.
+// The community identity rule (issue #401): which rows belong in this community's pages and counts, by the community
+// fields the comment's author signed. It is the rule client page verification applies (verifyPageComment), so the
+// community never hides a row a client would accept: a community with a name admits rows whose communityName is absent
+// or is that name or its .eth/.bso alias; a community without a name admits rows whose communityPublicKey is absent or
+// is its key. The JS twin of DbHandler's community identity clause. Always on, it is not a page sort option.
+export function createCommunityIdentityRowFilter(
+    communityAddress: string
+): (comment: { communityPublicKey?: string; communityName?: string }) => boolean {
+    if (isStringDomain(communityAddress)) {
+        const equivalentNames = new Set(getEquivalentCommunityAddresses(communityAddress));
+        return (comment) => !comment.communityName || equivalentNames.has(comment.communityName);
+    }
+    return (comment) => !comment.communityPublicKey || comment.communityPublicKey === communityAddress;
+}
+
+// The reserved exclusions applied to page entries in JS, plus the always-on community identity rule. Mirrors the SQL
+// clauses in DbHandler (exclusionClauses): a comment is removed when commentUpdate.removed is true, deleted when its
+// author's edit says so, disapproved when commentUpdate.approved is false, pending when commentUpdate.pendingApproval
+// is true.
 export function applyPageSortExclusions<T extends PageSortReplyEntry>({
     comments,
     exclusions,
@@ -33,26 +51,21 @@ export function applyPageSortExclusions<T extends PageSortReplyEntry>({
 }: {
     comments: T[];
     exclusions: Record<PageSortExclusionOptionName, boolean>;
-    communityAddress?: string; // the community the page belongs to; needed only for excludeCommentsWithDifferentCommunityAddress
+    communityAddress: string; // the community the page belongs to, for the community identity rule
 }): T[] {
-    const equivalentAddresses = communityAddress ? new Set(getEquivalentCommunityAddresses(communityAddress)) : undefined;
+    const belongsToCommunity = createCommunityIdentityRowFilter(communityAddress);
     return comments.filter(({ comment, commentUpdate }) => {
+        if (!belongsToCommunity(comment)) return false;
         if (exclusions.excludeRemovedComments && commentUpdate.removed === true) return false;
         if (exclusions.excludeDeletedComments && commentUpdate.edit?.deleted === true) return false;
         if (exclusions.excludeCommentWithApprovedFalse && commentUpdate.approved === false) return false;
         if (exclusions.excludeCommentPendingApproval && commentUpdate.pendingApproval === true) return false;
-        if (exclusions.excludeCommentsWithDifferentCommunityAddress && equivalentAddresses) {
-            const belongs =
-                (comment.communityPublicKey ? equivalentAddresses.has(comment.communityPublicKey) : false) ||
-                (comment.communityName ? equivalentAddresses.has(comment.communityName) : false);
-            if (!belongs) return false;
-        }
         return true;
     });
 }
 
-// The `replies` a requireReplies file receives: every reply in the scope except ones from another community address
-// (issue #407). The sort's exclude* options are not applied, they reach the file in `options`: a removed or deleted
+// The `replies` a requireReplies file receives: every reply in the scope that passes the community identity rule
+// (issues #401, #407). The sort's exclude* options are not applied, they reach the file in `options`: a removed or deleted
 // reply is a tombstone whose present replies still count (docs/protocol/comment-lifecycle.md, "Which replies count"),
 // so dropping it would cut its subtree, and the file decides what counts. Replies with no CommentUpdate never get
 // here (the DB query joins on commentUpdates). Reply pages keep tombstones too, so a client walking them gets this set.
@@ -69,8 +82,7 @@ export function filterRepliesForPageSort<T extends PageSortReplyEntry>({
             excludeRemovedComments: false,
             excludeDeletedComments: false,
             excludeCommentWithApprovedFalse: false,
-            excludeCommentPendingApproval: false,
-            excludeCommentsWithDifferentCommunityAddress: true
+            excludeCommentPendingApproval: false
         },
         communityAddress
     });

@@ -8,6 +8,7 @@ import {
     DEFAULT_RESERVED_OPTIONS,
     parseReservedPageSortOptions,
     RESERVED_PAGE_SORT_OPTION_NAMES,
+    REMOVED_PAGE_SORT_OPTION_NAMES,
     type ParsedReservedPageSortOptions
 } from "../../../../pages/page-sort-options.js";
 import { pkcJsPageSorts } from "../../../../pages/pkc-js-page-sorts/index.js";
@@ -207,6 +208,17 @@ export interface PageSortSettingsValidationFailure {
     error: PKCError;
 }
 
+// Drop the reserved options pkc-js no longer reads (REMOVED_PAGE_SORT_OPTION_NAMES) from an option record, so a value
+// stored before the removal neither fails the declared-option check nor reaches the file or the published publicOptions.
+function withoutRemovedPageSortOptions(options: Record<string, string>, pageSortName: string): Record<string, string> {
+    const removed = Object.keys(options).filter((optionName) => REMOVED_PAGE_SORT_OPTION_NAMES.includes(optionName));
+    if (removed.length === 0) return options;
+    Logger("pkc-js:local-community:page-sorts:resolve")(
+        `Ignoring removed page sort options ${removed.join(", ")} of sort ${pageSortName}; the community identity rule now always applies (issue #401)`
+    );
+    return Object.fromEntries(Object.entries(options).filter(([optionName]) => !removed.includes(optionName)));
+}
+
 // Generic validation of one entry against its loaded file, plus the reserved-option parsing pkc-js needs anyway.
 // Returns the resolved sort, or the first failure. A file that declares no optionInputs makes no promise about
 // which options it reads, so the declared-key check is skipped for it, same as challenges.
@@ -222,7 +234,7 @@ function resolveOneEntry({
     pageSortIndex: number;
 }): { resolved: ResolvedPageSort } | { error: PKCError } {
     const baseDetails = { scope, pageSortIndex, pageSortName: describePageSort(pageSortSettings), sortName: file.sortName };
-    const entryOptions = pageSortSettings.options ?? {};
+    const entryOptions = withoutRemovedPageSortOptions(pageSortSettings.options ?? {}, baseDetails.pageSortName);
 
     if (file.scope && file.scope !== scope)
         return { error: new PKCError("ERR_PAGE_SORT_SCOPE_MISMATCH", { ...baseDetails, fileScope: file.scope }) };
@@ -257,7 +269,10 @@ function resolveOneEntry({
             return { error: new PKCError("ERR_PAGE_SORT_PRIVATE_OPTION_NOT_SET", { ...baseDetails, offendingOption: optionName }) };
     }
 
-    const options: Record<string, string> = { ...DEFAULT_RESERVED_OPTIONS[scope], ...file.defaultOptions, ...entryOptions };
+    const options: Record<string, string> = withoutRemovedPageSortOptions(
+        { ...DEFAULT_RESERVED_OPTIONS[scope], ...file.defaultOptions, ...entryOptions },
+        baseDetails.pageSortName
+    );
     let reserved: ParsedReservedPageSortOptions;
     try {
         reserved = parseReservedPageSortOptions(options);

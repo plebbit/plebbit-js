@@ -57,8 +57,7 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 excludeRemovedComments: "true",
                 excludeDeletedComments: "true",
                 excludeCommentPendingApproval: "true",
-                excludeCommentWithApprovedFalse: "true",
-                excludeCommentsWithDifferentCommunityAddress: "true"
+                excludeCommentWithApprovedFalse: "true"
             });
             expect(Object.keys(community.pageSorts?.posts ?? {}).sort()).to.deep.equal(["active", "new"]);
         });

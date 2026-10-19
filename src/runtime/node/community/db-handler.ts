@@ -1350,47 +1350,39 @@ export class DbHandler {
         return `(${alias}.pendingApproval IS NULL OR ${alias}.pendingApproval != 1)`;
     }
 
-    private _communityAddressClause(alias: string): { clause: string; params: string[] } {
+    // The community identity rule (issue #401), the SQL twin of createCommunityIdentityRowFilter: the rows that belong in
+    // this community's pages, counts and stats, by the community fields the comment's author signed. It is the rule client
+    // page verification applies, so the community never hides a row a client would accept. A community with a name admits
+    // rows whose communityName is NULL or is that name or its .eth/.bso alias. A community without a name admits rows whose
+    // communityPublicKey is NULL (pre-v37 domain rows) or is its key, which is its address. Always on, for every query.
+    private _communityIdentityClause(alias: string): { clause: string; params: string[] } {
         const address = this._community.address;
-        const addresses = getEquivalentCommunityAddresses(address);
         if (isStringDomain(address)) {
-            // Domain-based: match communityName OR communityPublicKey (domain strings and IPNS keys never overlap)
-            const domainPlaceholders = addresses.map(() => "?").join(", ");
+            const names = getEquivalentCommunityAddresses(address);
             return {
-                clause: `(${alias}.communityName IN (${domainPlaceholders}) OR ${alias}.communityPublicKey IN (${domainPlaceholders}))`,
-                params: [...addresses, ...addresses]
+                clause: `(${alias}.communityName IS NULL OR ${alias}.communityName IN (${names.map(() => "?").join(", ")}))`,
+                params: names
             };
-        } else {
-            // IPNS key: match communityPublicKey directly
-            return { clause: `${alias}.communityPublicKey = ?`, params: [address] };
         }
+        return { clause: `(${alias}.communityPublicKey IS NULL OR ${alias}.communityPublicKey = ?)`, params: [address] };
     }
 
-    private _communityAddressClauseNamed(alias: string, paramPrefix: string): { clause: string; params: Record<string, string> } {
+    private _communityIdentityClauseNamed(alias: string, paramPrefix: string): { clause: string; params: Record<string, string> } {
         const address = this._community.address;
-        const addresses = getEquivalentCommunityAddresses(address);
         if (isStringDomain(address)) {
-            // Domain-based: match communityName OR communityPublicKey (domain strings and IPNS keys never overlap)
             const params: Record<string, string> = {};
-            const namePlaceholders: string[] = [];
-            const keyPlaceholders: string[] = [];
-            addresses.forEach((addr, i) => {
-                const nameParam = `${paramPrefix}CommunityName${i}`;
-                const keyParam = `${paramPrefix}CommunityKey${i}`;
-                params[nameParam] = addr;
-                params[keyParam] = addr;
-                namePlaceholders.push(`:${nameParam}`);
-                keyPlaceholders.push(`:${keyParam}`);
+            const placeholders = getEquivalentCommunityAddresses(address).map((name, i) => {
+                const paramName = `${paramPrefix}CommunityName${i}`;
+                params[paramName] = name;
+                return `:${paramName}`;
             });
-            return {
-                clause: `(${alias}.communityName IN (${namePlaceholders.join(", ")}) OR ${alias}.communityPublicKey IN (${keyPlaceholders.join(", ")}))`,
-                params
-            };
-        } else {
-            // IPNS key: match communityPublicKey directly
-            const paramName = `${paramPrefix}CommunityKey`;
-            return { clause: `${alias}.communityPublicKey = :${paramName}`, params: { [paramName]: address } };
+            return { clause: `(${alias}.communityName IS NULL OR ${alias}.communityName IN (${placeholders.join(", ")}))`, params };
         }
+        const paramName = `${paramPrefix}CommunityKey`;
+        return {
+            clause: `(${alias}.communityPublicKey IS NULL OR ${alias}.communityPublicKey = :${paramName})`,
+            params: { [paramName]: address }
+        };
     }
 
     private _buildPageQueryParts(options: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">): {
@@ -1403,11 +1395,9 @@ export class DbHandler {
         const whereClauses: string[] = [`${commentsTable}.parentCid = ?`];
         const params: any[] = [options.parentCid];
 
-        if (options.excludeCommentsWithDifferentCommunityAddress) {
-            const { clause, params: addrParams } = this._communityAddressClause(commentsTable);
-            whereClauses.push(clause);
-            params.push(...addrParams);
-        }
+        const { clause: identityClause, params: identityParams } = this._communityIdentityClause(commentsTable);
+        whereClauses.push(identityClause);
+        params.push(...identityParams);
         if (options.excludeCommentPendingApproval) whereClauses.push(this._pendingApprovalClause(commentsTable));
         if (options.excludeRemovedComments) whereClauses.push(this._removedClause(commentUpdatesTable));
         if (options.excludeDeletedComments) whereClauses.push(this._deletedFromUpdatesClause(commentUpdatesTable));
@@ -1722,14 +1712,12 @@ export class DbHandler {
         const commentUpdatesAlias = "c_updates";
         const deletedLookupAlias = "d";
 
-        if (options.excludeCommentsWithDifferentCommunityAddress) {
-            const { clause: baseClause, params: baseAddrParams } = this._communityAddressClause(commentsAlias);
-            baseFilterClauses.push(baseClause);
-            params.push(...baseAddrParams);
-            const { clause: recClause, params: recAddrParams } = this._communityAddressClause(commentsAlias);
-            recursiveFilterClauses.push(recClause);
-            params.push(...recAddrParams);
-        }
+        const { clause: baseIdentityClause, params: baseIdentityParams } = this._communityIdentityClause(commentsAlias);
+        baseFilterClauses.push(baseIdentityClause);
+        params.push(...baseIdentityParams);
+        const { clause: recursiveIdentityClause, params: recursiveIdentityParams } = this._communityIdentityClause(commentsAlias);
+        recursiveFilterClauses.push(recursiveIdentityClause);
+        params.push(...recursiveIdentityParams);
         if (options.excludeCommentPendingApproval) {
             const clause = this._pendingApprovalClause(commentsAlias);
             baseFilterClauses.push(clause);
@@ -1946,8 +1934,8 @@ export class DbHandler {
     private _collectCommentsToBeUpdated(): void {
         const windowed = this._buildWindowedReplySortArms(timestamp());
         const notPending = (alias: string) => `(${alias}.pendingApproval IS NULL OR ${alias}.pendingApproval != 1)`;
-        const countedChildAddress = this._communityAddressClauseNamed("c", "countedChild");
-        // A child that counts towards its parent's childCount: has a CommentUpdate and this community's address, not
+        const countedChildAddress = this._communityIdentityClauseNamed("c", "countedChild");
+        // A child that counts towards its parent's childCount: has a CommentUpdate, passes the community identity rule, not
         // removed, not deleted by its author, not disapproved (the rule _queryReplyCountsByParentCids and
         // _queryLastChildCidsByParentCids apply, or the parent is re-flagged every cycle)
         const countedChild = `
@@ -2113,8 +2101,8 @@ export class DbHandler {
     queryCommunityStats(): CommunityStats {
         // if you change this logic, make sure to run stats.community.test.js
         const now = timestamp(); // All timestamps are in seconds
-        const { clause: commentAddrClause, params: commentAddrParams } = this._communityAddressClauseNamed("comments", "statsComments");
-        const { clause: votesAddrClause, params: votesAddrParams } = this._communityAddressClauseNamed("comments_for_votes", "statsVotes");
+        const { clause: commentAddrClause, params: commentAddrParams } = this._communityIdentityClauseNamed("comments", "statsComments");
+        const { clause: votesAddrClause, params: votesAddrParams } = this._communityIdentityClauseNamed("comments_for_votes", "statsVotes");
         const removedCommentsClause = this._removedClause("cu_comments");
         const deletedCommentsClause = this._deletedFromUpdatesClause("cu_comments");
         const removedVotesClause = this._removedClause("cu_votes");
@@ -2300,7 +2288,7 @@ export class DbHandler {
 
     queryFirstCommentWithDepth(commentDepth: number): CommentsTableRow | undefined {
         if (!Number.isInteger(commentDepth) || commentDepth < 0) throw new Error("commentDepth must be a non-negative integer");
-        const { clause: addrClause, params: addrParams } = this._communityAddressClauseNamed("c", "firstComment");
+        const { clause: addrClause, params: addrParams } = this._communityIdentityClauseNamed("c", "firstComment");
         const exactDepthRow = this._db
             .prepare(
                 `SELECT c.* FROM ${TABLES.COMMENTS} c
@@ -2409,7 +2397,7 @@ export class DbHandler {
             .sort((a, b) => a - b)
             .map((bucket) => `WHEN (${currentTimestampSeconds} - c.timestamp) <= ${bucket} THEN ${bucket}`)
             .join(" ");
-        const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
+        const { clause: addrClause, params: addrParams } = this._communityIdentityClause("c");
         const query = `
             WITH post_data AS (
                 SELECT c.cid, c.timestamp, cu.postUpdatesBucket AS current_bucket,
@@ -2802,7 +2790,7 @@ export class DbHandler {
     // when it is also present (neither removed, deleted nor disapproved); childCount is the level-1 part of the same count.
     private _queryReplyCountsByParentCids(parentCids: string[]): Map<string, { replyCount: number; childCount: number }> {
         const result = new Map<string, { replyCount: number; childCount: number }>();
-        const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
+        const { clause: addrClause, params: addrParams } = this._communityIdentityClause("c");
         const present = this._replyWalkPresentExpression();
         const deletedLookup = `(SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES})`;
         for (const { placeholders, params } of this._cidChunks(parentCids, addrParams.length * 2)) {
@@ -2832,7 +2820,7 @@ export class DbHandler {
     // but the present replies under it do (#405).
     private _queryLastReplyTimestampsByParentCids(parentCids: string[]): Map<string, number> {
         const result = new Map<string, number>();
-        const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
+        const { clause: addrClause, params: addrParams } = this._communityIdentityClause("c");
         const walked = `${addrClause} AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)`;
         const present = this._replyWalkPresentExpression();
         const deletedLookup = `(SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES})`;
@@ -2861,7 +2849,7 @@ export class DbHandler {
     // not pending, disapproved, removed or deleted (MAX(rowid) with the bare cid column: SQLite returns the cid of that row).
     private _queryLastChildCidsByParentCids(parentCids: string[]): Map<string, string> {
         const result = new Map<string, string>();
-        const { clause: addrClause, params: addrParams } = this._communityAddressClause("c");
+        const { clause: addrClause, params: addrParams } = this._communityIdentityClause("c");
         for (const { placeholders, params } of this._cidChunks(parentCids, addrParams.length)) {
             const rows = this._prepareCached(
                 `SELECT c.parentCid AS parentCid, c.cid AS cid, MAX(c.rowid) AS lastRowid FROM ${TABLES.COMMENTS} c
@@ -3763,11 +3751,9 @@ export class DbHandler {
 
         const params: Record<string, string> = {};
         const postsWhereClauses = ["c.depth = 0"];
-        if (pageOptions.excludeCommentsWithDifferentCommunityAddress) {
-            const { clause, params: addrParams } = this._communityAddressClauseNamed("c", "asPosts");
-            postsWhereClauses.push(clause);
-            Object.assign(params, addrParams);
-        }
+        const { clause: identityClause, params: identityParams } = this._communityIdentityClauseNamed("c", "asPosts");
+        postsWhereClauses.push(identityClause);
+        Object.assign(params, identityParams);
         if (pageOptions.excludeRemovedComments) postsWhereClauses.push(this._removedClause("cu"));
         if (pageOptions.excludeDeletedComments) postsWhereClauses.push(this._deletedFromUpdatesClause("cu"));
         if (pageOptions.excludeCommentPendingApproval) postsWhereClauses.push(this._pendingApprovalClause("c"));

@@ -173,8 +173,7 @@ describe("pkc.settings.pageSorts over RPC", () => {
                 excludeRemovedComments: removedDeletedApproved,
                 excludeDeletedComments: removedDeletedApproved,
                 excludeCommentPendingApproval: "true",
-                excludeCommentWithApprovedFalse: removedDeletedApproved,
-                excludeCommentsWithDifferentCommunityAddress: "true"
+                excludeCommentWithApprovedFalse: removedDeletedApproved
             });
             expect(community.pageSorts).to.deep.equal({
                 posts: {

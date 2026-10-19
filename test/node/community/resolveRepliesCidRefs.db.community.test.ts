@@ -429,7 +429,6 @@ describeSkipIfRpc("queryFlattenedPageReplies recursive CTE filters (Gap 4)", fun
             excludeDeletedComments: false,
             excludeCommentPendingApproval: false,
             excludeCommentWithApprovedFalse: false,
-            excludeCommentsWithDifferentCommunityAddress: false,
             preloadedPage: "best",
             baseTimestamp: now + 100
         });
@@ -449,7 +448,6 @@ describeSkipIfRpc("queryFlattenedPageReplies recursive CTE filters (Gap 4)", fun
             excludeDeletedComments: true,
             excludeCommentPendingApproval: false,
             excludeCommentWithApprovedFalse: false,
-            excludeCommentsWithDifferentCommunityAddress: false,
             preloadedPage: "best",
             baseTimestamp: now + 100
         });
@@ -467,7 +465,6 @@ describeSkipIfRpc("queryFlattenedPageReplies recursive CTE filters (Gap 4)", fun
             excludeDeletedComments: false,
             excludeCommentPendingApproval: true,
             excludeCommentWithApprovedFalse: false,
-            excludeCommentsWithDifferentCommunityAddress: false,
             preloadedPage: "best",
             baseTimestamp: now + 100
         });
@@ -485,7 +482,6 @@ describeSkipIfRpc("queryFlattenedPageReplies recursive CTE filters (Gap 4)", fun
             excludeDeletedComments: false,
             excludeCommentPendingApproval: false,
             excludeCommentWithApprovedFalse: true,
-            excludeCommentsWithDifferentCommunityAddress: false,
             preloadedPage: "best",
             baseTimestamp: now + 100
         });
@@ -503,7 +499,6 @@ describeSkipIfRpc("queryFlattenedPageReplies recursive CTE filters (Gap 4)", fun
             excludeDeletedComments: true,
             excludeCommentPendingApproval: true,
             excludeCommentWithApprovedFalse: true,
-            excludeCommentsWithDifferentCommunityAddress: false,
             preloadedPage: "best",
             baseTimestamp: now + 100
         });

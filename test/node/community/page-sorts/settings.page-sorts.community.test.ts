@@ -336,16 +336,14 @@ describeSkipIfRpc.concurrent("settings.pages: published record", () => {
                     excludeRemovedComments: "true",
                     excludeDeletedComments: "true",
                     excludeCommentPendingApproval: "true",
-                    excludeCommentWithApprovedFalse: "true",
-                    excludeCommentsWithDifferentCommunityAddress: "true"
+                    excludeCommentWithApprovedFalse: "true"
                 };
                 const replyDefaults = {
                     pinnedFirst: "true",
                     excludeRemovedComments: "false",
                     excludeDeletedComments: "false",
                     excludeCommentPendingApproval: "true",
-                    excludeCommentWithApprovedFalse: "false",
-                    excludeCommentsWithDifferentCommunityAddress: "true"
+                    excludeCommentWithApprovedFalse: "false"
                 };
                 expect(_community.pageSorts).to.deep.equal({
                     posts: {
@@ -361,6 +359,36 @@ describeSkipIfRpc.concurrent("settings.pages: published record", () => {
                 });
             }
             expect(remoteCommunity.raw.communityIpfs?.pageSorts).to.deep.equal(community.pageSorts);
+        } finally {
+            await community.stop();
+        }
+    });
+
+    // excludeCommentsWithDifferentCommunityAddress was a reserved option until it became the always-on community identity
+    // rule (issue #401). Settings stored before then still carry it, on files that declare optionInputs too.
+    it("accepts a stored excludeCommentsWithDifferentCommunityAddress and leaves it out of publicOptions", async () => {
+        const community = (await pkc.createCommunity()) as LocalCommunity;
+        await community.edit({
+            settings: {
+                ...community.settings,
+                pages: {
+                    posts: [
+                        {
+                            path: NO_BUMP_KEYWORD_SORT_PATH,
+                            options: { noBumpKeywords: "sage", excludeCommentsWithDifferentCommunityAddress: "false" },
+                            preloaded: true
+                        }
+                    ],
+                    replies: [{ name: "old", preloaded: true, options: { excludeCommentsWithDifferentCommunityAddress: "true" } }]
+                }
+            }
+        });
+        await community.start();
+        try {
+            await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
+            expect(community.pageSorts?.posts?.active?.publicOptions).to.not.have.property("excludeCommentsWithDifferentCommunityAddress");
+            expect(community.pageSorts?.posts?.active?.publicOptions?.noBumpKeywords).to.equal("sage");
+            expect(community.pageSorts?.replies?.old?.publicOptions).to.not.have.property("excludeCommentsWithDifferentCommunityAddress");
         } finally {
             await community.stop();
         }
