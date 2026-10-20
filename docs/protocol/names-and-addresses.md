@@ -149,7 +149,7 @@ If an RPC server has no resolvers configured, any request with a domain name wil
 Every publication carries the community it was signed for: `communityPublicKey` (required; publish validation rejects
 any other key) and `communityName` (required when the community has a name, `ERR_PUBLICATION_MISSING_COMMUNITY_NAME`;
 it must equal the community's address). Both fields are signed, so they never change once a comment is stored, even
-when the owner later changes the community's address with `edit({ address })`.
+when the owner later changes the community's name.
 
 A name is part of the community's identity. Which stored comments a community still publishes is decided by the
 **community identity rule** (issue [#401](https://github.com/pkcprotocol/pkc-js/issues/401)), which is exactly what
@@ -177,6 +177,27 @@ What happens to comments published before an address change:
 | `N` → key only (the name dropped) | named `N` | yes: a community without a name does not check names, so clients still accept them |
 | `N` → key only | pre-v37, named `N`, no key | yes |
 | `N` → `M` → `N` (renamed back) | named `N` | yes again, the rule is evaluated against the current name at every page build |
+
+### Changing a community's name
+
+A local community's address is its name when it has one, else its identity key (the anchor's key on a delegated
+community), so changing the name and changing the address are one operation. `edit({ name })` and `edit({ address })`
+both move the community's DB file, its start lock and its MFS `postUpdates` folder to the new address, and from the next
+page build the identity rule above filters by the new name:
+
+| Edit | Result |
+| --- | --- |
+| `edit({ name: "m.bso" })` or `edit({ address: "m.bso" })` | name and address become `m.bso` |
+| `edit({ name: undefined })` or `edit({ address: <identity key> })` | the name is dropped, the address becomes the key |
+| `edit({ name: "m.bso", address: "m.bso" })` | accepted, same as either alone |
+| `edit({ name: "m.bso", address: "n.bso" })` | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
+| `edit({ name: undefined, address: "m.bso" })` | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
+
+The mismatch is rejected before anything is changed, so no other field of that edit is applied either: which of the two
+the owner meant is not pkc-js's guess. Before issue [#430](https://github.com/pkcprotocol/pkc-js/issues/430),
+`edit({ name })` changed only `community.name` and left the address, DB and lock on the old name. The pages then kept
+the comments signed with the old name, the community's own pre-publish check rejected every new record
+(`ERR_LOCAL_COMMUNITY_PRODUCED_INVALID_SIGNATURE`), and the renamed record was never published.
 
 A publication created with only a community's key (`createComment({ communityAddress: <key> })`) is signed again at
 `publish()` with the name of the community record it loaded, so pkc-js never sends a publication without the name to a
