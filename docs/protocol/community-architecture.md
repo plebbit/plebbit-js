@@ -84,6 +84,7 @@ The RPC server ties every subscription to one websocket connection and drops the
 
 - It retries the connection forever, with a backoff that doubles from 1s up to 30s, so a client survives a server restart or a laptop suspend.
 - After each reconnect it re-issues every live subscription (`update()`, `start()`, `community.exports`, the communities and settings lists). The server sends its current snapshot on subscribe, so each instance returns to the latest state. The events that happened during the gap are not replayed one by one.
+- `start()` is re-established with `startedCommunitySubscribe`, never `startCommunity`, so a reconnect never undoes a stop. If someone stopped the community on purpose, even while the client was away, the client gets `startedState: "stopped"` and does not try again. A community the server lost without a stop (a server restart) is started again.
 - Instances keep the subscription id they got first. The client maps the server's new id back to it, so nothing outside `PKCRpcClient` sees the change.
 - A publication in flight when the connection closes fails with `ERR_RPC_PUBLICATION_LOST_WITH_CONNECTION` and `publishingState: "failed"`. The server stopped it, and re-publishing automatically would start a challenge exchange the user never saw. Publish it again.
 - `pkc.destroy()` closes the socket and cancels any pending reconnect attempt.

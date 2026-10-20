@@ -124,6 +124,7 @@ The server registers the following methods. Param shapes are defined in `src/cli
 Each subscribe/publish method returns `{subscriptionId: number}` and streams JSON-RPC notifications until `unsubscribe` is called.
 
 - [`method: startCommunity, params: [{name?: string, publicKey?: string}]`](#startcommunity)
+- `method: startedCommunitySubscribe, params: [{name?: string, publicKey?: string}]`: same notifications as `startCommunity`, for a client re-establishing its `start()` after a reconnect. It attaches if the community is running and starts it only if it was started and never explicitly stopped since; otherwise it errors with `ERR_RPC_COMMUNITY_NOT_RUNNING`. It never overrides a stop.
 - `method: stopCommunity, params: [{name?: string, publicKey?: string}], result: {success: true}`
 - [`method: commentUpdateSubscribe, params: [{cid: string, communityPublicKey?: string, communityName?: string}]`](#commentupdatesubscribe)
 - [`method: communityUpdateSubscribe, params: [{name?: string, publicKey?: string}]`](#communityupdatesubscribe)
