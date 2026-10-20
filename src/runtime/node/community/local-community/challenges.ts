@@ -56,6 +56,14 @@ import { checkPublicationValidity, respondWithErrorIfSignatureOfPublicationIsInv
 import { createAuthorIdentityMatcher } from "./author-identity.js";
 import type { AuthorIdentityMatcher } from "./author-identity.js";
 
+// What a publisher is told about a challenge the community cannot run. An unregistered one is named, so the owner can
+// be pointed at it, but availableChallengeNames stays in the owner's error details: publishers do not get to list the
+// packages this node has installed (issue #428).
+const describeMisconfiguredChallenge = (e: Error): string =>
+    e instanceof PKCError && e.code === "ERR_CHALLENGE_NOT_REGISTERED"
+        ? `challenge "${e.details.challengeName}" is not registered on this node`
+        : e.message;
+
 export function cleanUpChallengeAnswerPromise(community: LocalCommunity, challengeRequestIdString: string) {
     community._challengeAnswerPromises.delete(challengeRequestIdString);
     community._challengeAnswerResolveReject.delete(challengeRequestIdString);
@@ -720,7 +728,7 @@ async function runChallengeExchangeIfNeeded(
         // notify the author that his publication wasn't published because the community is misconfigured
         challengeVerification = {
             challengeSuccess: false,
-            reason: `One of the community challenges is misconfigured: ${(<Error>e).message}`
+            reason: `One of the community challenges is misconfigured: ${describeMisconfiguredChallenge(<Error>e)}`
         };
     }
 

@@ -1,7 +1,8 @@
 import Logger from "../../../../logger.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { STORAGE_KEYS } from "../../../../constants.js";
-import { getCommunityChallengeFromCommunityChallengeSettings } from "../challenges/index.js";
+import { deriveCommunityChallengesOrThrow } from "../challenges/index.js";
+import type { PKCError } from "../../../../pkc-error.js";
 import {
     computePageSortsFingerprint,
     derivePublicPageSorts,
@@ -68,25 +69,35 @@ export async function syncPageSortsWithRegistry(community: LocalCommunity): Prom
 }
 
 // Recompute the record's community.challenges from the registry and republish only if it changed. A challenge whose
-// factory is gone keeps the previous record: challenge requests already fail and report it, and an unchanged record
-// costs no IPNS publish.
+// factory is gone keeps the previous record and the community keeps running: challenge requests fail and report it, and
+// an unchanged record costs no IPNS publish. The owner gets one error event per distinct set of unloadable entries
+// rather than one per cycle; the next start() refuses to come online until it is fixed (issue #428).
 export async function syncChallengesWithRegistry(community: LocalCommunity): Promise<void> {
     const log = Logger("pkc-js:local-community:registry-sync:challenges");
     const challengeSettings = community.settings?.challenges;
     if (!Array.isArray(challengeSettings)) return;
     let challenges: NonNullable<LocalCommunity["challenges"]>;
     try {
-        challenges = await Promise.all(
-            challengeSettings.map(
-                async (cs) =>
-                    (await getCommunityChallengeFromCommunityChallengeSettings({ communityChallengeSettings: cs, pkc: community._pkc }))
-                        .communityChallenge
-            )
-        );
+        challenges = await deriveCommunityChallengesOrThrow({
+            challengeSettings,
+            pkc: community._pkc,
+            communityAddress: community.address
+        });
     } catch (e) {
         log.error("Could not recompute community.challenges from the registry, keeping the previous ones", community.address, e);
+        const reported = deterministicStringify(
+            ((e as PKCError).details?.failures as { challengeIndex: number; error: PKCError }[] | undefined)?.map((f) => [
+                f.challengeIndex,
+                f.error.code
+            ]) ?? String(e)
+        );
+        if (reported !== community._reportedChallengeLoadFailures) {
+            community._reportedChallengeLoadFailures = reported;
+            community.emit("error", e as PKCError);
+        }
         return;
     }
+    community._reportedChallengeLoadFailures = undefined;
     if (deterministicStringify(challenges) === deterministicStringify(community.challenges ?? null)) return;
     log("community.challenges changed in the registry, republishing", community.address);
     community.challenges = challenges;

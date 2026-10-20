@@ -69,10 +69,14 @@ code cares about what is wrong, not about which path noticed.
 | `community.edit()` | Rejected before anything is persisted. Failures are collected across every challenge and thrown as one `PKCError` with code `ERR_CHALLENGE_SETTINGS_VALIDATION_FAILED_FOR_CHALLENGES`, whose `details.failures` is `{challengeIndex, challengeName, error}[]`, so an owner editing several challenges learns every failure at once |
 | Community creation | Throws the same aggregated error. Nothing is persisted yet, so a throw is safe |
 | `community.start()` | Emits one `error` event per invalid challenge, each carrying `{challengeIndex, challengeName, communityAddress}` in `details`. The community still starts, and the errors are re-emitted on every start until the config is fixed |
+| `community.start()`, challenge cannot be loaded | Throws `ERR_COMMUNITY_CHALLENGES_FAILED_TO_LOAD` before anything touches the network, whose `details.failures` is `{challengeIndex, challengeName?, path?, error}[]` (each `error` is `ERR_CHALLENGE_NOT_REGISTERED` for a `name` with no registered package, `ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY` for a `path` that does not import) and whose `details.availableChallengeNames` lists the names this node can run. The community stays offline until the owner removes the entry or installs the package again |
+| Running community, package uninstalled | Keeps running with the previous `community.challenges` record and emits the same `ERR_COMMUNITY_CHALLENGES_FAILED_TO_LOAD` once. Challenge requests fail; the publisher's `reason` names the challenge, while `availableChallengeNames` stays in the owner's `error` details |
 | DB migration | Silent. Surfacing config errors in the middle of a schema migration the owner did not initiate is the worst possible moment, and start catches the same problem seconds later |
 
-Start never throws by design. A config that was persisted before a check existed, or one that a stricter
-version of your challenge now rejects, must not take an owner's community down.
+Start never throws over invalid options by design. A config that was persisted before a check existed, or
+one that a stricter version of your challenge now rejects, must not take an owner's community down. A
+challenge that cannot be loaded at all is different: it can never run, so start refuses to bring the
+community online until it is fixed (issue #428).
 
 ## Publication obligations
 

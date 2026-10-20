@@ -5,7 +5,7 @@ import { PKCError } from "../../../../pkc-error.js";
 import env from "../../../../version.js";
 import { pubsubTopicToDhtKey, removeMfsFilesSafely, sleepUntilTimeoutOrAbort } from "../../../../util.js";
 import { moveCommunityDbToDeletedDirectory } from "../../util.js";
-import { getCommunityChallengeFromCommunityChallengeSettings } from "../challenges/index.js";
+import { deriveCommunityChallengesOrThrow } from "../challenges/index.js";
 import { collectChallengeSettingsValidationFailures } from "../challenges/validate-challenge-settings.js";
 import {
     findStartedCommunity,
@@ -183,6 +183,15 @@ export async function start(community: LocalCommunity) {
         await community._loadExportsFromKeyv();
 
         await setChallengesToDefaultIfNotDefined(community, log);
+        // A challenge that cannot be loaded (its package uninstalled, its path gone) can never run, so the community
+        // stays offline until the owner removes it from settings.challenges or installs it again. Checked here, before
+        // anything touches the network, and on every start (issue #428). Also makes sure community.challenges is
+        // using the latest props from settings.challenges.
+        community.challenges = await deriveCommunityChallengesOrThrow({
+            challengeSettings: community.settings.challenges!,
+            pkc: community._pkc,
+            communityAddress: community.address
+        });
         // Import community keys onto ipfs node
         await importCommunitySignerIntoIpfsIfNeeded(community);
         // Force-provides the never-changing pubsub-topic routing CIDs (the connection-critical CIDs the
@@ -198,15 +207,8 @@ export async function start(community: LocalCommunity) {
         await community._repinCommentsIPFSIfNeeded();
         await repinCommentUpdateIfNeeded(community);
         await community._listenToIncomingRequests();
-        community.challenges = await Promise.all(
-            community.settings.challenges!.map(
-                async (cs) =>
-                    (await getCommunityChallengeFromCommunityChallengeSettings({ communityChallengeSettings: cs, pkc: community._pkc }))
-                        .communityChallenge
-            )
-        ); // make sure community.challenges is using latest props from settings.challenges
 
-        // Start only reports; it never throws. A config that was persisted before these checks existed, or
+        // Option validation only reports; it never throws. A config that was persisted before these checks existed, or
         // one that a stricter challenge version now rejects, must not take startup down. It is re-emitted
         // on every start until the owner fixes it, because a suppressed error is how a misconfiguration
         // gets forgotten.
