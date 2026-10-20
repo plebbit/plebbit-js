@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.116](https://github.com/pkcprotocol/pkc-js/compare/v0.0.115...v0.0.116) (2026-10-20)
+
+### Bug Fixes
+
+* **community:** keep a purge and its moderation row when MFS cleanup fails ([#420](https://github.com/pkcprotocol/pkc-js/issues/420)) ([#421](https://github.com/pkcprotocol/pkc-js/issues/421)) ([3db8af3](https://github.com/pkcprotocol/pkc-js/commit/3db8af3a2bda422586e704b41945fe1c257408d8))
+
 ## [0.0.115](https://github.com/pkcprotocol/pkc-js/compare/v0.0.114...v0.0.115) (2026-10-19)
 
 ### Features
