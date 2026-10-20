@@ -6,8 +6,11 @@
 // notification handler is bound to the old socket object, which rpc-websockets replaces on
 // reconnect. The instances keep their state and emit nothing, so the consumer cannot tell.
 //
-// The contract asserted: as long as the client can reconnect, an earlier update() or publish()
-// keeps emitting its events, with no action from the consumer. An error is not enough.
+// The contract asserted: as long as the client can reconnect, an earlier update(), start() or
+// subscription keeps emitting its events, with no action from the consumer. An error is not
+// enough. The one exception is a publication in flight: the server stops it on disconnect and
+// re-publishing behind the user's back would start a challenge exchange they never saw, so it must
+// fail loudly with ERR_RPC_PUBLICATION_LOST_AFTER_RECONNECT and publishingState "failed".
 //
 // One case per subscription type the RPC server exposes:
 //   communityUpdateSubscribe  community.update()
@@ -24,10 +27,16 @@
 // a server restart or a laptop suspend):
 //   live     the client reconnects, then the event happens. It must be delivered.
 //   backlog  the event happens while the client is disconnected (auto-reconnect is held off until
-//            the server has emitted it), then the client reconnects. It must still be delivered:
-//            for the state subscriptions as the latest state, for a publication as the challenge
-//            the community sent during the gap.
+//            the server has emitted it), then the client reconnects. It must still be delivered,
+//            as the latest state: the server keeps no events for a dropped connection, the
+//            re-issued subscription's snapshot carries the state instead.
+//
+// The last block covers the connection itself: the client keeps retrying past rpc-websockets'
+// default of 5 attempts (a laptop waking from suspend may take a while to get its network back),
+// and pkc.destroy() leaves no connection or pending reconnect behind, whether it runs while
+// connected or during the retry backoff.
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import type { Server as HTTPServer } from "node:http";
 import PKC from "../../../dist/node/index.js";
 import { mockRpcServerPKC, publishRandomPost, publishRandomReply } from "../../../dist/node/test/test-util.js";
 import { createInProcessRpcServer, pollUntil, uniqueTmpDataPath, type PKCWsServerType } from "../../helpers/rpc-server-harness.js";
@@ -55,7 +64,10 @@ type Mode = "live" | "backlog";
 type Outcome = "delivered" | "errored" | "silent";
 
 type RpcServerInternals = {
-    rpcWebsockets: { wss: { clients: Set<{ terminate: () => void }> } };
+    rpcWebsockets: {
+        wss: { clients: Set<{ terminate: () => void }>; on: (event: "connection", listener: () => void) => unknown };
+    };
+    _httpServer: HTTPServer;
     _pendingDisconnectionCleanups: Set<Promise<void>>;
     _exportCommunityInstances: Map<string, LocalCommunity>;
     getStartedCommunity: (address: string) => Promise<LocalCommunity>;
@@ -65,8 +77,12 @@ type RpcClientInternals = {
     state: string;
     on: (event: "statechange", listener: (state: string) => void) => unknown;
     removeListener: (event: "statechange", listener: (state: string) => void) => unknown;
-    _webSocketClient: { setAutoReconnect: (reconnect: boolean) => void; connect: () => void };
+    _webSocketClient: { setAutoReconnect: (reconnect: boolean) => void; connect: () => void; getCurrentReconnects: () => number };
+    _reconnectBaseIntervalMs: number;
+    _reconnectMaxIntervalMs: number;
 };
+
+type ErrorWithCode = Error & { code?: string };
 
 type ErrorEmitter = { on: (event: "error", listener: (error: Error) => void) => unknown };
 
@@ -76,6 +92,8 @@ type ReconnectCase = {
     trigger: () => Promise<void>;
     delivered: () => boolean;
     cleanup: () => Promise<void>;
+    // Set when the case must fail loudly instead of delivering (a publication in flight)
+    expectedErrorCode?: string;
 };
 
 // A challenge the test can hold server-side. Disarmed it passes every request outright, so the
@@ -164,7 +182,7 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
     // the order the mode asks for, then waits for delivery
     async function runReconnectCase(opts: { client: PKCType; mode: Mode; errorEmitters: ErrorEmitter[]; testCase: ReconnectCase }) {
         const { client, mode, testCase } = opts;
-        const errors: Error[] = [];
+        const errors: ErrorWithCode[] = [];
         try {
             const { reconnect } = await dropConnection(client, mode);
             for (const emitter of opts.errorEmitters) emitter.on("error", (error) => errors.push(error));
@@ -174,6 +192,15 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
             } else {
                 await testCase.trigger();
                 await reconnect();
+            }
+            if (testCase.expectedErrorCode) {
+                const code = testCase.expectedErrorCode;
+                await pollUntil(() => errors.some((e) => e.code === code), { timeoutMs: DELIVERY_WINDOW_MS });
+                expect({ errorCodes: errors.map((e) => e.code), delivered: testCase.delivered() }).toEqual({
+                    errorCodes: [code],
+                    delivered: false
+                });
+                return;
             }
             await pollUntil(() => testCase.delivered(), { timeoutMs: DELIVERY_WINDOW_MS });
             const outcome: Outcome = testCase.delivered() ? "delivered" : errors.length > 0 ? "errored" : "silent";
@@ -320,6 +347,7 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
                 on: (event: "challenge" | "challengeverification", listener: () => void) => unknown;
                 publish: () => Promise<void>;
                 stop: () => Promise<void>;
+                publishingState: string;
             };
             const publicationCases: { rpcMethod: string; create: (client: PKCType, signer: SignerType) => Promise<unknown> }[] = [
                 {
@@ -369,7 +397,7 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
             ];
 
             for (const { rpcMethod, create } of publicationCases) {
-                it(`a publication waiting for its challenge receives it (${rpcMethod})`, async () => {
+                it(`a publication waiting for its challenge fails loudly instead of going silent (${rpcMethod})`, async () => {
                     const client = await createClient();
                     const signer = await client.createSigner({ privateKey: publisherSigner.privateKey, type: "ed25519" });
                     const publication = <PublicationLike>await create(client, signer);
@@ -396,7 +424,9 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
                                 await challengeSent;
                             },
                             delivered: () => challengeReceived,
+                            expectedErrorCode: "ERR_RPC_PUBLICATION_LOST_AFTER_RECONNECT",
                             cleanup: async () => {
+                                expect(publication.publishingState).toBe("failed");
                                 gate.armed = false;
                                 gate.release?.();
                                 await publication.stop().catch((): undefined => undefined);
@@ -490,4 +520,107 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
             });
         });
     }
+
+    describe("the connection itself", () => {
+        // Stop the server accepting connections: terminate the open sockets and close the listener,
+        // so every reconnect attempt fails with ECONNREFUSED. restore() listens on the same port again
+        async function takeServerDown(): Promise<{ restore: () => Promise<void> }> {
+            const httpServer = serverInternals()._httpServer;
+            const address = httpServer.address();
+            if (!address || typeof address !== "object") throw new Error("Test setup failed: the RPC server has no bound port");
+            const closed = new Promise<void>((resolve) => httpServer.close(() => resolve()));
+            for (const socket of serverInternals().rpcWebsockets.wss.clients) socket.terminate();
+            await closed;
+            await Promise.all([...serverInternals()._pendingDisconnectionCleanups]);
+            return {
+                restore: () =>
+                    new Promise<void>((resolve, reject) => {
+                        httpServer.once("error", reject);
+                        httpServer.listen(address.port, () => {
+                            httpServer.removeListener("error", reject);
+                            resolve();
+                        });
+                    })
+            };
+        }
+
+        // Fast backoff so a test can watch many failed attempts in a few seconds
+        function useFastBackoff(client: PKCType) {
+            const rpcClient = rpcClientOf(client);
+            rpcClient._reconnectBaseIntervalMs = 50;
+            rpcClient._reconnectMaxIntervalMs = 200;
+        }
+
+        it("keeps reconnecting past rpc-websockets' default 5 attempts, then delivers updates again", async () => {
+            const client = await createClient();
+            useFastBackoff(client);
+            const community = await client.createCommunity({ address: updatingCommunity.address });
+            await community.update();
+            await pollUntil(() => typeof community.updatedAt === "number", { timeoutMs: 30_000 });
+            const rpcClient = rpcClientOf(client);
+
+            const { restore } = await takeServerDown();
+            let restored = false;
+            try {
+                await pollUntil(() => rpcClient._webSocketClient.getCurrentReconnects() > 8, { timeoutMs: 15_000 });
+                expect(rpcClient._webSocketClient.getCurrentReconnects()).toBeGreaterThan(8);
+                await restore();
+                restored = true;
+                await pollUntil(() => rpcClient.state === "connected", { timeoutMs: 15_000 });
+                expect(rpcClient.state).toBe("connected");
+
+                const titleAfterOutage = `after outage ${Date.now()}`;
+                await editAndAwaitPublish(updatingCommunity, { title: titleAfterOutage });
+                await pollUntil(() => community.title === titleAfterOutage, { timeoutMs: DELIVERY_WINDOW_MS });
+                expect(community.title).toBe(titleAfterOutage);
+            } finally {
+                if (!restored) await restore();
+                await community.stop();
+            }
+        });
+
+        it("pkc.destroy() during the reconnect backoff leaves no connection and no pending reconnect", async () => {
+            const client = await createClient();
+            useFastBackoff(client);
+            const community = await client.createCommunity({ address: updatingCommunity.address });
+            await community.update();
+            await pollUntil(() => typeof community.updatedAt === "number", { timeoutMs: 30_000 });
+            const rpcClient = rpcClientOf(client);
+
+            const { restore } = await takeServerDown();
+            await pollUntil(() => rpcClient._webSocketClient.getCurrentReconnects() > 2, { timeoutMs: 15_000 });
+            await client.destroy();
+
+            let connectionsAfterDestroy = 0;
+            serverInternals().rpcWebsockets.wss.on("connection", () => connectionsAfterDestroy++);
+            await restore();
+            // Several max backoff intervals: a reconnect timer left behind by destroy() would fire in here
+            await new Promise((resolve) => setTimeout(resolve, 2_000));
+            expect({
+                connectionsAfterDestroy,
+                openServerConnections: serverInternals().rpcWebsockets.wss.clients.size,
+                rpcClientState: rpcClient.state
+            }).toEqual({ connectionsAfterDestroy: 0, openServerConnections: 0, rpcClientState: "stopped" });
+        });
+
+        it("pkc.destroy() while connected closes the connection and nothing reconnects", async () => {
+            const client = await createClient();
+            useFastBackoff(client);
+            const community = await client.createCommunity({ address: updatingCommunity.address });
+            await community.update();
+            await pollUntil(() => typeof community.updatedAt === "number", { timeoutMs: 30_000 });
+            const rpcClient = rpcClientOf(client);
+            expect(serverInternals().rpcWebsockets.wss.clients.size).toBe(1);
+
+            let connectionsAfterDestroy = 0;
+            serverInternals().rpcWebsockets.wss.on("connection", () => connectionsAfterDestroy++);
+            await client.destroy();
+            await new Promise((resolve) => setTimeout(resolve, 2_000));
+            expect({
+                connectionsAfterDestroy,
+                openServerConnections: serverInternals().rpcWebsockets.wss.clients.size,
+                rpcClientState: rpcClient.state
+            }).toEqual({ connectionsAfterDestroy: 0, openServerConnections: 0, rpcClientState: "stopped" });
+        });
+    });
 });
