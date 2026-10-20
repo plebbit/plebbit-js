@@ -31,6 +31,10 @@
 //            as the latest state: the server keeps no events for a dropped connection, the
 //            re-issued subscription's snapshot carries the state instead.
 //
+// A start() is re-established without ever overriding a stop it did not make: a community someone
+// else stopped, while this client was connected or while it was away, stays stopped and the client
+// is told so. One the server lost without a stop (a server restart) is started again.
+//
 // The last block covers the connection itself: the client keeps retrying past rpc-websockets'
 // default of 5 attempts (a laptop waking from suspend may take a while to get its network back),
 // and pkc.destroy() leaves no connection or pending reconnect behind, whether it runs while
@@ -64,6 +68,9 @@ type Mode = "live" | "backlog";
 type Outcome = "delivered" | "errored" | "silent";
 
 type RpcServerInternals = {
+    _startedCommunities: Record<string, unknown>;
+    _getRpcStateDb: () => { prepare: (sql: string) => { get: (...args: unknown[]) => unknown } } | undefined;
+    stopCommunity: (params: unknown[]) => Promise<unknown>;
     rpcWebsockets: {
         wss: { clients: Set<{ terminate: () => void }>; on: (event: "connection", listener: () => void) => unknown };
     };
@@ -521,6 +528,80 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
             });
         });
     }
+
+    describe("start() across a reconnect never undoes a stop it did not make", () => {
+        // Resolves to the server's persisted auto-start record for the community
+        const persistedStartState = (address: string) =>
+            serverInternals()
+                ._getRpcStateDb()
+                ?.prepare("SELECT wasStarted, wasExplicitlyStopped FROM community_states WHERE address = ?")
+                .get(address) as { wasStarted: number; wasExplicitlyStopped: number } | undefined;
+
+        async function startCommunityOverRpc() {
+            const communityToStart = <LocalCommunity>await serverPKC.createCommunity({});
+            await communityToStart.edit({ settings: { challenges: [] } });
+            const client = await createClient();
+            const community = <RpcLocalCommunity>await client.createCommunity({ address: communityToStart.address });
+            await community.start();
+            await pollUntil(() => typeof community.updatedAt === "number", { timeoutMs: 30_000 });
+            expect(community.updatedAt).toBeTypeOf("number");
+            return { client, community, address: communityToStart.address, publicKey: communityToStart.publicKey! };
+        }
+
+        it("a community stopped by someone else while this client was connected stays stopped after the reconnect", async () => {
+            const { client, community, address, publicKey } = await startCommunityOverRpc();
+            await serverInternals().stopCommunity([{ publicKey }]);
+            await pollUntil(() => community.startedState === "stopped", { timeoutMs: 15_000 });
+            expect(community.startedState).toBe("stopped");
+
+            const { reconnect } = await dropConnection(client, "live");
+            await reconnect();
+            // Long enough for a re-issued start to have reached the server and started the community
+            await new Promise((resolve) => setTimeout(resolve, 3_000));
+            expect({
+                runningOnServer: address in serverInternals()._startedCommunities,
+                persisted: persistedStartState(address)
+            }).toEqual({ runningOnServer: false, persisted: { wasStarted: 1, wasExplicitlyStopped: 1 } });
+        });
+
+        it("a community stopped by someone else while this client was disconnected stays stopped, and the client is told", async () => {
+            const { client, community, address, publicKey } = await startCommunityOverRpc();
+            const { reconnect } = await dropConnection(client, "backlog");
+            await serverInternals().stopCommunity([{ publicKey }]);
+            expect(community.startedState).not.toBe("stopped");
+
+            await reconnect();
+            await pollUntil(() => community.startedState === "stopped", { timeoutMs: DELIVERY_WINDOW_MS });
+            expect({
+                clientStartedState: community.startedState,
+                runningOnServer: address in serverInternals()._startedCommunities,
+                persisted: persistedStartState(address)
+            }).toEqual({
+                clientStartedState: "stopped",
+                runningOnServer: false,
+                persisted: { wasStarted: 1, wasExplicitlyStopped: 1 }
+            });
+        });
+
+        it("a community the server lost without a stop (a server restart) is started again by the reconnect", async () => {
+            const { client, community, address } = await startCommunityOverRpc();
+            const { reconnect } = await dropConnection(client, "backlog");
+            // What a server restart looks like from here: the running instance is gone, the
+            // persisted record still says started and not explicitly stopped
+            const serverSideStarted = await serverInternals().getStartedCommunity(address);
+            await serverSideStarted.stop();
+            delete serverInternals()._startedCommunities[address];
+
+            await reconnect();
+            await pollUntil(() => address in serverInternals()._startedCommunities, { timeoutMs: DELIVERY_WINDOW_MS });
+            const restarted = await serverInternals().getStartedCommunity(address);
+            const titleAfterRestart = `after restart ${Date.now()}`;
+            await editAndAwaitPublish(restarted, { title: titleAfterRestart });
+            await pollUntil(() => community.title === titleAfterRestart, { timeoutMs: DELIVERY_WINDOW_MS });
+            expect(community.title).toBe(titleAfterRestart);
+            await community.stop();
+        });
+    });
 
     describe("the connection itself", () => {
         // The earlier cases leave their clients connected (afterAll destroys them), and those would
