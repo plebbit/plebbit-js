@@ -50,13 +50,16 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
         );
     };
 
-    const waitUntilNextSync = async () => {
+    // A failed cycle leaves the update trigger set, so waking on it would retry on the next 100ms tick and emit the same
+    // error about ten times a second (issue #430). After a failure the loop waits the full sync interval instead.
+    const waitUntilNextSync = async ({ lastSyncFailed }: { lastSyncFailed: boolean }) => {
         const doneWithLoopTime = Date.now();
         await new Promise((resolve) => {
             const checkInterval = setInterval(() => {
                 const syncIntervalMsPassedSinceDoneWithLoop = Date.now() - doneWithLoopTime >= syncIntervalMs;
                 calculateLatestUpdateTrigger(community); // will update community._communityUpdateTrigger
-                if (community._communityUpdateTrigger || shouldStopPublishLoop() || syncIntervalMsPassedSinceDoneWithLoop) {
+                const wokenByTrigger = community._communityUpdateTrigger && !lastSyncFailed;
+                if (wokenByTrigger || shouldStopPublishLoop() || syncIntervalMsPassedSinceDoneWithLoop) {
                     clearInterval(checkInterval);
                     resolve(1);
                 }
@@ -65,6 +68,7 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
     };
 
     while (!shouldStopPublishLoop()) {
+        let lastSyncFailed = false;
         try {
             await syncIpnsWithDb(community);
             // Re-announce browser-dialable (WSS/WebRTC) addresses to HTTP routers when they rotate, so browsers
@@ -78,10 +82,11 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
             // must not break publishing either.
             await reprovideAnchorRecordIfDue(community).catch((e) => log.error("Failed to re-provide the anchor record", e));
         } catch (e) {
+            lastSyncFailed = true;
             if (community._stopHasBeenCalled) syncFailedSinceStop = true;
             community.emit("error", e as Error);
         } finally {
-            await waitUntilNextSync();
+            await waitUntilNextSync({ lastSyncFailed });
         }
     }
     log("Stopping the publishing loop of community", community.address);
