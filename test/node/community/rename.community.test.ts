@@ -7,7 +7,8 @@ import {
     createSubWithNoChallenge,
     resolveWhenConditionIsTrue,
     waitTillPostInCommunityPages,
-    waitTillReplyInParentPages
+    waitTillReplyInParentPages,
+    publishWithExpectedResult
 } from "../../../dist/node/test/test-util.js";
 import { describeSkipIfRpc } from "../../helpers/conditional-tests.js";
 import { v4 as uuidV4 } from "uuid";
@@ -79,7 +80,8 @@ for (const editKey of ["name", "address"] as const) {
         });
 
         it(`publishes a record with the new name instead of failing its own signature check`, async () => {
-            const updatedAtBeforeEdit = community.updatedAt!;
+            // updateCid changes only when a record is published; edit() itself already sets name and raw.communityIpfs
+            const updateCidBeforeEdit = community.updateCid;
             let failed = false;
             const onStartedState = (state: string) => {
                 if (state === "failed") failed = true;
@@ -88,13 +90,12 @@ for (const editKey of ["name", "address"] as const) {
             await community.edit({ [editKey]: newName });
             await resolveWhenConditionIsTrue({
                 toUpdate: community,
-                predicate: async () => failed || community.updatedAt! > updatedAtBeforeEdit,
+                predicate: async () => failed || community.updateCid !== updateCidBeforeEdit,
                 eventName: "startedstatechange"
             });
             community.removeListener("startedstatechange", onStartedState);
 
             expect(failed).to.be.false;
-            expect(community.updatedAt).to.be.greaterThan(updatedAtBeforeEdit);
             expect(community.name).to.equal(newName);
             expect(community.address).to.equal(newName);
         });
@@ -139,9 +140,9 @@ for (const editKey of ["name", "address"] as const) {
             community = (await pkc.createCommunity({ address: newName })) as LocalCommunity | RpcLocalCommunity;
             expect(community.name).to.equal(newName);
             expect(community.address).to.equal(newName);
-            const updatedAtBeforeStart = community.updatedAt!;
+            const updateCidBeforeStart = community.updateCid;
             await community.start();
-            await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => community.updatedAt! > updatedAtBeforeStart });
+            await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => community.updateCid !== updateCidBeforeStart });
             expect(community.name).to.equal(newName);
         });
     });
@@ -185,11 +186,11 @@ for (const [editKey, describeTitle] of [
         });
 
         it(`publishes a record without a name, under the public key`, async () => {
-            const updatedAtBeforeEdit = community.updatedAt!;
+            const updateCidBeforeEdit = community.updateCid;
             await community.edit(editKey === "name" ? { name: undefined } : { address: publicKey });
             expect(community.address).to.equal(publicKey);
             expect(community.name).to.be.undefined;
-            await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => community.updatedAt! > updatedAtBeforeEdit });
+            await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => community.updateCid !== updateCidBeforeEdit });
             expect(community.startedState).to.not.equal("failed");
             expect(community.name).to.be.undefined;
             expect(await (community as LocalCommunity)._dbHandler.isCommunityStartLocked(publicKey)).to.be.true;
@@ -209,6 +210,64 @@ for (const [editKey, describeTitle] of [
         });
     });
 }
+
+// An owner can rename the community over pubsub with a CommunityEdit publication. The community applies it through the
+// same edit(), which now stops and restarts it to move the address while the challenge exchange is still in flight.
+// Skipped under RPC because it inspects the LocalCommunity's address and start locks
+describeSkipIfRpc(`Renaming a community that has comments through an owner's CommunityEdit publication`, async () => {
+    let pkc: PKCType;
+    let remotePKC: PKCType;
+    let community: LocalCommunity | RpcLocalCommunity;
+    let oldName: string;
+    let newName: string;
+    let post: Comment & { cid: string };
+
+    beforeAll(async () => {
+        let records: Map<string, string | undefined>;
+        ({ pkc, remotePKC, records } = await createPKCsWithResolverRecords());
+        const signer = await pkc.createSigner();
+        oldName = `pubsub-rename-old-${uuidV4()}.bso`;
+        newName = `pubsub-rename-new-${uuidV4()}.bso`;
+        records.set(oldName, signer.address);
+        records.set(newName, signer.address);
+        community = await createSubWithNoChallenge({ signer }, pkc);
+        await community.edit({ address: oldName });
+        await community.start();
+        await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
+        post = (await publishRandomPost({ communityAddress: community.address, pkc })) as Comment & { cid: string };
+        await waitTillPostInCommunityPages(post, pkc);
+    });
+
+    afterAll(async () => {
+        await community.delete();
+        await pkc.destroy();
+        await remotePKC.destroy();
+    });
+
+    it(`renames the community and answers the owner with challenge success`, async () => {
+        const ownerSigner = await remotePKC.createSigner();
+        const updateCidBeforeRoles = community.updateCid;
+        await community.edit({ roles: { [ownerSigner.address]: { role: "owner" } } });
+        // the roles record first, so the updateCid change awaited below can only come from the rename's record
+        await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => community.updateCid !== updateCidBeforeRoles });
+        const updateCidBeforeRename = community.updateCid;
+        const communityEdit = await remotePKC.createCommunityEdit({
+            communityEdit: { name: newName },
+            communityAddress: oldName,
+            signer: ownerSigner
+        });
+        await publishWithExpectedResult({ publication: communityEdit, expectedChallengeSuccess: true });
+        await resolveWhenConditionIsTrue({
+            toUpdate: community,
+            predicate: async () => community.name === newName && community.updateCid !== updateCidBeforeRename
+        });
+        expect(community.address).to.equal(newName);
+        expect(community.startedState).to.not.equal("failed");
+        expect(await (community as LocalCommunity)._dbHandler.isCommunityStartLocked(newName)).to.be.true;
+        expect(await (community as LocalCommunity)._dbHandler.isCommunityStartLocked(oldName)).to.be.false;
+        expect(postsInPreloadedPages(community).map((comment) => comment.cid)).to.not.include(post.cid);
+    });
+});
 
 // edit() accepts name and address together only when they name the same address (issue #430): which one wins is the
 // owner's call, so a disagreement is rejected before anything is changed.
