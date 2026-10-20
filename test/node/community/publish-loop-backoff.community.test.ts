@@ -52,3 +52,51 @@ describeSkipIfRpc(`Publish loop after a failed sync cycle`, async () => {
         expect(community.startedState).to.not.equal("failed");
     });
 });
+
+// The backoff after a failed cycle must not hold back a new trigger: an owner who calls edit() to fix whatever made the
+// cycle fail should see the edit published on the next tick, not a full publishInterval later. A large publishInterval
+// separates the two outcomes.
+// Skipped under RPC because it stubs a method on the LocalCommunity instance, which lives in the RPC server
+describeSkipIfRpc(`Publish loop after a failed sync cycle, then an edit()`, async () => {
+    const publishInterval = 6000;
+    let pkc: PKCType;
+    let community: LocalCommunity;
+
+    beforeAll(async () => {
+        pkc = await mockPKC({ publishInterval });
+        community = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+        await community.start();
+        await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
+    });
+
+    afterAll(async () => {
+        await community.delete();
+        await pkc.destroy();
+    });
+
+    it(`publishes an edit made after a failed cycle without waiting a full publishInterval`, async () => {
+        let failing = true;
+        const originalValidate = community._validateCommunitySizeSchemaAndSignatureBeforePublishing.bind(community);
+        community._validateCommunitySizeSchemaAndSignatureBeforePublishing = async (...args) => {
+            if (failing)
+                throw new PKCError("ERR_LOCAL_COMMUNITY_PRODUCED_INVALID_SIGNATURE", { reason: "stubbed by publish-loop-backoff test" });
+            return originalValidate(...args);
+        };
+        try {
+            const failedCycle = new Promise<void>((resolve) => community.once("error", () => resolve()));
+            await community.edit({ title: "trigger a failing cycle " + Date.now() });
+            await failedCycle;
+
+            failing = false;
+            const updateCidBeforeEdit = community.updateCid;
+            const editedAt = Date.now();
+            await community.edit({ title: "the owner's fix " + Date.now() });
+            await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => community.updateCid !== updateCidBeforeEdit });
+            const publishedAfterMs = Date.now() - editedAt;
+            console.log(`edit after a failed cycle was published after ${publishedAfterMs}ms (publishInterval ${publishInterval}ms)`);
+            expect(publishedAfterMs).to.be.lessThan(2000);
+        } finally {
+            community._validateCommunitySizeSchemaAndSignatureBeforePublishing = originalValidate;
+        }
+    });
+});
