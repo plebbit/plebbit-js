@@ -103,7 +103,7 @@ export async function collectChallengeSettingsValidationFailures({
 }): Promise<ChallengeSettingsValidationFailure[]> {
     const failures: ChallengeSettingsValidationFailure[] = [];
     for (const [challengeIndex, communityChallengeSettings] of challengeSettings.entries()) {
-        const challengeFile = await loadChallengeFileFromCommunityChallengeSettings({ communityChallengeSettings, pkc });
+        const challengeFile = await loadChallengeFileFromCommunityChallengeSettings({ communityChallengeSettings, challengeIndex, pkc });
         const error = validateChallengeSettingsAgainstChallengeFile({
             challengeSettings: communityChallengeSettings,
             challengeFile,

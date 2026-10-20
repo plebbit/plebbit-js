@@ -146,6 +146,9 @@ export class LocalCommunity extends RpcLocalCommunity implements CreateNewLocalC
     // The registry factory each settings.pages entry resolved to when _pageSorts was built (lookupPageSortFactories).
     // Each cycle compares it with === to notice a package replaced in the registry (issue #411).
     _pageSortFactories: (PageSortFileFactoryInput | undefined)[] | undefined = undefined;
+    // The unloadable settings.challenges entries syncChallengesWithRegistry last reported, so a package that stays
+    // uninstalled is reported once instead of on every cycle (issue #428).
+    _reportedChallengeLoadFailures: string | undefined = undefined;
     _dbHandler!: DbHandler;
     _stopHasBeenCalled: boolean; // we use this to track if community.stop() has been called after community.start() or community.update()
     _publishLoopPromise?: Promise<void> = undefined;
