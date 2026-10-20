@@ -213,7 +213,14 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
                     this.setState("failed");
                     return;
                 }
-                this.emit("error", error);
+                // This runs inside ws's error event, ahead of the close event that schedules the next
+                // reconnect attempt. A throw here (an "error" emit with no listener on the PKC) would
+                // skip that close and end the reconnect loop for good, or crash the process
+                try {
+                    this.emit("error", error);
+                } catch (emitError) {
+                    log.error("No listener received the RPC websocket error", this._websocketServerUrl, emitError);
+                }
             });
 
             this._webSocketClient.on("close", () => {

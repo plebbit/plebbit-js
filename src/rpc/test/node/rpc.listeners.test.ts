@@ -117,9 +117,14 @@ describeSkipIfRpc("PKCWsServer listener lifecycle", function () {
 
         let capturedCommunity: LocalCommunity | undefined;
         const originalSetup = rpcServer._setupStartedEvents;
-        rpcServer._setupStartedEvents = function (community: LocalCommunity, connId: string, subscriptionId: number) {
+        rpcServer._setupStartedEvents = function (
+            community: LocalCommunity,
+            connId: string,
+            subscriptionId: number,
+            setupOpts?: { sendSnapshot?: boolean }
+        ) {
             capturedCommunity = community;
-            return originalSetup.call(this, community, connId, subscriptionId);
+            return originalSetup.call(this, community, connId, subscriptionId, setupOpts);
         };
 
         try {
@@ -172,9 +177,14 @@ describeSkipIfRpc("PKCWsServer listener lifecycle", function () {
 
         let capturedCommunity: LocalCommunity | undefined;
         const originalSetup = rpcServer._setupStartedEvents;
-        rpcServer._setupStartedEvents = function (community: LocalCommunity, connId: string, subscriptionId: number) {
+        rpcServer._setupStartedEvents = function (
+            community: LocalCommunity,
+            connId: string,
+            subscriptionId: number,
+            setupOpts?: { sendSnapshot?: boolean }
+        ) {
             capturedCommunity = community;
-            return originalSetup.call(this, community, connId, subscriptionId);
+            return originalSetup.call(this, community, connId, subscriptionId, setupOpts);
         };
 
         try {

@@ -183,9 +183,10 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
     async function runReconnectCase(opts: { client: PKCType; mode: Mode; errorEmitters: ErrorEmitter[]; testCase: ReconnectCase }) {
         const { client, mode, testCase } = opts;
         const errors: ErrorWithCode[] = [];
+        // Attached before the drop: a publication fails as the connection closes
+        for (const emitter of opts.errorEmitters) emitter.on("error", (error) => errors.push(error));
         try {
             const { reconnect } = await dropConnection(client, mode);
-            for (const emitter of opts.errorEmitters) emitter.on("error", (error) => errors.push(error));
             if (mode === "live") {
                 await reconnect();
                 await testCase.trigger();

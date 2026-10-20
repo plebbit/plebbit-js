@@ -680,7 +680,10 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         if (listenersByEvent.size === 0) this._trackedCommunityListeners.delete(community);
     }
 
-    _setupStartedEvents(community: LocalCommunity, connectionId: string, subscriptionId: number) {
+    // sendSnapshot: send the community's current state right away. For a subscriber attaching to a community
+    // that is already running, which would otherwise hear nothing until its next publish (a second client, or
+    // a client re-subscribing after a reconnect, #425)
+    _setupStartedEvents(community: LocalCommunity, connectionId: string, subscriptionId: number, opts?: { sendSnapshot?: boolean }) {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "startCommunity", subscription: subscriptionId, event, result, connectionId });
 
@@ -701,6 +704,7 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         };
         community.on("update", updateListener);
         this._trackCommunityListener(community, "update", updateListener);
+        if (opts?.sendSnapshot) updateListener();
 
         const startedStateListener = () => sendEvent("startedstatechange", { state: community.startedState });
         community.on("startedstatechange", startedStateListener);
@@ -771,7 +775,7 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
             const isCommunityStarted = address in this._startedCommunities;
             if (isCommunityStarted) {
                 const community = await this.getStartedCommunity(address);
-                this._setupStartedEvents(community, connectionId, subscriptionId);
+                this._setupStartedEvents(community, connectionId, subscriptionId, { sendSnapshot: true });
             } else {
                 try {
                     this._startedCommunities[address] = "pending";
