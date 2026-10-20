@@ -35,7 +35,7 @@
 // default of 5 attempts (a laptop waking from suspend may take a while to get its network back),
 // and pkc.destroy() leaves no connection or pending reconnect behind, whether it runs while
 // connected or during the retry backoff.
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, beforeEach, expect } from "vitest";
 import type { Server as HTTPServer } from "node:http";
 import PKC from "../../../dist/node/index.js";
 import { mockRpcServerPKC, publishRandomPost, publishRandomReply } from "../../../dist/node/test/test-util.js";
@@ -523,6 +523,12 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
     }
 
     describe("the connection itself", () => {
+        // The earlier cases leave their clients connected (afterAll destroys them), and those would
+        // reconnect through every outage here and show up in the server's connection counts
+        beforeEach(async () => {
+            for (const client of clients) if (!client.destroyed) await client.destroy();
+        });
+
         // Stop the server accepting connections: terminate the open sockets and close the listener,
         // so every reconnect attempt fails with ECONNREFUSED. restore() listens on the same port again
         async function takeServerDown(): Promise<{ restore: () => Promise<void> }> {
