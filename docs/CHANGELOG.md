@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.118](https://github.com/pkcprotocol/pkc-js/compare/v0.0.117...v0.0.118) (2026-10-20)
+
+### Bug Fixes
+
+* **challenges:** name unregistered challenges and refuse to start until they load ([#429](https://github.com/pkcprotocol/pkc-js/issues/429)) ([9ddba5a](https://github.com/pkcprotocol/pkc-js/commit/9ddba5a7fb5cf86747fbe19a6e2c482bfa116212)), closes [#428](https://github.com/pkcprotocol/pkc-js/issues/428) [#428](https://github.com/pkcprotocol/pkc-js/issues/428) [#428](https://github.com/pkcprotocol/pkc-js/issues/428)
+
 ## [0.0.117](https://github.com/pkcprotocol/pkc-js/compare/v0.0.116...v0.0.117) (2026-10-20)
 
 ### Bug Fixes
