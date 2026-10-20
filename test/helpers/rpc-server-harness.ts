@@ -118,11 +118,16 @@ export function wrapCommunityUpdateSubscriptionBind(opts: {
 // its response, so anything it emits precedes { subscriptionId } on the wire.
 export function wrapStartedEventsSetup(opts: { rpcServer: PKCWsServerType; onSetup: (community: LocalCommunity) => void }): void {
     const server = opts.rpcServer as unknown as {
-        _setupStartedEvents: (community: LocalCommunity, connectionId: string, subscriptionId: number) => void;
+        _setupStartedEvents: (
+            community: LocalCommunity,
+            connectionId: string,
+            subscriptionId: number,
+            setupOpts?: { sendSnapshot?: boolean }
+        ) => void;
     };
     const originalSetup = server._setupStartedEvents.bind(opts.rpcServer);
-    vi.spyOn(server, "_setupStartedEvents").mockImplementation((community, connectionId, subscriptionId) => {
-        originalSetup(community, connectionId, subscriptionId);
+    vi.spyOn(server, "_setupStartedEvents").mockImplementation((community, connectionId, subscriptionId, setupOpts) => {
+        originalSetup(community, connectionId, subscriptionId, setupOpts);
         opts.onSetup(community);
     });
 }

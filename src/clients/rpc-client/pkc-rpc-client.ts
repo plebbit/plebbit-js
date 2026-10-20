@@ -86,6 +86,20 @@ const DESTROY_SOCKET_CLOSE_TIMEOUT_MS = 5_000;
 // the attach and the buffered replay accordingly.
 const scheduleMacrotask: typeof setTimeout = setTimeout.bind(globalThis);
 
+// A JSON-RPC notification: one event on one subscription. `result` is the event's payload, shaped per
+// method and event, and narrowed by the handler the instance attached for it
+interface RpcSubscriptionNotification {
+    params: { subscription: number; event: string; result: unknown };
+}
+
+function isRpcSubscriptionNotification(message: unknown): message is RpcSubscriptionNotification {
+    if (typeof message !== "object" || message === null || !("params" in message)) return false;
+    const params = (message as { params: unknown }).params;
+    if (typeof params !== "object" || params === null) return false;
+    const { subscription, event } = params as { subscription?: unknown; event?: unknown };
+    return typeof subscription === "number" && subscription > 0 && typeof event === "string";
+}
+
 export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
     state: "stopped" | "connecting" | "failed" | "connected";
     communities: string[];
@@ -94,9 +108,33 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
     private _webSocketClient: WebSocketClient;
     private _websocketServerUrl: string;
     private _subscriptionEvents: Record<string, EventEmitter>; // subscription ID -> event emitter
-    private _pendingSubscriptionMsgs: Record<string, any[]> = {};
+    private _pendingSubscriptionMsgs: Record<string, RpcSubscriptionNotification[]> = {};
     private _timeoutSeconds: number;
     private _callTimeoutMs: number;
+
+    // Surviving a dropped connection (#425). The server ties every subscription to the connection
+    // and tears them all down when it closes, and it keeps no events for a dropped client. So after
+    // rpc-websockets reconnects, the client re-issues each live subscription on the new connection;
+    // the server's snapshot on subscribe brings the instance back to the latest state.
+    // Instances keep the subscription id they got when they first subscribed (the local id); a
+    // re-issued subscription gets a new id from the server, mapped back to the local id here
+    private _serverIdByLocalId: Map<number, number> = new Map();
+    private _localIdByServerId: Map<number, number> = new Map();
+    // How to re-issue each live subscription, keyed by local id
+    // (startCommunity is re-issued as startedCommunitySubscribe, which never overrides a stop)
+    private _resubscribeCalls: Map<number, { method: string; params: unknown[] }> = new Map();
+    // Publications in flight. The server stops them on disconnect, and re-publishing would start
+    // a challenge exchange the user never saw, so they fail when the connection drops instead
+    private _publishSubscriptionIds: Set<number> = new Set();
+    private _hasConnectedBefore = false;
+    // Sockets the notification handler is attached to; rpc-websockets creates a new one per connection
+    private _socketsWithNotificationHandler: WeakSet<object> = new WeakSet();
+    // Reconnect backoff: doubles from the base after every failed attempt, capped at the max, and
+    // retries forever (rpc-websockets' default gives up after 5 attempts 1s apart, too soon for a
+    // laptop waking from suspend). Reset on every successful open
+    private _reconnectBaseIntervalMs = 1_000;
+    private _reconnectMaxIntervalMs = 30_000;
+    private _reconnectIntervalMs = this._reconnectBaseIntervalMs;
     private _openConnectionPromise?: Promise<any>;
     private _destroyRequested: boolean;
     constructor(rpcServerUrl: string) {
@@ -151,32 +189,29 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
             // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
             // NOTE: it is possible to receive a subscription message before receiving the subscription id
 
-            this._webSocketClient = new WebSocketClient(this._websocketServerUrl);
-            log("Created a new WebSocket instance with url " + this._websocketServerUrl);
-            //@ts-expect-error
-            this._webSocketClient.socket.on("message", (jsonMessage) => {
-                const message = JSON.parse(jsonMessage);
-                const subscriptionId = message?.params?.subscription;
-                if (subscriptionId) {
-                    this._initSubscriptionEvent(subscriptionId);
-
-                    // We need to parse error props into PKCErrors
-                    if (message?.params?.event === "error") {
-                        message.params.result = this._deserializeRpcError(message.params.result);
-                        delete (<any>message.params.result).stack; // Need to delete locally generated stack traces
-                    }
-                    if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0)
-                        this._pendingSubscriptionMsgs[subscriptionId].push(message);
-                    else this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
-                }
+            this._webSocketClient = new WebSocketClient(this._websocketServerUrl, {
+                reconnect_interval: this._reconnectIntervalMs,
+                max_reconnects: 0 // retry forever, with the backoff below
             });
+            log("Created a new WebSocket instance with url " + this._websocketServerUrl);
+            this._attachNotificationHandler();
 
             this._webSocketClient.on("open", () => {
                 log("Connected to RPC server", this._websocketServerUrl);
+                // rpc-websockets replaced the socket if this is a reconnect
+                this._attachNotificationHandler();
+                this._reconnectIntervalMs = this._reconnectBaseIntervalMs;
+                this._webSocketClient.setReconnectInterval(this._reconnectIntervalMs);
+                const isReconnect = this._hasConnectedBefore;
+                this._hasConnectedBefore = true;
                 this.setState("connected");
+                if (isReconnect) this._resubscribeAllAfterReconnect();
             });
             // forward errors to PKC
             this._webSocketClient.on("error", (error) => {
+                // A failed connect attempt emits error before close, and rpc-websockets reads the
+                // interval when the close schedules the next attempt
+                this._backOffReconnectInterval();
                 lastWebsocketError = error;
                 if (this._destroyRequested) {
                     log("Ignoring websocket error emitted after destroy request", error);
@@ -193,7 +228,14 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
                     this.setState("failed");
                     return;
                 }
-                this.emit("error", error);
+                // This runs inside ws's error event, ahead of the close event that schedules the next
+                // reconnect attempt. A throw here (an "error" emit with no listener on the PKC) would
+                // skip that close and end the reconnect loop for good, or crash the process
+                try {
+                    this.emit("error", error);
+                } catch (emitError) {
+                    log.error("No listener received the RPC websocket error", this._websocketServerUrl, emitError);
+                }
             });
 
             this._webSocketClient.on("close", () => {
@@ -202,6 +244,7 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
                 if (!this._destroyRequested) log.error("connection with web socket has been closed", this._websocketServerUrl);
                 this._openConnectionPromise = undefined;
                 this.setState("stopped");
+                if (!this._destroyRequested) this._failPublicationsLostWithConnection();
             });
 
             // Process error JSON from server into a PKCError instance
@@ -285,9 +328,19 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
                 cleanupSubscriptionLocally(subscriptionId);
             }
 
+        this._resubscribeCalls.clear();
+        this._publishSubscriptionIds.clear();
+        this._serverIdByLocalId.clear();
+        this._localIdByServerId.clear();
+
         try {
             if (this._webSocketClient instanceof WebSocketClient) {
                 this._webSocketClient.setAutoReconnect(false);
+                // Between attempts there is no socket to close, only rpc-websockets' timer for the
+                // next attempt, which would open a connection after destroy() resolved
+                clearTimeout(
+                    (this._webSocketClient as unknown as { reconnect_timer_id?: ReturnType<typeof setTimeout> }).reconnect_timer_id
+                );
                 // Wait for the socket to actually close so nothing (in particular no log line) runs on our
                 // behalf after destroy() has resolved (#325)
                 const socketClosed = this._waitForSocketClose();
@@ -328,10 +381,138 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
     }
 
     async unsubscribe(subscriptionId: number) {
-        await this._webSocketClient.call("unsubscribe", [{ subscriptionId }]);
+        // The server dropped every subscription of a closed connection, and a publication that
+        // failed with it is not on the new connection either, so there is nothing to call
+        const liveOnServer =
+            this.state === "connected" && (this._resubscribeCalls.has(subscriptionId) || this._publishSubscriptionIds.has(subscriptionId));
+        const serverSubscriptionId = this._serverIdByLocalId.get(subscriptionId) ?? subscriptionId;
+        this._resubscribeCalls.delete(subscriptionId);
+        this._publishSubscriptionIds.delete(subscriptionId);
+        if (liveOnServer) await this._webSocketClient.call("unsubscribe", [{ subscriptionId: serverSubscriptionId }]);
+        this._serverIdByLocalId.delete(subscriptionId);
+        this._localIdByServerId.delete(serverSubscriptionId);
         if (this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId].removeAllListeners();
         delete this._subscriptionEvents[subscriptionId];
         delete this._pendingSubscriptionMsgs[subscriptionId];
+    }
+
+    private _attachNotificationHandler() {
+        const socket = (
+            this._webSocketClient as unknown as { socket?: { on: (event: "message", listener: (data: string) => void) => void } }
+        ).socket;
+        if (!socket || this._socketsWithNotificationHandler.has(socket)) return;
+        this._socketsWithNotificationHandler.add(socket);
+        socket.on("message", (jsonMessage) => {
+            const message: unknown = JSON.parse(jsonMessage);
+            if (!isRpcSubscriptionNotification(message)) return; // a response to a call, handled by rpc-websockets
+            const serverSubscriptionId = message.params.subscription;
+            const subscriptionId = this._localIdByServerId.get(serverSubscriptionId) ?? serverSubscriptionId;
+            message.params.subscription = subscriptionId;
+            this._dispatchNotification(subscriptionId, message);
+        });
+    }
+
+    // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
+    // NOTE: it is possible to receive a subscription message before receiving the subscription id
+    private _dispatchNotification(subscriptionId: number, message: RpcSubscriptionNotification) {
+        this._initSubscriptionEvent(subscriptionId);
+
+        // We need to parse error props into PKCErrors
+        if (message.params.event === "error" && !(message.params.result instanceof Error)) {
+            const error = this._deserializeRpcError(message.params.result);
+            delete (error as { stack?: string }).stack; // Need to delete locally generated stack traces
+            message.params.result = error;
+        }
+        if (this._subscriptionEvents[subscriptionId].listenerCount(message.params.event) === 0)
+            this._pendingSubscriptionMsgs[subscriptionId].push(message);
+        else this._subscriptionEvents[subscriptionId].emit(message.params.event, message);
+    }
+
+    private _backOffReconnectInterval() {
+        if (!(this._webSocketClient instanceof WebSocketClient)) return;
+        this._reconnectIntervalMs = Math.min(this._reconnectIntervalMs * 2, this._reconnectMaxIntervalMs);
+        this._webSocketClient.setReconnectInterval(this._reconnectIntervalMs);
+    }
+
+    // Subscribe and remember how to re-issue the subscription on a new connection
+    private async _subscribe(
+        method: string,
+        params: unknown[],
+        onReconnect: "resubscribe" | "fail",
+        resubscribeMethod: string = method
+    ): Promise<RpcSubscriptionIdResult> {
+        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call(method, params));
+        this._initSubscriptionEvent(res.subscriptionId);
+        if (onReconnect === "resubscribe") this._resubscribeCalls.set(res.subscriptionId, { method: resubscribeMethod, params });
+        else this._publishSubscriptionIds.add(res.subscriptionId);
+        return res;
+    }
+
+    private _resubscribeAllAfterReconnect() {
+        for (const subscriptionId of [...this._resubscribeCalls.keys()])
+            this._resubscribe(subscriptionId).catch((error) => {
+                if (this._destroyRequested) return;
+                if ((error as { code?: unknown })?.code === "ERR_RPC_COMMUNITY_NOT_RUNNING") {
+                    // Someone stopped the community on purpose, possibly while we were away; tell the
+                    // instance the way a stop reaches a connected client, and do not try again
+                    log("Not re-establishing start(), the community was stopped on purpose", subscriptionId);
+                    this._resubscribeCalls.delete(subscriptionId);
+                    this._dispatchNotification(subscriptionId, {
+                        params: { event: "startedstatechange", subscription: subscriptionId, result: { state: "stopped" } }
+                    });
+                    return;
+                }
+                log.error("Failed to re-subscribe after reconnecting to the RPC server", subscriptionId, error);
+                this._dispatchNotification(subscriptionId, {
+                    params: { event: "error", subscription: subscriptionId, result: error }
+                });
+            });
+    }
+
+    private async _resubscribe(subscriptionId: number) {
+        const call = this._resubscribeCalls.get(subscriptionId);
+        if (!call || this._destroyRequested) return;
+        const { subscriptionId: serverSubscriptionId } = parseRpcSubscriptionIdResult(
+            await this._webSocketClient.call(call.method, call.params)
+        );
+        // The server sends its snapshot before the response, so it arrived under the new id,
+        // which nothing mapped yet; take it over before it is replayed to the instance
+        const earlyMessages = serverSubscriptionId === subscriptionId ? [] : this._pendingSubscriptionMsgs[serverSubscriptionId] ?? [];
+        if (serverSubscriptionId !== subscriptionId) {
+            delete this._pendingSubscriptionMsgs[serverSubscriptionId];
+            delete this._subscriptionEvents[serverSubscriptionId];
+        }
+        if (this._resubscribeCalls.get(subscriptionId) !== call || this._destroyRequested) {
+            // Unsubscribed while the call was in flight
+            if (!this._destroyRequested)
+                await this._webSocketClient.call("unsubscribe", [{ subscriptionId: serverSubscriptionId }]).catch((error) => {
+                    log.error("Failed to unsubscribe a subscription re-issued after it was unsubscribed", error);
+                });
+            return;
+        }
+        const previousServerSubscriptionId = this._serverIdByLocalId.get(subscriptionId);
+        if (previousServerSubscriptionId !== undefined) this._localIdByServerId.delete(previousServerSubscriptionId);
+        this._serverIdByLocalId.set(subscriptionId, serverSubscriptionId);
+        this._localIdByServerId.set(serverSubscriptionId, subscriptionId);
+        log("Re-subscribed after reconnecting", call.method, { subscriptionId, serverSubscriptionId });
+        for (const message of earlyMessages) {
+            message.params.subscription = subscriptionId;
+            this._dispatchNotification(subscriptionId, message);
+        }
+    }
+
+    private _failPublicationsLostWithConnection() {
+        for (const subscriptionId of [...this._publishSubscriptionIds]) {
+            this._publishSubscriptionIds.delete(subscriptionId);
+            const error = new PKCError("ERR_RPC_PUBLICATION_LOST_WITH_CONNECTION", {
+                rpcServerUrl: this._websocketServerUrl,
+                publishThrowError: true
+            });
+            this._dispatchNotification(subscriptionId, {
+                params: { event: "publishingstatechange", subscription: subscriptionId, result: { state: "failed" } }
+            });
+            this._dispatchNotification(subscriptionId, { params: { event: "error", subscription: subscriptionId, result: error } });
+        }
     }
 
     private _deserializeRpcError(errorPayload: any): PKCError | Error {
@@ -464,8 +645,8 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
         if (!pendingMessages) return;
         while (pendingMessages.length > 0) {
             if (!shouldDeliver()) return;
-            const message = pendingMessages.shift();
-            this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
+            const message = pendingMessages.shift()!;
+            this._subscriptionEvents[subscriptionId].emit(message.params.event, message);
         }
         delete this._pendingSubscriptionMsgs[subscriptionId];
     }
@@ -515,8 +696,7 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
 
     async startCommunity(communityIdentifier: CommunityIdentifierRpcParam): Promise<RpcSubscriptionIdResult> {
         const parsedStartCommunityArgs = parseRpcCommunityIdentifierParam(communityIdentifier);
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("startCommunity", [parsedStartCommunityArgs]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("startCommunity", [parsedStartCommunityArgs], "resubscribe", "startedCommunitySubscribe");
         return res;
     }
 
@@ -557,45 +737,38 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
 
     async communityUpdateSubscribe(communityIdentifier: CommunityIdentifierRpcParam): Promise<RpcSubscriptionIdResult> {
         const parsedCommunityUpdateArgs = parseRpcCommunityIdentifierParam(communityIdentifier);
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("communityUpdateSubscribe", [parsedCommunityUpdateArgs]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("communityUpdateSubscribe", [parsedCommunityUpdateArgs], "resubscribe");
         return res;
     }
 
     async publishComment(commentProps: CommentChallengeRequestToEncryptType): Promise<RpcSubscriptionIdResult> {
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("publishComment", [commentProps]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("publishComment", [commentProps], "fail");
         return res;
     }
 
     async publishCommentEdit(commentEditProps: CommentEditChallengeRequestToEncryptType): Promise<RpcSubscriptionIdResult> {
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("publishCommentEdit", [commentEditProps]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("publishCommentEdit", [commentEditProps], "fail");
         return res;
     }
 
     async publishCommentModeration(commentModProps: CommentModerationChallengeRequestToEncrypt): Promise<RpcSubscriptionIdResult> {
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("publishCommentModeration", [commentModProps]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("publishCommentModeration", [commentModProps], "fail");
         return res;
     }
 
     async publishVote(voteProps: VoteChallengeRequestToEncryptType): Promise<RpcSubscriptionIdResult> {
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("publishVote", [voteProps]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("publishVote", [voteProps], "fail");
         return res;
     }
 
     async publishCommunityEdit(communityEdit: CommunityEditChallengeRequestToEncryptType): Promise<RpcSubscriptionIdResult> {
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("publishCommunityEdit", [communityEdit]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("publishCommunityEdit", [communityEdit], "fail");
         return res;
     }
 
     async commentUpdateSubscribe(args: CidRpcParam): Promise<RpcSubscriptionIdResult> {
         const parsedCommentUpdateArgs = parseRpcCidParam(args);
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("commentUpdateSubscribe", [parsedCommentUpdateArgs]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("commentUpdateSubscribe", [parsedCommentUpdateArgs], "resubscribe");
         return res;
     }
 
@@ -610,8 +783,7 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
     }
 
     async initalizeCommunitieschangeEvent() {
-        const { subscriptionId } = parseRpcSubscriptionIdResult(await this._webSocketClient.call("communitiesSubscribe", []));
-        this._initSubscriptionEvent(subscriptionId);
+        const { subscriptionId } = await this._subscribe("communitiesSubscribe", [], "resubscribe");
         this.getSubscription(subscriptionId).on("communitieschange", (res) => {
             this.emit("communitieschange", <string[]>res.params.result.communities);
         });
@@ -619,8 +791,7 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
     }
 
     async initalizeSettingschangeEvent() {
-        const { subscriptionId } = parseRpcSubscriptionIdResult(await this._webSocketClient.call("settingsSubscribe", []));
-        this._initSubscriptionEvent(subscriptionId);
+        const { subscriptionId } = await this._subscribe("settingsSubscribe", [], "resubscribe");
         this.getSubscription(subscriptionId).on("settingschange", (res) => {
             this.emit("settingschange", <PKCWsServerSettingsSerialized>res.params.result);
         });
@@ -665,8 +836,7 @@ export default class PKCRpcClient extends TypedEmitter<PKCRpcClientEvents> {
 
     async exportsSubscribe(args: CommunityIdentifierRpcParam): Promise<RpcSubscriptionIdResult> {
         const parsedArgs = parseRpcCommunityIdentifierParam(args);
-        const res = parseRpcSubscriptionIdResult(await this._webSocketClient.call("exportsSubscribe", [parsedArgs]));
-        this._initSubscriptionEvent(res.subscriptionId);
+        const res = await this._subscribe("exportsSubscribe", [parsedArgs], "resubscribe");
         return res;
     }
 
