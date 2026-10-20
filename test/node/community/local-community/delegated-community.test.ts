@@ -584,49 +584,58 @@ describeSkipIfRpc.sequential("delegated LocalCommunity: identity is the anchor, 
     // against signer.address, a correctly configured delegated community would have rejected its own
     // domain on every start and every edit. Both directions are asserted, since a check that accepts
     // everything would pass the happy path alone.
-    describe("a delegated community addressed by a domain", () => {
-        const anchorDomain = "delegated-publisher-anchor.bso";
-        const minterDomain = "delegated-publisher-minter.bso";
-        const resolverRecords = new Map<string, string>(); // filled once the keys below exist
-        let domainPkc: PKC;
-        let domainDataPath: string;
-        let domainCommunity: LocalCommunity;
+    for (const editKey of ["address", "name"] as const) {
+        describe(`a delegated community addressed by a domain (edit({ ${editKey} }))`, () => {
+            const anchorDomain = "delegated-publisher-anchor.bso";
+            const minterDomain = "delegated-publisher-minter.bso";
+            const resolverRecords = new Map<string, string>(); // filled once the keys below exist
+            let domainPkc: PKC;
+            let domainDataPath: string;
+            let domainCommunity: LocalCommunity;
 
-        beforeAll(async () => {
-            domainDataPath = path.join(process.cwd(), ".tmp", `delegated-domain-${uuidv4()}`);
-            domainPkc = await mockPKC({ dataPath: domainDataPath, nameResolvers: [createMockNameResolver({ records: resolverRecords })] });
-            const domainAnchor = await domainPkc.createSigner();
-            domainCommunity = <LocalCommunity>await createSubWithNoChallenge({ anchor: { publicKey: domainAnchor.address } }, domainPkc);
-            resolverRecords.set(anchorDomain, domainAnchor.address); // what a reader following the domain gets
-            resolverRecords.set(minterDomain, domainCommunity.signer.address); // pointed at the rotatable key instead
+            beforeAll(async () => {
+                domainDataPath = path.join(process.cwd(), ".tmp", `delegated-domain-${uuidv4()}`);
+                domainPkc = await mockPKC({
+                    dataPath: domainDataPath,
+                    nameResolvers: [createMockNameResolver({ records: resolverRecords })]
+                });
+                const domainAnchor = await domainPkc.createSigner();
+                domainCommunity = <LocalCommunity>(
+                    await createSubWithNoChallenge({ anchor: { publicKey: domainAnchor.address } }, domainPkc)
+                );
+                resolverRecords.set(anchorDomain, domainAnchor.address); // what a reader following the domain gets
+                resolverRecords.set(minterDomain, domainCommunity.signer.address); // pointed at the rotatable key instead
+            });
+
+            afterAll(async () => {
+                await domainCommunity.delete();
+                await domainPkc.destroy();
+                fs.rmSync(domainDataPath, { recursive: true, force: true });
+            });
+
+            it("accepts a domain whose TXT record resolves to the anchor", async () => {
+                await domainCommunity._assertDomainResolvesCorrectly(anchorDomain);
+                await domainCommunity.edit({ [editKey]: anchorDomain });
+                expect(domainCommunity.address).to.equal(anchorDomain);
+            });
+
+            // A domain pointing at the minter leads readers to a key that stops publishing the moment the
+            // owner rotates, so it is wrong even though it names a key this node holds.
+            it("rejects a domain resolving to the minter", async () => {
+                await expect(domainCommunity._assertDomainResolvesCorrectly(minterDomain)).rejects.toThrow(
+                    messages.ERR_DOMAIN_COMMUNITY_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS
+                );
+
+                // edit() does not await the check: validateNewAddressBeforeEditing fires it and routes the
+                // failure to the error event, so the address moves and the owner is told separately. That is
+                // pre-existing behaviour, not delegation-specific, so this asserts what an owner observes
+                // rather than the rejection the check alone would suggest.
+                const emittedError = new Promise<Error>((resolve) => domainCommunity.once("error", resolve));
+                await domainCommunity.edit({ [editKey]: minterDomain });
+                expect((await emittedError).message).to.include(
+                    messages.ERR_DOMAIN_COMMUNITY_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS
+                );
+            });
         });
-
-        afterAll(async () => {
-            await domainCommunity.delete();
-            await domainPkc.destroy();
-            fs.rmSync(domainDataPath, { recursive: true, force: true });
-        });
-
-        it("accepts a domain whose TXT record resolves to the anchor", async () => {
-            await domainCommunity._assertDomainResolvesCorrectly(anchorDomain);
-            await domainCommunity.edit({ address: anchorDomain });
-            expect(domainCommunity.address).to.equal(anchorDomain);
-        });
-
-        // A domain pointing at the minter leads readers to a key that stops publishing the moment the
-        // owner rotates, so it is wrong even though it names a key this node holds.
-        it("rejects a domain resolving to the minter", async () => {
-            await expect(domainCommunity._assertDomainResolvesCorrectly(minterDomain)).rejects.toThrow(
-                messages.ERR_DOMAIN_COMMUNITY_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS
-            );
-
-            // edit() does not await the check: validateNewAddressBeforeEditing fires it and routes the
-            // failure to the error event, so the address moves and the owner is told separately. That is
-            // pre-existing behaviour, not delegation-specific, so this asserts what an owner observes
-            // rather than the rejection the check alone would suggest.
-            const emittedError = new Promise<Error>((resolve) => domainCommunity.once("error", resolve));
-            await domainCommunity.edit({ address: minterDomain });
-            expect((await emittedError).message).to.include(messages.ERR_DOMAIN_COMMUNITY_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS);
-        });
-    });
+    }
 });
