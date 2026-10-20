@@ -408,6 +408,7 @@ export enum messages {
     ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC = "Failed to open connection to RPC",
     ERR_FAILED_TO_CREATE_WS_RPC_SERVER = "Failed to create WebSocket RPC server",
     ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_COMMUNITY = "Attempting to start a community that is not local",
+    ERR_RPC_COMMUNITY_NOT_RUNNING = "The community is not running on the PKC RPC server and was stopped on purpose, so the RPC client did not start it again after reconnecting",
     ERR_RPC_CLIENT_TRYING_TO_STOP_COMMUNITY_THAT_IS_NOT_RUNNING = "RPC client is attempting to stop a local community that is not running",
     ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_COMMUNITY = "RPC client is attempting to stop a remote community",
     ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_COMMUNITY = "RPC client is attempting to edit remote community",

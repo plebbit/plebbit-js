@@ -299,6 +299,7 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         this.rpcWebsocketsRegister("getCommentPage", this.getCommentPage.bind(this));
         this.rpcWebsocketsRegister("createCommunity", this.createCommunity.bind(this));
         this.rpcWebsocketsRegister("startCommunity", this.startCommunity.bind(this));
+        this.rpcWebsocketsRegister("startedCommunitySubscribe", this.startedCommunitySubscribe.bind(this));
         this.rpcWebsocketsRegister("stopCommunity", this.stopCommunity.bind(this));
         this.rpcWebsocketsRegister("editCommunity", this.editCommunity.bind(this));
         this.rpcWebsocketsRegister("deleteCommunity", this.deleteCommunity.bind(this));
@@ -815,6 +816,27 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         await startCommunityImpl();
 
         return { subscriptionId };
+    }
+
+    // A client re-establishing a start() subscription after its websocket reconnected (#425). Unlike startCommunity
+    // this never overrides a stop: it attaches to the community if it is running, starts it again only if the
+    // persisted record says it was started and not explicitly stopped since (what a server restart without
+    // auto-start, or before auto-start reached it, looks like), and throws ERR_RPC_COMMUNITY_NOT_RUNNING otherwise
+    async startedCommunitySubscribe(params: any, connectionId: string): Promise<RpcSubscriptionIdResult> {
+        const { name, publicKey } = parseRpcCommunityIdentifierParam(params[0]);
+        await this._getPKCInstance();
+        const address = this._findCommunityAddress({ name, publicKey });
+        if (!address) throw new PKCError("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_COMMUNITY", { communityAddress: name || publicKey });
+        if (!(address in this._startedCommunities) && !this._wasStartedAndNotExplicitlyStopped(address))
+            throw new PKCError("ERR_RPC_COMMUNITY_NOT_RUNNING", { communityAddress: address });
+        return this.startCommunity(params, connectionId);
+    }
+
+    private _wasStartedAndNotExplicitlyStopped(address: string): boolean {
+        const row = this._getRpcStateDb()
+            ?.prepare("SELECT wasStarted, wasExplicitlyStopped FROM community_states WHERE address = ?")
+            .get(address) as { wasStarted: number; wasExplicitlyStopped: number } | undefined;
+        return Boolean(row && row.wasStarted === 1 && row.wasExplicitlyStopped === 0);
     }
 
     async stopCommunity(params: any): Promise<RpcSuccessResult> {
