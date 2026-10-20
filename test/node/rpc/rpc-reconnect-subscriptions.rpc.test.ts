@@ -10,7 +10,7 @@
 // subscription keeps emitting its events, with no action from the consumer. An error is not
 // enough. The one exception is a publication in flight: the server stops it on disconnect and
 // re-publishing behind the user's back would start a challenge exchange they never saw, so it must
-// fail loudly with ERR_RPC_PUBLICATION_LOST_AFTER_RECONNECT and publishingState "failed".
+// fail loudly with ERR_RPC_PUBLICATION_LOST_WITH_CONNECTION and publishingState "failed".
 //
 // One case per subscription type the RPC server exposes:
 //   communityUpdateSubscribe  community.update()
@@ -424,7 +424,7 @@ describeIfRpc("RPC subscriptions after the websocket auto-reconnects (#425)", ()
                                 await challengeSent;
                             },
                             delivered: () => challengeReceived,
-                            expectedErrorCode: "ERR_RPC_PUBLICATION_LOST_AFTER_RECONNECT",
+                            expectedErrorCode: "ERR_RPC_PUBLICATION_LOST_WITH_CONNECTION",
                             cleanup: async () => {
                                 expect(publication.publishingState).toBe("failed");
                                 gate.armed = false;
