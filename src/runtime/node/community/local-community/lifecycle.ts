@@ -170,6 +170,14 @@ export async function start(community: LocalCommunity) {
                 anchorPublicKey: community.anchor.publicKey,
                 minterAddress: community.signer.address
             });
+        // Refuse an unloadable challenge before entering the started state: from there on a failed start goes
+        // through the running-community teardown in stop(), which unsubscribes from pubsub and unpins (issue #428).
+        // Checked again below against the settings as refreshed from the db.
+        await deriveCommunityChallengesOrThrow({
+            challengeSettings: community.settings?.challenges ?? [],
+            pkc: community._pkc,
+            communityAddress: community.address
+        });
         // update started value twice because it could be started prior lockCommunityStart
         community._setState("started");
         await community._updateStartedValue();

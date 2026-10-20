@@ -76,8 +76,12 @@ describeSkipIfRpc("unregistered challenge in settings.challenges (issue #428)", 
         delete pkc.settings.challenges!["other-challenge"];
 
         const fetchSpy = vi.spyOn(globalThis, "fetch");
+        // a failed start must not run the running-community teardown either: it unsubscribes from pubsub and unpins
+        const unsubscribeSpy = vi.spyOn(community._clientsManager, "pubsubUnsubscribe");
         const startedStates: string[] = [];
         community.on("startedstatechange", (state) => startedStates.push(state));
+        const states: string[] = [];
+        community.on("statechange", (state) => states.push(state));
 
         let thrown: unknown;
         try {
@@ -101,6 +105,8 @@ describeSkipIfRpc("unregistered challenge in settings.challenges (issue #428)", 
         const kuboKeyImports = fetchSpy.mock.calls.filter(([url]) => String(url).includes("/key/import"));
         expect(kuboKeyImports).to.have.length(0);
         expect(startedStates).to.not.include("publishing-ipns");
+        expect(unsubscribeSpy).not.toHaveBeenCalled();
+        expect(states).to.not.include("started");
         expect(community.started).to.be.false;
     });
 
@@ -164,6 +170,28 @@ describeSkipIfRpc("unregistered challenge in settings.challenges (issue #428)", 
 
         expect(community.started).to.be.true;
         expect(community.challenges?.map((c) => c.description)).to.deep.equal(["my challenge"]);
+    });
+
+    it("a running community reports a different challenge failing at the same index", async () => {
+        await community.edit({ settings: { ...community.settings, challenges: [{ name: "my-challenge" }] } });
+        await community.start();
+        await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
+
+        const errors: PKCError[] = [];
+        community.on("error", (e) => errors.push(e as PKCError));
+        delete pkc.settings.challenges!["my-challenge"];
+        await syncChallengesWithRegistry(community);
+
+        // the owner swaps in another package, which is then uninstalled before the next cycle succeeds
+        await community.edit({ settings: { ...community.settings, challenges: [{ name: "other-challenge" }] } });
+        delete pkc.settings.challenges!["other-challenge"];
+        await syncChallengesWithRegistry(community);
+
+        const loadErrors = errors.filter((e) => e.code === "ERR_COMMUNITY_CHALLENGES_FAILED_TO_LOAD");
+        expect(loadErrors.map((e) => (e.details.failures as LoadFailure[])[0].challengeName)).to.deep.equal([
+            "my-challenge",
+            "other-challenge"
+        ]);
     });
 
     it("a publisher is told which challenge is not registered, and the owner gets the details", async () => {

@@ -1,7 +1,7 @@
 import Logger from "../../../../logger.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { STORAGE_KEYS } from "../../../../constants.js";
-import { deriveCommunityChallengesOrThrow } from "../challenges/index.js";
+import { deriveCommunityChallengesOrThrow, type ChallengeLoadFailure } from "../challenges/index.js";
 import type { PKCError } from "../../../../pkc-error.js";
 import {
     computePageSortsFingerprint,
@@ -86,8 +86,10 @@ export async function syncChallengesWithRegistry(community: LocalCommunity): Pro
     } catch (e) {
         log.error("Could not recompute community.challenges from the registry, keeping the previous ones", community.address, e);
         const reported = deterministicStringify(
-            ((e as PKCError).details?.failures as { challengeIndex: number; error: PKCError }[] | undefined)?.map((f) => [
+            ((e as PKCError).details?.failures as ChallengeLoadFailure[] | undefined)?.map((f) => [
                 f.challengeIndex,
+                f.challengeName,
+                f.path,
                 f.error.code
             ]) ?? String(e)
         );
