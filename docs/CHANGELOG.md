@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.117](https://github.com/pkcprotocol/pkc-js/compare/v0.0.116...v0.0.117) (2026-10-20)
+
+### Bug Fixes
+
+* **rpc:** keep RPC subscriptions alive across websocket reconnects ([#425](https://github.com/pkcprotocol/pkc-js/issues/425)) ([#426](https://github.com/pkcprotocol/pkc-js/issues/426)) ([c6ef875](https://github.com/pkcprotocol/pkc-js/commit/c6ef8759f985b3830cca1a57671e8a5bea6c3fc6))
+
 ## [0.0.116](https://github.com/pkcprotocol/pkc-js/compare/v0.0.115...v0.0.116) (2026-10-20)
 
 ### Bug Fixes
