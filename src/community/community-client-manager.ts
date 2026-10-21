@@ -1008,13 +1008,19 @@ export class CommunityClientsManager extends PKCClientsManager {
                 // non-delegated community (no claim) ipnsName is the identity, unchanged.
                 const identityPublicKey = subRes.community.anchor?.publicKey ?? ipnsName;
                 const anchorIdentityAddress = subRes.community.name || identityPublicKey;
-                this._pkc._memCaches.communityForPublishing.set(anchorIdentityAddress, {
+                const communityForPublishing = {
                     encryption: subRes.community.encryption,
                     pubsubTopic: subRes.community.pubsubTopic,
                     address: anchorIdentityAddress,
                     publicKey: identityPublicKey,
                     name: subRes.community.name
-                });
+                };
+                // Under the name and under the key: a publication created with only the key reads the community's
+                // current name here to re-sign with it (issue #401), so the key's entry must not keep a record from
+                // before the community got its name
+                this._pkc._memCaches.communityForPublishing.set(anchorIdentityAddress, communityForPublishing);
+                if (anchorIdentityAddress !== identityPublicKey)
+                    this._pkc._memCaches.communityForPublishing.set(identityPublicKey, communityForPublishing);
             }
             return subRes;
         });
