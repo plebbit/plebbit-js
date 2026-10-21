@@ -201,10 +201,7 @@ for (const editKey of ["name", "address"] as const) {
             const reply = await generateMockComment(ctx.post as unknown as CommentIpfsWithCidDefined, ctx.pkc, false, {
                 communityAddress: ctx.newName
             });
-            const verification = await publishAndGetVerification(reply);
-            console.log(
-                `[scenario 2] reply to hidden post: challengeSuccess=${verification.challengeSuccess} reason=${verification.reason ?? ""}`
-            );
+            await publishAndGetVerification(reply);
 
             const updateCidBefore = ctx.community.updateCid;
             await ctx.community.edit({ title: `after reply to hidden post ${Date.now()}` });
@@ -350,8 +347,6 @@ describeSkipIfRpc(`A community stranded by the pre-#430 edit({ name }) bug`, asy
         await ctx.community.stop();
         const stopped = (await ctx.pkc.createCommunity({ address: ctx.oldName })) as LocalCommunity;
         await updateDbInternalState(stopped, { name: ctx.newName });
-        const written = await stopped._getDbInternalState(false);
-        console.log(`[scenario 6 setup] internal state after write: address=${written.address} name=${written.name}`);
         await stopped._dbHandler.destoryConnection();
     });
 
@@ -360,17 +355,11 @@ describeSkipIfRpc(`A community stranded by the pre-#430 edit({ name }) bug`, asy
     it(`(a) starts and publishes a valid record instead of failing every cycle`, async () => {
         const community = (await ctx.pkc.createCommunity({ address: ctx.oldName })) as LocalCommunity;
         ctx.community = community;
-        console.log(`[scenario 6a] loaded stranded community address=${community.address} name=${community.name}`);
         const health = watchCommunityHealth(community);
         ctx.health = health;
         const updateCidBefore = community.updateCid;
         await community.start();
         await waitForNextPublishedRecord(community, updateCidBefore, health);
-        console.log(
-            `[scenario 6a] after start address=${community.address} name=${community.name} failed=${health.failed} errors=${JSON.stringify(
-                health.errors.map((e) => ({ code: (e as { code?: string }).code, message: e.message }))
-            )}`
-        );
         expect(health.errors.map((e) => (e as { code?: string }).code ?? e.message)).to.deep.equal([]);
         expect(health.failed).to.be.false;
         expect(community.updateCid).to.not.equal(updateCidBefore);
@@ -383,14 +372,8 @@ describeSkipIfRpc(`A community stranded by the pre-#430 edit({ name }) bug`, asy
         ctx.health.failed = false;
         const updateCidBefore = community.updateCid;
         await community.edit({ name: ctx.newName });
-        console.log(`[scenario 6b] after redo edit address=${community.address} name=${community.name}`);
         expect(community.address).to.equal(ctx.newName);
         await waitForNextPublishedRecord(community, updateCidBefore, ctx.health);
-        console.log(
-            `[scenario 6b] after redo publish failed=${ctx.health.failed} errors=${JSON.stringify(
-                ctx.health.errors.map((e) => ({ code: (e as { code?: string }).code, message: e.message }))
-            )}`
-        );
         expect(ctx.health.errors.map((e) => (e as { code?: string }).code ?? e.message)).to.deep.equal([]);
         expect(ctx.health.failed).to.be.false;
         expect(community.updateCid).to.not.equal(updateCidBefore);
