@@ -172,11 +172,18 @@ describe("RPC server re-keys a community after a rename", () => {
     beforeAll(async () => {
         dataPath = uniqueTmpDataPath("rename-rekey");
         await startServer();
+        // Pinned to the test Kubo and the mock pubsub the in-process server's pkc uses (mockRpcServerPKC): under
+        // USE_RPC=1 the default would make it a client of the shared test server, whose pubsub never reaches this server
         ownerPKC = await mockPKCV2({
             stubStorage: false,
             remotePKC: true,
             mockResolve: false,
-            pkcOptions: { nameResolvers: nameResolvers() }
+            forceMockPubsub: true,
+            pkcOptions: {
+                kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+                pkcRpcClientsOptions: undefined,
+                nameResolvers: nameResolvers()
+            }
         });
     });
 
