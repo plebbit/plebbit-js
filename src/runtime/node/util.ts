@@ -232,6 +232,15 @@ export async function tryToDeleteCommunitiesThatFailedToBeDeletedBefore(pkc: PKC
     }
 }
 
+// Reads dataPath/communities now and emits communitieschange if pkc.communities is out of date. The filesystem watcher
+// calls it on every change, and a rename calls it right after moving the DB file: the watcher fires later (much later on
+// macOS), and until then pkc.createCommunity and the RPC server would resolve the old address (issue #430).
+export function refreshCommunitiesList(pkc: PKC) {
+    const currentCommunities = listCommunitiesSync(pkc);
+    if (deterministicStringify(currentCommunities) !== deterministicStringify(pkc.communities))
+        pkc.emit("communitieschange", currentCommunities);
+}
+
 export function listCommunitiesSync(pkc: PKC) {
     const log = Logger("pkc-js:listCommunitiesSync");
     if (typeof pkc.dataPath !== "string") throw Error("pkc.dataPath needs to be defined to listCommunities");
@@ -525,10 +534,7 @@ export async function monitorCommunitiesDirectory(pkc: PKC) {
     let isProcessingChange = false;
 
     // Initial check
-    const initialCommunities = listCommunitiesSync(pkc);
-    if (deterministicStringify(initialCommunities) !== deterministicStringify(pkc.communities)) {
-        pkc.emit("communitieschange", initialCommunities);
-    }
+    refreshCommunitiesList(pkc);
 
     // Set up watcher with synchronous check
     fsWatch(communitiesPath, { signal: watchAbortController.signal, persistent: false }, (eventType, filename) => {
@@ -540,10 +546,7 @@ export async function monitorCommunitiesDirectory(pkc: PKC) {
 
         isProcessingChange = true;
         try {
-            const currentCommunities = listCommunitiesSync(pkc);
-            if (deterministicStringify(currentCommunities) !== deterministicStringify(pkc.communities)) {
-                pkc.emit("communitieschange", currentCommunities);
-            }
+            refreshCommunitiesList(pkc);
         } catch (error) {
             // Handle any errors
         } finally {

@@ -22,6 +22,7 @@ import { findProcessStartedCommunity, processStartedCommunities, syncProcessStar
 import { updateDbInternalState, updateInstancePropsWithStartedCommunityOrDb } from "./db-state.js";
 import { setResolvedPageSorts } from "./registry-sync.js";
 import { communityIdentityPublicKey } from "./identity.js";
+import { refreshCommunitiesList } from "../../util.js";
 
 export async function movePostUpdatesFolderToNewAddress(community: LocalCommunity, oldAddress: string, newAddress: string) {
     const log = Logger("pkc-js:local-community:_movePostUpdatesFolderToNewAddress");
@@ -184,6 +185,7 @@ export async function editPropsOnStartedCommunity(
         log(`Attempting to edit community.address from ${oldAddress} to ${parsedEditOptions.address}. We will stop community first`);
         await community.stop();
         await community._dbHandler.changeDbFilename(oldAddress, parsedEditOptions.address);
+        refreshCommunitiesList(community._pkc); // list the new address now, not when the filesystem watcher fires
         community.setAddress(parsedEditOptions.address);
         await community._dbHandler.initDbIfNeeded();
         await community.start();
@@ -239,6 +241,7 @@ export async function editPropsOnNotStartedCommunity(
         await movePostUpdatesFolderToNewAddress(community, community.address, parsedEditOptions.address);
         community._dbHandler.destoryConnection();
         await community._dbHandler.changeDbFilename(community.address, parsedEditOptions.address);
+        refreshCommunitiesList(community._pkc); // list the new address now, not when the filesystem watcher fires
         await community._dbHandler.initDbIfNeeded();
         community.setAddress(parsedEditOptions.address);
     }
