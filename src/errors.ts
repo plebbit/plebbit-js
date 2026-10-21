@@ -446,6 +446,8 @@ export enum messages {
     ERR_CHALLENGE_PUBLIC_OPTION_NOT_DECLARED_IN_OPTION_INPUTS = "settings.challenges[i].publicOptions names an option that no optionInputs entry of the challenge declares",
     ERR_CHALLENGE_SETTINGS_VALIDATION_FAILED = "The challenge's validateChallengeSettings hook rejected settings.challenges[i]",
     ERR_CHALLENGE_SETTINGS_VALIDATION_FAILED_FOR_CHALLENGES = "One or more challenges in settings.challenges failed validation",
+    ERR_CHALLENGE_NOT_REGISTERED = "settings.challenges[i].name is not a challenge registered on this node, install its package or remove it from settings.challenges",
+    ERR_COMMUNITY_CHALLENGES_FAILED_TO_LOAD = "One or more challenges in settings.challenges could not be loaded, so the community cannot start until they are installed or removed from settings.challenges",
 
     // Configurable page sorts (settings.pages, issue #73). See docs/protocol/page-sorts.md.
     ERR_FAILED_TO_IMPORT_PAGE_SORT_FILE_FACTORY = "Failed to import page sort file factory",

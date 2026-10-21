@@ -186,8 +186,11 @@ describeSkipIfRpc.concurrent(`community.settings.challenges with path`, async ()
             await community.edit({ settings: { challenges } });
             expect.fail("Should have thrown an error for invalid path");
         } catch (error) {
-            const err = error as { code?: string };
-            expect(err.code).to.include("ERR_MODULE_NOT_FOUND");
+            // the import failure is wrapped with the entry it belongs to, the module error kept in details (issue #428)
+            const err = error as { code?: string; details?: { path?: string; error?: { code?: string } } };
+            expect(err.code).to.equal("ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY");
+            expect(err.details?.path).to.equal(invalidPath);
+            expect(err.details?.error?.code).to.equal("ERR_MODULE_NOT_FOUND");
         }
 
         await community.delete();

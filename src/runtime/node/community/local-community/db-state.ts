@@ -284,9 +284,14 @@ export async function createNewLocalCommunityDb(community: LocalCommunity) {
 
     community.challenges = await Promise.all(
         community.settings.challenges!.map(
-            async (cs) =>
-                (await getCommunityChallengeFromCommunityChallengeSettings({ communityChallengeSettings: cs, pkc: community._pkc }))
-                    .communityChallenge
+            async (cs, challengeIndex) =>
+                (
+                    await getCommunityChallengeFromCommunityChallengeSettings({
+                        communityChallengeSettings: cs,
+                        challengeIndex,
+                        pkc: community._pkc
+                    })
+                ).communityChallenge
         )
     );
 

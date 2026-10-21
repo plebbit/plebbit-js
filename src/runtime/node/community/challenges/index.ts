@@ -110,6 +110,30 @@ const resolveChallengeFactoryByName = ({
     return { factory: pkc?.settings?.challenges?.[name] ?? pkcJsChallenges[name] };
 };
 
+// Every name a settings.challenges entry can use on this node: the built-ins and the registered ones
+const listAvailableChallengeNames = ({ pkc }: { pkc?: PKCWithSettingsChallenges }): string[] =>
+    [...new Set([...Object.keys(pkcJsChallenges), ...Object.keys(pkc?.settings?.challenges ?? {})])].sort();
+
+// A name whose package was never installed, or was uninstalled while settings.challenges still names it (issue #428)
+const resolveRegisteredChallengeFactory = ({
+    name,
+    challengeIndex,
+    pkc
+}: {
+    name: string;
+    challengeIndex?: number;
+    pkc?: PKCWithSettingsChallenges;
+}): ChallengeFileFactoryInput => {
+    const { factory } = resolveChallengeFactoryByName({ name, pkc });
+    if (!factory)
+        throw new PKCError("ERR_CHALLENGE_NOT_REGISTERED", {
+            challengeName: name,
+            challengeIndex,
+            availableChallengeNames: listAvailableChallengeNames({ pkc })
+        });
+    return factory;
+};
+
 const pkcJsChallenges: Record<string, ChallengeFileFactoryInput> = {
     "text-math": textMath,
     fail: fail,
@@ -203,17 +227,17 @@ const loadChallengeFile = async ({
     challengeIndex: number;
     community: LocalCommunity;
 }): Promise<{ challengeFile: ChallengeFile }> => {
-    if (
-        !communityChallengeSettings.path &&
-        !resolveChallengeFactoryByName({ name: communityChallengeSettings.name!, pkc: community._pkc }).factory
-    )
+    if (!communityChallengeSettings.path && !communityChallengeSettings.name)
         throw Error("You have to provide either path or a stored pkc-js challenge");
+    const registeredFactory = communityChallengeSettings.path
+        ? undefined
+        : resolveRegisteredChallengeFactory({ name: communityChallengeSettings.name!, challengeIndex, pkc: community._pkc });
     let ChallengeFileFactory: ChallengeFileFactory;
     try {
         ChallengeFileFactory = ChallengeFileFactorySchema.parse(
             communityChallengeSettings.path
                 ? (await import(pathToFileURL(communityChallengeSettings.path).href)).default
-                : resolveChallengeFactoryByName({ name: communityChallengeSettings.name!, pkc: community._pkc }).factory
+                : registeredFactory
         );
         validateChallengeFileFactory({ challengeFileFactory: ChallengeFileFactory, challengeIndex, community });
     } catch (e) {
@@ -403,10 +427,11 @@ const getPendingChallengesOrChallengeVerification = async ({
     // Phase 0: load CommunityChallenge records for every index in parallel.
     const communityChallenges = await Promise.all(
         community.settings.challenges.map(
-            async (s) =>
+            async (s, challengeIndex) =>
                 (
                     await getCommunityChallengeFromCommunityChallengeSettings({
                         communityChallengeSettings: s,
+                        challengeIndex,
                         pkc: community._pkc
                     })
                 ).communityChallenge
@@ -943,9 +968,11 @@ const derivePublicOptions = (communityChallengeSettings: CommunityChallengeSetti
 // edit. Rejecting bad options is validateChallengeSettings' job. See docs/protocol/challenge-authoring.md.
 const loadChallengeFileFromCommunityChallengeSettings = async ({
     communityChallengeSettings,
+    challengeIndex,
     pkc
 }: {
     communityChallengeSettings: CommunityChallengeSetting;
+    challengeIndex?: number;
     pkc?: PKCWithSettingsChallenges;
 }): Promise<ChallengeFile> => {
     // if the challenge is an external file, fetch it and override the communityChallengeSettings values
@@ -956,20 +983,18 @@ const loadChallengeFileFromCommunityChallengeSettings = async ({
             const ChallengeFileFactory = ChallengeFileFactorySchema.parse(importedFile.default);
             challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory({ challengeSettings: communityChallengeSettings }));
         } catch (e) {
-            (e as PKCError).details = {
-                ...(e as PKCError).details,
+            throw new PKCError("ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY", {
                 path: communityChallengeSettings.path,
-                communityChallengeSettings
-            };
-            if (e instanceof Error)
-                e.message = `getCommunityChallengeFromCommunityChallengeSettings failed importing challenge with path '${communityChallengeSettings.path}': ${e.message}`;
-            throw e;
+                communityChallengeSettings,
+                challengeIndex,
+                error: e
+            });
         }
     }
     // else, the challenge is included with pkc-js or user-defined
     else if (communityChallengeSettings.name) {
         const ChallengeFileFactory = ChallengeFileFactorySchema.parse(
-            resolveChallengeFactoryByName({ name: communityChallengeSettings.name, pkc }).factory
+            resolveRegisteredChallengeFactory({ name: communityChallengeSettings.name, challengeIndex, pkc })
         );
         challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory({ challengeSettings: communityChallengeSettings }));
     }
@@ -980,13 +1005,15 @@ const loadChallengeFileFromCommunityChallengeSettings = async ({
 // get the data to be published publicly to community.challenges
 const getCommunityChallengeFromCommunityChallengeSettings = async ({
     communityChallengeSettings,
+    challengeIndex,
     pkc
 }: {
     communityChallengeSettings: CommunityChallengeSetting;
+    challengeIndex?: number;
     pkc?: PKCWithSettingsChallenges;
 }): Promise<{ communityChallenge: CommunityChallenge }> => {
     communityChallengeSettings = CommunityChallengeSettingSchema.parse(communityChallengeSettings);
-    const challengeFile = await loadChallengeFileFromCommunityChallengeSettings({ communityChallengeSettings, pkc });
+    const challengeFile = await loadChallengeFileFromCommunityChallengeSettings({ communityChallengeSettings, challengeIndex, pkc });
     const { challenge, type } = challengeFile;
     return {
         communityChallenge: {
@@ -1001,8 +1028,58 @@ const getCommunityChallengeFromCommunityChallengeSettings = async ({
     };
 };
 
+// One entry of settings.challenges that could not be loaded, as listed in ERR_COMMUNITY_CHALLENGES_FAILED_TO_LOAD
+export interface ChallengeLoadFailure {
+    challengeIndex: number;
+    challengeName?: string;
+    path?: string;
+    error: PKCError;
+}
+
+// Derive the record's community.challenges from settings.challenges, loading every entry before failing so the owner
+// learns about every unloadable entry at once (issue #428). An entry that cannot be loaded can never run, so this
+// throws, unlike option validation, which only reports.
+const deriveCommunityChallengesOrThrow = async ({
+    challengeSettings,
+    pkc,
+    communityAddress
+}: {
+    challengeSettings: CommunityChallengeSetting[];
+    pkc?: PKCWithSettingsChallenges;
+    communityAddress?: string;
+}): Promise<CommunityChallenge[]> => {
+    const results = await Promise.allSettled(
+        challengeSettings.map((communityChallengeSettings, challengeIndex) =>
+            getCommunityChallengeFromCommunityChallengeSettings({ communityChallengeSettings, challengeIndex, pkc })
+        )
+    );
+    const failures: ChallengeLoadFailure[] = [];
+    results.forEach((result, challengeIndex) => {
+        if (result.status === "fulfilled") return;
+        const { name: challengeName, path } = challengeSettings[challengeIndex];
+        const error =
+            result.reason instanceof PKCError
+                ? result.reason
+                : new PKCError("ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY", {
+                      challengeName,
+                      path,
+                      challengeIndex,
+                      error: result.reason
+                  });
+        failures.push({ challengeIndex, challengeName, path, error });
+    });
+    if (failures.length)
+        throw new PKCError("ERR_COMMUNITY_CHALLENGES_FAILED_TO_LOAD", {
+            communityAddress,
+            failures,
+            availableChallengeNames: listAvailableChallengeNames({ pkc })
+        });
+    return results.map((result) => (result as PromiseFulfilledResult<{ communityChallenge: CommunityChallenge }>).value.communityChallenge);
+};
+
 export {
     pkcJsChallenges,
+    deriveCommunityChallengesOrThrow,
     getPendingChallengesOrChallengeVerification,
     getChallengeVerificationFromChallengeAnswers,
     getChallengeVerification,

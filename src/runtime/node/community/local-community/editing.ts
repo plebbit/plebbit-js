@@ -81,9 +81,14 @@ export async function parseChallengesToEdit(
     return {
         challenges: await Promise.all(
             newChallengeSettings.map(
-                async (cs) =>
-                    (await getCommunityChallengeFromCommunityChallengeSettings({ communityChallengeSettings: cs, pkc: community._pkc }))
-                        .communityChallenge
+                async (cs, challengeIndex) =>
+                    (
+                        await getCommunityChallengeFromCommunityChallengeSettings({
+                            communityChallengeSettings: cs,
+                            challengeIndex,
+                            pkc: community._pkc
+                        })
+                    ).communityChallenge
             )
         ),
         _usingDefaultChallenge: isDefaultChallengeStructure(newChallengeSettings)
