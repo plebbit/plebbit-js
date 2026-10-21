@@ -117,10 +117,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
     _publishingToLocalCommunity?: LocalCommunity;
     // The message createX signed with only the community fields it knew, and the options it signed it from. When it was
     // created with just the community's key, publish() re-signs it with the name of the community it loaded (issue #401).
-    private _signedWithKnownCommunityFields?: {
-        message: PublicationFromDecryptedChallengeRequest;
-        unsignedOptions: CreatePublicationOptions;
-    };
+    // Initialized (not just declared) so hideClassPrivateProps sees it and keeps it out of JSON.
+    private _signedWithKnownCommunityFields:
+        | {
+              message: PublicationFromDecryptedChallengeRequest;
+              unsignedOptions: CreatePublicationOptions;
+          }
+        | undefined = undefined;
     // In-flight stale-cache community refresh fired by _fetchCommunityForPublishing. Deliberately
     // not awaited by the publish path, so stop() drains it (issue #270).
     _backgroundCommunityRefresh?: Promise<unknown>;
