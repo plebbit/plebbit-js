@@ -51,14 +51,20 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
     };
 
     // A failed cycle leaves the update trigger set, so waking on it would retry on the next 100ms tick and emit the same
-    // error about ten times a second (issue #430). After a failure the loop waits the full sync interval instead.
+    // error about ten times a second (issue #430). After a failure the loop wakes only for a new request for a record
+    // (an edit, a new publication), counted by _updateTriggerGeneration, and otherwise waits the full sync interval.
     const waitUntilNextSync = async ({ lastSyncFailed }: { lastSyncFailed: boolean }) => {
         const doneWithLoopTime = Date.now();
+        // the state the failed cycle tried to publish is not a new request: take it in before the snapshot
+        if (lastSyncFailed) calculateLatestUpdateTrigger(community);
+        const triggerGenerationAfterFailure = community._updateTriggerGeneration;
         await new Promise((resolve) => {
             const checkInterval = setInterval(() => {
                 const syncIntervalMsPassedSinceDoneWithLoop = Date.now() - doneWithLoopTime >= syncIntervalMs;
                 calculateLatestUpdateTrigger(community); // will update community._communityUpdateTrigger
-                const wokenByTrigger = community._communityUpdateTrigger && !lastSyncFailed;
+                const wokenByTrigger = lastSyncFailed
+                    ? community._updateTriggerGeneration !== triggerGenerationAfterFailure
+                    : community._communityUpdateTrigger;
                 if (wokenByTrigger || shouldStopPublishLoop() || syncIntervalMsPassedSinceDoneWithLoop) {
                     clearInterval(checkInterval);
                     resolve(1);

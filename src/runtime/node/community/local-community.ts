@@ -136,7 +136,17 @@ export class LocalCommunity extends RpcLocalCommunity implements CreateNewLocalC
 
     _cidsToUnPin: Set<string> = new Set<string>();
     _mfsPathsToRemove: Set<string> = new Set<string>();
-    _communityUpdateTrigger: boolean = false;
+    _communityUpdateTriggerValue: boolean = false;
+    // Counts every request for a new record (each time the trigger is set to true), so the publish loop can tell a new
+    // request from the trigger a failed cycle left set (issue #430)
+    _updateTriggerGeneration: number = 0;
+    get _communityUpdateTrigger(): boolean {
+        return this._communityUpdateTriggerValue;
+    }
+    set _communityUpdateTrigger(value: boolean) {
+        if (value) this._updateTriggerGeneration++;
+        this._communityUpdateTriggerValue = value;
+    }
     _combinedHashOfPendingCommentsCids: string = sha256("");
 
     _pageGenerator!: PageGenerator;
