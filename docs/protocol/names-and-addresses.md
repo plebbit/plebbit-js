@@ -199,6 +199,16 @@ the owner meant is not pkc-js's guess. Before issue [#430](https://github.com/pk
 the comments signed with the old name, the community's own pre-publish check rejected every new record
 (`ERR_LOCAL_COMMUNITY_PRODUCED_INVALID_SIGNATURE`), and the renamed record was never published.
 
+Readers do not follow a rename. A client that loaded the community by its old name keeps fetching the same IPNS key,
+but the next record names a different address than the one it asked for, so it emits
+`ERR_THE_COMMUNITY_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED` and stops updating. It has to load the
+community again by the new name or by its public key. A name is part of the community's identity, so this is intended.
+
+An owner can also rename the community with a `CommunityEdit` publication over pubsub (`name` or `address`, owner-only).
+It goes through the same `edit()`, so it is the same address move. An RPC server keeps a renamed community filed under
+its new address whichever way it was renamed, so lookups by the new name, a reconnecting client and auto-start on the
+next boot all find it.
+
 A publication created with only a community's key (`createComment({ communityAddress: <key> })`) is signed again at
 `publish()` with the name of the community record it loaded, so pkc-js never sends a publication without the name to a
 community that has one. Its `signature` therefore changes between `createX` and `publish()` in that case.
