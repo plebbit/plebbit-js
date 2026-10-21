@@ -429,13 +429,28 @@ Migration between minters reuses `exportCommunity`, which is type-blind and alre
 community address in the database is the anchor, and the minter key is node-local configuration that
 is never part of an export, so the database is portable by construction.
 
+## Finding a profile
+
+There is no field on `author` saying an author has a profile. A profile lives at the author's
+identity key, which is always derivable from `comment.signature.publicKey`, so finding one means
+loading the community at that key. A signed `author.hasProfile` hint was considered and rejected
+([#269](https://github.com/pkcprotocol/pkc-js/issues/269)). It would be permanent wire surface, it
+would be self-attested, and since comments are immutable it could never appear on anything the author
+published before creating the profile.
+
+The cost to manage is the negative case. A missing IPNS record is never proven missing, only timed
+out, so clients should:
+
+- **Not resolve authors speculatively** while rendering a feed. Checking every author on a page means
+  a full timeout for each one who has no profile.
+- **Resolve on demand**, for example when the author's page is opened, and render the result as a
+  profile only if it carries `suggested.uiType: "author"`.
+- **Cache the verdict per author key.** Keep a positive result, and keep "no profile" for about a day,
+  so a repeat visit does not wait on the same timeout while a newly created profile still shows up
+  within a day.
+
 ## Open questions
 
-- **A discovery hint on the author object.** A client seeing one of millions of authors has no cheap
-  way to know whether that author's identity key resolves to a profile worth fetching. The key is
-  always derivable from `comment.signature.publicKey`, so a hint would only save a failed lookup, but
-  at scale that may be worth a signed optional boolean on `AuthorPubsubSchema`. Deferred rather than
-  rejected: it is permanent wire surface once published.
-- **Delegating profile moderation** to a third party. The schema already supports it; v1 seeds the
-  roles map with the owner alone.
+- **Delegating profile moderation** to a third party. The schema already supports it; the recommended
+  config gives the roles map the owner alone.
 - **Convergence**, one name carrying both a community feed and its owner's author feed.
