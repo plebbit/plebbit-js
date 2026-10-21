@@ -148,8 +148,10 @@ If an RPC server has no resolvers configured, any request with a domain name wil
 
 Every publication carries the community it was signed for: `communityPublicKey` (required; publish validation rejects
 any other key) and `communityName` (required when the community has a name, `ERR_PUBLICATION_MISSING_COMMUNITY_NAME`;
-it must equal the community's address). Both fields are signed, so they never change once a comment is stored, even
-when the owner later changes the community's name.
+it must equal the community's address, exactly: publish validation does not accept a `.eth`/`.bso` alias). Both fields
+are signed, so they never change once a comment is stored, even when the owner later changes the community's name. The
+page rule below is looser than publish validation on purpose: it also accepts the alias, because a stored comment may
+have been signed under it.
 
 A name is part of the community's identity. Which stored comments a community still publishes is decided by the
 **community identity rule** (issue [#401](https://github.com/pkcprotocol/pkc-js/issues/401)), which is exactly what
