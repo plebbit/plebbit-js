@@ -55,3 +55,43 @@ describeSkipIfRpc(`pkc.communities right after renaming a local community`, asyn
         }
     }
 });
+
+// Same stale window for delete(): until the watcher fires, pkc.communities still lists the deleted address, so a rename
+// of another community to that address fails with ERR_COMMUNITY_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS
+// (the edit.community.test.ts RPC blocks reuse one name across two communities back to back).
+// Skipped under RPC because it stops the pkc's filesystem watcher, which lives in the RPC server
+describeSkipIfRpc(`pkc.communities right after deleting a local community`, async () => {
+    for (const started of [false, true]) {
+        it(`a deleted ${started ? "started" : "stopped"} community leaves pkc.communities at once, freeing its name`, async () => {
+            const records = new Map<string, string | undefined>();
+            const pkc = await mockPKCV2({
+                stubStorage: false,
+                mockResolve: false,
+                pkcOptions: { nameResolvers: [createMockNameResolver({ includeDefaultRecords: true, records })] }
+            });
+            const name = `delete-${started ? "started" : "stopped"}-${uuidV4()}.bso`;
+            const deleted = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+            const next = (await createSubWithNoChallenge({}, pkc)) as LocalCommunity;
+            try {
+                records.set(name, deleted.signer.address);
+                await deleted.edit({ name });
+                if (started) {
+                    await deleted.start();
+                    await resolveWhenConditionIsTrue({ toUpdate: deleted, predicate: async () => typeof deleted.updatedAt === "number" });
+                }
+                expect(pkc.communities).to.include(name);
+                (pkc as unknown as { _communityFsWatchAbort?: AbortController })._communityFsWatchAbort?.abort();
+
+                await deleted.delete();
+                expect(pkc.communities).to.not.include(name);
+
+                records.set(name, next.signer.address);
+                await next.edit({ name });
+                expect(pkc.communities).to.include(name);
+            } finally {
+                await next.delete().catch((): undefined => undefined);
+                await pkc.destroy();
+            }
+        });
+    }
+});
