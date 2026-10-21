@@ -40,7 +40,11 @@ import type Vote from "../../../dist/node/publications/vote/vote.js";
 import type { LocalCommunity } from "../../../dist/node/runtime/node/community/local-community.js";
 import type { RpcLocalCommunity } from "../../../dist/node/community/rpc-local-community.js";
 import type { CommentIpfsWithCidDefined } from "../../../dist/node/publications/comment/types.js";
-import type { CommunityChallengeSetting } from "../../../dist/node/community/types.js";
+import type {
+    CommunityChallengeSetting,
+    CommunityPagesSettings,
+    CreateNewLocalCommunityUserOptions
+} from "../../../dist/node/community/types.js";
 import type { SignerType } from "../../../dist/node/signer/types.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../../dist/node/pubsub-messages/types.js";
 import { createInProcessRpcServer, uniqueTmpDataPath } from "../../helpers/rpc-server-harness.js";
@@ -119,6 +123,29 @@ function replyAbleChallenge(): CommunityChallengeSetting {
     };
 }
 
+// A profile feed is one author's posts in the order they made them, so `new` is the only post sort, and
+// the feed-only default takes no replies. See "Page sorts" in the protocol doc.
+const FEED_ONLY_PAGES: CommunityPagesSettings = { posts: [{ name: "new", preloaded: true }], replies: [] };
+// The reply-able flavor adds one reply sort. Opening it to replies takes both this and an enabled exchange.
+const REPLY_ABLE_PAGES: CommunityPagesSettings = {
+    posts: [{ name: "new", preloaded: true }],
+    replies: [{ name: "new", preloaded: true }]
+};
+
+// The canonical createCommunity call from the protocol doc, verbatim.
+function feedOnlyProfileOptions(anchorPublicKey: string): CreateNewLocalCommunityUserOptions {
+    return {
+        anchor: { publicKey: anchorPublicKey },
+        roles: { [anchorPublicKey]: { role: "owner" } },
+        suggested: { uiType: "author" },
+        settings: {
+            disablePubsubChallengeExchange: true,
+            challenges: [ownerOnlyChallenge()],
+            pages: FEED_ONLY_PAGES
+        }
+    };
+}
+
 // A `fail` challenge reports through challengeErrors, not through the verification `reason`, so
 // publishWithExpectedResult's expectedReason cannot see it.
 async function publishAndCaptureVerification(publication: Comment | Vote): Promise<DecryptedChallengeVerificationMessageType> {
@@ -152,23 +179,25 @@ describe.sequential("author community: a community configured as a profile", () 
         anchorSigner = await createSigner();
         resolverRecords.set(OWNER_DOMAIN, anchorSigner.address);
 
-        community = await createSubWithNoChallenge({ anchor: { publicKey: anchorSigner.address } }, pkc);
-        minterAddress = community.signer.address;
-
-        // The default feed-only config from the protocol doc: the exchange is disabled, so every
-        // publish in this suite goes through the local/RPC shortcut, where the challenge pipeline
-        // still runs. Both roles keys: each is bound to the signer by its own rule, and the suite
-        // exercises both. See "The roles key" in the protocol doc.
-        await community.edit({
-            roles: { [anchorSigner.address]: { role: "owner" }, [OWNER_DOMAIN]: { role: "owner" } },
-            settings: { ...community.settings, disablePubsubChallengeExchange: true, challenges: [ownerOnlyChallenge()] }
+        // The default feed-only config from the protocol doc, in one createCommunity call: the exchange is
+        // disabled, so every publish in this suite goes through the local/RPC shortcut, where the
+        // challenge pipeline still runs. The domain key is added on top so the suite exercises both
+        // roles keys, each bound to the signer by its own rule. See "The roles key" in the protocol doc.
+        const options = feedOnlyProfileOptions(anchorSigner.address);
+        community = <ProfileCommunity>await pkc.createCommunity({
+            ...options,
+            roles: { ...options.roles, [OWNER_DOMAIN]: { role: "owner" } }
         });
+        minterAddress = community.signer.address;
         await startProfile(community, anchorSigner);
     });
 
     afterAll(async () => {
-        await community.delete();
-        await teardown();
+        try {
+            await community.delete();
+        } finally {
+            await teardown();
+        }
     });
 
     describe("identity is the author's key", () => {
@@ -260,6 +289,8 @@ describe.sequential("author community: a community configured as a profile", () 
 
     // The reply-able opt-in: the exchange stays on and the publicationType exclude is what keeps
     // replies open while posts and votes stay owner-only. See "The reply-able flavor" in the doc.
+    // It is also the doc's "converting an existing community" path: an ordinary community turned into a
+    // profile by one edit that spreads the existing settings.
     describe("the reply-able flavor", () => {
         let replyAbleCommunity: ProfileCommunity;
         let replyAbleAnchor: SignerType;
@@ -270,7 +301,8 @@ describe.sequential("author community: a community configured as a profile", () 
             replyAbleCommunity = await createSubWithNoChallenge({ anchor: { publicKey: replyAbleAnchor.address } }, pkc);
             await replyAbleCommunity.edit({
                 roles: { [replyAbleAnchor.address]: { role: "owner" } },
-                settings: { ...replyAbleCommunity.settings, challenges: [replyAbleChallenge()] }
+                suggested: { uiType: "author" },
+                settings: { ...replyAbleCommunity.settings, challenges: [replyAbleChallenge()], pages: REPLY_ABLE_PAGES }
             });
             await startProfile(replyAbleCommunity, replyAbleAnchor);
             ownerPost = await publishRandomPost({
@@ -286,6 +318,17 @@ describe.sequential("author community: a community configured as a profile", () 
 
         it("carries a pubsubTopic, since the exchange stays enabled", () => {
             expect(replyAbleCommunity.raw.communityIpfs!.pubsubTopic).to.be.a("string");
+        });
+
+        it("declares itself through the conversion edit, under a signature that covers the hint", () => {
+            expect(replyAbleCommunity.raw.communityIpfs!.suggested?.uiType).to.equal("author");
+            expect(replyAbleCommunity.raw.communityIpfs!.signature.signedPropertyNames).to.include("suggested");
+        });
+
+        it("publishes one post sort and one reply sort, both `new`", () => {
+            const pageSorts = replyAbleCommunity.raw.communityIpfs!.pageSorts;
+            expect(Object.keys(pageSorts?.posts ?? {})).to.deep.equal(["new"]);
+            expect(Object.keys(pageSorts?.replies ?? {})).to.deep.equal(["new"]);
         });
 
         // The second exclude is what keeps this flavor reply-able: only posts and votes are owner-only.
@@ -350,21 +393,15 @@ describe.sequential("author community: a community configured as a profile", () 
         });
     });
 
-    // The record declares itself a profile through suggested.uiType, set through the same edit() as the
-    // rest of the configuration. It is a rendering hint clients may ignore, spoofable like `title`, and
-    // nothing in pkc-js branches on it. See "Declaring the profile to UIs" in the protocol doc.
+    // The record declares itself a profile through suggested.uiType, set in the same createCommunity call
+    // as the rest of the configuration. It is a rendering hint clients may ignore, spoofable like `title`,
+    // and nothing in pkc-js branches on it. See "Declaring the profile to UIs" in the protocol doc.
     describe("declaring the profile to UIs", () => {
-        it("edit({ suggested: { uiType } }) lands in the published signed record", async () => {
-            expect(community.raw.communityIpfs!.suggested?.uiType).to.be.undefined;
-            await community.edit({ suggested: { uiType: "author" } });
-            // edit() patches raw.communityIpfs from internal state immediately, old signature and all,
-            // so the record carrying the hint is not proof it was re-signed. Wait for the signature that
-            // covers it: signedPropertyNames lists only the fields present at signing time.
-            await resolveWhenConditionIsTrue({
-                toUpdate: community,
-                predicate: async () => community.raw.communityIpfs?.signature.signedPropertyNames.includes("suggested") === true
-            });
+        // signedPropertyNames lists only the fields present at signing time, so this is what proves the
+        // signature covers the hint, not merely that the record carries it.
+        it("carries suggested.uiType in the signed record from its first publish", () => {
             expect(community.raw.communityIpfs!.suggested?.uiType).to.equal("author");
+            expect(community.raw.communityIpfs!.signature.signedPropertyNames).to.include("suggested");
         });
 
         it("exposes the hint on the community instance", () => {
@@ -422,6 +459,25 @@ describe.sequential("author community: a community configured as a profile", () 
                 .find((comment) => comment.cid === crosspostingPost.cid);
             expect(pageComment).to.not.be.undefined;
             expect(pageComment!.crosspost?.cid).to.equal(crosspostingPost.raw.comment!.crosspost!.cid);
+        });
+    });
+
+    // The cheap shape the page config exists for: one post sort, no reply sorts, and while the feed fits
+    // in one page, nothing but that page. The single-chunk shortcut means no pageCids at all, so a profile
+    // adds no rotating page CIDs beyond the record itself. See "Page sorts" in the protocol doc.
+    describe("pages: one sort, one page", () => {
+        it("publishes only the `new` post sort and no reply sorts", () => {
+            const pageSorts = community.raw.communityIpfs!.pageSorts;
+            expect(Object.keys(pageSorts?.posts ?? {})).to.deep.equal(["new"]);
+            expect(Object.keys(pageSorts?.replies ?? {})).to.deep.equal([]);
+        });
+
+        // Runs after the feed block, so the record already holds several posts and a crosspost.
+        it("embeds the feed as a single preloaded `new` page with no pageCids", () => {
+            const posts = community.raw.communityIpfs!.posts;
+            expect(Object.keys(posts?.pages ?? {})).to.deep.equal(["new"]);
+            expect(posts?.pages.new?.comments.length).to.be.greaterThan(1);
+            expect(posts?.pageCids).to.be.undefined;
         });
     });
 
