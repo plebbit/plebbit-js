@@ -437,8 +437,8 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         this._moveCommunityState(filedAddress, community.address);
     }
 
-    // Keeps a started community filed under its current address while it is started. The listener is tracked, so
-    // stopping or deleting the community through the server removes it with the subscription listeners.
+    // Keeps a started community filed under its current address while it is started. It is the server's own listener,
+    // not a subscription's, so it is not in _trackedCommunityListeners; _postStoppingOrDeleting removes it.
     private _followAddressChanges(community: LocalCommunity): void {
         let listener = this._addressChangeListeners.get(community);
         if (!listener) {
@@ -447,7 +447,6 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         }
         if (community.listeners("update").includes(listener)) return;
         community.on("update", listener);
-        this._trackCommunityListener(community, "update", listener);
     }
 
     async _autoStartPreviousCommunities(): Promise<void> {
@@ -925,6 +924,8 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
             }
             this._trackedCommunityListeners.delete(community);
         }
+        const addressChangeListener = this._addressChangeListeners.get(community);
+        if (addressChangeListener) community.removeListener("update", addressChangeListener);
     }
 
     async editCommunity(params: any): Promise<RpcLocalCommunityUpdateResultType> {
