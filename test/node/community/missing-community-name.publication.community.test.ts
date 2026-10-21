@@ -50,11 +50,11 @@ describeSkipIfRpc.sequential("a community with a name requires communityName on 
         await community.start();
         await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
         moderatorSigner = await pkc.createSigner();
+        const updateCidBeforeName = community.updateCid;
         await community.edit({ address: domainAddress, roles: { [moderatorSigner.address]: { role: "moderator" } } });
-        await resolveWhenConditionIsTrue({
-            toUpdate: community,
-            predicate: async () => community.name === domainAddress && community.roles?.[moderatorSigner.address]?.role === "moderator"
-        });
+        // edit() sets community.name before anything is published, so wait for the record that carries the name:
+        // publications created by key re-sign with the name of the record the client loads
+        await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => community.updateCid !== updateCidBeforeName });
 
         targetPost = await publishRandomPost({ communityAddress: domainAddress, pkc });
     });
