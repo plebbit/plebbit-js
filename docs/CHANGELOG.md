@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.119](https://github.com/pkcprotocol/pkc-js/compare/v0.0.118...v0.0.119) (2026-10-21)
+
+### Features
+
+* **community:** author profiles as a community configuration, with suggested.uiType ([#31](https://github.com/pkcprotocol/pkc-js/issues/31)) ([#268](https://github.com/pkcprotocol/pkc-js/issues/268)) ([1bd1b5c](https://github.com/pkcprotocol/pkc-js/commit/1bd1b5c4d2ab1141b03d34dbf98f0a5c80433cc9)), closes [#32](https://github.com/pkcprotocol/pkc-js/issues/32) [#237](https://github.com/pkcprotocol/pkc-js/issues/237) [#287](https://github.com/pkcprotocol/pkc-js/issues/287) [#294](https://github.com/pkcprotocol/pkc-js/issues/294) [#267](https://github.com/pkcprotocol/pkc-js/issues/267)
+
 ## [0.0.118](https://github.com/pkcprotocol/pkc-js/compare/v0.0.117...v0.0.118) (2026-10-20)
 
 ### Bug Fixes
