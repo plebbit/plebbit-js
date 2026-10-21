@@ -4,7 +4,7 @@ import { LRUCache } from "lru-cache";
 import { PKCError } from "../../../../pkc-error.js";
 import env from "../../../../version.js";
 import { pubsubTopicToDhtKey, removeMfsFilesSafely, sleepUntilTimeoutOrAbort } from "../../../../util.js";
-import { moveCommunityDbToDeletedDirectory } from "../../util.js";
+import { moveCommunityDbToDeletedDirectory, refreshCommunitiesList } from "../../util.js";
 import { getCommunityChallengeFromCommunityChallengeSettings } from "../challenges/index.js";
 import { collectChallengeSettingsValidationFailures } from "../challenges/validate-challenge-settings.js";
 import {
@@ -627,6 +627,7 @@ export async function deleteCommunity(community: LocalCommunity) {
     }
 
     await moveCommunityDbToDeletedDirectory(community.address, community._pkc);
+    refreshCommunitiesList(community._pkc); // unlist the address now, not when the filesystem watcher fires
 
     log(`Deleted community (${community.address}) successfully`);
 }
