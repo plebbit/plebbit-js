@@ -219,6 +219,14 @@ function withoutRemovedPageSortOptions(options: Record<string, string>, pageSort
     return Object.fromEntries(Object.entries(options).filter(([optionName]) => !removed.includes(optionName)));
 }
 
+// The same, applied to a stored entry before its file is loaded: the factory, validatePageSortSettings and the resolved
+// settings all see the entry without the removed options, so a file that rejects undeclared options keeps working
+function withoutRemovedPageSortSettingOptions(pageSortSettings: CommunityPageSortSetting): CommunityPageSortSetting {
+    if (!pageSortSettings.options) return pageSortSettings;
+    const options = withoutRemovedPageSortOptions(pageSortSettings.options, describePageSort(pageSortSettings));
+    return options === pageSortSettings.options ? pageSortSettings : { ...pageSortSettings, options };
+}
+
 // Generic validation of one entry against its loaded file, plus the reserved-option parsing pkc-js needs anyway.
 // Returns the resolved sort, or the first failure. A file that declares no optionInputs makes no promise about
 // which options it reads, so the declared-key check is skipped for it, same as challenges.
@@ -234,7 +242,7 @@ function resolveOneEntry({
     pageSortIndex: number;
 }): { resolved: ResolvedPageSort } | { error: PKCError } {
     const baseDetails = { scope, pageSortIndex, pageSortName: describePageSort(pageSortSettings), sortName: file.sortName };
-    const entryOptions = withoutRemovedPageSortOptions(pageSortSettings.options ?? {}, baseDetails.pageSortName);
+    const entryOptions = pageSortSettings.options ?? {}; // removed options already dropped by the caller
 
     if (file.scope && file.scope !== scope)
         return { error: new PKCError("ERR_PAGE_SORT_SCOPE_MISMATCH", { ...baseDetails, fileScope: file.scope }) };
@@ -324,7 +332,8 @@ export async function resolvePageSortsAndCollectFailures({
     const resolved: ResolvedPageSorts = { posts: [], replies: [] };
     for (const { scope, entries } of entriesOfEveryScope(pagesSettings)) {
         const seenSortNames = new Set<string>();
-        for (const [pageSortIndex, pageSortSettings] of entries.entries()) {
+        for (const [pageSortIndex, storedPageSortSettings] of entries.entries()) {
+            const pageSortSettings = withoutRemovedPageSortSettingOptions(storedPageSortSettings);
             const pageSortName = describePageSort(pageSortSettings);
             let file: PageSortFile;
             try {
