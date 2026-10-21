@@ -34,11 +34,15 @@ real one: the local shortcut only suppresses the pubsub echo and the challenge p
 a multi-tenant minter the challenge is what rejects the other tenants, and if the exchange is ever
 re-enabled the configuration fails closed rather than open.
 
+The whole profile is one `createCommunity` call:
+
 ```js
-await community.edit({
+const profile = await pkc.createCommunity({
+    anchor: { publicKey: An },           // the author's identity key, see delegated-ipns.md
     roles: {
-        [An]: { role: "owner" }          // An is the anchor publicKey, see "The roles key" below
+        [An]: { role: "owner" }          // createCommunity never adds this itself, see "The roles key" below
     },
+    suggested: { uiType: "author" },     // declares the profile to UIs, see "Declaring the profile to UIs"
     settings: {
         disablePubsubChallengeExchange: true, // feed-only: nobody can publish over pubsub
         challenges: [
@@ -48,23 +52,66 @@ await community.edit({
                 publicOptions: ["error"], // publish the rejection text, see "What a reader can actually tell"
                 exclude: [{ roles: ["owner"] }]
             }
-        ]
+        ],
+        pages: {
+            posts: [{ name: "new", preloaded: true }], // the only sort a profile feed needs, see "Page sorts"
+            replies: []                                 // feed-only: no reply pages
+        }
+    }
+})
+```
+
+Then publish the anchor record and start the community, as in [delegated-ipns.md](delegated-ipns.md).
+
+**What `disablePubsubChallengeExchange: true` costs.** Nobody but the owner can publish anything to
+the profile: no replies, no votes. That includes replies to the crossposts the feed is made of, so a
+reader who wants to discuss a crossposted comment has to do it at the origin community, where it was
+first published. That discussion is unaffected, but it is not mirrored into the profile, see
+"The profile as a backup". A profile that should take replies is the reply-able flavor below.
+
+**Converting an existing community.** The same configuration can be applied with `edit()` to a
+community that was created with `anchor`; an ordinary community cannot be re-keyed onto the author's
+identity afterwards. `settings` and `suggested` are replaced wholesale on edit, so spread what is
+already there, or the edit silently drops everything it does not repeat, `settings.pages` included.
+`roles` is a patch, so it needs no spread:
+
+```js
+await community.edit({
+    roles: { [An]: { role: "owner" } },
+    suggested: { ...community.suggested, uiType: "author" },
+    settings: {
+        ...community.settings,
+        disablePubsubChallengeExchange: true,
+        challenges: [/* the fail challenge above */],
+        pages: { posts: [{ name: "new", preloaded: true }], replies: [] }
     }
 })
 ```
 
 ### The reply-able flavor
 
-To let strangers reply, leave the exchange enabled and make the challenge configuration carry the
-whole restriction. The built-in `fail` challenge exists to be paired with `exclude`: it always fails,
-so the only way past it is to be excluded. Two challenges express "the owner posts, anyone may reply":
+To let strangers reply, leave the exchange enabled, add a reply sort, and make the challenge
+configuration carry the whole restriction. Replies take both settings, and either one alone is not
+enough: with the exchange enabled and `replies: []`, a stranger's reply is accepted and counted but
+listed in no page, and with a reply sort but the exchange disabled, nobody but the owner can reply.
+
+The built-in `fail` challenge exists to be paired with `exclude`: it always fails, so the only way
+past it is to be excluded. Two challenges express "the owner posts, anyone may reply". In the
+`createCommunity` call above, drop `disablePubsubChallengeExchange` (unset means enabled) and
+replace `challenges` and `pages`:
 
 ```js
-await community.edit({
+const profile = await pkc.createCommunity({
+    anchor: { publicKey: An },
     roles: {
         [An]: { role: "owner" }
     },
+    suggested: { uiType: "author" },
     settings: {
+        pages: {
+            posts: [{ name: "new", preloaded: true }],
+            replies: [{ name: "new", preloaded: true }] // one reply sort, see "Page sorts"
+        },
         challenges: [
             {
                 name: "fail",
@@ -200,8 +247,10 @@ base58btc form. The base36 and base32 encodings of the same key (`k51...`, `bafz
 gateway paths, and the address schema is a plain string, so a roles key copied from a gateway URL is
 accepted and never matches.
 
-Both keys can sit in the map side by side. The peer-ID key is what `createCommunity` gives an owner;
-the domain key is what an owner adds once they publish under a domain and want the record to show it:
+Both keys can sit in the map side by side. The peer-ID key is the one every profile needs, and
+`createCommunity` does not add it: pass it in `roles` yourself before the owner's first publication,
+as the call above does. The domain key is what an owner adds once they publish under a domain and want
+the record to show it:
 
 ```js
 roles: {
@@ -225,8 +274,11 @@ does not weaken "a configuration, not a type": nothing in pkc-js branches on it,
 validation or loading, and a record that lies about it verifies fine, exactly like a record with a
 misleading `title`.
 
+It is part of the `createCommunity` call above. On an existing community, spread the rest of
+`suggested`, since `edit()` replaces it whole:
+
 ```js
-await community.edit({ suggested: { uiType: "author" } })
+await community.edit({ suggested: { ...community.suggested, uiType: "author" } })
 ```
 
 `"author"` is the only defined value. Absence means an ordinary community. Clients must ignore values
@@ -239,12 +291,50 @@ discourages it, while `createCommunity` never seeds `roles`, so a half-configure
 entry. Both signals are claims by the same node that writes the record, so the inference buys no
 extra trust over the declaration, it only buys false positives.
 
+## Page sorts
+
+An unconfigured community generates nine post sorts and five reply sorts on every update cycle,
+chunked, added to IPFS and rotated. A profile feed is one author's posts in the order they made them,
+so almost all of that is for nobody, and profiles are potentially one per author, so they outnumber
+boards by a wide margin. `settings.pages` (see [page-sorts.md](page-sorts.md)) cuts a profile to what
+it serves:
+
+| flavor | `settings.pages` |
+|---|---|
+| feed-only (default) | `{ posts: [{ name: "new", preloaded: true }], replies: [] }` |
+| reply-able | `{ posts: [{ name: "new", preloaded: true }], replies: [{ name: "new", preloaded: true }] }` |
+
+**Posts: `new` only, preloaded.** While the feed fits in one page, the single-chunk shortcut applies:
+the record embeds `posts.pages.new` and carries no `pageCids` at all, so a small profile adds no page
+CIDs beyond its own record. A client that wants another order rebuilds it locally from the embedded
+page. Past one page, `new` chunks into `pageCids` like any other sort. `pinnedFirst` keeps its default
+`"true"`, so a post the owner pins stays on top.
+
+**Replies: none in the feed-only default.** `replies: []` generates no reply pages. Watch for one
+consequence: the owner can still reply over RPC, since the `fail` challenge excludes their role. That
+reply is accepted and counted in the parent's `replyCount` and `lastReplyTimestamp`, but no page lists
+it, so readers see a count with nothing to open. An owner who wants to reply uses the reply-able
+flavor.
+
+**Replies: `new`, preloaded, in the reply-able flavor.** Votes are rejected there (see "Votes stay
+rejected"), so every score ties and `best` or `top` would order nothing. An owner who re-enables
+votes may switch the reply sort to `best`.
+
+Like every other setting, `pages` is replaced with `settings` on `edit()`, so spread the existing
+settings when changing anything else. Any change to `settings.pages` regenerates every CommentUpdate
+once, on the next pass.
+
 ## The feed
 
 The owner's client publishes a crosspost into the profile alongside the real comment, so the profile
 shows the author's activity. Backfilling history by walking `author.previousCommentCid` works the same
 way. Both are client behavior: pkc-js ships the crosspost primitive and the community, and does not
 mirror anything on an author's behalf.
+
+Entries sort by when they were crossposted, not by when the original was published. A crosspost is a
+native comment of the profile with its own `timestamp`, and `new` orders by it. Live crossposts land
+within moments of their originals, but history backfilled through `previousCommentCid` all lands at
+the time of the backfill. A client that wants true chronology re-sorts on `crosspost.comment.timestamp`.
 
 Only the author can sign as the author, so a feed entry is either author-signed or it is a foreign
 record embedded by the minter. There is no third option, and the second was rejected because it made
@@ -261,21 +351,59 @@ minter-computed number would be the owner's own delegate attesting to the owner'
 Duplicate crossposts of the same `cid` are not rejected. Two people crossposting the same comment to
 one community is legitimate, so idempotency belongs to whatever does the mirroring.
 
+## The profile as a backup
+
+A crosspost embeds the whole author-signed record, so a profile is also the author's own copy of
+their posts. A client that crossposts each of the author's posts into their profile as it publishes
+them (a bare crosspost, with nothing added, see [crossposts.md](crossposts.md)) keeps a copy the
+origin community cannot take back. If the origin purges the post, or the board disappears, the
+profile still holds the text, and tier 1 still proves the author wrote it.
+
+What a reader sees then follows from the three render states in crossposts.md:
+
+- **Purged at the origin, or the origin is gone:** the entry is **unknown**. The origin no longer
+  serves a `CommentUpdate` for it, so tier 2 never completes. The text still renders, and the entry
+  stops counting toward karma, unless a client had already verified the origin's update and kept it.
+- **Removed or deleted at the origin:** the entry is **removed**, because the origin still serves an
+  update that says so.
+- **Replies do not follow.** The profile copy is its own comment, with its own reply thread or none.
+  The origin's discussion is not mirrored, and when the origin purges a post its replies go with it.
+
+Clients SHOULD treat a **self-signed** entry in a profile differently from an ordinary crosspost.
+Self-signed means the embedded record was signed by the profile's own key: the address derived from
+`crosspost.comment.signature.publicKey` equals the profile's `publicKey`. Tier 1 makes that check with
+no network. For such an entry:
+
+- **When it is unknown**, render it as the author's own copy instead of with the generic unverified
+  marker, and word it so it does not assert the origin, for example "kept by the author; its original
+  community did not confirm it". Show the origin community only as the author's claim, which is all it
+  is at tier 1: an unknown entry may have been purged, or may never have been accepted at all.
+- **When it is removed or deleted at the origin**, keep showing its text, labeled "removed at C" or
+  "deleted at C". Hiding a removed crosspost is reasonable in a board, but in a profile it defeats the
+  backup. This includes the author deleting the original themselves: a deletion at the origin does not
+  reach the profile copy.
+- **It leaves the profile only through the profile's own moderation**: the owner's `CommentEdit` with
+  `deleted`, or a `CommentModeration` with `removed` or `purged`, on the profile copy.
+
+Foreign records embedded in a profile, signed by anyone else, get the ordinary crosspost treatment.
+
 ## Two flavors
 
 **Feed-only**, the default. `settings.disablePubsubChallengeExchange` is set, the record omits
 `pubsubTopic`, and nobody can publish over pubsub, replies and votes included. The owner publishes
 over RPC, because that is the only remaining path, and the `fail` challenge is belt and braces rather
 than the mechanism. A profile is a broadcast of one author's activity, so this is the shape most
-profiles want, and it is also the cheapest: the node runs no exchange topic at all.
+profiles want, and it is also the cheapest: the node runs no exchange topic at all, and with
+`replies: []` it builds no reply pages either.
 
 **Reply-able**, the opt-in. Leave the exchange enabled, so the record carries a `pubsubTopic` and
-strangers can reply over pubsub. The restriction then lives entirely in the challenge configuration
-above, which needs the second challenge or replies are unguarded. Strangers still cannot vote, see
-"Votes stay rejected" above. An owner who can only publish over pubsub themselves, such as a
-browser-only author with no RPC access to their minter, must also leave the exchange enabled; if they
-still want no replies, they drop the `publicationType` exclude and the second challenge, so the `fail`
-challenge rejects everything the owner does not sign.
+strangers can reply over pubsub, and add a reply sort so those replies appear in pages. The
+restriction then lives entirely in the challenge configuration above, which needs the second challenge
+or replies are unguarded. Strangers still cannot vote, see "Votes stay rejected" above. An owner who
+can only publish over pubsub themselves, such as a browser-only author with no RPC access to their
+minter, must also leave the exchange enabled; if they still want no replies, they drop the
+`publicationType` exclude and the second challenge, so the `fail` challenge rejects everything the
+owner does not sign, and keep `replies: []`.
 
 ## How the owner publishes
 
