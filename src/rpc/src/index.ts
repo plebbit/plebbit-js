@@ -166,6 +166,8 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
     private _settingsSenders = new Map<string, (args: { newPKC: PKC }) => Promise<void>>();
 
     private _startedCommunities: { [address: string]: "pending" | LocalCommunity } = {};
+    // The server's own update listener on each started community, which keeps it filed under its current address
+    private _addressChangeListeners = new WeakMap<LocalCommunity, () => void>();
     private _autoStartOnBoot: boolean = false;
     private _autoStartConcurrency: number;
     private _rpcStateDb: BetterSqlite3Database | undefined;
@@ -344,6 +346,15 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         const { name, publicKey } = identifier;
         if (!name && !publicKey) throw new Error("At least one of name or publicKey must be provided");
         if (name && name in this._startedCommunities) return name;
+        // A client that subscribed before a rename still sends the old name (it re-subscribes with its original params
+        // after a reconnect), so a started community is also found by its identity key, wherever it is filed now (#430)
+        if (publicKey) {
+            const startedAddress = Object.keys(this._startedCommunities).find((address) => {
+                const entry = this._startedCommunities[address];
+                return entry !== "pending" && entry.publicKey === publicKey;
+            });
+            if (startedAddress) return startedAddress;
+        }
         if (name && this.pkc.communities.includes(name)) return name;
         if (publicKey && publicKey in this._startedCommunities) return publicKey;
         if (publicKey && this.pkc.communities.includes(publicKey)) return publicKey;
@@ -402,6 +413,41 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         const db = this._getRpcStateDb();
         if (!db) return;
         db.prepare("DELETE FROM community_states WHERE address = ?").run(address);
+    }
+
+    private _moveCommunityState(oldAddress: string, newAddress: string): void {
+        const db = this._getRpcStateDb();
+        if (!db || oldAddress === newAddress) return;
+        db.prepare("UPDATE OR REPLACE community_states SET address = @newAddress WHERE address = @oldAddress").run({
+            newAddress,
+            oldAddress
+        });
+    }
+
+    // A started community is filed under its address in _startedCommunities and community_states. A rename moves the
+    // address, whichever path renamed it (editCommunity, an owner's CommunityEdit over pubsub, another LocalCommunity
+    // instance in this process), so the entry and its auto-start row follow it here. Otherwise lookups by the new
+    // address miss it and the next boot drops it from auto-start as "no longer exists" (issue #430).
+    private _fileStartedCommunityUnderItsAddress(community: LocalCommunity): void {
+        if (this._startedCommunities[community.address] === community) return;
+        const filedAddress = Object.keys(this._startedCommunities).find((address) => this._startedCommunities[address] === community);
+        if (filedAddress === undefined) return;
+        this._startedCommunities[community.address] = community;
+        delete this._startedCommunities[filedAddress];
+        this._moveCommunityState(filedAddress, community.address);
+    }
+
+    // Keeps a started community filed under its current address while it is started. The listener is tracked, so
+    // stopping or deleting the community through the server removes it with the subscription listeners.
+    private _followAddressChanges(community: LocalCommunity): void {
+        let listener = this._addressChangeListeners.get(community);
+        if (!listener) {
+            listener = () => this._fileStartedCommunityUnderItsAddress(community);
+            this._addressChangeListeners.set(community, listener);
+        }
+        if (community.listeners("update").includes(listener)) return;
+        community.on("update", listener);
+        this._trackCommunityListener(community, "update", listener);
     }
 
     async _autoStartPreviousCommunities(): Promise<void> {
@@ -496,6 +542,8 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
             await community.start();
             this._startedCommunities[address] = community;
             this._updateCommunityState(address, { wasStarted: true, wasExplicitlyStopped: false });
+            this._followAddressChanges(community);
+            this._fileStartedCommunityUnderItsAddress(community);
             return community;
         } catch (e) {
             delete this._startedCommunities[address];
@@ -787,6 +835,8 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
                     await community.start();
                     this._startedCommunities[address] = community;
                     this._updateCommunityState(address, { wasStarted: true, wasExplicitlyStopped: false });
+                    this._followAddressChanges(community);
+                    this._fileStartedCommunityUnderItsAddress(community);
                 } catch (e) {
                     const cleanup = this.subscriptionCleanups?.[connectionId]?.[subscriptionId];
                     if (cleanup) await cleanup();
@@ -797,18 +847,20 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         };
 
         this._onSettingsChange[connectionId][subscriptionId] = async ({ newPKC }: { newPKC: PKC }) => {
-            const current = this._startedCommunities[address];
+            // the community may have been renamed since it was started, so look up where it is filed now (#430)
+            const filedAddress = this._findCommunityAddress({ name, publicKey }) ?? address;
+            const current = this._startedCommunities[filedAddress];
             if (!current || current === "pending") return;
-            const community = await this.getStartedCommunity(address);
+            const community = await this.getStartedCommunity(filedAddress);
             // mark as pending so other consumers wait while we restart with the new pkc instance
-            this._startedCommunities[address] = "pending";
+            this._startedCommunities[filedAddress] = "pending";
             try {
                 await community.stop();
                 community._pkc = newPKC;
                 await community.start();
-                this._startedCommunities[address] = community;
+                this._startedCommunities[filedAddress] = community;
             } catch (error) {
-                delete this._startedCommunities[address];
+                delete this._startedCommunities[filedAddress];
                 throw error;
             }
         };
@@ -884,8 +936,11 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
 
         const address = this._findCommunityAddress({ name, publicKey });
         if (!address) throw new PKCError("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_COMMUNITY", { communityAddress: name || publicKey });
+        // A start still pending is awaited, so the edit applies to the started community instead of moving the DB out
+        // from under it
+        const startedCommunity = address in this._startedCommunities ? await this.getStartedCommunity(address) : undefined;
         let community: LocalCommunity;
-        if (this._startedCommunities[address] instanceof LocalCommunity) community = <LocalCommunity>this._startedCommunities[address];
+        if (startedCommunity instanceof LocalCommunity) community = startedCommunity;
         else {
             community = <LocalCommunity>await pkc.createCommunity({ address });
             community.once("error", (error: PKCError | Error) => {
@@ -894,19 +949,12 @@ class PKCWsServer extends TypedEmitter<PKCRpcServerEvents> {
         }
 
         await community.edit(editCommunityOptions);
-        if (editCommunityOptions.address && this._startedCommunities[address]) {
-            // if (editCommunityOptions.address && this._startedCommunities[address] && editCommunityOptions.address !== address) {
-            this._startedCommunities[editCommunityOptions.address] = this._startedCommunities[address];
-            delete this._startedCommunities[address];
-
-            // Update RPC state with new address
-            const db = this._getRpcStateDb();
-            if (db) {
-                db.prepare("UPDATE community_states SET address = @newAddress WHERE address = @oldAddress").run({
-                    newAddress: editCommunityOptions.address,
-                    oldAddress: address
-                });
-            }
+        // edit({ address }), edit({ name }) and edit({ name: undefined }) all move the address (#430). The community's
+        // update listener has already re-filed a started community; this also covers one that is not started, whose
+        // auto-start row (e.g. an explicit stop) must follow it.
+        if (community.address !== address) {
+            if (startedCommunity === community) this._fileStartedCommunityUnderItsAddress(community);
+            else this._moveCommunityState(address, community.address);
         }
         if (typeof community.updatedAt === "number") return community.toJSONInternalRpcAfterFirstUpdate();
         else return community.toJSONInternalRpcBeforeFirstUpdate();
