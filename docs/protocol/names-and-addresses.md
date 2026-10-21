@@ -168,15 +168,15 @@ in `src/pages/page-sort-scoring.ts`).
 
 What happens to comments published before an address change:
 
-| Address change | Comments signed before it | Published after it |
-| --- | --- | --- |
-| key only → `C` (a name added) | key, no name | yes |
-| `a.eth` → `a.bso` | named `a.eth` | yes, the alias matches |
-| `N` → `M` (a different name) | named `N` | **no**, they belong to the identity `N` |
-| `N` → `M` | key, no name | yes |
-| `N` → key only (the name dropped) | named `N` | yes: a community without a name does not check names, so clients still accept them |
-| `N` → key only | pre-v37, named `N`, no key | yes |
-| `N` → `M` → `N` (renamed back) | named `N` | yes again, the rule is evaluated against the current name at every page build |
+| Address change                    | Comments signed before it  | Published after it                                                                                          |
+| --------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| key only → `C` (a name added)     | key, no name               | yes: they claim no name, and clients accept them ([#413](https://github.com/pkcprotocol/pkc-js/issues/413)) |
+| `a.eth` → `a.bso`                 | named `a.eth`              | yes, the alias matches                                                                                      |
+| `N` → `M` (a different name)      | named `N`                  | **no**, they belong to the identity `N`                                                                     |
+| `N` → `M`                         | key, no name               | yes                                                                                                         |
+| `N` → key only (the name dropped) | named `N`                  | yes: a community without a name does not check names, so clients still accept them                          |
+| `N` → key only                    | pre-v37, named `N`, no key | yes                                                                                                         |
+| `N` → `M` → `N` (renamed back)    | named `N`                  | yes again, the rule is evaluated against the current name at every page build                               |
 
 ### Changing a community's name
 
@@ -185,13 +185,13 @@ community), so changing the name and changing the address are one operation. `ed
 both move the community's DB file, its start lock and its MFS `postUpdates` folder to the new address, and from the next
 page build the identity rule above filters by the new name:
 
-| Edit | Result |
-| --- | --- |
-| `edit({ name: "m.bso" })` or `edit({ address: "m.bso" })` | name and address become `m.bso` |
-| `edit({ name: undefined })` or `edit({ address: <identity key> })` | the name is dropped, the address becomes the key |
-| `edit({ name: "m.bso", address: "m.bso" })` | accepted, same as either alone |
-| `edit({ name: "m.bso", address: "n.bso" })` | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
-| `edit({ name: undefined, address: "m.bso" })` | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
+| Edit                                                               | Result                                                |
+| ------------------------------------------------------------------ | ----------------------------------------------------- |
+| `edit({ name: "m.bso" })` or `edit({ address: "m.bso" })`          | name and address become `m.bso`                       |
+| `edit({ name: undefined })` or `edit({ address: <identity key> })` | the name is dropped, the address becomes the key      |
+| `edit({ name: "m.bso", address: "m.bso" })`                        | accepted, same as either alone                        |
+| `edit({ name: "m.bso", address: "n.bso" })`                        | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
+| `edit({ name: undefined, address: "m.bso" })`                      | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
 
 The mismatch is rejected before anything is changed, so no other field of that edit is applied either: which of the two
 the owner meant is not pkc-js's guess. Before issue [#430](https://github.com/pkcprotocol/pkc-js/issues/430),

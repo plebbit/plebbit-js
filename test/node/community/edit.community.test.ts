@@ -35,6 +35,7 @@ for (const editKey of ["address", "name"] as const) {
         let remotePKC: PKCType;
         let community: LocalCommunity | RpcLocalCommunity;
         let postToPublishAfterEdit: Comment;
+        let postPublishedBeforeEdit: Comment;
         let bsoNameAddress: string;
         let pkcResolverRecords: Map<string, string | undefined>;
         let remoteResolverRecords: Map<string, string | undefined>;
@@ -71,7 +72,7 @@ for (const editKey of ["address", "name"] as const) {
             await pkc.resolveAuthorName({ name: "esteban.bso" });
             await community.start();
             await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
-            await publishRandomPost({ communityAddress: community.address, pkc: pkc });
+            postPublishedBeforeEdit = await publishRandomPost({ communityAddress: community.address, pkc: pkc });
         });
         afterAll(async () => {
             await community.stop();
@@ -145,9 +146,16 @@ for (const editKey of ["address", "name"] as const) {
             expect(subs).to.not.include(community.signer.address);
         });
 
-        it(`Local community resets posts after changing address`, async () => {
-            expect(community.posts.pages).to.deep.equal({});
-            expect(community.posts.pageCids).to.deep.equal({});
+        // #413: the post was signed with the community's key and no name, so it claims no name that conflicts with the
+        // new one and clients accept it; the community keeps it (name-added-comments.community.test.ts covers the rest)
+        it(`Local community keeps the posts published before it added a name`, async () => {
+            await resolveWhenConditionIsTrue({
+                toUpdate: community,
+                predicate: async () =>
+                    community.raw.communityIpfs?.name === bsoNameAddress &&
+                    Boolean(community.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postPublishedBeforeEdit.cid))
+            });
+            expect(community.posts.pages.hot!.comments.map((comment) => comment.cid)).to.include(postPublishedBeforeEdit.cid);
         });
 
         it(`Start locks are moved to the new address`, async () => {
@@ -162,12 +170,10 @@ for (const editKey of ["address", "name"] as const) {
             expect(loadedCommunity.raw.communityIpfs).to.deep.equal(community.raw.communityIpfs);
         });
 
-        it(`remote community.posts is reset after changing address`, async () => {
-            const loadedCommunity = (await pkc.getCommunity({ address: bsoNameAddress })) as RemoteCommunity;
-            // community.posts should omit all comments that referenced the old community address
-            // So in essence it be undefined
-            expect(loadedCommunity.posts.pages).to.deep.equal({});
-            expect(loadedCommunity.posts.pageCids).to.deep.equal({});
+        it(`remote community.posts keeps the posts published before the community added a name`, async () => {
+            const loadedCommunity = (await remotePKC.getCommunity({ address: bsoNameAddress })) as RemoteCommunity;
+            expect(loadedCommunity.name).to.equal(bsoNameAddress);
+            expect(loadedCommunity.posts.pages.hot!.comments.map((comment) => comment.cid)).to.include(postPublishedBeforeEdit.cid);
         });
 
         it(`Started Sub can receive publications on new ENS address`, async () => {
