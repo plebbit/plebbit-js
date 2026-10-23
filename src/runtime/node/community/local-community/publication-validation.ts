@@ -12,6 +12,7 @@ import {
     isLinkOfVideo,
     isLinkValid,
     isStringDomain,
+    doesDomainAddressHaveCapitalLetter,
     findMalformedUnicodeString,
     timestamp
 } from "../../../../util.js";
@@ -188,6 +189,13 @@ async function checkAuthorIdentity(
     if (authorName && !isStringDomain(authorName)) {
         log("Rejecting publication: author.name is not a domain", authorName);
         return messages.ERR_AUTHOR_NAME_MUST_BE_A_DOMAIN;
+    }
+
+    // Same rule as a community name (ERR_COMMUNITY_NAME_HAS_CAPITAL_LETTER): one author is never spelled two ways on
+    // the wire. Checked before any resolve, so it costs nothing. Issue #447.
+    if (authorName && doesDomainAddressHaveCapitalLetter(authorName)) {
+        log("Rejecting publication: author.name has an uppercase letter", authorName);
+        return messages.ERR_AUTHOR_NAME_HAS_CAPITAL_LETTER;
     }
 
     // Reject publications with author domains that can't be resolved or don't match the signer
