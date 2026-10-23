@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.120](https://github.com/pkcprotocol/pkc-js/compare/v0.0.119...v0.0.120) (2026-10-23)
+
+### Bug Fixes
+
+* **community:** apply one identity rule to pages and to name edits ([#401](https://github.com/pkcprotocol/pkc-js/issues/401), [#430](https://github.com/pkcprotocol/pkc-js/issues/430)) ([#414](https://github.com/pkcprotocol/pkc-js/issues/414)) ([c6b6f93](https://github.com/pkcprotocol/pkc-js/commit/c6b6f93219a3d6c4e4d419c462a2e7693c1ef0c2)), closes [#413](https://github.com/pkcprotocol/pkc-js/issues/413)
+
 ## [0.0.119](https://github.com/pkcprotocol/pkc-js/compare/v0.0.118...v0.0.119) (2026-10-21)
 
 ### Features
