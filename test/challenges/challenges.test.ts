@@ -1587,3 +1587,78 @@ describe("real-world bitsocial config: production-faithful coverage", () => {
         expect(aiReviewCount).to.equal(0);
     });
 });
+
+// Issue #424: `.bso` and `.eth` are one ENS name, and ENS is case-insensitive, so a whitelist or blacklist entry
+// must match its owner under any spelling. The address lists go through the same identity matcher as excludes
+// and role keys. For the whitelist the bug locks the owner out; for the blacklist it lets a blacklisted author
+// through by publishing under another spelling of their own name.
+describe("whitelist/blacklist match a listed name across .bso/.eth spellings and letter case (#424)", () => {
+    const owner = signers[6];
+    const impostor = signers[7];
+    // Answers like the production resolver: one record, reachable through every spelling.
+    const community = {
+        _clientsManager: {
+            resolveAuthorNameIfNeeded: async ({ authorName }: { authorName: string }) => ({
+                resolvedAuthorName: authorName.toLowerCase().replace(/\.bso$/, ".eth") === "listed-424.eth" ? owner.address : null
+            })
+        },
+        _pkc: PKC()
+    } as unknown as LocalCommunity;
+
+    const runListChallenge = async ({
+        name,
+        listed,
+        authorName,
+        signer = owner
+    }: {
+        name: "whitelist" | "blacklist";
+        listed: string;
+        authorName: string;
+        signer?: (typeof signers)[number];
+    }) => {
+        const challengeSettings = { name, options: { addresses: listed } };
+        const challengeFile = pkcJsChallenges[name]({ challengeSettings });
+        const challengeRequestMessage = {
+            comment: { author: { address: authorName }, signature: { publicKey: signer.publicKey } }
+        } as unknown as DecryptedChallengeRequestMessageTypeWithCommunityAuthor;
+        return challengeFile.getChallenge({ challengeSettings, challengeRequestMessage, community, challengeIndex: 0 } as Parameters<
+            typeof challengeFile.getChallenge
+        >[0]);
+    };
+
+    const spellings = [
+        ["listed-424.eth", "listed-424.bso"],
+        ["listed-424.bso", "listed-424.eth"],
+        ["Listed-424.bso", "listed-424.bso"],
+        ["Listed-424.eth", "listed-424.bso"],
+        ["listed-424.BSO", "listed-424.eth"],
+        ["LISTED-424.ETH", "listed-424.bso"]
+    ] as const;
+
+    for (const [listed, authorName] of spellings) {
+        it(`whitelist "${listed}" lets its owner publishing as ${authorName} through`, async () => {
+            expect(await runListChallenge({ name: "whitelist", listed, authorName })).to.deep.equal({ success: true });
+        });
+
+        it(`blacklist "${listed}" blocks its owner publishing as ${authorName}`, async () => {
+            expect(await runListChallenge({ name: "blacklist", listed, authorName })).to.deep.equal({
+                success: false,
+                error: "You're blacklisted."
+            });
+        });
+    }
+
+    // Guards for the fix: normalizing the comparison must not loosen the binding to the signer.
+    it("whitelist still rejects an impostor claiming the other spelling of a listed name", async () => {
+        expect(
+            await runListChallenge({ name: "whitelist", listed: "listed-424.eth", authorName: "listed-424.bso", signer: impostor })
+        ).to.deep.equal({ success: false, error: "You're not whitelisted." });
+    });
+
+    it("blacklist does not block an impostor claiming the other spelling of a listed name", async () => {
+        // The listed name is not theirs, so the entry is not about them.
+        expect(
+            await runListChallenge({ name: "blacklist", listed: "listed-424.eth", authorName: "listed-424.bso", signer: impostor })
+        ).to.deep.equal({ success: true });
+    });
+});

@@ -1,5 +1,5 @@
 import Logger from "../../../../logger.js";
-import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../util.js";
+import { areEquivalentNames, derivePublicationFromChallengeRequest, isStringDomain } from "../../../../util.js";
 import { getPKCAddressFromPublicKeySync } from "../../../../signer/util.js";
 import { getAuthorNameFromWire } from "../../../../publications/publication-author.js";
 import { PKCError } from "../../../../pkc-error.js";
@@ -15,8 +15,10 @@ import type { LocalCommunity } from "../local-community.js";
 // identity string (a role key, an exclude entry, a list entry) refers to the author of a publication:
 //
 // - a key-derived address matches iff it equals the signer address
-// - a domain matches iff it equals the wire name AND resolves to the signer address, resolved here regardless
-//   of `pkc.resolveAuthorNames` (that flag only controls the optional identity check in publication validation)
+// - a domain matches iff it is the same name as the wire name AND the wire name resolves to the signer address,
+//   resolved here regardless of `pkc.resolveAuthorNames` (that flag only controls the optional identity check in
+//   publication validation). "The same name" is `areEquivalentNames`: `x.bso`, `x.eth` and `X.eth` are one ENS
+//   name (issue #424). Only the wire name the author published is ever resolved, never the configured spelling.
 //
 // A resolver problem still never throws out of a matcher: an identity that cannot be verified does not match.
 // But the matcher now reports WHY it did not match, so a caller that is about to reject can tell the publisher
@@ -139,7 +141,7 @@ export function createAuthorIdentityMatcher({
 
     const matchesIdentity = async (identity: string): Promise<IdentityMatchOutcome> => {
         if (!isStringDomain(identity)) return identity === signerAddress ? MATCH : NO_MATCH;
-        if (identity !== wireName) return NO_MATCH;
+        if (!wireName || !areEquivalentNames(identity, wireName)) return NO_MATCH;
         return nameResolvesToSigner();
     };
 
@@ -150,7 +152,7 @@ export function createAuthorIdentityMatcher({
         // domain lookup, and must stay authorized while the resolver is down. See issue #354.
         for (const identity of identities) {
             if (identity === signerAddress) return MATCH;
-            if (wireName && identity === wireName) nameListed = true;
+            if (wireName && areEquivalentNames(identity, wireName)) nameListed = true;
         }
         return nameListed ? nameResolvesToSigner() : NO_MATCH;
     };
