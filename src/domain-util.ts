@@ -14,5 +14,6 @@ export function isEthAliasDomain(address: string): boolean {
 }
 
 export function normalizeEthAliasDomain(address: string): string {
-    return address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;
+    const lower = address.toLowerCase();
+    return lower.endsWith(".bso") ? address.slice(0, -3) + ".eth" : address;
 }
