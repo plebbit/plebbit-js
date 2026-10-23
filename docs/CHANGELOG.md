@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.121](https://github.com/pkcprotocol/pkc-js/compare/v0.0.120...v0.0.121) (2026-10-23)
+
+### Bug Fixes
+
+* **signer:** reject AES-GCM decryption when the authentication tag does not match ([#418](https://github.com/pkcprotocol/pkc-js/issues/418)) ([#441](https://github.com/pkcprotocol/pkc-js/issues/441)) ([6cdd530](https://github.com/pkcprotocol/pkc-js/commit/6cdd5301c0a28f40e56c7c23b80461ab47bcb605))
+
 ## [0.0.120](https://github.com/pkcprotocol/pkc-js/compare/v0.0.119...v0.0.120) (2026-10-23)
 
 ### Bug Fixes
