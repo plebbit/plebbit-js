@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.123](https://github.com/pkcprotocol/pkc-js/compare/v0.0.122...v0.0.123) (2026-10-23)
+
+### Bug Fixes
+
+* **community:** reject publications whose author.name has an uppercase letter ([#447](https://github.com/pkcprotocol/pkc-js/issues/447)) ([#448](https://github.com/pkcprotocol/pkc-js/issues/448)) ([134cacc](https://github.com/pkcprotocol/pkc-js/commit/134cacc15ae443a7b2a050dc059bdc105617faa4))
+
 ## [0.0.122](https://github.com/pkcprotocol/pkc-js/compare/v0.0.121...v0.0.122) (2026-10-23)
 
 ### Bug Fixes
