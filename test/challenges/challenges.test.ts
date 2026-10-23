@@ -1630,7 +1630,9 @@ describe("whitelist/blacklist match a listed name across .bso/.eth spellings and
         ["listed-424.eth", "listed-424.bso"],
         ["listed-424.bso", "listed-424.eth"],
         ["Listed-424.bso", "listed-424.bso"],
-        ["Listed-424.eth", "listed-424.bso"]
+        ["Listed-424.eth", "listed-424.bso"],
+        ["listed-424.BSO", "listed-424.eth"],
+        ["LISTED-424.ETH", "listed-424.bso"]
     ] as const;
 
     for (const [listed, authorName] of spellings) {

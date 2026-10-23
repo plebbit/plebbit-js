@@ -559,7 +559,8 @@ describe("shouldExcludePublication", () => {
         for (const [listed, wireName] of [
             ["bitsocialbot.eth", "bitsocialbot.bso"],
             ["bitsocialbot.bso", "bitsocialbot.eth"],
-            ["BitsocialBot.bso", "bitsocialbot.bso"]
+            ["BitsocialBot.bso", "bitsocialbot.bso"],
+            ["bitsocialbot.BSO", "bitsocialbot.eth"]
         ] as const) {
             it(`exclude.names ["${listed}"] excludes the bot publishing as ${wireName}`, async () => {
                 const communityChallenge = { exclude: [{ names: [listed] }] };

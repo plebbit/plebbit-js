@@ -189,7 +189,9 @@ describe("author-identity: a domain matches across .bso/.eth spellings and lette
         ["the list has .eth and the author publishes .bso", "bitsocialbot.eth", "bitsocialbot.bso"],
         ["the list has .bso and the author publishes .eth", "bitsocialbot.bso", "bitsocialbot.eth"],
         ["the list differs from the author's name only in letter case", "BitsocialBot.bso", "bitsocialbot.bso"],
-        ["the list has a capitalized .eth and the author publishes .bso", "BitsocialBot.eth", "bitsocialbot.bso"]
+        ["the list has a capitalized .eth and the author publishes .bso", "BitsocialBot.eth", "bitsocialbot.bso"],
+        ["the list has an uppercase .BSO suffix and the author publishes .eth", "bitsocialbot.BSO", "bitsocialbot.eth"],
+        ["the list has an uppercase .ETH suffix and the author publishes .bso", "BITSOCIALBOT.ETH", "bitsocialbot.bso"]
     ] as const) {
         it(`matchesAnyIdentity matches when ${label}`, async () => {
             const { matcher, resolveAuthorNameIfNeeded } = buildMatcher({ name: wireName, resolve: resolveLikeProduction });
