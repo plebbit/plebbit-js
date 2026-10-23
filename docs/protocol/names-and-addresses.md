@@ -221,7 +221,7 @@ community that has one. Its `signature` therefore changes between `createX` and 
 -   `author.address` is never an identity on the community side. Excludes, roles and blacklists match through the signer address or a domain resolved to it (`docs/protocol/challenge-flow.md`, "Author identity in excludes").
 -   Use `nameResolved` to indicate whether a domain resolved correctly, do NOT change `address`.
 -   An author and a community **cannot share the same domain name**.
--   Domain names are **lowercase**. A community name or address with an uppercase letter throws `ERR_COMMUNITY_NAME_HAS_CAPITAL_LETTER` (create, load, edit). A publication whose `author.name` has an uppercase letter is rejected by the community with `ERR_AUTHOR_NAME_HAS_CAPITAL_LETTER`, before any name resolution and whatever the TLD (issue [#447](https://github.com/pkcprotocol/pkc-js/issues/447)). So one name is never spelled two ways on the wire.
+-   Domain names are **lowercase**. A community name or address with an uppercase letter throws `ERR_COMMUNITY_NAME_HAS_CAPITAL_LETTER` (create, load, edit). A publication whose `author.name` has an uppercase letter throws `ERR_AUTHOR_NAME_HAS_CAPITAL_LETTER` when it is created (`createComment`, `createVote`, ...), and a community that receives one anyway rejects it with the same error, before any name resolution and whatever the TLD (issue [#447](https://github.com/pkcprotocol/pkc-js/issues/447)). So one name is never spelled two ways on the wire.
 -   `shortAddress` is runtime-only, a truncated `address` for display purposes.
 
 ## Key Functions
