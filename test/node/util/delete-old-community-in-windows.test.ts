@@ -18,8 +18,8 @@ function createPkcWithStorage(): { pkc: PkcWithStorage; storage: Map<string, unk
     const storage = new Map<string, unknown>();
     const pkc = {
         _storage: {
-            getItem: async (key: string) => storage.get(key),
-            setItem: async (key: string, value: unknown) => void storage.set(key, value)
+            getItem: async (key: string): Promise<unknown> => storage.get(key),
+            setItem: async (key: string, value: unknown): Promise<void> => void storage.set(key, value)
         }
     } as unknown as PkcWithStorage;
     return { pkc, storage };
