@@ -55,7 +55,11 @@ export const decryptStringAesGcm = async (ciphertext: Uint8Array, key: Uint8Arra
     const cipher = forge.cipher.createDecipher("AES-GCM", keyAsForgeBuffer);
     cipher.start({ iv: ivAsForgeBuffer, tag: tagAsForgeBuffer });
     cipher.update(uint8ArrayToNodeForgeBuffer(ciphertext));
-    cipher.finish();
+    // finish() returns false when the authentication tag doesn't match; cipher.output is then unauthenticated and must not be read
+    // https://github.com/pkcprotocol/pkc-js/issues/418
+    const authenticated = cipher.finish();
+    if (!authenticated)
+        throw Error("decryptStringAesGcm failed to decrypt, the AES-GCM authentication tag does not match the ciphertext, key and iv");
     const decrypted = cipher.output.toString();
     return decrypted;
 };

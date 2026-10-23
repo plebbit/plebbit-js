@@ -161,6 +161,55 @@ getAvailablePKCConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc",
             expect(verificationMsg.commentUpdate).to.be.undefined;
         });
 
+        // https://github.com/pkcprotocol/pkc-js/issues/418
+        it(`Sub responds with error to a challenge request whose encrypted.tag fails AES-GCM authentication`, async () => {
+            const comment = await generateMockPost({
+                communityAddress: signers[0].address,
+                pkc: pkc,
+                postProps: { content: "Test content" }
+            });
+            const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
+            comment._clientsManager.pubsubPublishOnProvider = (async () => {}) as typeof comment._clientsManager.pubsubPublishOnProvider;
+
+            const challengeRequestPromise = new Promise<DecryptedChallengeRequestMessageType>((resolve) =>
+                comment.once("challengerequest", resolve)
+            );
+
+            await comment.publish();
+            const challengeRequest = await challengeRequestPromise;
+
+            const challengeRequestToModify = omit(challengeRequest, ["comment", "challengeCommentCids", "challengeAnswers"]);
+            const pubsubSigner = Object.values(comment._challengeExchanges)[0].signer!;
+            // ciphertext is valid for the community's key, only the tag is tampered, so decrypting without checking the tag yields the real plaintext
+            const tamperedTag = challengeRequestToModify.encrypted.tag.slice();
+            tamperedTag[0] ^= 1;
+            challengeRequestToModify.encrypted = { ...challengeRequestToModify.encrypted, tag: tamperedTag };
+
+            challengeRequestToModify.signature = await signChallengeRequest({ request: challengeRequestToModify, signer: pubsubSigner });
+
+            const responsePromise = new Promise<
+                { type: "challenge" } | { type: "challengeverification"; msg: DecryptedChallengeVerificationMessageType }
+            >((resolve) => {
+                comment.once("challenge", () => resolve({ type: "challenge" }));
+                comment.once("challengeverification", (msg) => resolve({ type: "challengeverification", msg }));
+            });
+
+            await originalPublish(
+                comment._community!.pubsubTopic!,
+                challengeRequestToModify,
+                Object.values(comment._challengeExchanges)[0].providerUrl
+            );
+
+            const response = await responsePromise;
+            expect(response.type, "community accepted the unauthenticated request and sent a challenge").to.equal("challengeverification");
+            if (response.type !== "challengeverification") return;
+            const verificationMsg = response.msg;
+            expect(verificationMsg.challengeSuccess).to.be.false;
+            expect(verificationMsg.reason).to.equal(messages.ERR_COMMUNITY_FAILED_TO_DECRYPT_PUBSUB_MSG);
+            expect(verificationMsg.comment).to.be.undefined;
+            expect(verificationMsg.commentUpdate).to.be.undefined;
+        });
+
         it(`Sub responds with error to a challenge request with invalid pubsubMessage.encrypted.comment.signature`, async () => {
             const comment = await generateMockPost({ communityAddress: signers[0].address, pkc: pkc });
             const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);

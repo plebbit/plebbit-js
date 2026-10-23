@@ -107,6 +107,51 @@ describe("encryption", () => {
                 });
             });
 
+            // https://github.com/pkcprotocol/pkc-js/issues/418
+            // node-forge's decipher.finish() returns false when the GCM tag doesn't match; the output must never be returned
+            describe("ciphertext that fails AES-GCM authentication is rejected", () => {
+                const string = "string";
+                let ciphertext: Uint8Array;
+                let tag: Uint8Array;
+                beforeAll(async () => {
+                    const res = await encryptStringAesGcm(string, key, iv);
+                    ciphertext = res.ciphertext;
+                    tag = res.tag;
+                });
+
+                const expectDecryptionError = async (decryptPromise: Promise<string>) => {
+                    let decrypted: string | undefined;
+                    let error: unknown;
+                    try {
+                        decrypted = await decryptPromise;
+                    } catch (e) {
+                        error = e;
+                    }
+                    expect(decrypted, "unauthenticated plaintext was returned").to.be.undefined;
+                    expect(error).to.be.instanceOf(Error);
+                    // a URIError means the garbage output was decoded as UTF-8 before anything checked the tag
+                    expect(error).to.not.be.instanceOf(URIError);
+                    expect((error as Error).message).to.match(/decrypt/i);
+                };
+
+                it("tag with a flipped byte is rejected", async () => {
+                    const tamperedTag = tag.slice();
+                    tamperedTag[0] ^= 1;
+                    await expectDecryptionError(decryptStringAesGcm(ciphertext, key, iv, tamperedTag));
+                });
+
+                it("ciphertext with a flipped byte is rejected", async () => {
+                    const tamperedCiphertext = ciphertext.slice();
+                    tamperedCiphertext[0] ^= 1;
+                    await expectDecryptionError(decryptStringAesGcm(tamperedCiphertext, key, iv, tag));
+                });
+
+                it("ciphertext encrypted with a different key is rejected", async () => {
+                    const differentKey = uint8ArrayFromString("2222222222222222");
+                    await expectDecryptionError(decryptStringAesGcm(ciphertext, differentKey, iv, tag));
+                });
+            });
+
             describe("encrypt an emoji", () => {
                 const emoji = "🤡";
                 let ciphertext: Uint8Array;
