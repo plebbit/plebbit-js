@@ -514,9 +514,11 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
         });
 
         // Scenario C: {address: domain} where record has name: "other.eth" (different name)
-        it(`community.update() rejects record when record name differs from loaded domain address`, async () => {
+        it(`community.update() refuses a record whose name differs from the loaded domain address`, async () => {
             // "wrong-name.bso" is in defaultMockResolverRecords → signers[3].address
-            // signers[3]'s record has name: "plebbit.bso", so "wrong-name.bso" ≠ "plebbit.bso" → rejection
+            // signers[3]'s record has name: "plebbit.bso", so "wrong-name.bso" ≠ "plebbit.bso" → refused.
+            // The record is genuine (signed by the key the name resolves to), so the refusal is the
+            // loader's own and retriable rather than a fetch failure: a later record could claim the name.
             const testPKC = await config.pkcInstancePromise();
 
             try {
@@ -526,19 +528,14 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                 await community.update();
                 const error = await errorPromise;
 
-                if (isPKCFetchingUsingGateways(testPKC)) {
-                    expect(error.code).to.equal("ERR_FAILED_TO_FETCH_COMMUNITY_FROM_GATEWAYS");
-                    for (const gatewayUrl of Object.keys(testPKC.clients.ipfsGateways)) {
-                        expect((error.details.gatewayToError[gatewayUrl] as PKCError).code).to.equal(
-                            "ERR_THE_COMMUNITY_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED"
-                        );
-                    }
-                } else {
-                    expect(error.code).to.equal("ERR_THE_COMMUNITY_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED");
-                }
+                expect(error.code).to.equal("ERR_COMMUNITY_RECORD_NAME_DOES_NOT_MATCH_REQUESTED_NAME");
+                expect(error.details.requestedName).to.equal("wrong-name.bso");
+                expect(error.details.recordName).to.equal("plebbit.bso");
+                expect(error.details.retriableError).to.equal(true);
                 // Record should not be accepted
                 expect(community.updatedAt).to.be.undefined;
                 expect(community.address).to.equal("wrong-name.bso");
+                expect(community.state).to.equal("updating");
 
                 await community.stop();
             } finally {

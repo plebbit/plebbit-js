@@ -15,6 +15,7 @@ import { CommentIpfsGatewayClient, CommentKuboRpcClient } from "./comment/commen
 import type { CommunityEvents, CommunityIpfsType } from "../community/types.js";
 import { waitForUpdateInCommunityInstanceWithErrorAndTimeout } from "../util.js";
 import { findStartedCommunity, findUpdatingCommunity, untrackUpdatingCommunity } from "../pkc/tracked-instance-registry-util.js";
+import { findCommunityRecordNameMismatch } from "../community/community-wire.js";
 
 export class PublicationClientsManager extends PKCClientsManager {
     override clients!: {
@@ -399,6 +400,15 @@ export class PublicationClientsManager extends PKCClientsManager {
                 communityAddress: updatingCommunityInstance.community.address,
                 timeoutMs: this._pkc._timeouts["community-ipns"]
             });
+        // The record may come straight from a shared updating instance loaded by public key, which
+        // accepts a record whatever name it claims. A publication addressed to a name must not be sent
+        // to a community that no longer claims it.
+        const nameMismatch = findCommunityRecordNameMismatch({
+            requestedName: this._publication.communityName,
+            record: communityIpfs,
+            communityPublicKey: updatingCommunityInstance.community.publicKey
+        });
+        if (nameMismatch) throw nameMismatch;
         return {
             address: updatingCommunityInstance.community.address,
             publicKey: updatingCommunityInstance.community.publicKey!,
