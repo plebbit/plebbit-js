@@ -541,6 +541,39 @@ describe("shouldExcludePublication", () => {
         expect(await testShouldExcludePublication(communityChallenge, { comment: impostor }, community)).to.equal(false);
     });
 
+    // Issue #424: `.bso` and `.eth` are one ENS name and ENS is case-insensitive, so an owner exempting a bot by
+    // any spelling of its name must exempt the bot. The resolver below answers like production does: the same
+    // record for every spelling.
+    describe("names and role keys match across .bso/.eth spellings and letter case (#424)", () => {
+        const bot = authorSigners["high-karma.bso"];
+        const community = {
+            _clientsManager: {
+                resolveAuthorNameIfNeeded: async ({ authorName }: { authorName: string }) => ({
+                    resolvedAuthorName: authorName.toLowerCase().replace(/\.bso$/, ".eth") === "bitsocialbot.eth" ? bot.address : null
+                })
+            },
+            _pkc: PKC()
+        };
+        const publishedAs = (name: string) => ({ comment: { author: { address: name }, signature: { publicKey: bot.publicKey } } });
+
+        for (const [listed, wireName] of [
+            ["bitsocialbot.eth", "bitsocialbot.bso"],
+            ["bitsocialbot.bso", "bitsocialbot.eth"],
+            ["BitsocialBot.bso", "bitsocialbot.bso"]
+        ] as const) {
+            it(`exclude.names ["${listed}"] excludes the bot publishing as ${wireName}`, async () => {
+                const communityChallenge = { exclude: [{ names: [listed] }] };
+                expect(await testShouldExcludePublication(communityChallenge, publishedAs(wireName), community)).to.equal(true);
+            });
+
+            it(`a moderator role keyed "${listed}" excludes the bot publishing as ${wireName}`, async () => {
+                const communityChallenge = { exclude: [{ roles: ["moderator"] }] };
+                const withRoles = { ...community, roles: { [listed]: { role: "moderator" } } };
+                expect(await testShouldExcludePublication(communityChallenge, publishedAs(wireName), withRoles)).to.equal(true);
+            });
+        }
+    });
+
     it("postCount", async () => {
         const communityChallenge = {
             exclude: [{ postCount: 10 }]
