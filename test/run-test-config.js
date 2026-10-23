@@ -442,6 +442,9 @@ const runNodeTests = () => {
     const stdoutStream = stdoutLogPath ? prepareWriteStream(stdoutLogPath) : undefined;
     const stderrStream = stderrLogPath ? prepareWriteStream(stderrLogPath) : undefined;
 
+    // Read by test/vitest-node-setup.js to stagger the workers' first files (issue #265). Set here,
+    // after the type check, so the schedule starts when vitest does.
+    env.PKC_TEST_RUN_STARTED_AT_MS = String(Date.now());
     const runnerProcess = spawn(process.execPath, [vitestCli, ...vitestArgs], {
         cwd: projectRoot,
         env,
