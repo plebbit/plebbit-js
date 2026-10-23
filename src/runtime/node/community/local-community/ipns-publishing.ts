@@ -56,13 +56,17 @@ export function calculateLatestUpdateTrigger(community: LocalCommunity) {
     const lastPostCidChanged = community.lastPostCid !== community._dbHandler.queryLatestPostCid()?.cid;
     const lastCommentCidChanged = community.lastCommentCid !== community._dbHandler.queryLatestCommentCid()?.cid;
 
-    community._communityUpdateTrigger =
-        community._communityUpdateTrigger ||
-        lastPublishTooOld ||
-        community._pendingEditProps.length > 0 ||
-        community._blocksToRm.length > 0 ||
-        lastCommentCidChanged ||
-        lastPostCidChanged; // we have at least one edit to include in new ipns
+    // Assigned only when it turns the trigger on: every assignment of true counts as a new request for a record
+    // (_updateTriggerGeneration), and the publish loop calls this every 100ms
+    if (
+        !community._communityUpdateTrigger &&
+        (lastPublishTooOld ||
+            community._pendingEditProps.length > 0 ||
+            community._blocksToRm.length > 0 ||
+            lastCommentCidChanged ||
+            lastPostCidChanged) // we have at least one edit to include in new ipns
+    )
+        community._communityUpdateTrigger = true;
 }
 
 export function requireCommunityUpdateIfModQueueChanged(community: LocalCommunity) {

@@ -169,27 +169,58 @@ export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>)
     for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
 };
 
-export const deleteOldCommunityInWindows = async (subPath: string, pkc: Pick<PKC, "_storage">) => {
+// The codes Windows returns while a file is still held, e.g. for a moment after its DB connection closed
+const WINDOWS_FILE_BUSY_ERROR_CODES = ["EBUSY", "EPERM"];
+
+// Removes a community's old DB file after a delete or a rename. It is tried at once and retried with a growing delay
+// only while Windows reports the file busy, so nothing waits when the file is free (it used to sleep 10s every time)
+export const deleteOldCommunityInWindows = async (
+    subPath: string,
+    pkc: Pick<PKC, "_storage">,
+    { timeoutMs = 10000 }: { timeoutMs?: number } = {}
+) => {
     const log = Logger("pkc-js:community:deleteStaleCommunityInWindows");
     const communityAddress = path.basename(subPath);
-    await new Promise((resolve) => setTimeout(resolve, 10000)); // give windows time to release the file
-    try {
-        await fsPromises.rm(subPath, { force: true });
-        log(`Succeeded in deleting old community (${communityAddress})`);
-    } catch (e) {
-        // Assume it's because of EBUSY
-        log.error(
-            `Failed to delete old community (${communityAddress}). Restarting the node process or daemon should make this error disappear`,
-            e
-        );
-        // Put communityAddress in storage
-        const storageKey = STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_COMMUNITIES];
-        const communitiesThatWeFailedToDelete: string[] = (await pkc._storage.getItem(storageKey)) || [];
-        if (!communitiesThatWeFailedToDelete.includes(communityAddress)) communitiesThatWeFailedToDelete.push(communityAddress);
-        await pkc._storage.setItem(storageKey, communitiesThatWeFailedToDelete);
-        log(`Updated persistent deleted communities in storage`, communitiesThatWeFailedToDelete);
+    const deadline = Date.now() + timeoutMs;
+    for (let retryDelayMs = 50; ; retryDelayMs = Math.min(retryDelayMs * 2, 1000)) {
+        try {
+            await fsPromises.rm(subPath, { force: true });
+            log(`Succeeded in deleting old community (${communityAddress})`);
+            return;
+        } catch (e) {
+            const code = (e as NodeJS.ErrnoException).code;
+            if (!code || !WINDOWS_FILE_BUSY_ERROR_CODES.includes(code) || Date.now() + retryDelayMs >= deadline) {
+                await recordCommunityThatFailedToBeDeleted({ communityAddress, pkc, error: e, log });
+                return;
+            }
+            log(`Old community (${communityAddress}) is still busy (${code}), retrying in ${retryDelayMs}ms`);
+            await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        }
     }
 };
+
+async function recordCommunityThatFailedToBeDeleted({
+    communityAddress,
+    pkc,
+    error,
+    log
+}: {
+    communityAddress: string;
+    pkc: Pick<PKC, "_storage">;
+    error: unknown;
+    log: Logger;
+}) {
+    log.error(
+        `Failed to delete old community (${communityAddress}). Restarting the node process or daemon should make this error disappear`,
+        error
+    );
+    // Put communityAddress in storage, so tryToDeleteCommunitiesThatFailedToBeDeletedBefore removes it on a later run
+    const storageKey = STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_COMMUNITIES];
+    const communitiesThatWeFailedToDelete: string[] = (await pkc._storage.getItem(storageKey)) || [];
+    if (!communitiesThatWeFailedToDelete.includes(communityAddress)) communitiesThatWeFailedToDelete.push(communityAddress);
+    await pkc._storage.setItem(storageKey, communitiesThatWeFailedToDelete);
+    log(`Updated persistent deleted communities in storage`, communitiesThatWeFailedToDelete);
+}
 
 export async function tryToDeleteCommunitiesThatFailedToBeDeletedBefore(pkc: PKC, log: Logger) {
     const deletedPersistentCommunities = <string[] | undefined>(
@@ -230,6 +261,15 @@ export async function tryToDeleteCommunitiesThatFailedToBeDeletedBefore(pkc: PKC
             return newPersistentDeletedCommunities;
         }
     }
+}
+
+// Reads dataPath/communities now and emits communitieschange if pkc.communities is out of date. The filesystem watcher
+// calls it on every change, and a rename calls it right after moving the DB file: the watcher fires later (much later on
+// macOS), and until then pkc.createCommunity and the RPC server would resolve the old address (issue #430).
+export function refreshCommunitiesList(pkc: PKC) {
+    const currentCommunities = listCommunitiesSync(pkc);
+    if (deterministicStringify(currentCommunities) !== deterministicStringify(pkc.communities))
+        pkc.emit("communitieschange", currentCommunities);
 }
 
 export function listCommunitiesSync(pkc: PKC) {
@@ -525,10 +565,7 @@ export async function monitorCommunitiesDirectory(pkc: PKC) {
     let isProcessingChange = false;
 
     // Initial check
-    const initialCommunities = listCommunitiesSync(pkc);
-    if (deterministicStringify(initialCommunities) !== deterministicStringify(pkc.communities)) {
-        pkc.emit("communitieschange", initialCommunities);
-    }
+    refreshCommunitiesList(pkc);
 
     // Set up watcher with synchronous check
     fsWatch(communitiesPath, { signal: watchAbortController.signal, persistent: false }, (eventType, filename) => {
@@ -540,10 +577,7 @@ export async function monitorCommunitiesDirectory(pkc: PKC) {
 
         isProcessingChange = true;
         try {
-            const currentCommunities = listCommunitiesSync(pkc);
-            if (deterministicStringify(currentCommunities) !== deterministicStringify(pkc.communities)) {
-                pkc.emit("communitieschange", currentCommunities);
-            }
+            refreshCommunitiesList(pkc);
         } catch (error) {
             // Handle any errors
         } finally {

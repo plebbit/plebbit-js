@@ -144,6 +144,77 @@ Name resolution happens on the **RPC server**, not the RPC client. This means:
 
 If an RPC server has no resolvers configured, any request with a domain name will fail with `ERR_NO_RESOLVER_FOR_NAME`.
 
+## A community's identity in its comments
+
+Every publication carries the community it was signed for: `communityPublicKey` (required; publish validation rejects
+any other key) and `communityName` (required when the community has a name, `ERR_PUBLICATION_MISSING_COMMUNITY_NAME`;
+it must equal the community's address, exactly: publish validation does not accept a `.eth`/`.bso` alias). Both fields
+are signed, so they never change once a comment is stored, even when the owner later changes the community's name. The
+page rule below is looser than publish validation on purpose: it also accepts the alias, because a stored comment may
+have been signed under it.
+
+A name is part of the community's identity. Which stored comments a community still publishes is decided by the
+**community identity rule** (issue [#401](https://github.com/pkcprotocol/pkc-js/issues/401)), which is exactly what
+client page verification (`verifyPageComment`) accepts, so a community never publishes a comment clients reject and never
+hides one they accept:
+
+-   **The community has a name `C`:** a comment whose `communityName` is set must carry `C` or its `.eth`/`.bso` alias.
+    A comment without a name passes, and its key is not checked (clients tolerate a rotated key on a named community).
+-   **The community has no name:** a comment whose `communityPublicKey` is set must carry the community's key. A
+    comment without a key passes (migrated pre-v37 domain rows have none). The name is not checked.
+
+The rule is always on, not a page sort option (it replaced `excludeCommentsWithDifferentCommunityAddress`). It applies
+to every page, to `replyCount`, `childCount` and `lastReplyTimestamp`, to the stats and to the first-comment lookup, so
+the counts always match the pages (`_communityIdentityClause` in `db-handler.ts`, `createCommunityIdentityRowFilter`
+in `src/pages/page-sort-scoring.ts`).
+
+What happens to comments published before an address change:
+
+| Address change                    | Comments signed before it  | Published after it                                                                                          |
+| --------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| key only → `C` (a name added)     | key, no name               | yes: they claim no name, and clients accept them ([#413](https://github.com/pkcprotocol/pkc-js/issues/413)) |
+| `a.eth` → `a.bso`                 | named `a.eth`              | yes, the alias matches                                                                                      |
+| `N` → `M` (a different name)      | named `N`                  | **no**, they belong to the identity `N`                                                                     |
+| `N` → `M`                         | key, no name               | yes                                                                                                         |
+| `N` → key only (the name dropped) | named `N`                  | yes: a community without a name does not check names, so clients still accept them                          |
+| `N` → key only                    | pre-v37, named `N`, no key | yes                                                                                                         |
+| `N` → `M` → `N` (renamed back)    | named `N`                  | yes again, the rule is evaluated against the current name at every page build                               |
+
+### Changing a community's name
+
+A local community's address is its name when it has one, else its identity key (the anchor's key on a delegated
+community), so changing the name and changing the address are one operation. `edit({ name })` and `edit({ address })`
+both move the community's DB file, its start lock and its MFS `postUpdates` folder to the new address, and from the next
+page build the identity rule above filters by the new name:
+
+| Edit                                                               | Result                                                |
+| ------------------------------------------------------------------ | ----------------------------------------------------- |
+| `edit({ name: "m.bso" })` or `edit({ address: "m.bso" })`          | name and address become `m.bso`                       |
+| `edit({ name: undefined })` or `edit({ address: <identity key> })` | the name is dropped, the address becomes the key      |
+| `edit({ name: "m.bso", address: "m.bso" })`                        | accepted, same as either alone                        |
+| `edit({ name: "m.bso", address: "n.bso" })`                        | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
+| `edit({ name: undefined, address: "m.bso" })`                      | throws `ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH` |
+
+The mismatch is rejected before anything is changed, so no other field of that edit is applied either: which of the two
+the owner meant is not pkc-js's guess. Before issue [#430](https://github.com/pkcprotocol/pkc-js/issues/430),
+`edit({ name })` changed only `community.name` and left the address, DB and lock on the old name. The pages then kept
+the comments signed with the old name, the community's own pre-publish check rejected every new record
+(`ERR_LOCAL_COMMUNITY_PRODUCED_INVALID_SIGNATURE`), and the renamed record was never published.
+
+Readers do not follow a rename. A client that loaded the community by its old name keeps fetching the same IPNS key,
+but the next record names a different address than the one it asked for, so it emits
+`ERR_THE_COMMUNITY_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED` and stops updating. It has to load the
+community again by the new name or by its public key. A name is part of the community's identity, so this is intended.
+
+An owner can also rename the community with a `CommunityEdit` publication over pubsub (`name` or `address`, owner-only).
+It goes through the same `edit()`, so it is the same address move. An RPC server keeps a renamed community filed under
+its new address whichever way it was renamed, so lookups by the new name, a reconnecting client and auto-start on the
+next boot all find it.
+
+A publication created with only a community's key (`createComment({ communityAddress: <key> })`) is signed again at
+`publish()` with the name of the community record it loaded, so pkc-js never sends a publication without the name to a
+community that has one. Its `signature` therefore changes between `createX` and `publish()` in that case.
+
 ## Invariants
 
 -   `author.address` and `community.address` are **immutable**, never override or fall back to a derived address.

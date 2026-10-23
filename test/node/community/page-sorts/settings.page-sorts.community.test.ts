@@ -11,7 +11,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { PKCError } from "../../../../dist/node/pkc-error.js";
 import { DbHandler } from "../../../../dist/node/runtime/node/community/db-handler.js";
-import { pkcJsPageSorts } from "../../../../dist/node/runtime/node/community/page-sorts/index.js";
+import { pkcJsPageSorts, resolvePageSortsAndCollectFailures } from "../../../../dist/node/runtime/node/community/page-sorts/index.js";
 import { timestamp } from "../../../../dist/node/util.js";
 import {
     createCommunityWithDefaultDb,
@@ -19,7 +19,8 @@ import {
     seedComments,
     MOST_REPLIES_SORT_PATH,
     NO_BUMP_KEYWORD_SORT_PATH,
-    THROWING_SORT_PATH
+    THROWING_SORT_PATH,
+    STRICT_OPTIONS_SORT_PATH
 } from "./page-sorts-test-util.js";
 
 import type { PKC as PKCType } from "../../../../dist/node/pkc/pkc.js";
@@ -336,16 +337,14 @@ describeSkipIfRpc.concurrent("settings.pages: published record", () => {
                     excludeRemovedComments: "true",
                     excludeDeletedComments: "true",
                     excludeCommentPendingApproval: "true",
-                    excludeCommentWithApprovedFalse: "true",
-                    excludeCommentsWithDifferentCommunityAddress: "true"
+                    excludeCommentWithApprovedFalse: "true"
                 };
                 const replyDefaults = {
                     pinnedFirst: "true",
                     excludeRemovedComments: "false",
                     excludeDeletedComments: "false",
                     excludeCommentPendingApproval: "true",
-                    excludeCommentWithApprovedFalse: "false",
-                    excludeCommentsWithDifferentCommunityAddress: "true"
+                    excludeCommentWithApprovedFalse: "false"
                 };
                 expect(_community.pageSorts).to.deep.equal({
                     posts: {
@@ -364,6 +363,52 @@ describeSkipIfRpc.concurrent("settings.pages: published record", () => {
         } finally {
             await community.stop();
         }
+    });
+
+    // excludeCommentsWithDifferentCommunityAddress was a reserved option until it became the always-on community identity
+    // rule (issue #401). Settings stored before then still carry it, on files that declare optionInputs too.
+    it("accepts a stored excludeCommentsWithDifferentCommunityAddress and leaves it out of publicOptions", async () => {
+        const community = (await pkc.createCommunity()) as LocalCommunity;
+        await community.edit({
+            settings: {
+                ...community.settings,
+                pages: {
+                    posts: [
+                        {
+                            path: NO_BUMP_KEYWORD_SORT_PATH,
+                            options: { noBumpKeywords: "sage", excludeCommentsWithDifferentCommunityAddress: "false" },
+                            preloaded: true
+                        }
+                    ],
+                    replies: [{ name: "old", preloaded: true, options: { excludeCommentsWithDifferentCommunityAddress: "true" } }]
+                }
+            }
+        });
+        await community.start();
+        try {
+            await resolveWhenConditionIsTrue({ toUpdate: community, predicate: async () => typeof community.updatedAt === "number" });
+            expect(community.pageSorts?.posts?.active?.publicOptions).to.not.have.property("excludeCommentsWithDifferentCommunityAddress");
+            expect(community.pageSorts?.posts?.active?.publicOptions?.noBumpKeywords).to.equal("sage");
+            expect(community.pageSorts?.replies?.old?.publicOptions).to.not.have.property("excludeCommentsWithDifferentCommunityAddress");
+        } finally {
+            await community.stop();
+        }
+    });
+
+    // A stored removed option must not reach the sort file at all: not its factory, not validatePageSortSettings, not
+    // the resolved settings. A package that rejects undeclared options would otherwise drop the sort after an upgrade.
+    it("keeps a stored excludeCommentsWithDifferentCommunityAddress away from the sort file's factory and validation", async () => {
+        const pages: PagesSettings = {
+            posts: [{ path: STRICT_OPTIONS_SORT_PATH, options: { excludeCommentsWithDifferentCommunityAddress: "false" } }]
+        };
+        const { resolved, failures } = await resolvePageSortsAndCollectFailures({ pagesSettings: pages, pkc, tolerateLoadErrors: true });
+        expect(failures.map((failure) => failure.error.code)).to.deep.equal([]);
+        expect(resolved.posts.map((sort) => sort.sortName)).to.deep.equal(["strict"]);
+        expect(resolved.posts[0].settings.options).to.not.have.property("excludeCommentsWithDifferentCommunityAddress");
+
+        const community = (await pkc.createCommunity()) as LocalCommunity;
+        await community.edit({ settings: { ...community.settings, pages } });
+        expect(community.settings?.pages?.posts?.[0]?.path).to.equal(STRICT_OPTIONS_SORT_PATH);
     });
 
     it("an unset settings.pages publishes no pageSorts field", async () => {

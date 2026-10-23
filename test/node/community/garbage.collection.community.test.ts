@@ -25,7 +25,8 @@ vi.mock("../../../dist/node/runtime/node/util.js", () => ({
     resolveDbPostsCidRefs: vi.fn(),
     getThumbnailPropsOfLink: vi.fn(),
     importSignerIntoKuboNode: vi.fn(),
-    moveCommunityDbToDeletedDirectory: vi.fn()
+    moveCommunityDbToDeletedDirectory: vi.fn(),
+    refreshCommunitiesList: vi.fn()
 }));
 
 interface StubKuboClient {

@@ -51,8 +51,7 @@ export type PageSortExclusionOptionName =
     | "excludeRemovedComments"
     | "excludeDeletedComments"
     | "excludeCommentPendingApproval"
-    | "excludeCommentWithApprovedFalse"
-    | "excludeCommentsWithDifferentCommunityAddress";
+    | "excludeCommentWithApprovedFalse";
 
 // What a page sort file with `requireReplies` receives per descendant (docs/protocol/page-sorts.md, "Writing a page
 // sort file"): the subset of a page entry a sort can reasonably rank on, without the signature, the nested pages or

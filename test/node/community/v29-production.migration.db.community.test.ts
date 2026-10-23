@@ -1144,12 +1144,11 @@ describeSkipIfRpc("v29 production data → v37 migration", function () {
             expect(children[0].communityPublicKey).to.equal(COMMUNITY_ADDRESS);
         });
 
-        it("queryPageComments with excludeCommentsWithDifferentCommunityAddress returns migrated replies", () => {
+        it("queryPageComments returns migrated replies under the community identity rule", () => {
             const now = Math.floor(Date.now() / 1000);
             // queryPageComments finds direct children of a parent — use a post with known replies
             const results = dbHandler!.queryPageComments({
                 parentCid: "QmRinNcdouie5tTjpfmJpRvRn18Am1F7MYhGDXKRtm5QVt",
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeRemovedComments: false,
                 excludeDeletedComments: false,
                 excludeCommentPendingApproval: false,
@@ -1165,7 +1164,6 @@ describeSkipIfRpc("v29 production data → v37 migration", function () {
             const now = Math.floor(Date.now() / 1000);
             const results = dbHandler!.queryFlattenedPageReplies({
                 parentCid: "QmRinNcdouie5tTjpfmJpRvRn18Am1F7MYhGDXKRtm5QVt",
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeRemovedComments: false,
                 excludeDeletedComments: false,
                 excludeCommentPendingApproval: false,
@@ -1196,7 +1194,6 @@ describeSkipIfRpc("v29 production data → v37 migration", function () {
         it("queryPostsWithActiveScore returns posts with scores", () => {
             const results = dbHandler!.queryPostsWithActiveScore({
                 parentCid: null,
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeRemovedComments: false,
                 excludeDeletedComments: false,
                 excludeCommentPendingApproval: false,

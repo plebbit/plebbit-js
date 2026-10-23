@@ -82,7 +82,9 @@ Reply pages deliberately include removed and deleted comments so clients can ren
 
 The `active` sort applies the same exclusions to a post's **descendants** when computing its bump score, so a removed reply does not bump its post (`activeScoresCte` in `src/runtime/node/community/db-handler.ts`).
 
-> **These are defaults, not guarantees.** Every exclusion is a per-sort option (`excludeRemovedComments`, `excludeDeletedComments`, `excludeCommentPendingApproval`, `excludeCommentWithApprovedFalse`, `excludeCommentsWithDifferentCommunityAddress` in `settings.pages[].options`), defaulting per scope to the table above ([#73](https://github.com/pkcprotocol/pkc-js/issues/73)). A community can publish a feed that includes removed or deleted posts, for example an archive or mod-review sort. Frontends must not assume removed content is absent from a feed; check `commentUpdate.removed` / `deleted` and render accordingly.
+> **These are defaults, not guarantees.** Every exclusion is a per-sort option (`excludeRemovedComments`, `excludeDeletedComments`, `excludeCommentPendingApproval`, `excludeCommentWithApprovedFalse` in `settings.pages[].options`), defaulting per scope to the table above ([#73](https://github.com/pkcprotocol/pkc-js/issues/73)). A community can publish a feed that includes removed or deleted posts, for example an archive or mod-review sort. Frontends must not assume removed content is absent from a feed; check `commentUpdate.removed` / `deleted` and render accordingly.
+
+Independent of the sort options, a page only contains comments that belong to the community's current identity: the always-on community identity rule, the same rule client page verification applies (see [names-and-addresses.md, A community's identity in its comments](names-and-addresses.md#a-communitys-identity-in-its-comments)). It decides which comments survive a change of the community's address.
 
 ## Pinned Comments
 

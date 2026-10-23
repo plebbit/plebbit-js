@@ -33,9 +33,13 @@ export const PAGE_SORT_EXCLUSION_OPTION_NAMES: readonly PageSortExclusionOptionN
     "excludeRemovedComments",
     "excludeDeletedComments",
     "excludeCommentPendingApproval",
-    "excludeCommentWithApprovedFalse",
-    "excludeCommentsWithDifferentCommunityAddress"
+    "excludeCommentWithApprovedFalse"
 ]);
+
+// Reserved options pkc-js no longer reads. A value still stored in settings.pages is dropped when the sort resolves, so it
+// never reaches the sort file or the published publicOptions. excludeCommentsWithDifferentCommunityAddress became the
+// always-on community identity rule (issue #401).
+export const REMOVED_PAGE_SORT_OPTION_NAMES: readonly string[] = Object.freeze(["excludeCommentsWithDifferentCommunityAddress"]);
 
 export const RESERVED_PAGE_SORT_OPTION_NAMES: readonly string[] = Object.freeze([
     "maxAge",
@@ -56,16 +60,14 @@ export const DEFAULT_RESERVED_OPTIONS: Record<
         excludeRemovedComments: "true",
         excludeDeletedComments: "true",
         excludeCommentPendingApproval: "true",
-        excludeCommentWithApprovedFalse: "true",
-        excludeCommentsWithDifferentCommunityAddress: "true"
+        excludeCommentWithApprovedFalse: "true"
     },
     replies: {
         pinnedFirst: "true",
         excludeRemovedComments: "false",
         excludeDeletedComments: "false",
         excludeCommentPendingApproval: "true",
-        excludeCommentWithApprovedFalse: "false",
-        excludeCommentsWithDifferentCommunityAddress: "true"
+        excludeCommentWithApprovedFalse: "false"
     }
 });
 

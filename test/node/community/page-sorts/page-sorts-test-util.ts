@@ -21,6 +21,7 @@ export const NO_BUMP_KEYWORD_SORT_PATH = path.resolve(process.cwd(), "test/fixtu
 export const THROWING_SORT_PATH = path.resolve(process.cwd(), "test/fixtures/page-sorts/throwing.js");
 export const KEYWORD_FILTER_SORT_PATH = path.resolve(process.cwd(), "test/fixtures/page-sorts/keyword-filter.js");
 export const MOST_REPLIES_SORT_PATH = path.resolve(process.cwd(), "test/fixtures/page-sorts/most-replies.js");
+export const STRICT_OPTIONS_SORT_PATH = path.resolve(process.cwd(), "test/fixtures/page-sorts/strict-options.js");
 
 export interface CommunityContext {
     pkc: PKCType;

@@ -85,13 +85,19 @@ publishes per sort, so a client never needs to know the defaults below.
 |---|---|---|
 | `maxAge` | A duration: `"36h"`, `"7d"`, `"2w"`, `"1M"`, `"1y"` (units `s m h d w M y`; `M` is 2629746s and `y` 31557600s, the windows `topMonth` / `topYear` have always used) | none |
 | `pinnedFirst` | `"true"` / `"false"` | `"true"` |
-| `excludeRemovedComments`, `excludeDeletedComments`, `excludeCommentPendingApproval`, `excludeCommentWithApprovedFalse`, `excludeCommentsWithDifferentCommunityAddress` | `"true"` / `"false"` | Per scope, the table in [pages.md, Moderation Visibility](pages.md#moderation-visibility): `posts` excludes all five, `replies` excludes only pending-approval and other-community comments |
+| `excludeRemovedComments`, `excludeDeletedComments`, `excludeCommentPendingApproval`, `excludeCommentWithApprovedFalse` | `"true"` / `"false"` | Per scope, the table in [pages.md, Moderation Visibility](pages.md#moderation-visibility): `posts` excludes all four, `replies` excludes only pending-approval comments |
 
 Reserved options cannot be listed in `privateOptions`: a client re-sorting a page must know how its set was
 filtered.
 
 The `exclude*` flags filter the comments a sort ranks. They do not filter the `replies` a `requireReplies` sort
 receives (issue #407): those reach `score` in `options`, and the file applies them to `replies` if it wants to.
+
+`excludeCommentsWithDifferentCommunityAddress` was a reserved option until
+[#401](https://github.com/pkcprotocol/pkc-js/issues/401) replaced it with the always-on community identity rule (see
+[names-and-addresses.md](names-and-addresses.md#a-communitys-identity-in-its-comments)), which every sort and every
+reply set a `requireReplies` file receives is filtered by. A value still stored in `settings.pages` is dropped when the
+sort resolves: it neither fails the declared-option check nor reaches the file or `publicOptions`.
 
 `maxAge` makes any sort a sliding window: "hot in the last 24 hours" is `{ name: "hot", options: { maxAge: "1d" } }`. Windows are relative to generation time; there are no absolute cutoffs. A windowed sort's page membership changes as comments age out even when nothing was posted, so its CID rotates on every rebuild: a post sort is rebuilt at least every 15 minutes, and a reply sort's parent is re-flagged only when a reply actually crosses the boundary. Six windowed sorts are six rotating CIDs, which pulls against the reason to configure fewer sorts.
 
@@ -126,8 +132,7 @@ community.pageSorts = {
                 excludeRemovedComments: "true",
                 excludeDeletedComments: "true",
                 excludeCommentPendingApproval: "true",
-                excludeCommentWithApprovedFalse: "true",
-                excludeCommentsWithDifferentCommunityAddress: "true"
+                excludeCommentWithApprovedFalse: "true"
             }
         }
     },

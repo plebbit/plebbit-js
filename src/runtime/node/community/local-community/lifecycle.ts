@@ -4,7 +4,7 @@ import { LRUCache } from "lru-cache";
 import { PKCError } from "../../../../pkc-error.js";
 import env from "../../../../version.js";
 import { pubsubTopicToDhtKey, removeMfsFilesSafely, sleepUntilTimeoutOrAbort } from "../../../../util.js";
-import { moveCommunityDbToDeletedDirectory } from "../../util.js";
+import { moveCommunityDbToDeletedDirectory, refreshCommunitiesList } from "../../util.js";
 import { deriveCommunityChallengesOrThrow } from "../challenges/index.js";
 import { collectChallengeSettingsValidationFailures } from "../challenges/validate-challenge-settings.js";
 import {
@@ -50,13 +50,22 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
         );
     };
 
-    const waitUntilNextSync = async () => {
+    // A failed cycle leaves the update trigger set, so waking on it would retry on the next 100ms tick and emit the same
+    // error about ten times a second (issue #430). After a failure the loop wakes only for a new request for a record
+    // (an edit, a new publication), counted by _updateTriggerGeneration, and otherwise waits the full sync interval.
+    const waitUntilNextSync = async ({ lastSyncFailed }: { lastSyncFailed: boolean }) => {
         const doneWithLoopTime = Date.now();
+        // the state the failed cycle tried to publish is not a new request: take it in before the snapshot
+        if (lastSyncFailed) calculateLatestUpdateTrigger(community);
+        const triggerGenerationAfterFailure = community._updateTriggerGeneration;
         await new Promise((resolve) => {
             const checkInterval = setInterval(() => {
                 const syncIntervalMsPassedSinceDoneWithLoop = Date.now() - doneWithLoopTime >= syncIntervalMs;
                 calculateLatestUpdateTrigger(community); // will update community._communityUpdateTrigger
-                if (community._communityUpdateTrigger || shouldStopPublishLoop() || syncIntervalMsPassedSinceDoneWithLoop) {
+                const wokenByTrigger = lastSyncFailed
+                    ? community._updateTriggerGeneration !== triggerGenerationAfterFailure
+                    : community._communityUpdateTrigger;
+                if (wokenByTrigger || shouldStopPublishLoop() || syncIntervalMsPassedSinceDoneWithLoop) {
                     clearInterval(checkInterval);
                     resolve(1);
                 }
@@ -65,6 +74,7 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
     };
 
     while (!shouldStopPublishLoop()) {
+        let lastSyncFailed = false;
         try {
             await syncIpnsWithDb(community);
             // Re-announce browser-dialable (WSS/WebRTC) addresses to HTTP routers when they rotate, so browsers
@@ -78,10 +88,11 @@ export async function publishLoop(community: LocalCommunity, syncIntervalMs: num
             // must not break publishing either.
             await reprovideAnchorRecordIfDue(community).catch((e) => log.error("Failed to re-provide the anchor record", e));
         } catch (e) {
+            lastSyncFailed = true;
             if (community._stopHasBeenCalled) syncFailedSinceStop = true;
             community.emit("error", e as Error);
         } finally {
-            await waitUntilNextSync();
+            await waitUntilNextSync({ lastSyncFailed });
         }
     }
     log("Stopping the publishing loop of community", community.address);
@@ -626,6 +637,7 @@ export async function deleteCommunity(community: LocalCommunity) {
     }
 
     await moveCommunityDbToDeletedDirectory(community.address, community._pkc);
+    refreshCommunitiesList(community._pkc); // unlist the address now, not when the filesystem watcher fires
 
     log(`Deleted community (${community.address}) successfully`);
 }

@@ -678,7 +678,6 @@ describeSkipIfRpc.concurrent("settings.pages: page generation", () => {
 
             const tree = context.community._dbHandler.queryPageCommentsWithResolvedReplies({
                 parentCid: cidOf("post"),
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeDeletedComments: false,
                 excludeRemovedComments: false,
                 excludeCommentWithApprovedFalse: false,

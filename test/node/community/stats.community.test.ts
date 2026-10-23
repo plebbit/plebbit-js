@@ -79,7 +79,9 @@ function createMockEdit(
 }
 
 async function createTestDbHandler(): Promise<{ dbHandler: DbHandler; communityAddress: string }> {
-    const communityAddress = `test-sub-${Date.now()}-${Math.random()}`;
+    // No "." in it, so the community is addressed by key (isStringDomain) and a comment carrying another key belongs to
+    // another community under the community identity rule (issue #401)
+    const communityAddress = `test-sub-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const fakePKC = { noData: true };
     const fakeCommunity = { address: communityAddress, _pkc: fakePKC };
     const handler = new DbHandler(fakeCommunity as DbHandler extends { _community: infer T } ? T : never);

@@ -56,8 +56,7 @@ describeSkipIfRpc("post pages with nested replies are built from the published C
         excludeRemovedComments: true,
         excludeDeletedComments: true,
         excludeCommentPendingApproval: true,
-        excludeCommentWithApprovedFalse: true,
-        excludeCommentsWithDifferentCommunityAddress: true
+        excludeCommentWithApprovedFalse: true
     };
 
     // Run the CommentUpdate pass the sync loop runs and refresh the reference entries of the posts it touched

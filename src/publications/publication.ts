@@ -80,7 +80,7 @@ import PKCRpcClient from "../clients/rpc-client/pkc-rpc-client.js";
 import { PublicationClientsManager } from "./publication-client-manager.js";
 import { LocalCommunity } from "../runtime/node/community/local-community.js";
 import { buildRuntimeAuthor } from "./publication-author.js";
-import { buildRuntimeCommunityFields, normalizeCommunityInputFromCommunity } from "./publication-community.js";
+import { buildRuntimeCommunityFields, getCommunityNameFromWire, normalizeCommunityInputFromCommunity } from "./publication-community.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -115,6 +115,15 @@ class Publication extends TypedEmitter<PublicationEvents> {
         pubsubTopic?: CommunityIpfsType["pubsubTopic"];
     } = undefined; // will be used for publishing
     _publishingToLocalCommunity?: LocalCommunity;
+    // The message createX signed with only the community fields it knew, and the options it signed it from. When it was
+    // created with just the community's key, publish() re-signs it with the name of the community it loaded (issue #401).
+    // Initialized (not just declared) so hideClassPrivateProps sees it and keeps it out of JSON.
+    private _signedWithKnownCommunityFields:
+        | {
+              message: PublicationFromDecryptedChallengeRequest;
+              unsignedOptions: CreatePublicationOptions;
+          }
+        | undefined = undefined;
     // In-flight stale-cache community refresh fired by _fetchCommunityForPublishing. Deliberately
     // not awaited by the publish path, so stop() drains it (issue #270).
     _backgroundCommunityRefresh?: Promise<unknown>;
@@ -263,12 +272,28 @@ class Publication extends TypedEmitter<PublicationEvents> {
     async _signPublicationWithKnownCommunityFieldsIfAvailable() {
         if (!this.communityPublicKey || this.raw.pubsubMessageToPublish || !this.raw.unsignedPublicationOptions) return;
 
+        const unsignedOptions = this.raw.unsignedPublicationOptions;
         await this._signPublication({
             communityFields: {
                 communityPublicKey: this.communityPublicKey,
                 ...(this.communityName ? { communityName: this.communityName } : {})
             }
         });
+        if (this.raw.pubsubMessageToPublish)
+            this._signedWithKnownCommunityFields = { message: this.raw.pubsubMessageToPublish, unsignedOptions };
+    }
+
+    // A community with a name rejects a publication without it (ERR_PUBLICATION_MISSING_COMMUNITY_NAME), so one createX
+    // signed knowing only the community's key is signed again once the loaded record shows the community has a name. Only
+    // the message createX signed is re-signed: a message set another way, or signed with a name, is published as it is.
+    private _isSignedWithoutTheLoadedCommunityName(): boolean {
+        const signed = this._signedWithKnownCommunityFields;
+        return Boolean(
+            signed &&
+                this.raw.pubsubMessageToPublish === signed.message &&
+                this._community?.name &&
+                !getCommunityNameFromWire(signed.message as unknown as Record<string, unknown>)
+        );
     }
 
     protected async _validateSignatureHook(): Promise<void> {
@@ -1444,6 +1469,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         // Sign the publication with community fields if not yet signed
         if (this.raw.unsignedPublicationOptions && !this.raw.pubsubMessageToPublish) {
+            await this._signPublicationWithCommunityFields();
+        } else if (this._isSignedWithoutTheLoadedCommunityName()) {
+            log(
+                `Re-signing the ${this.getType()} with the name of community ${this._community!.name}; it was created with only the community's key`
+            );
+            this.raw.unsignedPublicationOptions = this._signedWithKnownCommunityFields!.unsignedOptions;
+            this._signedWithKnownCommunityFields = undefined;
             await this._signPublicationWithCommunityFields();
         }
 

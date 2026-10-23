@@ -205,7 +205,6 @@ describeSkipIfRpc("resolveRepliesCidRefsForEntries preserves commentCids order a
             // Now resolve via the page gen path and verify order matches
             const pageOptions: PageOptions = {
                 parentCid: null as unknown as string,
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeDeletedComments: true,
                 excludeRemovedComments: true,
                 excludeCommentPendingApproval: true,
@@ -364,7 +363,6 @@ describeSkipIfRpc("resolveRepliesCidRefsForEntries preserves commentCids order a
                 // Resolve with the spy active — childrenByParent will have wrong order
                 const pageOptions: PageOptions = {
                     parentCid: null as unknown as string,
-                    excludeCommentsWithDifferentCommunityAddress: true,
                     excludeDeletedComments: true,
                     excludeRemovedComments: true,
                     excludeCommentPendingApproval: true,

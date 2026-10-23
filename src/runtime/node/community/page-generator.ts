@@ -40,7 +40,6 @@ export type PageOptions = {
     excludeDeletedComments: boolean;
     excludeCommentPendingApproval: boolean; // Exclude comments waiting in mod queue for approval or disapproval
     excludeCommentWithApprovedFalse: boolean; // comment has only {approved: false}
-    excludeCommentsWithDifferentCommunityAddress: boolean;
     commentUpdateFieldsToExclude?: (keyof CommentUpdateType)[];
     parentCid: string | null;
     preloadedPage?: PostSortName | ReplySortName; // informational; which sorts embed is decided by settings.pages (issue #73)

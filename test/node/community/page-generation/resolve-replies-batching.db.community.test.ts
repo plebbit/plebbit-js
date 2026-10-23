@@ -133,8 +133,7 @@ describeSkipIfRpc("db-handler cid lists above the SQLite variable cap", () => {
             excludeRemovedComments: true,
             excludeDeletedComments: true,
             excludeCommentPendingApproval: true,
-            excludeCommentWithApprovedFalse: true,
-            excludeCommentsWithDifferentCommunityAddress: true
+            excludeCommentWithApprovedFalse: true
         });
         expect(posts).to.have.length(POSTS);
         const resolved = dbHandler.resolveRepliesCidRefsForEntries(posts);

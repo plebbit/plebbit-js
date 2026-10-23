@@ -21,6 +21,8 @@ import { isDefaultChallengeStructure } from "./defaults.js";
 import { findProcessStartedCommunity, processStartedCommunities, syncProcessStartedCommunity } from "./registry.js";
 import { updateDbInternalState, updateInstancePropsWithStartedCommunityOrDb } from "./db-state.js";
 import { setResolvedPageSorts } from "./registry-sync.js";
+import { communityIdentityPublicKey } from "./identity.js";
+import { refreshCommunitiesList } from "../../util.js";
 
 export async function movePostUpdatesFolderToNewAddress(community: LocalCommunity, oldAddress: string, newAddress: string) {
     const log = Logger("pkc-js:local-community:_movePostUpdatesFolderToNewAddress");
@@ -150,6 +152,29 @@ export async function validateNewAddressBeforeEditing(community: LocalCommunity,
     });
 }
 
+// A community's address is its name when it has one, else its identity key, so an edit of either is one move: the
+// DB file, the start lock and the MFS postUpdates folder follow the new address, and the page rule filters by it
+// (issue #430). Normalizes the edit so both are set: { name: M } and { address: M } become { name: M, address: M } for
+// a domain M; { name: undefined } and { address: <identity key> } drop the name and return the address to the key.
+// Both given and naming different addresses is rejected rather than guessing which one the owner meant.
+export function deriveNameAndAddressEdit<T extends Pick<ParsedCommunityEditOptions, "name" | "address">>(
+    community: LocalCommunity,
+    editOptions: T
+): T {
+    const hasName = "name" in editOptions;
+    const hasAddress = typeof editOptions.address === "string";
+    if (!hasName && !hasAddress) return editOptions;
+    const addressFromName = hasName ? editOptions.name ?? communityIdentityPublicKey(community) : undefined;
+    if (hasAddress && hasName && editOptions.address !== addressFromName)
+        throw new PKCError("ERR_COMMUNITY_EDIT_NAME_AND_ADDRESS_MISMATCH", {
+            name: editOptions.name,
+            address: editOptions.address,
+            communityAddress: community.address
+        });
+    const address = hasAddress ? editOptions.address! : addressFromName!;
+    return { ...editOptions, address, name: isStringDomain(address) ? address : undefined };
+}
+
 export async function editPropsOnStartedCommunity(
     community: LocalCommunity,
     parsedEditOptions: ParsedCommunityEditOptions,
@@ -165,6 +190,7 @@ export async function editPropsOnStartedCommunity(
         log(`Attempting to edit community.address from ${oldAddress} to ${parsedEditOptions.address}. We will stop community first`);
         await community.stop();
         await community._dbHandler.changeDbFilename(oldAddress, parsedEditOptions.address);
+        refreshCommunitiesList(community._pkc); // list the new address now, not when the filesystem watcher fires
         community.setAddress(parsedEditOptions.address);
         await community._dbHandler.initDbIfNeeded();
         await community.start();
@@ -220,6 +246,7 @@ export async function editPropsOnNotStartedCommunity(
         await movePostUpdatesFolderToNewAddress(community, community.address, parsedEditOptions.address);
         community._dbHandler.destoryConnection();
         await community._dbHandler.changeDbFilename(community.address, parsedEditOptions.address);
+        refreshCommunitiesList(community._pkc); // list the new address now, not when the filesystem watcher fires
         await community._dbHandler.initDbIfNeeded();
         community.setAddress(parsedEditOptions.address);
     }
@@ -267,11 +294,7 @@ export async function edit(community: LocalCommunity, newCommunityOptions: Commu
 
     const parsedEditOptions = parseCommunityEditOptionsSchemaWithPKCErrorIfItFails(newCommunityOptions);
 
-    // Convert backward-compat address → name for wire format when address is a domain
-    const editWithDerivedName =
-        typeof parsedEditOptions.address === "string" && isStringDomain(parsedEditOptions.address)
-            ? { ...parsedEditOptions, name: parsedEditOptions.address }
-            : parsedEditOptions;
+    const editWithDerivedName = deriveNameAndAddressEdit(community, parsedEditOptions);
 
     // settings is replaced wholesale, so an edit carrying settings without `pages` unsets it too
     const pagesEdit = editWithDerivedName?.settings ? await parsePagesToEdit(community, editWithDerivedName.settings) : undefined;

@@ -33,42 +33,44 @@ describe.concurrent(`pkc._startedCommunities`, () => {
         expect(findStartedCommunity(pkc, { publicKey: community.publicKey, name: community.name })).to.be.undefined;
     });
 
-    it(`started registry resolves the same community by address, name, publicKey, and sticky aliases`, async () => {
-        const isolatedPKC = await mockPKC();
+    for (const editKey of ["address", "name"] as const) {
+        it(`started registry resolves the same community by address, name, publicKey, and sticky aliases (edit({ ${editKey} }))`, async () => {
+            const isolatedPKC = await mockPKC();
 
-        try {
-            const startedCommunity = (await isolatedPKC.createCommunity()) as LocalCommunity | RpcLocalCommunity;
-            const originalAddress = startedCommunity.address;
-            const aliasBase = `started-sub-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-            const bsoAddress = `${aliasBase}.bso`;
-            const ethAddress = `${aliasBase}.eth`;
+            try {
+                const startedCommunity = (await isolatedPKC.createCommunity()) as LocalCommunity | RpcLocalCommunity;
+                const originalAddress = startedCommunity.address;
+                const aliasBase = `started-sub-${editKey}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+                const bsoAddress = `${aliasBase}.bso`;
+                const ethAddress = `${aliasBase}.eth`;
 
-            await startedCommunity.start();
-            await startedCommunity.edit({ address: bsoAddress });
-            await resolveWhenConditionIsTrue({
-                toUpdate: startedCommunity,
-                predicate: async () => findStartedCommunity(isolatedPKC, { publicKey: originalAddress }) === startedCommunity
-            });
+                await startedCommunity.start();
+                await startedCommunity.edit({ [editKey]: bsoAddress });
+                await resolveWhenConditionIsTrue({
+                    toUpdate: startedCommunity,
+                    predicate: async () => findStartedCommunity(isolatedPKC, { publicKey: originalAddress }) === startedCommunity
+                });
 
-            const publicKey = startedCommunity.publicKey || startedCommunity.signer.address;
+                const publicKey = startedCommunity.publicKey || startedCommunity.signer.address;
 
-            expect(findStartedCommunity(isolatedPKC, { publicKey: originalAddress })).to.equal(startedCommunity);
-            expect(findStartedCommunity(isolatedPKC, { name: bsoAddress })).to.equal(startedCommunity);
-            expect(findStartedCommunity(isolatedPKC, { name: ethAddress })).to.equal(startedCommunity);
-            expect(findStartedCommunity(isolatedPKC, { name: bsoAddress })).to.equal(startedCommunity);
-            expect(findStartedCommunity(isolatedPKC, { publicKey })).to.equal(startedCommunity);
-            expect(listStartedCommunities(isolatedPKC)).to.deep.equal([startedCommunity]);
+                expect(findStartedCommunity(isolatedPKC, { publicKey: originalAddress })).to.equal(startedCommunity);
+                expect(findStartedCommunity(isolatedPKC, { name: bsoAddress })).to.equal(startedCommunity);
+                expect(findStartedCommunity(isolatedPKC, { name: ethAddress })).to.equal(startedCommunity);
+                expect(findStartedCommunity(isolatedPKC, { name: bsoAddress })).to.equal(startedCommunity);
+                expect(findStartedCommunity(isolatedPKC, { publicKey })).to.equal(startedCommunity);
+                expect(listStartedCommunities(isolatedPKC)).to.deep.equal([startedCommunity]);
 
-            await startedCommunity.stop();
+                await startedCommunity.stop();
 
-            expect(findStartedCommunity(isolatedPKC, { publicKey: originalAddress })).to.be.undefined;
-            expect(findStartedCommunity(isolatedPKC, { name: bsoAddress })).to.be.undefined;
-            expect(findStartedCommunity(isolatedPKC, { name: ethAddress })).to.be.undefined;
-            expect(listStartedCommunities(isolatedPKC)).to.deep.equal([]);
-        } finally {
-            await isolatedPKC.destroy().catch(() => {});
-        }
-    });
+                expect(findStartedCommunity(isolatedPKC, { publicKey: originalAddress })).to.be.undefined;
+                expect(findStartedCommunity(isolatedPKC, { name: bsoAddress })).to.be.undefined;
+                expect(findStartedCommunity(isolatedPKC, { name: ethAddress })).to.be.undefined;
+                expect(listStartedCommunities(isolatedPKC)).to.deep.equal([]);
+            } finally {
+                await isolatedPKC.destroy().catch(() => {});
+            }
+        });
+    }
 
     itSkipIfRpc(`localCommunity.update() should use the community in pkc._startdCommunitys`, async () => {
         const startedCommunity = (await pkc.createCommunity()) as LocalCommunity;

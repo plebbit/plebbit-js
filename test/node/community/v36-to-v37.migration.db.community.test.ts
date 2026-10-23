@@ -886,11 +886,10 @@ describeSkipIfRpc("v36 → v37 DB migration (subplebbitAddress → communityPubl
             }
         });
 
-        it("queryPageComments with excludeCommentsWithDifferentCommunityAddress returns migrated replies", () => {
+        it("queryPageComments returns migrated replies under the community identity rule", () => {
             // queryPageComments finds direct children of a parent — use the post to find its reply
             const results = pageDbHandler!.queryPageComments({
                 parentCid: "QmPagePost",
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeRemovedComments: false,
                 excludeDeletedComments: false,
                 excludeCommentPendingApproval: false,
@@ -905,7 +904,6 @@ describeSkipIfRpc("v36 → v37 DB migration (subplebbitAddress → communityPubl
         it("queryFlattenedPageReplies returns replies from migrated data", () => {
             const results = pageDbHandler!.queryFlattenedPageReplies({
                 parentCid: "QmPagePost",
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeRemovedComments: false,
                 excludeDeletedComments: false,
                 excludeCommentPendingApproval: false,
@@ -932,7 +930,6 @@ describeSkipIfRpc("v36 → v37 DB migration (subplebbitAddress → communityPubl
         it("queryPostsWithActiveScore returns migrated posts with scores", () => {
             const results = pageDbHandler!.queryPostsWithActiveScore({
                 parentCid: null,
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeRemovedComments: false,
                 excludeDeletedComments: false,
                 excludeCommentPendingApproval: false,
@@ -1019,7 +1016,6 @@ describeSkipIfRpc("v36 → v37 DB migration (subplebbitAddress → communityPubl
         it("queryPostsWithActiveScore finds domain-address posts (communityName matched)", () => {
             const results = domainDbHandler!.queryPostsWithActiveScore({
                 parentCid: null,
-                excludeCommentsWithDifferentCommunityAddress: true,
                 excludeRemovedComments: false,
                 excludeDeletedComments: false,
                 excludeCommentPendingApproval: false,
@@ -1048,7 +1044,6 @@ describeSkipIfRpc("v36 → v37 DB migration (subplebbitAddress → communityPubl
             try {
                 const results = domainDbHandler!.queryPostsWithActiveScore({
                     parentCid: null,
-                    excludeCommentsWithDifferentCommunityAddress: true,
                     excludeRemovedComments: false,
                     excludeDeletedComments: false,
                     excludeCommentPendingApproval: false,
