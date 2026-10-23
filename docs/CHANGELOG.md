@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.124](https://github.com/pkcprotocol/pkc-js/compare/v0.0.123...v0.0.124) (2026-10-23)
+
+### Bug Fixes
+
+* **community:** match author names across .bso/.eth and letter case ([#424](https://github.com/pkcprotocol/pkc-js/issues/424)) ([#445](https://github.com/pkcprotocol/pkc-js/issues/445)) ([88dbac3](https://github.com/pkcprotocol/pkc-js/commit/88dbac3d1de69084d2c48c84641db3a7b1e8fd9e))
+
 ## [0.0.123](https://github.com/pkcprotocol/pkc-js/compare/v0.0.122...v0.0.123) (2026-10-23)
 
 ### Bug Fixes
