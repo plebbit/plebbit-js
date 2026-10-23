@@ -357,6 +357,14 @@ if (vitestTimeoutValue === undefined && npmLifecycleEvent === "test:node:paralle
     vitestTimeoutValue = "160000";
 }
 
+// The RPC client's per-call timeout (300s by default) has to fire before vitest kills the test,
+// otherwise a lost JSON-RPC response surfaces as a bare "Test timed out" instead of an
+// ERR_RPC_CALL_TIMED_OUT naming the rpcMethod (issue #266).
+const rpcCallTimeoutDefaultMs = 300_000;
+if (!env.PKC_RPC_CALL_TIMEOUT_MS && Number(vitestTimeoutValue) > 0) {
+    env.PKC_RPC_CALL_TIMEOUT_MS = String(Math.min(rpcCallTimeoutDefaultMs, Math.floor(Number(vitestTimeoutValue) * 0.75)));
+}
+
 const waitForStreamFinish = (stream) =>
     new Promise((resolve, reject) => {
         stream.once("finish", resolve);
