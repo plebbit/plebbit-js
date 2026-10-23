@@ -324,3 +324,84 @@ describeSkipIfRpc.sequential("LocalCommunity rejects incoming non-domain author.
         });
     });
 });
+
+// Issue #447: a community name can never contain an uppercase letter (ERR_COMMUNITY_NAME_HAS_CAPITAL_LETTER), and
+// author.name follows the same rule, so one author is never spelled two ways on the wire (#424). The community runs
+// with resolveAuthorNames: false so name resolution cannot be what rejects these: only the case rule can.
+// RPC skipped because these tests require direct community interaction with crafted wire payloads
+describeSkipIfRpc.sequential("LocalCommunity rejects incoming author.name with an uppercase letter", async () => {
+    let pkc: PKC;
+    let community: LocalCommunity | RpcLocalCommunity;
+    let targetPost: Comment;
+
+    beforeAll(async () => {
+        pkc = await mockPKC({ resolveAuthorNames: false });
+        community = await createSubWithNoChallenge({}, pkc);
+
+        await community.start();
+        await resolveWhenConditionIsTrue({
+            toUpdate: community,
+            predicate: async () => typeof community.updatedAt === "number"
+        });
+
+        targetPost = await publishRandomPost({
+            communityAddress: community.address,
+            pkc
+        });
+    });
+
+    afterAll(async () => {
+        await community.delete();
+        await pkc.destroy();
+    });
+
+    const publishCommentWithAuthorName = async ({ name, expectedReason }: { name: string; expectedReason?: messages }) => {
+        const comment = await pkc.createComment({
+            communityAddress: community.address,
+            title: `author.name ${name} ${Date.now()}`,
+            content: `Content ${Date.now()}`,
+            signer: await pkc.createSigner()
+        });
+
+        await ensurePublicationIsSigned(comment, community);
+        const currentAuthor = comment.raw.pubsubMessageToPublish!.author || {};
+        await setExtraPropOnCommentAndSign(comment, { author: { ...currentAuthor, name } }, true);
+
+        await publishWithExpectedResult({
+            publication: comment,
+            expectedChallengeSuccess: expectedReason === undefined,
+            ...(expectedReason ? { expectedReason } : {})
+        });
+    };
+
+    it("accepts a comment with an all-lowercase author.name", async () => {
+        // Control: without resolution, a lowercase domain name is accepted, so the rejections below are the case rule.
+        await publishCommentWithAuthorName({ name: "lowercase-447.bso" });
+    });
+
+    for (const name of ["Uppercase-447.bso", "uppercase-447.BSO", "UPPERCASE-447.ETH", "Uppercase-447.sol"]) {
+        it(`rejects a comment with author.name "${name}"`, async () => {
+            await publishCommentWithAuthorName({ name, expectedReason: messages.ERR_AUTHOR_NAME_HAS_CAPITAL_LETTER });
+        });
+    }
+
+    it("rejects a vote with an uppercase author.name", async () => {
+        if (!targetPost.cid) throw Error("Expected target post to have a CID");
+        const vote = await pkc.createVote({
+            commentCid: targetPost.cid,
+            vote: 1,
+            communityAddress: community.address,
+            signer: await pkc.createSigner()
+        });
+
+        await ensurePublicationIsSigned(vote, community);
+        const currentAuthor = vote.raw.pubsubMessageToPublish!.author || {};
+        await setExtraPropOnVoteAndSign(vote as Vote, { author: { ...currentAuthor, name: "Uppercase-447.bso" } }, true);
+
+        await publishWithExpectedResult({
+            publication: vote,
+            expectedChallengeSuccess: false,
+            expectedReason: messages.ERR_AUTHOR_NAME_HAS_CAPITAL_LETTER
+        });
+    });
+});
