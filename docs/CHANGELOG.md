@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.122](https://github.com/pkcprotocol/pkc-js/compare/v0.0.121...v0.0.122) (2026-10-23)
+
+### Bug Fixes
+
+* **helia:** turn off the delegated-routing Cache API cache and delete leftovers ([#442](https://github.com/pkcprotocol/pkc-js/issues/442)) ([f49e396](https://github.com/pkcprotocol/pkc-js/commit/f49e39648794ffd7177344e21ac438d4f5ddebfd)), closes [ipfs/helia-delegated-routing-v1-http-api#208](https://github.com/ipfs/helia-delegated-routing-v1-http-api/issues/208)
+
 ## [0.0.121](https://github.com/pkcprotocol/pkc-js/compare/v0.0.120...v0.0.121) (2026-10-23)
 
 ### Bug Fixes
