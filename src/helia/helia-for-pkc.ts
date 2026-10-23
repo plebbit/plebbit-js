@@ -60,6 +60,32 @@ const creatingLibp2pJsClients: Partial<Record<string, Promise<Libp2pJsClient>>> 
 // (total request volume per burst is unchanged; only burstiness increases).
 const DELEGATED_ROUTING_CONCURRENT_REQUESTS = 32;
 
+// Issue #439: the delegated-routing client defaults to a 5-minute response cache in the browser's
+// Cache API. It stores every successful GET, evicts an entry only when the same URL is looked up
+// again, and deletes the cache only in stop(), which a closed tab never runs, so the cache grows
+// for the life of the profile (~10,700 records on 5chan.app). iOS Safari reads every Cache API
+// record of the origin before the first Cache API operation of a session, which stalled 5chan's
+// service worker and page load ~4s. Our routers answer in well under a second, so the cache buys
+// nothing: cacheTTL 0 keeps the client from opening it at all.
+const DELEGATED_ROUTING_CACHE_TTL_MS = 0;
+// The client's default cache name. Profiles used by older pkc-js versions still hold one.
+const DELEGATED_ROUTING_LEGACY_CACHE_NAME = "delegated-routing-v1-cache";
+
+// Delete the cache older pkc-js versions left behind. Not awaited: on iOS this first Cache API
+// call waits for Safari to read every stored record, and nothing in the client depends on it.
+function deleteLegacyDelegatedRoutingCache() {
+    try {
+        // Typed locally: the node build's lib has no DOM CacheStorage
+        const { caches } = globalThis as { caches?: { delete(cacheName: string): Promise<boolean> } };
+        caches?.delete(DELEGATED_ROUTING_LEGACY_CACHE_NAME).catch((e: unknown) => {
+            log.trace("Failed to delete the legacy delegated-routing cache", e);
+        });
+    } catch (e) {
+        // Accessing `caches` throws in some contexts (e.g. opaque origins)
+        log.trace("Failed to delete the legacy delegated-routing cache", e);
+    }
+}
+
 // TODO can you verify if we're already content who has a specific and we fetch the CID even though http router says it has no providers, it should be able to load the CID
 function getDelegatedRoutingFields(routers: string[]) {
     // @helia/delegated-routing-v1-http-api-client 8.x: the raw client returned by
@@ -72,7 +98,8 @@ function getDelegatedRoutingFields(routers: string[]) {
     for (let i = 0; i < routers.length; i++) {
         const factory = delegatedRoutingV1HttpApiClientContentRouting({
             url: routers[i],
-            concurrentRequests: DELEGATED_ROUTING_CONCURRENT_REQUESTS
+            concurrentRequests: DELEGATED_ROUTING_CONCURRENT_REQUESTS,
+            cacheTTL: DELEGATED_ROUTING_CACHE_TTL_MS
         });
         routersObj["delegatedRouting" + i] = (components) => {
             const routing = factory(components);
@@ -163,6 +190,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
     let closeBlockstore = async () => {};
 
     creatingLibp2pJsClients[pkcOptions.key] = (async () => {
+        deleteLegacyDelegatedRoutingCache();
         // A caller supplying their own heliaOptions.blockstore owns block storage entirely, so skip
         // ours rather than opening a directory or IndexedDB database nothing will read.
         let lruBlockstore: LruBlockstore | undefined;
