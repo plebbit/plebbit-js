@@ -215,6 +215,26 @@ A publication created with only a community's key (`createComment({ communityAdd
 `publish()` with the name of the community record it loaded, so pkc-js never sends a publication without the name to a
 community that has one. Its `signature` therefore changes between `createX` and `publish()` in that case.
 
+## Equivalent names in identity lists
+
+The community owner types names into `exclude.names`, `roles` keys and the whitelist/blacklist challenge
+`addresses`. An author's published `author.name` matches such an entry when the two are the same name according to
+`areEquivalentNames` (`src/domain-util.ts`), not only when the strings are equal (issue
+[#424](https://github.com/pkcprotocol/pkc-js/issues/424)):
+
+-   **`.eth` and `.bso` names** are compared after lowercasing both and turning `.bso` into `.eth`. `.bso` is the
+    protocol's spelling of an ENS `.eth` name, and ENS names are case-insensitive, so `bot.eth`, `bot.bso`, `Bot.bso` and
+    `bot.BSO` are all one name.
+-   **Any other name** must match exactly, letter case included. We do not know that its resolver ignores case.
+
+This only widens which entry counts as naming the author. The match still requires that the name the author
+**published** resolves, fresh (`cache: { maxAge: 0 }`), to the key that signed the publication; the spelling in the
+list is never resolved. So an impostor claiming `bot.bso` gains nothing from a `bot.eth` entry. Stored settings are
+not rewritten: the owner's spelling is kept as typed. If two `roles` keys are spellings of one name, the author holds
+both roles.
+
+`areEquivalentCommunityAddresses` (`src/util.ts`) applies the same rule to community addresses.
+
 ## Invariants
 
 -   `author.address` and `community.address` are **immutable**, never override or fall back to a derived address.
@@ -229,6 +249,7 @@ community that has one. Its `signature` therefore changes between `createX` and 
 | ---------------------------------- | ---------------------------------------- | --------------------------------------- |
 | `getPKCAddressFromPublicKeySync()` | `src/signer/util.ts`                     | Ed25519 public key → IPNS address       |
 | `isStringDomain()`                 | `src/util.ts`                            | Check if a string is a domain name      |
+| `areEquivalentNames()`             | `src/domain-util.ts`                     | Same name? `.eth`/`.bso` alias and case |
 | `getAuthorNameFromWire()`          | `src/publications/publication-author.ts` | Extract name from wire author           |
 | `getCommunityDomainFromWire()`     | `src/community/community-wire.ts`        | Extract domain from wire community      |
 | `buildRuntimeAuthor()`             | `src/publications/publication-author.ts` | Compute `address` from wire + signature |

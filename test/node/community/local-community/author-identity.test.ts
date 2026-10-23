@@ -224,4 +224,13 @@ describe("author-identity: a domain matches across .bso/.eth spellings and lette
         expect((await matcher.matchesAnyIdentity(["bitsocialbot.sol"])).matched).to.equal(false);
         expect(resolveAuthorNameIfNeeded).not.toHaveBeenCalled();
     });
+
+    it("compares names outside .eth/.bso exactly, letter case included", async () => {
+        // We only know that ENS ignores case. Another TLD's resolver might not, so its spellings stay distinct.
+        const { matcher, resolveAuthorNameIfNeeded } = buildMatcher({ name: "bitsocialbot.sol", resolve: async () => owner.address });
+
+        expect((await matcher.matchesAnyIdentity(["BitsocialBot.sol"])).matched).to.equal(false);
+        expect((await matcher.matchesIdentity("BitsocialBot.sol")).matched).to.equal(false);
+        expect(resolveAuthorNameIfNeeded).not.toHaveBeenCalled();
+    });
 });
