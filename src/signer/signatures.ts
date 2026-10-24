@@ -765,6 +765,11 @@ export async function verifyCommunityList({ communityList }: { communityList: Co
     if (communityList.author && intersection(Object.keys(communityList.author), AuthorReservedFields).length > 0)
         return { valid: false, reason: messages.ERR_COMMUNITY_LIST_AUTHOR_INCLUDES_RESERVED_FIELD };
 
+    // author.address = name || publicKey, so a non-domain name would display another key's address as
+    // the author. Comments are vetted by their community; a list has no such gate, so verification is it
+    if (communityList.author?.name !== undefined && !isStringDomain(communityList.author.name))
+        return { valid: false, reason: messages.ERR_AUTHOR_NAME_MUST_BE_A_DOMAIN };
+
     for (const entry of communityList.communities)
         if (intersection(Object.keys(entry), CommunityListEntryReservedFields).length > 0)
             return { valid: false, reason: messages.ERR_COMMUNITY_LIST_ENTRY_INCLUDES_RESERVED_FIELD };
