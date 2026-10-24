@@ -348,6 +348,94 @@ getAvailablePKCConfigsToTestAgainst({
             }
         });
 
+        // Alone, the restarted loader gets a new updating instance; with a by-key sibling keeping the shared
+        // instance running, it mirrors that instance again and is replayed the record it already refused
+        for (const sibling of ["no sibling", "a by-key sibling"] as const) {
+            it(`a refused record is reported again after stop() and update(), with ${sibling}`, async () => {
+                const staticCommunity = await publishStaticCommunityWithPostInPages({ withSelfResolvingName: true });
+                const communityName = staticCommunity.communityName!;
+                const pkc = await config.pkcInstancePromise();
+                try {
+                    const byKey =
+                        sibling === "a by-key sibling"
+                            ? await pkc.createCommunity({ address: staticCommunity.communityAddress })
+                            : undefined;
+                    if (byKey) {
+                        await byKey.update();
+                        await waitForUpdatedAt(byKey, staticCommunity.communityRecord.updatedAt);
+                    }
+                    // With a sibling, load by name and key so the restart matches the shared instance by key
+                    const byName = await pkc.createCommunity(
+                        byKey ? { name: communityName, publicKey: staticCommunity.communityAddress } : { address: communityName }
+                    );
+                    const mismatchErrors = collectMismatchErrors(byName);
+                    await byName.update();
+                    await waitForUpdatedAt(byName, staticCommunity.communityRecord.updatedAt);
+                    const nameless = await publishNewerRecord({
+                        staticCommunity,
+                        previous: staticCommunity.communityRecord,
+                        name: undefined
+                    });
+                    await waitForMismatchCount(mismatchErrors, 1);
+                    if (byKey) await waitForUpdatedAt(byKey, nameless.updatedAt);
+
+                    // A restarted loader gets the same record again and must be told why it is refused,
+                    // like a restarted loader of a migrated community is told about the migration again
+                    await byName.stop();
+                    await byName.update();
+                    await vi.waitFor(() => expect(mismatchErrors.length).to.equal(2), { timeout: 30_000, interval: 100 });
+                    expectMismatchDetails(mismatchErrors[1], {
+                        requestedName: communityName,
+                        recordName: undefined,
+                        record: nameless,
+                        publicKey: staticCommunity.communityAddress
+                    });
+                    await byName.stop();
+                    if (byKey) {
+                        // The refusing loader detached fully and left the by-key loader on the one shared instance
+                        expect(pkc._updatingCommunities.size()).to.equal(1);
+                        await byKey.stop();
+                    }
+                } finally {
+                    await pkc.destroy();
+                    await staticCommunity.ipnsObj.pkc.destroy();
+                }
+            });
+        }
+
+        // The record claims `<key>.bso`; `<key>.eth` is an alias of it (areEquivalentNames), so a loader of
+        // either accepts the record. The `.bso` loader is the control for the alias one.
+        for (const requestedTld of ["bso", "eth"] as const) {
+            it(`a loader by the record's name as .${requestedTld} keeps nameResolved and its registry entry`, async () => {
+                const staticCommunity = await publishStaticCommunityWithPostInPages({ withSelfResolvingName: true });
+                const recordName = staticCommunity.communityName!;
+                expect(recordName.endsWith(".bso")).to.be.true;
+                const requestedName = recordName.slice(0, -".bso".length) + "." + requestedTld;
+                const pkc = await config.pkcInstancePromise();
+                try {
+                    const first = await pkc.createCommunity({ address: requestedName });
+                    const mismatchErrors = collectMismatchErrors(first);
+                    await first.update();
+                    await waitForUpdatedAt(first, staticCommunity.communityRecord.updatedAt);
+                    await vi.waitFor(() => expect(first.nameResolved).to.equal(true), { timeout: 30_000, interval: 100 });
+                    expect(mismatchErrors).to.have.length(0);
+
+                    // A second loader of the same name finds the running instance instead of starting another
+                    const second = await pkc.createCommunity({ address: requestedName });
+                    await second.update();
+                    await waitForUpdatedAt(second, staticCommunity.communityRecord.updatedAt);
+                    expect(pkc._updatingCommunities.size()).to.equal(1);
+                    expect(second.nameResolved).to.equal(true);
+
+                    await second.stop();
+                    await first.stop();
+                } finally {
+                    await pkc.destroy();
+                    await staticCommunity.ipnsObj.pkc.destroy();
+                }
+            });
+        }
+
         it(`getCommunity by a name the record does not claim rejects with the mismatch error and stops its updating instance`, async () => {
             // A community whose record never claimed the self-resolving name that points at its key
             const staticCommunity = await publishStaticCommunityWithPostInPages();
