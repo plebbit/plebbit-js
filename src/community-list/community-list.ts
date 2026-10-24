@@ -249,8 +249,12 @@ export class CommunityList extends TypedEmitter<CommunityListEvents> {
         outerSignal?.addEventListener("abort", onOuterAbort, { once: true });
         try {
             const record = await new Promise<CommunityListIpfsType>((resolve, reject) => {
+                // Settle on abort, not on the next attempt: stop() clears a pending retry timer, so an
+                // attempt may never run again, and a load left pending never reaches its finally
+                const rejectOnAbort = () => reject(<Error>signal.reason || new Error("Aborted loading CommunityList"));
+                signal.addEventListener("abort", rejectOnAbort, { once: true });
                 operation.attempt(async () => {
-                    if (signal.aborted) return reject(<Error>signal.reason || new Error("Aborted loading CommunityList"));
+                    if (signal.aborted) return rejectOnAbort();
                     try {
                         resolve(await this._fetchAndVerifyOnce(cid, signal));
                     } catch (e) {
