@@ -175,3 +175,62 @@ describe("author-identity: why a domain did not match (#353)", () => {
         await expect(matcher.matchesAnyIdentity([ownerDomain])).resolves.toBeTruthy();
     });
 });
+
+// Issue #424. `.bso` is the protocol's spelling of an ENS `.eth` name, and ENS names are case-insensitive, so
+// the resolver answers the same for `x.bso`, `x.eth` and `X.bso`. The matcher compared the configured identity
+// to the wire name as an exact string first, so an exclude/role/list entry spelled differently from the
+// author's wire name never reached the resolver, and the real owner was silently treated as a non-match.
+describe("author-identity: a domain matches across .bso/.eth spellings and letter case (#424)", () => {
+    // Mirrors the production resolver: one record, reachable through every spelling of the same ENS name.
+    const resolveLikeProduction = async (authorName: string) =>
+        authorName.toLowerCase().replace(/\.bso$/, ".eth") === "bitsocialbot.eth" ? owner.address : null;
+
+    for (const [label, listed, wireName] of [
+        ["the list has .eth and the author publishes .bso", "bitsocialbot.eth", "bitsocialbot.bso"],
+        ["the list has .bso and the author publishes .eth", "bitsocialbot.bso", "bitsocialbot.eth"],
+        ["the list differs from the author's name only in letter case", "BitsocialBot.bso", "bitsocialbot.bso"],
+        ["the list has a capitalized .eth and the author publishes .bso", "BitsocialBot.eth", "bitsocialbot.bso"],
+        ["the list has an uppercase .BSO suffix and the author publishes .eth", "bitsocialbot.BSO", "bitsocialbot.eth"],
+        ["the list has an uppercase .ETH suffix and the author publishes .bso", "BITSOCIALBOT.ETH", "bitsocialbot.bso"]
+    ] as const) {
+        it(`matchesAnyIdentity matches when ${label}`, async () => {
+            const { matcher, resolveAuthorNameIfNeeded } = buildMatcher({ name: wireName, resolve: resolveLikeProduction });
+
+            const result = await matcher.matchesAnyIdentity([listed]);
+
+            expect(result.matched).to.equal(true);
+            // Authority still comes from a fresh resolve of the name the author actually published.
+            expect(resolveAuthorNameIfNeeded).toHaveBeenCalledTimes(1);
+            expect(resolveAuthorNameIfNeeded.mock.calls[0][0].authorName).to.equal(wireName);
+        });
+
+        it(`matchesIdentity matches when ${label}`, async () => {
+            const { matcher } = buildMatcher({ name: wireName, resolve: resolveLikeProduction });
+            expect((await matcher.matchesIdentity(listed)).matched).to.equal(true);
+        });
+    }
+
+    it("still rejects an impostor who claims the other spelling of a listed name", async () => {
+        const { matcher } = buildMatcher({ signer: impostor, name: "bitsocialbot.bso", resolve: resolveLikeProduction });
+
+        // Normalizing the comparison must not loosen the binding: the name still has to resolve to the signer.
+        expect(await matcher.matchesAnyIdentity(["bitsocialbot.eth"])).to.deep.equal({ matched: false });
+        expect(await matcher.matchesIdentity("BitsocialBot.eth")).to.deep.equal({ matched: false });
+    });
+
+    it("does not treat .bso and a non-ENS TLD as the same name", async () => {
+        const { matcher, resolveAuthorNameIfNeeded } = buildMatcher({ name: "bitsocialbot.bso", resolve: resolveLikeProduction });
+
+        expect((await matcher.matchesAnyIdentity(["bitsocialbot.sol"])).matched).to.equal(false);
+        expect(resolveAuthorNameIfNeeded).not.toHaveBeenCalled();
+    });
+
+    it("compares names outside .eth/.bso exactly, letter case included", async () => {
+        // We only know that ENS ignores case. Another TLD's resolver might not, so its spellings stay distinct.
+        const { matcher, resolveAuthorNameIfNeeded } = buildMatcher({ name: "bitsocialbot.sol", resolve: async () => owner.address });
+
+        expect((await matcher.matchesAnyIdentity(["BitsocialBot.sol"])).matched).to.equal(false);
+        expect((await matcher.matchesIdentity("BitsocialBot.sol")).matched).to.equal(false);
+        expect(resolveAuthorNameIfNeeded).not.toHaveBeenCalled();
+    });
+});

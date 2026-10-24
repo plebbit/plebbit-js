@@ -15,6 +15,7 @@ import {
 import { createAuthorIdentityMatcher } from "../../../../dist/node/runtime/node/community/local-community/author-identity.js";
 import type { LocalCommunity } from "../../../../dist/node/runtime/node/community/local-community.js";
 import type { Flair } from "../../../../dist/node/community/types.js";
+import signers from "../../../fixtures/signers.js";
 
 describe("publication-validation: export shape", () => {
     it("exports all publication-validation helpers", () => {
@@ -96,5 +97,57 @@ describe("publication-validation: matchPublicationAuthorAgainstRoles", () => {
         });
         expect(result.matched).to.equal(false);
         expect(result.matched === false && result.nameFailure).to.be.undefined;
+    });
+});
+
+// Issue #424: a role key is a name the owner typed, and `.bso`/`.eth` are one ENS name that ignores letter case.
+// A moderator keyed under one spelling must keep their authority when publishing under another, or a mod
+// action from the real moderator is rejected. The resolver below answers like production: one record,
+// reachable through every spelling.
+describe("publication-validation: role keys match across .bso/.eth spellings and letter case (#424)", () => {
+    const moderator = signers[6];
+    const impostor = signers[7];
+
+    const check = async ({
+        roleKey,
+        authorName,
+        signer = moderator
+    }: {
+        roleKey: string;
+        authorName: string;
+        signer?: (typeof signers)[number];
+    }) => {
+        const community = {
+            roles: { [roleKey]: { role: "moderator" } },
+            _clientsManager: {
+                resolveAuthorNameIfNeeded: async ({ authorName: name }: { authorName: string }) => ({
+                    resolvedAuthorName: name.toLowerCase().replace(/\.bso$/, ".eth") === "mod-424.eth" ? moderator.address : null
+                })
+            },
+            _pkc: { resolveAuthorNames: false, _timeouts: { "resolve-author-name": 1000 } }
+        } as unknown as LocalCommunity;
+        return matchPublicationAuthorAgainstRoles({
+            community,
+            rolesToCheckAgainst: ["moderator", "admin", "owner"],
+            authorIdentityMatcher: createAuthorIdentityMatcher({
+                community,
+                publication: { author: { address: authorName }, signature: { publicKey: signer.publicKey } }
+            })
+        });
+    };
+
+    for (const [roleKey, authorName] of [
+        ["mod-424.eth", "mod-424.bso"],
+        ["mod-424.bso", "mod-424.eth"],
+        ["Mod-424.bso", "mod-424.bso"],
+        ["mod-424.BSO", "mod-424.eth"]
+    ] as const) {
+        it(`a moderator keyed "${roleKey}" keeps authority when publishing as ${authorName}`, async () => {
+            expect((await check({ roleKey, authorName })).matched).to.equal(true);
+        });
+    }
+
+    it("an impostor claiming the other spelling of a moderator's role key gets no authority", async () => {
+        expect(await check({ roleKey: "mod-424.eth", authorName: "mod-424.bso", signer: impostor })).to.deep.equal({ matched: false });
     });
 });

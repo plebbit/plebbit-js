@@ -60,6 +60,24 @@ const creatingLibp2pJsClients: Partial<Record<string, Promise<Libp2pJsClient>>> 
 // (total request volume per burst is unchanged; only burstiness increases).
 const DELEGATED_ROUTING_CONCURRENT_REQUESTS = 32;
 
+// Issue #439: in browsers the client caches every lookup in this Cache API cache (default cacheTTL
+// 5 minutes). It never sweeps entries that are not looked up again, and our lookups are almost all
+// for CIDs that change with every record, so the cache only grows (10k+ entries stalled Safari's
+// first Cache API operation, and every service-worker fetch behind it, for seconds). The client also
+// awaits cache.put() before returning a response, which reads the whole ndjson stream before the
+// first provider is yielded. So run with the cache off and delete any cache an earlier version left.
+// Upstream: https://github.com/ipfs/helia-delegated-routing-v1-http-api/issues/208
+const DELEGATED_ROUTING_CACHE_NAME = "delegated-routing-v1-cache";
+
+function deleteLeftoverDelegatedRoutingCache() {
+    // Only browsers have the Cache API (and the node build has no DOM lib to type it).
+    const { caches } = globalThis as typeof globalThis & { caches?: { delete(cacheName: string): Promise<boolean> } };
+    // Not awaited: on a large leftover cache the delete can take seconds and must not delay startup.
+    caches
+        ?.delete(DELEGATED_ROUTING_CACHE_NAME)
+        .catch((e: unknown) => log.trace("Failed to delete leftover delegated-routing cache", DELEGATED_ROUTING_CACHE_NAME, e));
+}
+
 // TODO can you verify if we're already content who has a specific and we fetch the CID even though http router says it has no providers, it should be able to load the CID
 function getDelegatedRoutingFields(routers: string[]) {
     // @helia/delegated-routing-v1-http-api-client 8.x: the raw client returned by
@@ -72,7 +90,8 @@ function getDelegatedRoutingFields(routers: string[]) {
     for (let i = 0; i < routers.length; i++) {
         const factory = delegatedRoutingV1HttpApiClientContentRouting({
             url: routers[i],
-            concurrentRequests: DELEGATED_ROUTING_CONCURRENT_REQUESTS
+            concurrentRequests: DELEGATED_ROUTING_CONCURRENT_REQUESTS,
+            cacheTTL: 0 // issue #439, see DELEGATED_ROUTING_CACHE_NAME
         });
         routersObj["delegatedRouting" + i] = (components) => {
             const routing = factory(components);
@@ -163,6 +182,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
     let closeBlockstore = async () => {};
 
     creatingLibp2pJsClients[pkcOptions.key] = (async () => {
+        deleteLeftoverDelegatedRoutingCache();
         // A caller supplying their own heliaOptions.blockstore owns block storage entirely, so skip
         // ours rather than opening a directory or IndexedDB database nothing will read.
         let lruBlockstore: LruBlockstore | undefined;

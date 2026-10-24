@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.0.124](https://github.com/pkcprotocol/pkc-js/compare/v0.0.123...v0.0.124) (2026-10-23)
+
+### Bug Fixes
+
+* **community:** match author names across .bso/.eth and letter case ([#424](https://github.com/pkcprotocol/pkc-js/issues/424)) ([#445](https://github.com/pkcprotocol/pkc-js/issues/445)) ([88dbac3](https://github.com/pkcprotocol/pkc-js/commit/88dbac3d1de69084d2c48c84641db3a7b1e8fd9e))
+
+## [0.0.123](https://github.com/pkcprotocol/pkc-js/compare/v0.0.122...v0.0.123) (2026-10-23)
+
+### Bug Fixes
+
+* **community:** reject publications whose author.name has an uppercase letter ([#447](https://github.com/pkcprotocol/pkc-js/issues/447)) ([#448](https://github.com/pkcprotocol/pkc-js/issues/448)) ([134cacc](https://github.com/pkcprotocol/pkc-js/commit/134cacc15ae443a7b2a050dc059bdc105617faa4))
+
+## [0.0.122](https://github.com/pkcprotocol/pkc-js/compare/v0.0.121...v0.0.122) (2026-10-23)
+
+### Bug Fixes
+
+* **helia:** turn off the delegated-routing Cache API cache and delete leftovers ([#442](https://github.com/pkcprotocol/pkc-js/issues/442)) ([f49e396](https://github.com/pkcprotocol/pkc-js/commit/f49e39648794ffd7177344e21ac438d4f5ddebfd)), closes [ipfs/helia-delegated-routing-v1-http-api#208](https://github.com/ipfs/helia-delegated-routing-v1-http-api/issues/208)
+
 ## [0.0.121](https://github.com/pkcprotocol/pkc-js/compare/v0.0.120...v0.0.121) (2026-10-23)
 
 ### Bug Fixes

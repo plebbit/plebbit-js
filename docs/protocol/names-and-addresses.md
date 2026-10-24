@@ -239,12 +239,33 @@ record signed by a different key than the one resolved is still the fatal
 `ERR_THE_COMMUNITY_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED` for everyone. Over RPC the server's
 instance for the subscription does the check, so only that subscription receives the error.
 
+## Equivalent names in identity lists
+
+The community owner types names into `exclude.names`, `roles` keys and the whitelist/blacklist challenge
+`addresses`. An author's published `author.name` matches such an entry when the two are the same name according to
+`areEquivalentNames` (`src/domain-util.ts`), not only when the strings are equal (issue
+[#424](https://github.com/pkcprotocol/pkc-js/issues/424)):
+
+-   **`.eth` and `.bso` names** are compared after lowercasing both and turning `.bso` into `.eth`. `.bso` is the
+    protocol's spelling of an ENS `.eth` name, and ENS names are case-insensitive, so `bot.eth`, `bot.bso`, `Bot.bso` and
+    `bot.BSO` are all one name.
+-   **Any other name** must match exactly, letter case included. We do not know that its resolver ignores case.
+
+This only widens which entry counts as naming the author. The match still requires that the name the author
+**published** resolves, fresh (`cache: { maxAge: 0 }`), to the key that signed the publication; the spelling in the
+list is never resolved. So an impostor claiming `bot.bso` gains nothing from a `bot.eth` entry. Stored settings are
+not rewritten: the owner's spelling is kept as typed. If two `roles` keys are spellings of one name, the author holds
+both roles.
+
+`areEquivalentCommunityAddresses` (`src/util.ts`) applies the same rule to community addresses.
+
 ## Invariants
 
 -   `author.address` and `community.address` are **immutable**, never override or fall back to a derived address.
 -   `author.address` is never an identity on the community side. Excludes, roles and blacklists match through the signer address or a domain resolved to it (`docs/protocol/challenge-flow.md`, "Author identity in excludes").
 -   Use `nameResolved` to indicate whether a domain resolved correctly, do NOT change `address`.
 -   An author and a community **cannot share the same domain name**.
+-   Domain names are **lowercase**. A community name or address with an uppercase letter throws `ERR_COMMUNITY_NAME_HAS_CAPITAL_LETTER` (create, load, edit). A publication whose `author.name` has an uppercase letter throws `ERR_AUTHOR_NAME_HAS_CAPITAL_LETTER` when it is created (`createComment`, `createVote`, ...), and a community that receives one anyway rejects it with the same error, before any name resolution and whatever the TLD (issue [#447](https://github.com/pkcprotocol/pkc-js/issues/447)). So one name is never spelled two ways on the wire.
 -   `shortAddress` is runtime-only, a truncated `address` for display purposes.
 
 ## Key Functions
@@ -253,6 +274,7 @@ instance for the subscription does the check, so only that subscription receives
 | ---------------------------------- | ---------------------------------------- | --------------------------------------- |
 | `getPKCAddressFromPublicKeySync()` | `src/signer/util.ts`                     | Ed25519 public key → IPNS address       |
 | `isStringDomain()`                 | `src/util.ts`                            | Check if a string is a domain name      |
+| `areEquivalentNames()`             | `src/domain-util.ts`                     | Same name? `.eth`/`.bso` alias and case |
 | `getAuthorNameFromWire()`          | `src/publications/publication-author.ts` | Extract name from wire author           |
 | `getCommunityDomainFromWire()`     | `src/community/community-wire.ts`        | Extract domain from wire community      |
 | `buildRuntimeAuthor()`             | `src/publications/publication-author.ts` | Compute `address` from wire + signature |

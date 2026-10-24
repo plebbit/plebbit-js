@@ -16,3 +16,12 @@ export function isEthAliasDomain(address: string): boolean {
 export function normalizeEthAliasDomain(address: string): string {
     return address.endsWith(".bso") ? address.slice(0, -4) + ".eth" : address;
 }
+
+// Do two names refer to the same name? `.bso` is the protocol's spelling of an ENS `.eth` name, and ENS names
+// are case-insensitive, so `x.bso`, `x.eth` and `X.BSO` are one name. Any other name must match exactly: we do
+// not know that its resolver ignores case. Issue #424.
+export function areEquivalentNames(nameA: string, nameB: string): boolean {
+    if (nameA === nameB) return true;
+    if (!isEthAliasDomain(nameA) || !isEthAliasDomain(nameB)) return false;
+    return normalizeEthAliasDomain(nameA.toLowerCase()) === normalizeEthAliasDomain(nameB.toLowerCase());
+}

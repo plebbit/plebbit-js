@@ -142,7 +142,7 @@ import type { PageTypeJson } from "../pages/types.js";
 import type { Libp2pJsClient } from "../helia/libp2pjsClient.js";
 import type { AuthorNameRpcParam, CidRpcParam, RpcFetchCidResult } from "../clients/rpc-client/types.js";
 import { parseRpcAuthorNameParam, parseRpcCidParam } from "../clients/rpc-client/rpc-schema-util.js";
-import { cleanWireAuthor, normalizeCreatePublicationAuthor } from "../publications/publication-author.js";
+import { cleanWireAuthor, getAuthorNameFromWire, normalizeCreatePublicationAuthor } from "../publications/publication-author.js";
 import type Publication from "../publications/publication.js";
 import { stripNameResolvedFromCrosspost } from "../publications/comment/crosspost-runtime.js";
 import { IndexedTrackedInstanceRegistry, TrackedInstanceRegistry } from "./tracked-instance-registry.js";
@@ -600,6 +600,11 @@ export class PKC extends PKCTypedEmitter<PKCEvents> implements ParsedPKCOptions 
         const finalOptions = clone(pubOptions);
         if (!finalOptions.signer) throw Error("User did not provide a signer to create a local publication");
         const normalizedAuthor = normalizeCreatePublicationAuthor(finalOptions.author);
+        // Communities reject an author.name with an uppercase letter, the same rule as a community name. Fail here,
+        // before signing, rather than at the community after the challenge exchange. Issue #447.
+        const authorName = getAuthorNameFromWire(normalizedAuthor);
+        if (authorName && doesDomainAddressHaveCapitalLetter(authorName))
+            throw new PKCError("ERR_AUTHOR_NAME_HAS_CAPITAL_LETTER", { authorName });
         let cleanedAuthor = cleanWireAuthor(normalizedAuthor);
         // Strip empty objects from author — empty {} should not be signed
         if (cleanedAuthor) {
