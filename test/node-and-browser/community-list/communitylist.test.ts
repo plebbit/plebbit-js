@@ -1,8 +1,9 @@
 // CommunityList lifecycle (docs/protocol/community-lists.md): an immutable, signed IPFS file
 // addressed by CID. publish() = sign + IPFS add; update() = fetch + verify with retries, emit
 // `update`, then auto-stop once there is nothing left to settle.
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, expect, vi } from "vitest";
 import { clone } from "remeda";
+import { CID } from "multiformats/cid";
 import signers from "../../fixtures/signers.js";
 import { getAvailablePKCConfigsToTestAgainst, mockRemotePKC, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
@@ -124,6 +125,35 @@ getAvailablePKCConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc",
             expect(list.state).to.equal("stopped");
         });
 
+        it("publishes a revision from a loaded instance's props, as the spec documents", async () => {
+            // docs/protocol/community-lists.md: "Publishing a revision means calling createCommunityList()
+            // again with the previous record's props (obtained from a loaded instance)". A loaded
+            // instance's entries and author carry runtime fields (address, shortAddress, publicKey...)
+            const signer = await pkc.createSigner();
+            const original = await pkc.createCommunityList({
+                signer,
+                title: "v1",
+                author: { displayName: "Curator" },
+                communities: mockCommunityListEntries
+            });
+            const cid = await original.publish();
+            const loaded = await pkc.getCommunityList({ cid });
+            expect(loaded.communities?.[0].address).to.be.a("string"); // runtime fields present on the loaded instance
+
+            const revision = await pkc.createCommunityList({
+                signer,
+                title: "v2",
+                description: loaded.description,
+                author: loaded.author,
+                communities: [...loaded.communities!, { publicKey: signers[2].address, title: "Added in v2" }]
+            });
+            const revisionCid = await revision.publish();
+            expect(revisionCid).to.not.equal(cid);
+            // runtime fields are stripped before signing, so the carried-over entries are byte-identical
+            expect(revision.raw.communityList?.communities.slice(0, 2)).to.deep.equal(original.raw.communityList?.communities);
+            expect(revision.raw.communityList?.author).to.deep.equal({ displayName: "Curator" });
+        });
+
         it("update() after publish() emits update with the already-loaded record and stops itself", async () => {
             const signer = await pkc.createSigner();
             const list = await pkc.createCommunityList({ signer, communities: mockCommunityListEntries });
@@ -205,6 +235,33 @@ describe("communitylist load", () => {
                 expect(err.code).to.equal("ERR_INVALID_COMMUNITY_LIST_SCHEMA");
             });
 
+            it("update() rejects a validly signed record whose author.name is not a domain", async () => {
+                // address = name || publicKey, so a non-domain name would display another key's address
+                // as the list author; nameResolved stays undefined for non-domains, so nothing flags it
+                const helperPkc = await mockRemotePKC();
+                const { record } = await buildSignedCommunityListRecord({
+                    pkc: helperPkc,
+                    author: { name: signers[1].address },
+                    skipAuthorValidation: true
+                });
+                await helperPkc.destroy();
+                const impersonatingCid = await addCommunityListRecordToIpfs(record);
+                const list = await pkc.createCommunityList({ cid: impersonatingCid });
+                const outcome = new Promise<"update" | PKCError>((resolve) => {
+                    list.once("update", () => resolve("update"));
+                    list.once("error", (e) => resolve(<PKCError>e));
+                });
+                await list.update();
+                const result = await outcome;
+                await list.stop();
+                expect(result, `loaded with author.address ${list.author?.address}`).to.not.equal("update");
+                const err = <PKCError>result;
+                expect(err.code).to.equal("ERR_COMMUNITY_LIST_SIGNATURE_IS_INVALID");
+                expect((<{ validity?: { reason?: string } }>err.details).validity?.reason).to.equal(
+                    messages.ERR_AUTHOR_NAME_MUST_BE_A_DOMAIN
+                );
+            });
+
             it("update() emits an error and stops itself when the record includes a reserved field", async () => {
                 // a wire record must never smuggle in runtime-only names; `cid` is added after signing
                 // so it hits the reserved-field check, not the unsigned-signable-field check
@@ -249,4 +306,97 @@ describe("communitylist load", () => {
             });
         })
     );
+});
+
+// The fetch is stubbed on a local instance so these run deterministically without a live RPC server;
+// both reproduce behaviors of the RPC transport (a fetch that ignores the abort signal, and the
+// client-side cid check on bytes returned by the server)
+describe("communitylist rpc transport behaviors", () => {
+    let pkc: PKC;
+    let record: CommunityListIpfsType;
+    let cidV0: string;
+
+    beforeAll(async () => {
+        pkc = await mockRemotePKC();
+        record = (await buildSignedCommunityListRecord({ pkc })).record;
+        cidV0 = await addCommunityListRecordToIpfs(record);
+    });
+    afterAll(async () => {
+        await pkc.destroy();
+    });
+
+    type CommunityListInternals = { _fetchAndVerifyOnce: (cid: string, signal?: AbortSignal) => Promise<CommunityListIpfsType> };
+
+    const deferred = <T>() => {
+        let resolve!: (value: T) => void;
+        let reject!: (err: Error) => void;
+        const promise = new Promise<T>((res, rej) => ((resolve = res), (reject = rej)));
+        return { promise, resolve, reject };
+    };
+
+    const waitFor = async (predicate: () => boolean, timeoutMs = 5000) => {
+        const started = Date.now();
+        while (!predicate()) {
+            if (Date.now() - started > timeoutMs) throw Error("waitFor timed out");
+            await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+    };
+
+    it("a stale load finishing after update(); stop(); update() does not cancel the new run's retries", async () => {
+        const list = await pkc.createCommunityList({ cid: cidV0 });
+        const errors: Error[] = [];
+        list.on("error", (e) => errors.push(e));
+        const fetches = [deferred<CommunityListIpfsType>(), deferred<CommunityListIpfsType>()];
+        let fetchCalls = 0;
+        vi.spyOn(<CommunityListInternals>(<unknown>list), "_fetchAndVerifyOnce").mockImplementation(async () => {
+            const call = fetchCalls++;
+            if (call < fetches.length) return fetches[call].promise;
+            return record;
+        });
+
+        await list.update();
+        await waitFor(() => fetchCalls === 1);
+        await list.stop();
+        await list.update();
+        await waitFor(() => fetchCalls === 2);
+
+        // the first run's fetch resolves late, as an RPC fetch that takes no abort signal does
+        fetches[0].resolve(record);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        // the second run's attempt fails transiently, so it must schedule a retry (minTimeout 1s)
+        fetches[1].reject(new Error("mock transient fetch failure"));
+
+        const updated = await Promise.race([
+            new Promise<boolean>((resolve) => list.once("update", () => resolve(true))),
+            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000))
+        ]);
+        const stateAfterWait = list.state;
+        await list.stop();
+        expect(updated, `instance hung in state ${stateAfterWait} after ${fetchCalls} fetches`).to.equal(true);
+        expect(fetchCalls).to.equal(3);
+        expect(errors.map((e) => e.message)).to.deep.equal(["mock transient fetch failure"]);
+    });
+
+    it("loads a list by its CIDv1 over RPC, the same as by its CIDv0", async () => {
+        const cidV1 = CID.parse(cidV0).toV1().toString();
+        const rawString = JSON.stringify(record);
+        const fetchedCids: string[] = [];
+        // Only CommunityList's fetch path reads the RPC client here; restored before destroy()
+        pkc._pkcRpcClient = <PKC["_pkcRpcClient"]>(<unknown>{
+            fetchCommunityList: async ({ cid }: { cid: string }) => {
+                fetchedCids.push(cid);
+                return { communityListRawString: rawString };
+            }
+        });
+        try {
+            const byV0 = await pkc.getCommunityList({ cid: cidV0 });
+            expect(byV0.raw.communityList).to.deep.equal(record);
+            const byV1 = await pkc.getCommunityList({ cid: cidV1 });
+            expect(byV1.raw.communityList).to.deep.equal(record);
+            expect(byV1.cid).to.equal(cidV1);
+            expect(fetchedCids).to.deep.equal([cidV0, cidV1]);
+        } finally {
+            pkc._pkcRpcClient = undefined;
+        }
+    });
 });

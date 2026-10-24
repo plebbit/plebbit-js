@@ -7,6 +7,7 @@
 // failures retry until the caller's own stop(). The one-shot getCommunityList never waits for the
 // verdict; it only warms the pkc-wide cache.
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { sha256 } from "js-sha256";
 import signers from "../../fixtures/signers.js";
 import {
     createMockNameResolver,
@@ -99,6 +100,49 @@ getAvailablePKCConfigsToTestAgainst().map((config) =>
 // client-side resolver mocks (canResolve, throwing resolvers, resolveAuthorNames toggles) cannot
 // reach it, so these behaviors are only testable against a locally-constructed PKC instance
 describeSkipIfRpc("communitylist author.nameResolved - custom resolvers", () => {
+    // The pkc-wide verdict cache is shared with comments and pages under the same key (issue #353)
+    const nameResolvedCacheKey = (signer: SignerWithPublicKeyAddress) => sha256(DOMAIN + signer.publicKey);
+
+    it("caches a false verdict with the short false ttl, not the cache's default true ttl", async () => {
+        // the default mock resolver maps plebbit.bso -> signers[3], so a fresh signer gets `false`
+        const pkc = await mockRemotePKC();
+        pkc._nameResolvedFalseTtlMs = 200;
+        try {
+            const { cid, signer } = await publishListWithAuthorName(pkc);
+            const list = await pkc.createCommunityList({ cid });
+            await list.update();
+            await resolveWhenConditionIsTrue({ toUpdate: list, predicate: async () => list.author?.nameResolved === false });
+            await waitUntilStoppedByItself(list);
+            const cache = pkc._memCaches.nameResolvedCache;
+            expect(cache.get(nameResolvedCacheKey(signer))).to.equal(false);
+            await new Promise((resolve) => setTimeout(resolve, 400));
+            // a curator who fixes their domain record must not stay `false` for the full true ttl
+            expect(cache.get(nameResolvedCacheKey(signer)), `remaining ttl ${cache.getRemainingTTL(nameResolvedCacheKey(signer))}ms`).to.be
+                .undefined;
+        } finally {
+            await pkc.destroy();
+        }
+    });
+
+    it("does not write a no-resolver `false` into the cache it shares with comments", async () => {
+        // For comments and pages, "no resolver handles this TLD" is `undefined` (never asked), not
+        // `false`; a list writing `false` under the same key would flip the signer's comments to false
+        const pkc = await mockRemotePKC({
+            mockResolve: false,
+            pkcOptions: { nameResolvers: [createMockNameResolver({ canResolve: () => false })] }
+        });
+        try {
+            const { cid, signer } = await publishListWithAuthorName(pkc);
+            const list = await pkc.createCommunityList({ cid });
+            await list.update();
+            await resolveWhenConditionIsTrue({ toUpdate: list, predicate: async () => list.author?.nameResolved === false });
+            await waitUntilStoppedByItself(list);
+            expect(pkc._memCaches.nameResolvedCache.get(nameResolvedCacheKey(signer))).to.be.undefined;
+        } finally {
+            await pkc.destroy();
+        }
+    });
+
     it("resolves to false (definitive) when no resolver handles the author TLD, then stops itself", async () => {
         const pkc = await mockRemotePKC({
             mockResolve: false,

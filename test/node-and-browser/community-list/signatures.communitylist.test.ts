@@ -4,6 +4,7 @@
 // the verify function directly on a locally-constructed clients manager, so they can't run under RPC
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import { clone } from "remeda";
+import signers from "../../fixtures/signers.js";
 import { describeSkipIfRpc } from "../../helpers/conditional-tests.js";
 import { mockRemotePKC } from "../../../dist/node/test/test-util.js";
 import { verifyCommunityList } from "../../../dist/node/signer/signatures.js";
@@ -95,6 +96,20 @@ describeSkipIfRpc("verifyCommunityList", () => {
         expect(await verifyCommunityList({ communityList: withReservedEntry })).to.deep.equal({
             valid: false,
             reason: messages.ERR_COMMUNITY_LIST_ENTRY_INCLUDES_RESERVED_FIELD
+        });
+    });
+
+    it("rejects a validly signed record whose author.name is not a domain (it would become author.address)", async () => {
+        // A list has no community vetting it, so verification is the only gate: a non-domain name
+        // would let the signer display another key's address as the list author
+        const { record } = await buildSignedCommunityListRecord({
+            pkc,
+            author: { name: signers[1].address },
+            skipAuthorValidation: true
+        });
+        expect(await verifyCommunityList({ communityList: record })).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_AUTHOR_NAME_MUST_BE_A_DOMAIN
         });
     });
 
