@@ -321,9 +321,9 @@ describe("communitylist load", () => {
     );
 });
 
-// The fetch is stubbed on a local instance so this runs deterministically without a live RPC server:
-// an RPC fetch takes no abort signal, so a stopped run can still settle after a newer run started
-describe("communitylist rpc transport behaviors", () => {
+// The fetch is stubbed on a local instance so these run deterministically without a live RPC server
+// (an RPC fetch takes no abort signal, so a stopped run can still settle after a newer run started)
+describe("communitylist load lifecycle", () => {
     let pkc: PKC;
     let record: CommunityListIpfsType;
     let cid: string;
@@ -387,5 +387,29 @@ describe("communitylist rpc transport behaviors", () => {
         expect(updated, `instance hung in state ${stateAfterWait} after ${fetchCalls} fetches`).to.equal(true);
         expect(fetchCalls).to.equal(3);
         expect(errors.map((e) => e.message)).to.deep.equal(["mock transient fetch failure"]);
+    });
+
+    it("stop() during a retry backoff settles the pending load instead of leaving it hanging", async () => {
+        // A load left pending never runs its finally, so its abort listener would stay attached to the
+        // caller's signal, which outlives the call (getCommunityList stops the list on timeout this way)
+        const list = await pkc.createCommunityList({ cid });
+        list.on("error", () => {});
+        let fetchCalls = 0;
+        vi.spyOn(<CommunityListInternals>(<unknown>list), "_fetchAndVerifyOnce").mockImplementation(async () => {
+            fetchCalls++;
+            throw new Error("mock transient fetch failure");
+        });
+        const callerAbortController = new AbortController();
+        const settled = list._loadCommunityListIpfsWithRetries(callerAbortController.signal).then(
+            () => "resolved",
+            () => "rejected"
+        );
+        await waitFor(() => fetchCalls === 1);
+        await new Promise((resolve) => setTimeout(resolve, 50)); // the retry is now waiting out its 1s backoff
+        await list.stop();
+
+        const outcome = await Promise.race([settled, new Promise((resolve) => setTimeout(() => resolve("pending"), 3000))]);
+        expect(outcome).to.equal("rejected");
+        expect(fetchCalls).to.equal(1); // stop() cancelled the retry
     });
 });
