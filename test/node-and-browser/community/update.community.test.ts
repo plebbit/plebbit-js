@@ -164,12 +164,19 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
 
                 await community.update();
 
-                // First update: record loaded, name set from record
+                // First update: record loaded, name set from record. Read the name inside the predicate: by
+                // the time the await returns, the loop may have migrated to signers[0] and loaded its record,
+                // which has no name, and name follows the latest record.
+                let nameFromFirstRecord: string | undefined;
                 await resolveWhenConditionIsTrue({
                     toUpdate: community,
-                    predicate: async () => typeof community.updatedAt === "number"
+                    predicate: async () => {
+                        if (typeof community.updatedAt !== "number") return false;
+                        nameFromFirstRecord = community.name;
+                        return true;
+                    }
                 });
-                expect(community.name).to.equal("migration-test.bso");
+                expect(nameFromFirstRecord).to.equal("migration-test.bso");
 
                 const error = await errorPromise;
                 expect(error.details.previousPublicKey).to.equal(ipnsKey);

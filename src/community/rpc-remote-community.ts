@@ -4,7 +4,7 @@ import type { RpcRemoteCommunityType, CommunityEvents, CommunityRpcErrorToTransm
 import { keys } from "remeda";
 import { PKCError } from "../pkc-error.js";
 import { parseRpcRemoteCommunityUpdateEventWithPKCErrorIfItFails } from "../schema/schema-util.js";
-import { deepMergeRuntimeFields } from "../util.js";
+import { areEquivalentCommunityAddresses, deepMergeRuntimeFields } from "../util.js";
 import { RpcLocalCommunity } from "./rpc-local-community.js";
 import {
     findStartedCommunity,
@@ -304,6 +304,13 @@ export class RpcRemoteCommunity extends RemoteCommunity {
         await updatingSub._initRpcUpdateSubscription();
     }
 
+    private _sharesRequestedIdentityWith(other: RpcRemoteCommunity): boolean {
+        const ownName = this._requestedName();
+        const otherName = other._requestedName();
+        if (ownName === undefined || otherName === undefined) return ownName === otherName;
+        return areEquivalentCommunityAddresses(ownName, otherName);
+    }
+
     override async update() {
         const log = Logger("pkc-js:rpc-remote-community:update");
 
@@ -316,7 +323,12 @@ export class RpcRemoteCommunity extends RemoteCommunity {
                 | undefined;
             if (existingSub) {
                 if (existingSub === this) await this._initRpcUpdateSubscription();
-                else await this._initMirroringUpdatingCommunity(existingSub);
+                else if (this._sharesRequestedIdentityWith(existingSub)) await this._initMirroringUpdatingCommunity(existingSub);
+                // The entry's server subscription checks records against the name the entry asked for, so a
+                // loader asking for another identity (e.g. by key, joining a by-name entry that key-migrated
+                // onto its key) would never receive records that do not claim that name. Subscribe this
+                // instance on its own instead, untracked, since the entry already owns the registry aliases.
+                else await this._initRpcUpdateSubscription();
             } else {
                 const startedSub = findStartedCommunity(this._pkc, { publicKey: this.publicKey, name: this.name });
                 if (startedSub) await this._initMirroringUpdatingCommunity(startedSub as RpcLocalCommunity);
