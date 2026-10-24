@@ -162,21 +162,22 @@ getAvailablePKCConfigsToTestAgainst().map((config) => {
                     });
                 });
 
+                // First update: record loaded, name set from record. Capture it from a listener attached before
+                // update(): by the time a later check runs, the loop may have migrated to signers[0] and loaded its
+                // record, which has no name, and name follows the latest record. Over RPC that can all be replayed
+                // before update() returns.
+                const nameFromFirstRecordPromise = new Promise<string | undefined>((resolve) => {
+                    const onUpdate = () => {
+                        if (typeof community.updatedAt !== "number") return;
+                        community.removeListener("update", onUpdate);
+                        resolve(community.name);
+                    };
+                    community.on("update", onUpdate);
+                });
+
                 await community.update();
 
-                // First update: record loaded, name set from record. Read the name inside the predicate: by
-                // the time the await returns, the loop may have migrated to signers[0] and loaded its record,
-                // which has no name, and name follows the latest record.
-                let nameFromFirstRecord: string | undefined;
-                await resolveWhenConditionIsTrue({
-                    toUpdate: community,
-                    predicate: async () => {
-                        if (typeof community.updatedAt !== "number") return false;
-                        nameFromFirstRecord = community.name;
-                        return true;
-                    }
-                });
-                expect(nameFromFirstRecord).to.equal("migration-test.bso");
+                expect(await nameFromFirstRecordPromise).to.equal("migration-test.bso");
 
                 const error = await errorPromise;
                 expect(error.details.previousPublicKey).to.equal(ipnsKey);
