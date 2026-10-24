@@ -303,7 +303,7 @@ export class CommunityList extends TypedEmitter<CommunityListEvents> {
     }
 
     // One resolution attempt. Returns a definitive verdict (boolean) or undefined for a transient
-    // failure that should be retried. Definitive verdicts are cached pkc-wide, same as publications
+    // failure that should be retried. Resolved verdicts are cached pkc-wide, same as publications
     private async _resolveAuthorNameVerdictOnce(authorDomain: string): Promise<boolean | undefined> {
         const cache = this._pkc._memCaches.nameResolvedCache;
         const cacheKey = this._nameResolvedCacheKey(authorDomain);
@@ -319,13 +319,16 @@ export class CommunityList extends TypedEmitter<CommunityListEvents> {
             }
             const signerAddress = getPKCAddressFromPublicKeySync(this.raw.communityList!.signature.publicKey);
             const verdict = resolvedAuthorName === signerAddress;
-            cache.set(cacheKey, verdict);
+            // Same per-verdict ttls as resolveAuthorNamesInBackground: a `false` is what a domain looks
+            // like while its owner is still configuring it, so it expires quickly (issue #353)
+            cache.set(cacheKey, verdict, { ttl: verdict ? this._pkc._nameResolvedTrueTtlMs : this._pkc._nameResolvedFalseTtlMs });
             return verdict;
         } catch (e) {
             // Classified by code, not instanceof: over RPC the rejection is a plain object carrying the code
             if ((<{ code?: unknown }>e)?.code === "ERR_NO_RESOLVER_FOR_NAME") {
-                // Definitive: no resolver in this PKC instance (or its RPC server) handles this TLD
-                cache.set(cacheKey, false);
+                // Definitive for this list: no resolver in this PKC instance (or its RPC server) handles
+                // this TLD. Not cached: the cache is shared with comments and pages, for which "never
+                // asked" is undefined, not false (issue #353)
                 return false;
             }
             return undefined; // transient
