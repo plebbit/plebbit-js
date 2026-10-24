@@ -1,4 +1,5 @@
 import {
+    areEquivalentCommunityAddresses,
     createAbortError,
     doesDomainAddressHaveCapitalLetter,
     hideClassPrivateProps,
@@ -434,7 +435,9 @@ export class RemoteCommunity extends TypedEmitter<CommunityEvents> implements Om
             this.name = newProps.address as string;
         }
 
-        if (nameBeforeProps !== undefined && this.name !== nameBeforeProps) {
+        // An alias of the previous name (x.eth for x.bso) still identifies this community, as it does for
+        // the loader's mismatch check (findCommunityRecordNameMismatch)
+        if (nameBeforeProps !== undefined && (this.name === undefined || !areEquivalentCommunityAddresses(this.name, nameBeforeProps))) {
             // The verdict described the previous name, and the previous name no longer identifies this
             // community, so a new loader asking for it must not be routed to this instance.
             this.nameResolved = undefined;
@@ -764,15 +767,18 @@ export class RemoteCommunity extends TypedEmitter<CommunityEvents> implements Om
     // is ours: a domain-addressed instance classifies its address, which can differ from the name its record
     // claims. Otherwise restore the value we had before mirroring, undoing anything deepMergeRuntimeFields
     // copied in, unless our own name changed with the record, which leaves no verdict for it. See #119.
+    // Names are compared as aliases: a loader of x.eth whose record claims x.bso is described by a verdict
+    // computed for x.eth.
     protected _adoptMirroredNameResolved(
         source: { name?: string; address?: string; nameResolved?: boolean },
         nameResolvedBeforeMirror: boolean | undefined,
         nameBeforeMirror: string | undefined
     ) {
         const nameTheSourceClassified = source.address && isStringDomain(source.address) ? source.address : source.name;
-        if (this.name && this.name === nameTheSourceClassified) {
+        if (this.name && nameTheSourceClassified && areEquivalentCommunityAddresses(this.name, nameTheSourceClassified)) {
             if (typeof source.nameResolved === "boolean") this.nameResolved = source.nameResolved;
-        } else if (this.name && this.name === nameBeforeMirror) this.nameResolved = nameResolvedBeforeMirror;
+        } else if (this.name && nameBeforeMirror && areEquivalentCommunityAddresses(this.name, nameBeforeMirror))
+            this.nameResolved = nameResolvedBeforeMirror;
         else this.nameResolved = undefined;
     }
 
@@ -1010,6 +1016,8 @@ export class RemoteCommunity extends TypedEmitter<CommunityEvents> implements Om
 
         const log = Logger("pkc-js:remote-community:stop");
         this._abortStopOperations(`Aborting community operations for ${this.address} because community.stop() was called`);
+        // The next update() is a new run whose listeners have not been told about any refused record
+        this._lastRefusedRecordUpdatedAt = undefined;
 
         if (this._updatingCommunityInstanceWithListeners) await this._cleanUpUpdatingCommunityInstanceWithListeners();
         else {

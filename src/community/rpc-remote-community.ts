@@ -407,6 +407,8 @@ export class RpcRemoteCommunity extends RemoteCommunity {
     override async stop() {
         const log = Logger("pkc-js:rpc-remote-community:stop");
         if (this.state === "stopped") return;
+        // The next update() is a new run whose listeners have not been told about any refused record
+        this._lastRefusedRecordUpdatedAt = undefined;
 
         if (this._updatingRpcCommunityInstanceWithListeners) {
             await this._cleanupMirroringUpdatingCommunity();
