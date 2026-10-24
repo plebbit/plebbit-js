@@ -236,31 +236,38 @@ export class CommunityList extends TypedEmitter<CommunityListEvents> {
         if (this.raw.communityList) return;
         const cid = this.cid;
         if (!cid) throw new PKCError("ERR_COMMUNITY_LIST_HAS_NO_CID", {});
-        // Own controller so stop() can cancel a load that was started without update() (getCommunityList)
-        this._loadingAbortController = new AbortController();
-        const signal = this._loadingAbortController.signal;
-        const onOuterAbort = () => this._loadingAbortController?.abort(outerSignal?.reason);
+        // Own controller so stop() can cancel a load that was started without update() (getCommunityList).
+        // The controller and retry operation are this run's own: a stopped run can still settle later (an
+        // RPC fetch takes no abort signal), and it must not touch a newer run's controller or retry timers.
+        // They are mirrored on the instance only so stop() can reach the current run
+        const abortController = new AbortController();
+        const operation = retry.operation({ forever: true, factor: 2 });
+        this._loadingAbortController = abortController;
+        this._loadingOperation = operation;
+        const signal = abortController.signal;
+        const onOuterAbort = () => abortController.abort(outerSignal?.reason);
         outerSignal?.addEventListener("abort", onOuterAbort, { once: true });
         try {
-            this._loadingOperation = retry.operation({ forever: true, factor: 2 });
             const record = await new Promise<CommunityListIpfsType>((resolve, reject) => {
-                this._loadingOperation!.attempt(async () => {
+                operation.attempt(async () => {
                     if (signal.aborted) return reject(<Error>signal.reason || new Error("Aborted loading CommunityList"));
                     try {
                         resolve(await this._fetchAndVerifyOnce(cid, signal));
                     } catch (e) {
                         if (signal.aborted || this._isNonRetriableError(e)) return reject(<Error>e);
                         this.emit("error", <Error>e);
-                        this._loadingOperation!.retry(<Error>e);
+                        operation.retry(<Error>e);
                     }
                 });
             });
-            this._loadingOperation.stop();
             if (signal.aborted) return;
             this._initFromWireRecord(record, cid);
             this.emit("update", this);
         } finally {
+            operation.stop();
             outerSignal?.removeEventListener("abort", onOuterAbort);
+            if (this._loadingOperation === operation) this._loadingOperation = undefined;
+            if (this._loadingAbortController === abortController) this._loadingAbortController = undefined;
         }
     }
 
