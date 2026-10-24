@@ -755,14 +755,14 @@ Prints:
 
 ##### CreateCommunityListOptions
 
-Either `{cid}` to load an existing list, or an object which may have the following keys:
+Either `{cid}` to load an existing list (a CIDv0 `Qm...`, as `publish()` returns), or an object which may have the following keys:
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | signer | `Signer` | `Signer` that signs the list; any key works, including the curator's personal author key. The caller persists it |
 | title | `string` or `undefined` | Title of the community list |
 | description | `string` or `undefined` | Description of the community list |
-| author | `Author` or `undefined` | The curator's profile, same schema as `publication.author` |
+| author | `Author` or `undefined` | The curator's profile, same schema as `publication.author`; `author.name` must be a domain |
 | communities | `CommunityListEntry[]` | Entries of the list; duplicate `publicKey` entries throw |
 | timestamp | `number` or `undefined` | Seconds, defaults to now |
 
@@ -792,6 +792,15 @@ const cid = await communityList.publish()
 const loaded = await pkc.createCommunityList({cid})
 loaded.on('update', () => console.log(loaded.title, loaded.author?.nameResolved))
 await loaded.update()
+
+// publish a revision from the loaded props (runtime fields like entry.address are dropped on create)
+const revision = await pkc.createCommunityList({
+  signer,
+  title: loaded.title,
+  author: loaded.author,
+  communities: [...loaded.communities, {publicKey: '12D3KooY...'}]
+})
+const revisionCid = await revision.publish()
 ```
 
 ### `pkc.createCommunity(createCommunityOptions)`

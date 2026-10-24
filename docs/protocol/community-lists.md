@@ -103,6 +103,10 @@ schema verbatim, wire and runtime:
   `author.name` reports resolution through `author.nameResolved` (same lazy background
   resolution as publications, gated on the `resolveAuthorNames` option), never by
   overriding `author.address`.
+- **`author.name` must be a domain, and loading enforces it.** Because `author.address` is
+  `name || publicKey`, a non-domain name would display another key's address as the list
+  author. Comments are vetted by their community before anyone sees them; a list has no
+  such gate, so `verifyCommunityList` rejects it (`ERR_AUTHOR_NAME_MUST_BE_A_DOMAIN`).
 - **Any key can sign a list**, including the curator's personal author key (the one they
   sign comments with). Signing a list consumes no IPNS slot, so one key can sign any number
   of lists, and a list signed with the curator's personal key carries their real,
@@ -132,8 +136,10 @@ schema verbatim, wire and runtime:
   failure (see below).
 - `stop()`: aborts an in-flight `publish()`.
 - There is no `edit()`. Publishing a revision means calling `createCommunityList()` again
-  with the previous record's props (obtained from a loaded instance) and publishing a new
-  CID.
+  with the previous record's props from a loaded instance (`title`, `description`,
+  `author`, `communities`) and publishing a new CID. The runtime fields a loaded instance
+  carries (`address`/`shortAddress` on entries, the derived author fields) are dropped on
+  create; anything else unknown is still rejected.
 - Publishing is isomorphic (Node and browser). There is no Node-only dependency: no
   sqlite, no MFS, no pubsub. It does require a node that can `ipfs add`: a kubo RPC client
   or a PKC RPC server. Gateway-only and libp2p-js-only instances can load lists but not
@@ -152,17 +158,23 @@ schema verbatim, wire and runtime:
     until the verdict is **definitive**, emits `update` again with `author.nameResolved`
     set, then stops itself. Definitive means: resolved to `signature.publicKey` (true),
     resolved to a different key (false), or no resolver in this PKC instance handles the TLD
-    (false). A resolution that returns nothing is indistinguishable from a resolver outage
+    (false). That last verdict is the list's own and is not written to the pkc-wide cache,
+    which comments and pages share and for which "never asked" means `undefined`. A
+    resolution that returns nothing is indistinguishable from a resolver outage
     today, so it retries rather than failing shut, the same policy as publication authors.
     Transient resolver failures keep retrying until the caller's `stop()`.
   - When there is nothing to settle (no `author`, `author.name` absent or not a domain, or
     `resolveAuthorNames: false`), the instance stops itself right after the first `update`.
+- `cid` must be a CIDv0 (`Qm...`, what `publish()` returns). A CIDv1 is rejected with
+  `ERR_INVALID_CREATE_COMMUNITY_LIST_OPTIONS_SCHEMA`: every content check in pkc-js (RPC,
+  gateway, kubo) recomputes a v0 hash, so a v1 would load on some transports and not others.
 - One-shot `pkc.getCommunityList({cid})`: resolves after fetch + verify, without waiting
   for the `nameResolved` verdict (same as `getComment`); the verdict lands in the pkc-wide
   cache, so evented instances pick it up.
 - Load-side rejection (a cap only enforced by honest publishers is not a cap):
   - records over **2 MB**, rejected before parsing (DoS guard),
   - invalid signatures,
+  - a non-domain `author.name`,
   - duplicate `publicKey` entries,
   - schema violations.
 
