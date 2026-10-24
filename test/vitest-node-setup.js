@@ -22,5 +22,6 @@ const runStartedAtMs = Number(process.env.PKC_TEST_RUN_STARTED_AT_MS);
 const poolId = Number(process.env.VITEST_POOL_ID);
 if (runStartedAtMs > 0 && poolId > 1 && workerStaggerMs > 0) {
     const waitMs = runStartedAtMs + Math.min((poolId - 1) * workerStaggerMs, workerStaggerCapMs) - Date.now();
-    if (waitMs > 0) beforeAll(() => new Promise((resolve) => setTimeout(resolve, waitMs)));
+    // Own timeout: the wait can be up to the 12s cap, more than a short --vitest-timeout gives hooks
+    if (waitMs > 0) beforeAll(() => new Promise((resolve) => setTimeout(resolve, waitMs)), waitMs + 10_000);
 }
