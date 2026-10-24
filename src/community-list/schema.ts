@@ -33,7 +33,18 @@ const communityListEntryShape = {
 // Loose on load: a newer publisher may add fields and sign them; a strict schema would drop signed
 // props and break signature verification
 export const CommunityListEntrySchema = z.looseObject(communityListEntryShape);
-export const CreateCommunityListEntrySchema = z.object(communityListEntryShape).strict(); // strict on create
+
+export const CommunityListEntryReservedFields = ["address", "shortAddress"];
+
+// Strict on create, after dropping the runtime fields a loaded instance's entries carry, so a revision
+// can be built from `loaded.communities` as docs/protocol/community-lists.md documents
+const omitEntryRuntimeFields = (entry: unknown) => {
+    if (!entry || typeof entry !== "object") return entry;
+    const wireEntry: Record<string, unknown> = { ...entry };
+    for (const field of CommunityListEntryReservedFields) delete wireEntry[field];
+    return wireEntry;
+};
+export const CreateCommunityListEntrySchema = z.preprocess(omitEntryRuntimeFields, z.object(communityListEntryShape).strict());
 
 // Strict base is the typing schema (same idiom as CommunityIpfsSchema); loading MUST go through the
 // loose variant below so extra signed props are preserved
@@ -81,5 +92,3 @@ export const CreateCommunityListOptionsSchema = z.union([CreateCommunityListWith
 
 // Runtime-only instance props: looseness must never let a wire record smuggle these in
 export const CommunityListReservedFields = ["cid", "shortCid", "state", "updatingState", "publishingState", "clients", "signer", "raw"];
-
-export const CommunityListEntryReservedFields = ["address", "shortAddress"];
