@@ -482,5 +482,6 @@ export enum messages {
     ERR_COMMUNITY_LIST_PUBLISH_ABORTED = "CommunityList.publish() was aborted via stop()",
     ERR_COMMUNITY_LIST_SIGNATURE_IS_INVALID = "CommunityList record has an invalid signature",
     ERR_ADDED_COMMUNITY_LIST_TO_IPFS_BUT_GOT_DIFFERENT_CID = "The RPC server returned a cid different from the cid of the signed CommunityList bytes",
-    ERR_GET_COMMUNITY_LIST_ABORTED = "pkc.getCommunityList() was aborted by a signal"
+    ERR_GET_COMMUNITY_LIST_ABORTED = "pkc.getCommunityList() was aborted by a signal",
+    ERR_COMMUNITY_LIST_CID_MUST_BE_V0 = "CommunityList cid must be a CIDv0 (Qm...), the cid that publish() returns"
 }

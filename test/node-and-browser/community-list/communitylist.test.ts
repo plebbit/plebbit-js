@@ -262,6 +262,19 @@ describe("communitylist load", () => {
                 );
             });
 
+            it("rejects a CIDv1 up front, since every transport's content check recomputes a CIDv0", async () => {
+                const cidV1 = CID.parse(fixture.cid).toV1().toString();
+                for (const load of [() => pkc.createCommunityList({ cid: cidV1 }), () => pkc.getCommunityList({ cid: cidV1 })]) {
+                    try {
+                        await load();
+                        expect.fail("should have thrown");
+                    } catch (e) {
+                        expectPKCErrorCode(e, "ERR_INVALID_CREATE_COMMUNITY_LIST_OPTIONS_SCHEMA");
+                        expect(JSON.stringify((<PKCError>e).details)).to.include(messages.ERR_COMMUNITY_LIST_CID_MUST_BE_V0);
+                    }
+                }
+            });
+
             it("update() emits an error and stops itself when the record includes a reserved field", async () => {
                 // a wire record must never smuggle in runtime-only names; `cid` is added after signing
                 // so it hits the reserved-field check, not the unsigned-signable-field check
@@ -308,18 +321,17 @@ describe("communitylist load", () => {
     );
 });
 
-// The fetch is stubbed on a local instance so these run deterministically without a live RPC server;
-// both reproduce behaviors of the RPC transport (a fetch that ignores the abort signal, and the
-// client-side cid check on bytes returned by the server)
+// The fetch is stubbed on a local instance so this runs deterministically without a live RPC server:
+// an RPC fetch takes no abort signal, so a stopped run can still settle after a newer run started
 describe("communitylist rpc transport behaviors", () => {
     let pkc: PKC;
     let record: CommunityListIpfsType;
-    let cidV0: string;
+    let cid: string;
 
     beforeAll(async () => {
         pkc = await mockRemotePKC();
         record = (await buildSignedCommunityListRecord({ pkc })).record;
-        cidV0 = await addCommunityListRecordToIpfs(record);
+        cid = await addCommunityListRecordToIpfs(record);
     });
     afterAll(async () => {
         await pkc.destroy();
@@ -343,7 +355,7 @@ describe("communitylist rpc transport behaviors", () => {
     };
 
     it("a stale load finishing after update(); stop(); update() does not cancel the new run's retries", async () => {
-        const list = await pkc.createCommunityList({ cid: cidV0 });
+        const list = await pkc.createCommunityList({ cid: cid });
         const errors: Error[] = [];
         list.on("error", (e) => errors.push(e));
         const fetches = [deferred<CommunityListIpfsType>(), deferred<CommunityListIpfsType>()];
@@ -375,28 +387,5 @@ describe("communitylist rpc transport behaviors", () => {
         expect(updated, `instance hung in state ${stateAfterWait} after ${fetchCalls} fetches`).to.equal(true);
         expect(fetchCalls).to.equal(3);
         expect(errors.map((e) => e.message)).to.deep.equal(["mock transient fetch failure"]);
-    });
-
-    it("loads a list by its CIDv1 over RPC, the same as by its CIDv0", async () => {
-        const cidV1 = CID.parse(cidV0).toV1().toString();
-        const rawString = JSON.stringify(record);
-        const fetchedCids: string[] = [];
-        // Only CommunityList's fetch path reads the RPC client here; restored before destroy()
-        pkc._pkcRpcClient = <PKC["_pkcRpcClient"]>(<unknown>{
-            fetchCommunityList: async ({ cid }: { cid: string }) => {
-                fetchedCids.push(cid);
-                return { communityListRawString: rawString };
-            }
-        });
-        try {
-            const byV0 = await pkc.getCommunityList({ cid: cidV0 });
-            expect(byV0.raw.communityList).to.deep.equal(record);
-            const byV1 = await pkc.getCommunityList({ cid: cidV1 });
-            expect(byV1.raw.communityList).to.deep.equal(record);
-            expect(byV1.cid).to.equal(cidV1);
-            expect(fetchedCids).to.deep.equal([cidV0, cidV1]);
-        } finally {
-            pkc._pkcRpcClient = undefined;
-        }
     });
 });

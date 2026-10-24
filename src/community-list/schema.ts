@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CID } from "multiformats/cid";
 import { keys, omit } from "remeda";
 import {
     AuthorPubsubSchema,
@@ -86,7 +87,11 @@ export const CreateNewCommunityListOptionsSchema = z
     .strict()
     .refine(communityListHasNoDuplicateEntryPublicKeys, messages.ERR_COMMUNITY_LIST_HAS_DUPLICATE_COMMUNITY_PUBLIC_KEY);
 
-export const CreateCommunityListWithCidOptionsSchema = z.object({ cid: CidStringSchema }).strict();
+// CIDv0 only: every content check in pkc-js (RPC, gateway, kubo size check) recomputes a v0 hash, so a
+// v1 cid could never match on some transports. Rejected up front, the same on all of them
+const CommunityListCidSchema = CidStringSchema.refine((cid) => CID.parse(cid).version === 0, messages.ERR_COMMUNITY_LIST_CID_MUST_BE_V0);
+
+export const CreateCommunityListWithCidOptionsSchema = z.object({ cid: CommunityListCidSchema }).strict();
 
 export const CreateCommunityListOptionsSchema = z.union([CreateCommunityListWithCidOptionsSchema, CreateNewCommunityListOptionsSchema]);
 
